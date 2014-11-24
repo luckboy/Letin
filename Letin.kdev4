@@ -1,0 +1,4 @@
+[Project]
+Name=Letin
+Manager=KDevCMakeManager
+VersionControl=kdevgit
