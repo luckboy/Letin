@@ -1,4 +1,7 @@
 project(letin)
 
-add_executable(letin main.cpp)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
+include_directories(include)
+
+add_subdirectory(vm)
