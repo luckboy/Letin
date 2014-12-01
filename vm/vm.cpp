@@ -7,6 +7,9 @@
  ****************************************************************************/
 #include <letin/const.hpp>
 #include <letin/vm.hpp>
+#include "vm.hpp"
+
+using namespace std;
 
 namespace letin
 {
@@ -108,5 +111,59 @@ namespace letin
     //
 
     GarbageCollector::~GarbageCollector() {}
+    
+    //
+    // A ThreadContext class.
+    //
+
+    ThreadContext::ThreadContext(size_t stack_size)
+    {
+      _M_regs.abp = _M_regs.ac = _M_regs.lvc = _M_regs.abp2 = _M_regs.ac2 = 0;
+      _M_regs.fun = nullptr;
+      _M_regs.ip = 0;
+      _M_regs.rv = ReturnValue();
+      _M_stack = new Value[stack_size];
+      _M_stack_size = stack_size;
+    }
+
+    bool ThreadContext::enter_to_fun()
+    {
+      if(_M_regs.abp2 + _M_regs.ac2 + 3 < _M_stack_size) {
+        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 0] = Value(_M_regs.abp, _M_regs.ac);
+        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 1] = Value(_M_regs.lvc, _M_regs.ip);
+        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 2] = Value(_M_regs.fun);
+        _M_regs.abp = _M_regs.abp2;
+        _M_regs.ac = _M_regs.ac2;
+        _M_regs.abp2 = lvbp();
+        _M_regs.lvc = _M_regs.ac2 = 0;
+        return true;
+      } else
+        return false;
+    }
+
+    bool ThreadContext::leave_from_fun()
+    {
+      auto fbp = _M_regs.abp + _M_regs.ac;
+      if(fbp + 3 < _M_stack_size ||
+          _M_stack[fbp + 0].type() == VALUE_TYPE_PAIR ||
+          _M_stack[fbp + 1].type() == VALUE_TYPE_PAIR ||
+          _M_stack[fbp + 2].type() == VALUE_TYPE_FUN) {
+        _M_regs.abp2 = _M_regs.abp;
+        _M_regs.ac2 = 0;
+        _M_regs.abp = _M_stack[fbp + 0].raw().p.first;
+        _M_regs.ac = _M_stack[fbp + 0].raw().p.second;
+        _M_regs.lvc = _M_stack[fbp + 1].raw().p.first;
+        _M_regs.ip = _M_stack[fbp + 1].raw().p.second;
+        _M_regs.fun = _M_stack[fbp + 2].raw().fun;
+        return true;
+      } else
+        return false;
+    }
+
+    //
+    // An VirtualMachineContext class.
+    //
+
+    VirtualMachineContext::~VirtualMachineContext() {}
   }
 }

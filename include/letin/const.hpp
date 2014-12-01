@@ -13,6 +13,8 @@ namespace letin
   const int VALUE_TYPE_INT =            0;
   const int VALUE_TYPE_FLOAT =          1;
   const int VALUE_TYPE_REF =            2;
+  const int VALUE_TYPE_FUN =            3;
+  const int VALUE_TYPE_PAIR =           4;
   const int VALUE_TYPE_ERROR =          -1;
 
   const int OBJECT_TYPE_IARRAY8 =       0;

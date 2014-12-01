@@ -20,6 +20,7 @@ namespace letin
   namespace vm
   {
     class Object;
+    class Function;
     class Program;
     class Loader;
     class ThreadContext;
@@ -47,9 +48,15 @@ namespace letin
     {
       union
       {
-        int64_t i;
+        std::int64_t i;
         double f;
         Reference r;
+        Function *fun;
+        struct
+        {
+          uint32_t first;
+          uint32_t second;
+        } p;
       };
       int type;
 
@@ -64,11 +71,16 @@ namespace letin
 
       Value(int i) { _M_raw.type = VALUE_TYPE_INT; _M_raw.i = i; }
 
-      Value(int64_t i) { _M_raw.type = VALUE_TYPE_INT; _M_raw.i = i; }
+      Value(std::int64_t i) { _M_raw.type = VALUE_TYPE_INT; _M_raw.i = i; }
 
       Value(double f) { _M_raw.type = VALUE_TYPE_FLOAT; _M_raw.f = f; }
 
       Value(Reference r) { _M_raw.type = VALUE_TYPE_REF; _M_raw.r = r; }
+      
+      Value(Function *fun) { _M_raw.type = VALUE_TYPE_FUN; _M_raw.fun = fun; }
+      
+      Value(std::uint32_t first, std::uint32_t second)
+      { _M_raw.type = VALUE_TYPE_PAIR; _M_raw.p.first = first; _M_raw.p.second = second; }
 
       const ValueRaw &raw() const { return _M_raw; }
 
@@ -76,7 +88,7 @@ namespace letin
 
       int type() const { return _M_raw.type; }
 
-      int64_t i() const { return _M_raw.type == VALUE_TYPE_INT ? _M_raw.i : 0; }
+      std::int64_t i() const { return _M_raw.type == VALUE_TYPE_INT ? _M_raw.i : 0; }
 
       double f() const { return _M_raw.type == VALUE_TYPE_FLOAT ? _M_raw.f : 0.0; }
 
@@ -86,13 +98,13 @@ namespace letin
     struct ObjectRaw
     {
       int type;
-      size_t length;
+      std::size_t length;
       union
       {
-        int8_t is8[1];
-        int16_t is16[1];
-        int32_t is32[1];
-        int64_t is64[1];
+        std::int8_t is8[1];
+        std::int16_t is16[1];
+        std::int32_t is32[1];
+        std::int64_t is64[1];
         float sfs[1];
         double dfs[1];
         Reference rs[1];
@@ -108,7 +120,7 @@ namespace letin
     public:
       Object() { _M_raw.type = OBJECT_TYPE_ERROR; _M_raw.length = 0; }
 
-      Object(int type, size_t length) { _M_raw.type = type; _M_raw.length = length; }
+      Object(int type, std::size_t length) { _M_raw.type = type; _M_raw.length = length; }
 
       const ObjectRaw &raw() const { return _M_raw; }
 
@@ -116,13 +128,13 @@ namespace letin
 
       int type() const { return _M_raw.type; }
       
-      Value elem(size_t i) const;
+      Value elem(std::size_t i) const;
 
-      bool set_elem(size_t i, Value &value);
+      bool set_elem(std::size_t i, Value &value);
 
-      Value operator[](size_t i) const { elem(i); }
+      Value operator[](std::size_t i) const { elem(i); }
 
-      size_t length() const { return _M_raw.length; }
+      std::size_t length() const { return _M_raw.length; }
     };
 
     struct ReturnValueRaw
@@ -138,13 +150,13 @@ namespace letin
     public:
       ReturnValue() { _M_raw.i = 0; _M_raw.f = 0.0; _M_raw.r = nullptr; }
 
-      ReturnValue(int64_t i, double f, Reference r) { _M_raw.i = i; _M_raw.f = f; _M_raw.r = r; }
+      ReturnValue(std::int64_t i, double f, Reference r) { _M_raw.i = i; _M_raw.f = f; _M_raw.r = r; }
 
       const ReturnValueRaw &raw() const { return _M_raw; }
 
       ReturnValueRaw &raw() { return _M_raw; }
 
-      int64_t i() const { return _M_raw.i; }
+      std::int64_t i() const { return _M_raw.i; }
 
       double f() const { return _M_raw.f; }
 
@@ -153,9 +165,9 @@ namespace letin
 
     struct FunctionRaw
     {
-      size_t arg_count;
+      std::size_t arg_count;
       Instruction *instrs;
-      size_t instr_count;
+      std::size_t instr_count;
     };
 
     class Function
@@ -164,64 +176,68 @@ namespace letin
     public:
       Function() { _M_raw.arg_count = 0; _M_raw.instrs = nullptr; _M_raw.instr_count = 0; }
 
-      Function(size_t arg_count, Instruction *instrs, size_t instr_count)
+      Function(std::size_t arg_count, Instruction *instrs, std::size_t instr_count)
       { _M_raw.arg_count =  arg_count; _M_raw.instrs = instrs; _M_raw.instr_count = instr_count; }
 
       const FunctionRaw &raw() const { return _M_raw; }
 
       FunctionRaw &raw() { return _M_raw; }
 
-      size_t arg_count() const { return _M_raw.arg_count; }
+      std::size_t arg_count() const { return _M_raw.arg_count; }
 
-      const Instruction &instr(size_t i) const { return _M_raw.instrs[i]; }
+      const Instruction &instr(std::size_t i) const { return _M_raw.instrs[i]; }
 
-      size_t instr_count() const { return _M_raw.instr_count; }
+      std::size_t instr_count() const { return _M_raw.instr_count; }
     };
 
     class Environment
     {
+    protected:
+      Environment() {}
     public:
       virtual ~Environment();
 
-      virtual const Function &fun(size_t i) const = 0;
+      virtual const Function &fun(std::size_t i) = 0;
 
-      virtual const Value &var(size_t i) const = 0;
+      virtual const Value &var(std::size_t i) = 0;
     };
 
     class VirtualMachine
     {
       Loader *_M_loader;
       GarbageCollector *_M_gc;
-
+    protected:
       VirtualMachine(GarbageCollector *gc) : _M_gc(gc) {}
     public:
       virtual ~VirtualMachine();
 
-      virtual void load(void *ptr, size_t size) = 0;
+      virtual void load(void *ptr, std::size_t size) = 0;
 
       void load(const char *file_name);
 
-      virtual std::thread &start(size_t i, std::function<void (const ReturnValue &)> fun) = 0;
+      virtual std::thread &start(std::size_t i, std::function<void (const ReturnValue &)> fun) = 0;
 
       virtual Environment *env() = 0;
     };
 
     class Loader
     {
+    protected:
       Loader() {}
     public:
       virtual ~Loader();
 
-      virtual Program *load(const void *ptr, size_t size);
+      virtual Program *load(void *ptr, std::size_t size) = 0;
     };
 
     class Allocator
     {
+    protected:
       Allocator() {}
     public:
       virtual ~Allocator();
 
-      virtual void *allocate(size_t size) = 0;
+      virtual void *allocate(std::size_t size) = 0;
 
       virtual void free(void *ptr) = 0;
     };
@@ -229,14 +245,14 @@ namespace letin
     class GarbageCollector
     {
       Allocator *_M_alloc;
-
+    protected:
       GarbageCollector(Allocator *alloc) : _M_alloc(alloc) {}
     public:
       virtual ~GarbageCollector();
 
       virtual void collect() = 0;
 
-      virtual void *allocate(size_t size) = 0;
+      virtual void *allocate(std::size_t size) = 0;
     protected:
       virtual void gc_free(void *ptr) = 0;
     public:
@@ -248,6 +264,14 @@ namespace letin
 
       virtual void delete_vm_context(int i) = 0;
     };
+
+    Loader *new_loader();
+
+    Allocator *new_allocator();
+
+    GarbageCollector *new_garbage_collector(Allocator *alloc = new_allocator());
+
+    VirtualMachine *new_virtual_machine(Loader *loader = new_loader(), GarbageCollector *gc = new_garbage_collector());
   }
 }
 

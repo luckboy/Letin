@@ -14,35 +14,46 @@ namespace letin
 {
   namespace format
   {
-    const uint32_t HEADER_FLAG_LIBRARY = 1;
+    const std::uint32_t HEADER_FLAG_LIBRARY = 1;
 
-    const uint8_t HEADER_MAGIC0 = 0x33;
-    const uint8_t HEADER_MAGIC1 = 'L';
-    const uint8_t HEADER_MAGIC2 = 'E';
-    const uint8_t HEADER_MAGIC3 = 'T';
-    const uint8_t HEADER_MAGIC4 = 0x77;
-    const uint8_t HEADER_MAGIC5 = 'I';
-    const uint8_t HEADER_MAGIC6 = 'N';
-    const uint8_t HEADER_MAGIC7 = 0xff;
+    const std::uint8_t HEADER_MAGIC0 = 0x33;
+    const std::uint8_t HEADER_MAGIC1 = 'L';
+    const std::uint8_t HEADER_MAGIC2 = 'E';
+    const std::uint8_t HEADER_MAGIC3 = 'T';
+    const std::uint8_t HEADER_MAGIC4 = 0x77;
+    const std::uint8_t HEADER_MAGIC5 = 'I';
+    const std::uint8_t HEADER_MAGIC6 = 'N';
+    const std::uint8_t HEADER_MAGIC7 = 0xff;
+
+    const std::uint8_t HEADER_MAGIC[8] = {
+      HEADER_MAGIC0,
+      HEADER_MAGIC1,
+      HEADER_MAGIC2,
+      HEADER_MAGIC3,
+      HEADER_MAGIC4,
+      HEADER_MAGIC5,
+      HEADER_MAGIC6,
+      HEADER_MAGIC7
+    };
 
     struct Header
     {
-      uint8_t           magic[8];
-      uint32_t          flags;
-      uint32_t          entry;
-      uint32_t          fun_count;
-      uint32_t          var_count;
-      uint32_t          code_size;
-      uint32_t          data_size;
-      uint32_t          reserved[4];
+      std::uint8_t      magic[8];
+      std::uint32_t     flags;
+      std::uint32_t     entry;
+      std::uint32_t     fun_count;
+      std::uint32_t     var_count;
+      std::uint32_t     code_size;
+      std::uint32_t     data_size;
+      std::uint32_t     reserved[4];
     };
 
     struct Float
     {
       union
       {
-        uint8_t         bytes[4];
-        uint32_t        word;
+        std::uint8_t    bytes[4];
+        std::uint32_t   word;
       };
 
       float to_float();
@@ -52,8 +63,8 @@ namespace letin
     {
       union
       {
-        uint8_t         bytes[8];
-        uint64_t        dword;
+        std::uint8_t    bytes[8];
+        std::uint64_t   dword;
       };
 
       double to_double();
@@ -61,31 +72,31 @@ namespace letin
 
     struct Function
     {
-      uint32_t          addr;
-      uint32_t          arg_count;
+      std::uint32_t     addr;
+      std::uint32_t     arg_count;
     };
 
     struct Variable
     {
       union
       {
-        uint64_t        i;
+        std::int64_t    i;
         Double          f;
-        uint32_t        addr;
+        std::uint32_t   addr;
       };
-      int32_t           type;
+      std::int32_t      type;
     };
 
     union Argument
     {
-      int32_t           i;
+      std::int32_t      i;
       Float             f;
-      uint32_t          r;
+      std::uint32_t     r;
     };
 
     struct Instruction
     {
-      uint32_t          opcode;
+      std::uint32_t     opcode;
       Argument          arg1;
       Argument          arg2;
     };
@@ -94,26 +105,26 @@ namespace letin
     {
       union
       {
-        int64_t         i;
+        std::int64_t    i;
         Double          f;
-        uint32_t        r;
+        std::uint32_t   r;
       };
-      int32_t           type;
+      std::int32_t      type;
     };
 
     struct Object
     {
-      int32_t           type;
-      uint32_t          length;
+      std::int32_t      type;
+      std::uint32_t     length;
       union
       {
-        int8_t          is8[1];
-        int16_t         is16[1];
-        int32_t         is32[1];
-        int64_t         is64[1];
+        std::int8_t     is8[1];
+        std::int16_t    is16[1];
+        std::int32_t    is32[1];
+        std::int64_t    is64[1];
         Float           sfs[1];
         Double          dfs[1];
-        uint32_t        rs[1];
+        std::uint32_t   rs[1];
         Value           tes[1];
       };
     };
