@@ -76,7 +76,7 @@ namespace letin
       std::uint32_t     arg_count;
     };
 
-    struct Variable
+    struct Value
     {
       union
       {
@@ -101,17 +101,6 @@ namespace letin
       Argument          arg2;
     };
 
-    struct Value
-    {
-      union
-      {
-        std::int64_t    i;
-        Double          f;
-        std::uint32_t   r;
-      };
-      std::int32_t      type;
-    };
-
     struct Object
     {
       std::int32_t      type;
@@ -132,5 +121,3 @@ namespace letin
 }
 
 #endif
-
-

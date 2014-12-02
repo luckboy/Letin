@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <set>
 #include <unordered_map>
 #include <letin/format.hpp>
 #include <letin/vm.hpp>
@@ -24,19 +25,22 @@ namespace letin
       std::size_t _M_entry;
       format::Function *_M_funs;
       std::size_t _M_fun_count;
-      format::Variable *_M_vars;
+      format::Value *_M_vars;
       std::size_t _M_var_count;
       format::Instruction *_M_code;
       std::size_t _M_code_size;
       std::uint8_t *_M_data;
       std::size_t _M_data_size;
+      std::set<std::uint32_t> _M_data_addrs;
     public:
       Program(std::uint32_t flags, std::size_t entry,
-              format::Function *funs, std::size_t fun_count, format::Variable *vars, std::size_t var_count,
-              format::Instruction *code, std::size_t code_size, uint8_t *data, std::size_t data_size) :
+              format::Function *funs, std::size_t fun_count, format::Value *vars, std::size_t var_count,
+              format::Instruction *code, std::size_t code_size, uint8_t *data, std::size_t data_size,
+              std::set<std::uint32_t> data_addrs) :
         _M_flags(flags), _M_entry(entry),
         _M_funs(funs), _M_fun_count(fun_count), _M_vars(vars), _M_var_count(var_count),
-        _M_code(code), _M_code_size(code_size), _M_data(data), _M_data_size(data_size)
+        _M_code(code), _M_code_size(code_size), _M_data(data), _M_data_size(data_size),
+        _M_data_addrs(data_addrs)
       {}
 
       std::uint32_t flags() const { return _M_flags; }
@@ -49,9 +53,9 @@ namespace letin
 
       std::size_t fun_count() const { return _M_fun_count; }
 
-      const format::Variable &var(std::size_t i) const { return _M_vars[i]; }
+      const format::Value &var(std::size_t i) const { return _M_vars[i]; }
 
-      format::Variable &var(std::size_t i) { return _M_vars[i]; }
+      format::Value &var(std::size_t i) { return _M_vars[i]; }
 
       std::size_t var_count() const { return _M_var_count; }
 
@@ -62,6 +66,8 @@ namespace letin
       format::Object *data(std::size_t i) { return reinterpret_cast<format::Object *>(_M_data + i); }
 
       std::size_t data_size() const { return _M_data_size; }
+      
+      const std::set<std::uint32_t>  &data_addrs() const { return _M_data_addrs; }
     };
 
     struct Registers

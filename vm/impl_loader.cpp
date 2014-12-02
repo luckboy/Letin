@@ -31,7 +31,7 @@ namespace letin
         format::Header *header = reinterpret_cast<format::Header *>(tmp_ptr + tmp_idx);
         tmp_idx += sizeof(format::Header);
         if(tmp_idx >= size) return nullptr;
-        if(equal(header->magic, header->magic + 8, format::HEADER_MAGIC)) return nullptr;
+        if(!equal(header->magic, header->magic + 8, format::HEADER_MAGIC)) return nullptr;
         header->flags = ntohl(header->flags);
         header->entry = ntohl(header->entry);
         header->fun_count = ntohl(header->fun_count);
@@ -48,18 +48,18 @@ namespace letin
           funs[i].arg_count = ntohl(funs[i].arg_count);
         }
 
-        format::Variable *vars = reinterpret_cast<format::Variable *>(tmp_ptr + tmp_idx);
+        format::Value *vars = reinterpret_cast<format::Value *>(tmp_ptr + tmp_idx);
         size_t var_count = header->var_count;
-        tmp_idx += sizeof(format::Variable) * var_count;
+        tmp_idx += sizeof(format::Value) * var_count;
         if(tmp_idx >= size) return nullptr;
-        set<uint32_t> addrs;
+        set<uint32_t> var_addrs;
         for(size_t i = 0; i < var_count; i++) {
           vars[i].i = ntohll(vars[i].i);
           vars[i].type = ntohl(vars[i].type);
           if(vars[i].type != VALUE_TYPE_INT ||
               vars[i].type != VALUE_TYPE_FLOAT ||
               vars[i].type != VALUE_TYPE_REF) return nullptr;
-          if(vars[i].type == VALUE_TYPE_REF) addrs.insert(vars[i].addr);
+          if(vars[i].type == VALUE_TYPE_REF) var_addrs.insert(vars[i].addr);
         }
 
         format::Instruction *code = reinterpret_cast<format::Instruction *>(tmp_ptr + tmp_idx);
@@ -76,9 +76,12 @@ namespace letin
         size_t data_size = header->code_size;
         tmp_idx += data_size;
         if(tmp_idx >= size) return nullptr;
+        set<uint32_t> ref_addrs;
+        set<uint32_t> data_addrs;
         for(size_t i = 0; i != size - tmp_idx;) {
           if(i >= size - tmp_idx) return nullptr;
-          if(addrs.find(i) != addrs.end()) addrs.erase(i);
+          if(var_addrs.find(i) != var_addrs.end()) var_addrs.erase(i);
+          data_addrs.insert(i);
           format::Object *object = reinterpret_cast<format::Object *>(tmp_ptr + i);
           object->type = ntohl(object->type);
           object->length = ntohl(object->length);
@@ -109,6 +112,7 @@ namespace letin
             case OBJECT_TYPE_RARRAY:
               for(size_t j = 0; j < object->length; j++) {
                 object->rs[j] = ntohl(object->rs[j]);
+                ref_addrs.insert(object->rs[j]);
               }
               i += object->length * 4;
               break;
@@ -119,6 +123,7 @@ namespace letin
                 if(object->tes[j].type != VALUE_TYPE_INT ||
                     object->tes[j].type != VALUE_TYPE_FLOAT ||
                     object->tes[j].type != VALUE_TYPE_REF) return nullptr;
+                if(object->tes[j].type == VALUE_TYPE_REF) ref_addrs.insert(object->tes[j].addr);
               }
               i += object->length * 12;
               break;
@@ -126,8 +131,9 @@ namespace letin
               return nullptr;
           }
         }
-        if(!addrs.empty()) return nullptr;
-        return new Program(header->flags, header->entry, funs, fun_count, vars, var_count, code, code_size, data, data_size);
+        if(!var_addrs.empty()) return nullptr;
+        if(all_of(ref_addrs.begin(), ref_addrs.end(), [&ref_addrs, &data_addrs](uint32_t i) { return data_addrs.find(i) != data_addrs.end(); })) return nullptr;
+        return new Program(header->flags, header->entry, funs, fun_count, vars, var_count, code, code_size, data, data_size, data_addrs);
       }
     }
   }
