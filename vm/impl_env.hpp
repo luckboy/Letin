@@ -28,11 +28,15 @@ namespace letin
 
         ~ImplEnvironment();
 
-        const Function &fun(std::size_t i);
+        Function fun(std::size_t i);
 
-        const Value &var(std::size_t i);
+        Value var(std::size_t i);
 
         const std::unordered_map<std::size_t, Value> &vars() const;
+        
+        void add_fun(std::size_t i, const Function &fun);
+        
+        void add_var(std::size_t i, const Value &value);
       };
     }
   }

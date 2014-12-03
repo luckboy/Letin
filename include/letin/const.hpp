@@ -26,6 +26,10 @@ namespace letin
   const int OBJECT_TYPE_RARRAY =        6;
   const int OBJECT_TYPE_TUPLE =         7;
   const int OBJECT_TYPE_ERROR =         -1;
+  
+  const int ERROR_OUT_OF_MEM =          1;
+  const int ERROR_INVALID_OPCODE =      2;
+  const int ERROR_INVALID_ARG =         3;
 }
 
 #endif

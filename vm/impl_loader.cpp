@@ -46,6 +46,7 @@ namespace letin
         for(size_t i = 0; i < fun_count; i++) {
           funs[i].addr = ntohl(funs[i].addr);
           funs[i].arg_count = ntohl(funs[i].arg_count);
+          funs[i].instr_count = ntohl(funs[i].instr_count);
         }
 
         format::Value *vars = reinterpret_cast<format::Value *>(tmp_ptr + tmp_idx);
@@ -72,11 +73,10 @@ namespace letin
           code[i].arg2.i = ntohl(code[i].arg2.i);
         }
 
-        std::uint8_t *data = tmp_ptr + tmp_idx;
+        uint8_t *data = tmp_ptr + tmp_idx;
         size_t data_size = header->code_size;
         tmp_idx += data_size;
         if(tmp_idx >= size) return nullptr;
-        set<uint32_t> ref_addrs;
         set<uint32_t> data_addrs;
         for(size_t i = 0; i != size - tmp_idx;) {
           if(i >= size - tmp_idx) return nullptr;
@@ -110,10 +110,7 @@ namespace letin
               i += object->length * 8;
               break;
             case OBJECT_TYPE_RARRAY:
-              for(size_t j = 0; j < object->length; j++) {
-                object->rs[j] = ntohl(object->rs[j]);
-                ref_addrs.insert(object->rs[j]);
-              }
+              for(size_t j = 0; j < object->length; j++) object->rs[j] = ntohl(object->rs[j]);
               i += object->length * 4;
               break;
             case OBJECT_TYPE_TUPLE:
@@ -123,7 +120,6 @@ namespace letin
                 if(object->tes[j].type != VALUE_TYPE_INT ||
                     object->tes[j].type != VALUE_TYPE_FLOAT ||
                     object->tes[j].type != VALUE_TYPE_REF) return nullptr;
-                if(object->tes[j].type == VALUE_TYPE_REF) ref_addrs.insert(object->tes[j].addr);
               }
               i += object->length * 12;
               break;
@@ -132,9 +128,9 @@ namespace letin
           }
         }
         if(!var_addrs.empty()) return nullptr;
-        if(all_of(ref_addrs.begin(), ref_addrs.end(), [&ref_addrs, &data_addrs](uint32_t i) { return data_addrs.find(i) != data_addrs.end(); })) return nullptr;
         return new Program(header->flags, header->entry, funs, fun_count, vars, var_count, code, code_size, data, data_size, data_addrs);
       }
     }
   }
 }
+

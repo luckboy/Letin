@@ -2,15 +2,18 @@
 BuildItems=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x01\x00\x00\x00\n\x00L\x00e\x00t\x00i\x00n)
 
 [CMake]
-BuildDirs=/home/luck/develop/prj/cpp/Letin/build
+Build Directory Count=1
 CMakeDir=/usr/share/cmake-2.8/Modules
-Current CMake Binary=file:///usr/bin/cmake
-CurrentBuildDir=file:///home/luck/develop/prj/cpp/Letin/build
-CurrentBuildType=Debug
-CurrentInstallDir=file:///usr/local
+Current Build Directory Index=0
 Environment Profile=
-Extra Arguments=
 ProjectRootRelative=./
+
+[CMake][CMake Build Directory 0]
+Build Directory Path=file:///home/luck/develop/prj/cpp/Letin/build
+Build Type=Debug
+CMake Binary=file:///usr/bin/cmake
+Environment Profile=default
+Install Directory=file:///usr/local
 
 [MakeBuilder]
 Number Of Jobs=1

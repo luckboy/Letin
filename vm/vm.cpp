@@ -5,6 +5,10 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
+#include <sys/stat.h>
+#include <fstream>
+#include <limits>
+#include <memory>
 #include <letin/const.hpp>
 #include <letin/vm.hpp>
 #include "vm.hpp"
@@ -94,6 +98,19 @@ namespace letin
 
     VirtualMachine::~VirtualMachine() {}
 
+    bool VirtualMachine::load(const char *file_name)
+    {
+      struct stat stat_buf;
+      if(stat(file_name, &stat_buf) == -1) return false;
+      if(stat_buf.st_size > numeric_limits<size_t>::max()) return false;
+      size_t size = stat_buf.st_size;
+      unique_ptr<char[]> ptr(new char[size]);
+      ifstream ifs(file_name);
+      if(ifs.good()) return false;
+      ifs.read(ptr.get(), size);
+      return load(reinterpret_cast<void *>(ptr.get()), size);
+    }
+
     //
     // A Loader class.
     //
@@ -112,6 +129,41 @@ namespace letin
 
     GarbageCollector::~GarbageCollector() {}
     
+    Object *GarbageCollector::new_object(int type, std::size_t length)
+    {
+      size_t object_size = sizeof(Object);
+      size_t elem_size;
+      switch(type) {
+        case OBJECT_TYPE_IARRAY8:
+          elem_size = 1;
+          break;
+        case OBJECT_TYPE_IARRAY16:
+          elem_size = 2;
+          break;
+        case OBJECT_TYPE_IARRAY32:
+          elem_size = 4;
+          break;
+        case OBJECT_TYPE_IARRAY64:
+          elem_size = 8;
+          break;
+        case OBJECT_TYPE_SFARRAY:
+          elem_size = sizeof(float);
+          break;
+        case OBJECT_TYPE_DFARRAY:
+          elem_size = sizeof(double);
+          break;
+        case OBJECT_TYPE_RARRAY:
+          elem_size =  sizeof(Reference);
+          break;
+        case OBJECT_TYPE_TUPLE:
+          elem_size = sizeof(Value);
+          break;
+        default:
+          return nullptr;
+      }
+      return reinterpret_cast<Object *>(allocate((object_size - elem_size) + length * elem_size));
+    }
+
     //
     // A ThreadContext class.
     //

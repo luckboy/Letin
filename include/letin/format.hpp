@@ -74,6 +74,7 @@ namespace letin
     {
       std::uint32_t     addr;
       std::uint32_t     arg_count;
+      std::uint32_t     instr_count;
     };
 
     struct Value
@@ -91,7 +92,9 @@ namespace letin
     {
       std::int32_t      i;
       Float             f;
-      std::uint32_t     r;
+      std::uint32_t     lvar;
+      std::uint32_t     arg;
+      std::uint32_t     gvar;
     };
 
     struct Instruction

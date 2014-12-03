@@ -85,6 +85,8 @@ namespace letin
       const ValueRaw &raw() const { return _M_raw; }
 
       ValueRaw &raw() { return _M_raw; }
+      
+      bool is_error() const { return _M_raw.type == VALUE_TYPE_ERROR; }
 
       int type() const { return _M_raw.type; }
 
@@ -125,6 +127,8 @@ namespace letin
       const ObjectRaw &raw() const { return _M_raw; }
 
       ObjectRaw &raw() { return _M_raw; }
+      
+      bool is_error() const { return _M_raw.type == OBJECT_TYPE_ERROR; }
 
       int type() const { return _M_raw.type; }
       
@@ -142,6 +146,7 @@ namespace letin
       int64_t i;
       double f;
       Reference r;
+      int error;
     };
 
     class ReturnValue
@@ -182,6 +187,8 @@ namespace letin
       const FunctionRaw &raw() const { return _M_raw; }
 
       FunctionRaw &raw() { return _M_raw; }
+      
+      bool is_error() const { return _M_raw.instrs == nullptr; }
 
       std::size_t arg_count() const { return _M_raw.arg_count; }
 
@@ -197,27 +204,36 @@ namespace letin
     public:
       virtual ~Environment();
 
-      virtual const Function &fun(std::size_t i) = 0;
-
-      virtual const Value &var(std::size_t i) = 0;
+      virtual Function fun(std::size_t i) = 0;
+      
+      virtual Value var(std::size_t i) = 0;
     };
 
     class VirtualMachine
     {
+    protected:
       Loader *_M_loader;
       GarbageCollector *_M_gc;
-    protected:
+
       VirtualMachine(GarbageCollector *gc) : _M_gc(gc) {}
     public:
       virtual ~VirtualMachine();
 
-      virtual void load(void *ptr, std::size_t size) = 0;
+      virtual bool load(void *ptr, std::size_t size) = 0;
 
-      void load(const char *file_name);
+      bool load(const char *file_name);
 
       virtual std::thread &start(std::size_t i, std::function<void (const ReturnValue &)> fun) = 0;
 
-      virtual Environment *env() = 0;
+      std::thread &start(std::function<void (const ReturnValue &)> fun) { return start(entry(), fun); }
+      
+      virtual Environment &env() = 0;
+      
+      virtual bool is_entry();
+      
+      virtual std::size_t entry(); 
+      
+      GarbageCollector *gc() { return _M_gc; }
     };
 
     class Loader
@@ -244,8 +260,9 @@ namespace letin
 
     class GarbageCollector
     {
-      Allocator *_M_alloc;
     protected:
+      Allocator *_M_alloc;
+
       GarbageCollector(Allocator *alloc) : _M_alloc(alloc) {}
     public:
       virtual ~GarbageCollector();
@@ -263,15 +280,23 @@ namespace letin
       virtual int add_vm_context(VirtualMachineContext *context) = 0;
 
       virtual void delete_vm_context(int i) = 0;
+      
+      virtual std::thread &start();
+      
+      Object *new_object(int type, std::size_t length);
+      
+      virtual void lock();
+      
+      virtual void unlock();
     };
-
+    
     Loader *new_loader();
 
     Allocator *new_allocator();
 
-    GarbageCollector *new_garbage_collector(Allocator *alloc = new_allocator());
+    GarbageCollector *new_garbage_collector(Allocator *alloc);
 
-    VirtualMachine *new_virtual_machine(Loader *loader = new_loader(), GarbageCollector *gc = new_garbage_collector());
+    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc);
   }
 }
 
