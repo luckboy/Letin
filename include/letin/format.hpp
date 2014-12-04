@@ -55,8 +55,6 @@ namespace letin
         std::uint8_t    bytes[4];
         std::uint32_t   word;
       };
-
-      float to_float();
     };
 
     struct Double
@@ -66,8 +64,6 @@ namespace letin
         std::uint8_t    bytes[8];
         std::uint64_t   dword;
       };
-
-      double to_double();
     };
 
     struct Function

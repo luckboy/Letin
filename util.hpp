@@ -10,7 +10,9 @@
 
 #include <netinet/in.h>
 #include <cstdint>
+#include <cmath>
 #include <endian.h>
+#include <letin/format.hpp>
 
 inline std::uint64_t htonll(std::uint64_t x)
 {
@@ -26,6 +28,30 @@ inline std::uint64_t htonll(std::uint64_t x)
 inline std::uint64_t ntohll(std::uint64_t x)
 {
   return htonll(x);
+}
+
+inline float format_float_to_float(const letin::format::Float &x)
+{
+#if defined(__STDC_IEC_559__) && (__SIZEOF_FLOAT__ == 4)
+  return *(reinterpret_cast<const float *>(&(x.word)));
+#else
+  float sign = (x.word & 0x80000000) != 0 ? -1.0f : 1.0f;
+  int exp = static_cast<unsigned int>((x.word >> 23) & 0xff) - 127;
+  float fract = std::ldexp(static_cast<float>(x.word & 0x007fffff), -23) + 1.0f;
+  return std::ldexp(sign * fract, exp);
+#endif
+}
+
+inline double format_double_to_double(const letin::format::Double &x)
+{
+#if defined(__STDC_IEC_559__) && (__SIZEOF_DOUBLE__ == 8)
+  return *(reinterpret_cast<const double *>(&(x.dword)));
+#else
+  double sign = (x.dword & 0x8000000000000000LL) != 0 ? -1.0 : 1.0;
+  int exp = static_cast<unsigned int>((x.dword >> 52) & 0x7ff) - 1023;
+  double fract = std::ldexp(static_cast<double>(x.dword & 0x000fffffffffffffLL), -52) + 1.0;
+  return std::ldexp(sign * fract, exp);
+#endif
 }
 
 #endif

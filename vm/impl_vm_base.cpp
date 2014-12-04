@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <letin/format.hpp>
 #include "impl_vm_base.hpp"
+#include "util.hpp"
 #include "vm.hpp"
 
 using namespace std;
@@ -62,11 +63,11 @@ namespace letin
               break;
             case OBJECT_TYPE_SFARRAY:
               for(size_t i = 0; i < object->length(); i++)
-                object->raw().sfs[i] = data_object->sfs[i].to_float();
+                object->raw().sfs[i] = format_float_to_float(data_object->sfs[i]);
               break;
             case OBJECT_TYPE_DFARRAY:
               for(size_t i = 0; i < object->length(); i++)
-                object->raw().dfs[i] = data_object->dfs[i].to_double();
+                object->raw().dfs[i] = format_double_to_double(data_object->dfs[i]);
               break;
             case OBJECT_TYPE_RARRAY:
               for(size_t i = 0; i < object->length(); i++) {
@@ -82,7 +83,7 @@ namespace letin
                     object->raw().tes[i] = Value(data_object->tes[i].i);
                     break;
                   case VALUE_TYPE_FLOAT:
-                    object->raw().tes[i] = Value(data_object->tes[i].f.to_double());
+                    object->raw().tes[i] = Value(format_double_to_double(data_object->tes[i].f));
                     break;
                   case VALUE_TYPE_REF:
                   {
@@ -107,7 +108,7 @@ namespace letin
               _M_env.add_var(i, Value(var_value.i));
               break;
             case VALUE_TYPE_FLOAT:
-              _M_env.add_var(i, Value(var_value.f.to_double()));
+              _M_env.add_var(i, Value(format_double_to_double(var_value.f)));
               break;
             case VALUE_TYPE_REF:
             {
