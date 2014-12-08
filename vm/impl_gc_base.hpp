@@ -13,6 +13,7 @@
 #include <set>
 #include <thread>
 #include <letin/vm.hpp>
+#include "vm.hpp"
 
 namespace letin
 {
@@ -23,9 +24,18 @@ namespace letin
       class ImplGarbageCollectorBase : public GarbageCollector
       {
       protected:
+        struct ThreadContexts
+        {
+          std::set<ThreadContext *> contexts;
+
+          void lock() { for(auto context : contexts) context->stop(); }
+
+          void unlock() { for(auto context : contexts) context->cont(); }
+        };
+
         std::thread _M_gc_thread;
         std::recursive_mutex _M_gc_mutex;
-        std::set<ThreadContext *> _M_thread_contexts;
+        ThreadContexts _M_thread_contexts;
         std::set<VirtualMachineContext *> _M_vm_contexts;
       private:
         bool _M_is_started;
@@ -33,12 +43,12 @@ namespace letin
         std::mutex _M_interval_mutex;
         std::condition_variable _M_interval_cv;
       public:
-        ImplGarbageCollectorBase(Allocator *alloc) :
-          GarbageCollector(alloc), _M_is_started(false), _M_interval_usecs(500) {}
+        ImplGarbageCollectorBase(Allocator *alloc, unsigned int interval_usecs) :
+          GarbageCollector(alloc), _M_is_started(false), _M_interval_usecs(interval_usecs) {}
 
         ~ImplGarbageCollectorBase();
       protected:
-        virtual void collect_in_gc_thread();
+        virtual void collect_in_gc_thread() = 0;
       public:
         void add_thread_context(ThreadContext *context);
 

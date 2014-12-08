@@ -5,8 +5,8 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
-#ifndef _NEW_ALLOC_HPP
-#define _NEW_ALLOC_HPP
+#ifndef _ALLOC_NEW_ALLOC_HPP
+#define _ALLOC_NEW_ALLOC_HPP
 
 #include <letin/vm.hpp>
 

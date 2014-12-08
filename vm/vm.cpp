@@ -23,7 +23,7 @@ namespace letin
     // A Reference class.
     //
     
-    Object Reference::nil;
+    Object Reference::_S_nil;
     
     //
     // An Object class.
@@ -143,7 +143,7 @@ namespace letin
 
     GarbageCollector::~GarbageCollector() {}
 
-    Object *GarbageCollector::new_object(int type, std::size_t length)
+    Object *GarbageCollector::new_object(int type, size_t length, ThreadContext *context)
     {
       size_t object_size = sizeof(Object);
       size_t elem_size;
@@ -175,7 +175,7 @@ namespace letin
         default:
           return nullptr;
       }
-      return new(allocate((object_size - elem_size) + length * elem_size)) Object(type, length);
+      return new(allocate((object_size - elem_size) + length * elem_size, context)) Object(type, length);
     }
 
     //

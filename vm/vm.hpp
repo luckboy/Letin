@@ -83,6 +83,7 @@ namespace letin
       Function *fun;
       std::uint32_t ip;
       ReturnValue rv;
+      void *tmp_ptr;
     };
 
     class ThreadContext
@@ -116,6 +117,10 @@ namespace letin
       const Registers &regs() const { return _M_regs; }
 
       Registers &regs() { return _M_regs; }
+
+      const Value &stack_elem(std::size_t i) const { return _M_stack[i]; }
+
+      std::size_t stack_size() const { return _M_stack_size; }
 
       std::size_t lvbp() const { return _M_regs.abp + _M_regs.ac + 3; }
 

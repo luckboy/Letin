@@ -32,11 +32,11 @@ namespace letin
 
     class Reference
     {
-      static Object nil;
+      static Object _S_nil;
 
       Object *_M_ptr;
     public:
-      Reference() : _M_ptr(&nil) {}
+      Reference() : _M_ptr(&_S_nil) {}
 
       Reference(Object *ptr) : _M_ptr(ptr) {}
 
@@ -45,6 +45,12 @@ namespace letin
       Object &operator*() const { return *_M_ptr; }
 
       Object *operator->() const { return _M_ptr; }
+      
+      bool has_nil() const { return _M_ptr == &_S_nil; }
+
+      const Object *ptr() const { return _M_ptr; }
+
+      Object *ptr() { return _M_ptr; }
     };
 
     struct ValueRaw
@@ -280,9 +286,9 @@ namespace letin
       GarbageCollector(Allocator *alloc) : _M_alloc(alloc) {}
     public:
       virtual ~GarbageCollector();
-
-      virtual void *allocate(std::size_t size) = 0;
-
+    protected:
+      virtual void *allocate(std::size_t size, ThreadContext *context = nullptr) = 0;
+    public:
       virtual void add_thread_context(ThreadContext *context) = 0;
 
       virtual void delete_thread_context(ThreadContext *context) = 0;
@@ -291,7 +297,7 @@ namespace letin
 
       virtual void delete_vm_context(VirtualMachineContext *context) = 0;
 
-      Object *new_object(int type, std::size_t length);
+      Object *new_object(int type, std::size_t length, ThreadContext *context = nullptr);
 
       virtual void start() = 0;
 

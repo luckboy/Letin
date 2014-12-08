@@ -34,7 +34,7 @@ namespace letin
         Thread start(std::size_t i, std::function<void (const ReturnValue &)> fun);
 
       protected:
-        ReturnValue start_in_thread(ThreadContext &context, std::size_t i);
+        ReturnValue start_in_thread(std::size_t i, ThreadContext &context);
       public:
         Environment &env();
 

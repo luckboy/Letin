@@ -134,7 +134,7 @@ namespace letin
         context->start([this, i, &fun, context]() {
           Thread thread2(context);
           try {
-            fun(start_in_thread(*context, i)); 
+            fun(start_in_thread(i, *context)); 
           } catch(...) {
             fun(ReturnValue(0, 0.0, Reference(), ERROR_EXCEPTION));
           }

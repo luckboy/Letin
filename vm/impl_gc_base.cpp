@@ -25,25 +25,25 @@ namespace letin
 
       void ImplGarbageCollectorBase::add_thread_context(ThreadContext *context)
       {
-        lock_guard<recursive_mutex> gaurd(_M_gc_mutex);
-        _M_thread_contexts.insert(context);
+        lock_guard<GarbageCollector> gaurd(*this);
+        _M_thread_contexts.contexts.insert(context);
       }
 
       void ImplGarbageCollectorBase::delete_thread_context(ThreadContext *context)
       {
-        lock_guard<recursive_mutex> gaurd(_M_gc_mutex);
-        _M_thread_contexts.erase(context);
+        lock_guard<GarbageCollector> gaurd(*this);
+        _M_thread_contexts.contexts.erase(context);
       }
 
       void ImplGarbageCollectorBase::add_vm_context(VirtualMachineContext *context)
       {
-        lock_guard<recursive_mutex> gaurd(_M_gc_mutex);
+        lock_guard<GarbageCollector> gaurd(*this);
         _M_vm_contexts.insert(context);
       }
 
       void ImplGarbageCollectorBase::delete_vm_context(VirtualMachineContext *context)
       {
-        lock_guard<recursive_mutex> gaurd(_M_gc_mutex);
+        lock_guard<GarbageCollector> gaurd(*this);
         _M_vm_contexts.erase(context);
       }
 
@@ -66,10 +66,7 @@ namespace letin
                 } while(_M_interval_cv.wait_for(lock, chrono::milliseconds(_M_interval_usecs)) != cv_status::timeout);
               }
               // Collects.
-              lock_guard<recursive_mutex> guard(_M_gc_mutex);
-              for(auto context : _M_thread_contexts) context->stop();
               collect_in_gc_thread();
-              for(auto context : _M_thread_contexts) context->cont();
             }
           });
         }
