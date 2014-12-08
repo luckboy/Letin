@@ -10,10 +10,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <set>
+#include <thread>
 #include <unordered_map>
 #include <letin/format.hpp>
 #include <letin/vm.hpp>
+#include "thread.hpp"
 
 namespace letin
 {
@@ -84,11 +87,31 @@ namespace letin
 
     class ThreadContext
     {
+      GarbageCollector *_M_gc;
+      std::thread _M_thread;
       Registers _M_regs;
       Value *_M_stack;
       std::size_t _M_stack_size;
+      bool _M_is_active;
     public:
       ThreadContext(std::size_t stack_size = 32 * 1024);
+
+      ~ThreadContext() { if(_M_gc != nullptr) _M_gc->delete_thread_context(this); delete[] _M_stack; }
+
+      void set_gc(GarbageCollector *gc)
+      {
+          if(_M_gc != nullptr) _M_gc->delete_thread_context(this);
+          _M_gc = gc;
+          _M_gc->add_thread_context(this);
+      }
+
+      std::thread &system_thread() { return _M_thread; }
+
+      void start(std::function<void ()> fun) { _M_thread = std::thread(fun); }
+
+      void stop() { priv::stop_thread(_M_thread); }
+
+      void cont() { priv::continue_thread(_M_thread); }
 
       const Registers &regs() const { return _M_regs; }
 
@@ -129,6 +152,10 @@ namespace letin
       bool leave_from_fun();
 
       void in() { _M_regs.lvc = _M_regs.abp2 - lvbp(); }
+      
+      bool is_active() const { _M_is_active; }
+      
+      void deactive() { _M_is_active = false; }
     };
 
     class VirtualMachineContext

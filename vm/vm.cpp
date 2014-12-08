@@ -87,6 +87,14 @@ namespace letin
     }
 
     //
+    // A Thread class.
+    //
+
+    Thread::Thread(ThreadContext *context) : _M_context(context) {}
+
+    std::thread &Thread::system_thread() { return _M_context->system_thread(); }
+
+    //
     // An Environment class.
     //
 
@@ -128,7 +136,7 @@ namespace letin
     //
 
     GarbageCollector::~GarbageCollector() {}
-    
+
     Object *GarbageCollector::new_object(int type, std::size_t length)
     {
       size_t object_size = sizeof(Object);
@@ -161,7 +169,7 @@ namespace letin
         default:
           return nullptr;
       }
-      return reinterpret_cast<Object *>(allocate((object_size - elem_size) + length * elem_size));
+      return new(allocate((object_size - elem_size) + length * elem_size)) Object(type, length);
     }
 
     //
@@ -170,12 +178,14 @@ namespace letin
 
     ThreadContext::ThreadContext(size_t stack_size)
     {
+      _M_gc = nullptr;
       _M_regs.abp = _M_regs.ac = _M_regs.lvc = _M_regs.abp2 = _M_regs.ac2 = 0;
       _M_regs.fun = nullptr;
       _M_regs.ip = 0;
       _M_regs.rv = ReturnValue();
       _M_stack = new Value[stack_size];
       _M_stack_size = stack_size;
+      _M_is_active = true;
     }
 
     bool ThreadContext::enter_to_fun()

@@ -5,11 +5,9 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
-#ifndef _IMPL_LOADER_HPP
-#define _IMPL_LOADER_HPP
+#include "new_alloc.hpp"
 
-#include <cstddef>
-#include <letin/vm.hpp>
+using namespace std;
 
 namespace letin
 {
@@ -17,17 +15,13 @@ namespace letin
   {
     namespace impl
     {
-      class ImplLoader : public Loader
-      {
-      public:
-        ImplLoader() {}
+      NewAllocator::~NewAllocator() {}
         
-        ~ImplLoader();
-        
-        Program *load(void *ptr, std::size_t size);
-      };
+      void *NewAllocator::allocate(size_t size)
+      { try { return reinterpret_cast<void *>(new char[size]); } catch(...) { return nullptr; } }
+
+      void NewAllocator::free(void *ptr)
+      { delete[] (reinterpret_cast<char *>(ptr)); }
     }
   }
 }
-
-#endif

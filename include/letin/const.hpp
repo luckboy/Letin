@@ -30,6 +30,8 @@ namespace letin
   const int ERROR_OUT_OF_MEM =          1;
   const int ERROR_INVALID_OPCODE =      2;
   const int ERROR_INVALID_ARG =         3;
+  const int ERROR_EXCEPTION =           4;
+  const int ERROR_NO_ENTRY =            5;
 }
 
 #endif

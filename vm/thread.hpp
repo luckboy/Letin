@@ -5,27 +5,24 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
-#ifndef _IMPL_LOADER_HPP
-#define _IMPL_LOADER_HPP
+#ifndef _THREAD_HPP
+#define _THREAD_HPP
 
-#include <cstddef>
-#include <letin/vm.hpp>
+#include <thread>
 
 namespace letin
 {
   namespace vm
   {
-    namespace impl
+    namespace priv
     {
-      class ImplLoader : public Loader
-      {
-      public:
-        ImplLoader() {}
-        
-        ~ImplLoader();
-        
-        Program *load(void *ptr, std::size_t size);
-      };
+      void initialize_threads();
+      
+      void finalize_threads();
+
+      void stop_thread(std::thread &thr);
+
+      void continue_thread(std::thread &thr);
     }
   }
 }

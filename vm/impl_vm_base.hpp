@@ -8,8 +8,6 @@
 #ifndef _IMPL_VM_BASE_HPP
 #define _IMPL_VM_BASE_HPP
 
-#include <list>
-#include <thread>
 #include <letin/vm.hpp>
 #include "vm.hpp"
 #include "impl_env.hpp"
@@ -23,21 +21,18 @@ namespace letin
       class ImplVirtualMachineBase : public VirtualMachine
       {
       protected:
-        struct Thread
-        {
-          std::thread thread;
-          ThreadContext context;
-        };
         ImplEnvironment _M_env;
         bool _M_is_entry;
         std::size_t _M_entry;
-        std::list<Thread> _M_threads;
 
         ImplVirtualMachineBase(GarbageCollector *gc) : VirtualMachine(gc) {}
       public:
-        virtual ~ImplVirtualMachineBase();
+        ~ImplVirtualMachineBase();
 
         bool load(void *ptr, std::size_t size);
+
+        Thread start(std::size_t i, std::function<void (const ReturnValue &)> fun);
+
       protected:
         ReturnValue start_in_thread(ThreadContext &context, std::size_t i);
       public:

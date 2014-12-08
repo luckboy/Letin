@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <thread>
 #include <letin/const.hpp>
 #include <letin/format.hpp>
@@ -76,16 +77,16 @@ namespace letin
       Value(double f) { _M_raw.type = VALUE_TYPE_FLOAT; _M_raw.f = f; }
 
       Value(Reference r) { _M_raw.type = VALUE_TYPE_REF; _M_raw.r = r; }
-      
+
       Value(Function *fun) { _M_raw.type = VALUE_TYPE_FUN; _M_raw.fun = fun; }
-      
+
       Value(std::uint32_t first, std::uint32_t second)
       { _M_raw.type = VALUE_TYPE_PAIR; _M_raw.p.first = first; _M_raw.p.second = second; }
 
       const ValueRaw &raw() const { return _M_raw; }
 
       ValueRaw &raw() { return _M_raw; }
-      
+
       bool is_error() const { return _M_raw.type == VALUE_TYPE_ERROR; }
 
       int type() const { return _M_raw.type; }
@@ -127,11 +128,11 @@ namespace letin
       const ObjectRaw &raw() const { return _M_raw; }
 
       ObjectRaw &raw() { return _M_raw; }
-      
+
       bool is_error() const { return _M_raw.type == OBJECT_TYPE_ERROR; }
 
       int type() const { return _M_raw.type; }
-      
+
       Value elem(std::size_t i) const;
 
       bool set_elem(std::size_t i, Value &value);
@@ -153,9 +154,11 @@ namespace letin
     {
       ReturnValueRaw _M_raw;
     public:
-      ReturnValue() { _M_raw.i = 0; _M_raw.f = 0.0; _M_raw.r = nullptr; }
+      ReturnValue()
+      { _M_raw.i = 0; _M_raw.f = 0.0; _M_raw.r = nullptr; _M_raw.error = 0; }
 
-      ReturnValue(std::int64_t i, double f, Reference r) { _M_raw.i = i; _M_raw.f = f; _M_raw.r = r; }
+      ReturnValue(std::int64_t i, double f, Reference r, int error)
+      { _M_raw.i = i; _M_raw.f = f; _M_raw.r = r; _M_raw.error = error; }
 
       const ReturnValueRaw &raw() const { return _M_raw; }
 
@@ -187,7 +190,7 @@ namespace letin
       const FunctionRaw &raw() const { return _M_raw; }
 
       FunctionRaw &raw() { return _M_raw; }
-      
+
       bool is_error() const { return _M_raw.instrs == nullptr; }
 
       std::size_t arg_count() const { return _M_raw.arg_count; }
@@ -195,6 +198,15 @@ namespace letin
       const Instruction &instr(std::size_t i) const { return _M_raw.instrs[i]; }
 
       std::size_t instr_count() const { return _M_raw.instr_count; }
+    };
+
+    class Thread
+    {
+      std::shared_ptr<ThreadContext> _M_context;
+    public:
+      Thread(ThreadContext *context);
+
+      std::thread &system_thread();
     };
 
     class Environment
@@ -205,7 +217,7 @@ namespace letin
       virtual ~Environment();
 
       virtual Function fun(std::size_t i) = 0;
-      
+
       virtual Value var(std::size_t i) = 0;
     };
 
@@ -223,16 +235,16 @@ namespace letin
 
       bool load(const char *file_name);
 
-      virtual std::thread &start(std::size_t i, std::function<void (const ReturnValue &)> fun) = 0;
+      virtual Thread start(std::size_t i, std::function<void (const ReturnValue &)> fun) = 0;
 
-      std::thread &start(std::function<void (const ReturnValue &)> fun) { return start(entry(), fun); }
-      
+      Thread start(std::function<void (const ReturnValue &)> fun) { return start(entry(), fun); }
+
       virtual Environment &env() = 0;
-      
+
       virtual bool is_entry();
-      
-      virtual std::size_t entry(); 
-      
+
+      virtual std::size_t entry();
+
       GarbageCollector *gc() { return _M_gc; }
     };
 
@@ -267,29 +279,29 @@ namespace letin
     public:
       virtual ~GarbageCollector();
 
-      virtual void collect() = 0;
-
       virtual void *allocate(std::size_t size) = 0;
-    protected:
-      virtual void gc_free(void *ptr) = 0;
-    public:
-      virtual int add_thread_context(ThreadContext *context) = 0;
 
-      virtual void delete_thread_context(int i) = 0;
+      virtual void add_thread_context(ThreadContext *context) = 0;
 
-      virtual int add_vm_context(VirtualMachineContext *context) = 0;
+      virtual void delete_thread_context(ThreadContext *context) = 0;
 
-      virtual void delete_vm_context(int i) = 0;
-      
-      virtual std::thread &start();
-      
+      virtual void add_vm_context(VirtualMachineContext *context) = 0;
+
+      virtual void delete_vm_context(VirtualMachineContext *context) = 0;
+
       Object *new_object(int type, std::size_t length);
-      
-      virtual void lock();
-      
-      virtual void unlock();
+
+      virtual void start() = 0;
+
+      virtual void stop() = 0;
+
+      virtual void lock() = 0;
+
+      virtual void unlock() = 0;
+
+      virtual std::thread &system_thread() = 0;
     };
-    
+
     Loader *new_loader();
 
     Allocator *new_allocator();

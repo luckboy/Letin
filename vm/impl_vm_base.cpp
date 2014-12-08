@@ -126,10 +126,26 @@ namespace letin
         return true;
       }
 
+      Thread ImplVirtualMachineBase::start(size_t i, function<void (const ReturnValue &)> fun)
+      {
+        ThreadContext *context = new ThreadContext();
+        Thread thread(context);
+        context->set_gc(_M_gc);
+        context->start([this, i, &fun, context]() {
+          Thread thread2(context);
+          try {
+            fun(start_in_thread(*context, i)); 
+          } catch(...) {
+            fun(ReturnValue(0, 0.0, nullptr, ERROR_EXCEPTION));
+          }
+        });
+        return thread;
+      }
+
       Environment &ImplVirtualMachineBase::env() { return _M_env; }
 
       bool ImplVirtualMachineBase::is_entry() { return _M_is_entry; }
-      
+
       size_t ImplVirtualMachineBase::entry() { return _M_entry; }
     }
   }
