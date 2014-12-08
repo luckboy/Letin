@@ -24,10 +24,11 @@ namespace letin
       {
       protected:
         std::thread _M_gc_thread;
-        bool _M_is_started;
         std::recursive_mutex _M_gc_mutex;
         std::set<ThreadContext *> _M_thread_contexts;
         std::set<VirtualMachineContext *> _M_vm_contexts;
+      private:
+        bool _M_is_started;
         unsigned int _M_interval_usecs;
         std::mutex _M_interval_mutex;
         std::condition_variable _M_interval_cv;

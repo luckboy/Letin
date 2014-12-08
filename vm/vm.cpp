@@ -20,6 +20,12 @@ namespace letin
   namespace vm
   {
     //
+    // A Reference class.
+    //
+    
+    Object Reference::nil;
+    
+    //
     // An Object class.
     //
 

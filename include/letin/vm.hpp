@@ -32,9 +32,11 @@ namespace letin
 
     class Reference
     {
+      static Object nil;
+
       Object *_M_ptr;
     public:
-      Reference() : _M_ptr(nullptr) {}
+      Reference() : _M_ptr(&nil) {}
 
       Reference(Object *ptr) : _M_ptr(ptr) {}
 
@@ -155,7 +157,7 @@ namespace letin
       ReturnValueRaw _M_raw;
     public:
       ReturnValue()
-      { _M_raw.i = 0; _M_raw.f = 0.0; _M_raw.r = nullptr; _M_raw.error = 0; }
+      { _M_raw.i = 0; _M_raw.f = 0.0; _M_raw.r = Reference(); _M_raw.error = 0; }
 
       ReturnValue(std::int64_t i, double f, Reference r, int error)
       { _M_raw.i = i; _M_raw.f = f; _M_raw.r = r; _M_raw.error = error; }

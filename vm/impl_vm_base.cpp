@@ -136,7 +136,7 @@ namespace letin
           try {
             fun(start_in_thread(*context, i)); 
           } catch(...) {
-            fun(ReturnValue(0, 0.0, nullptr, ERROR_EXCEPTION));
+            fun(ReturnValue(0, 0.0, Reference(), ERROR_EXCEPTION));
           }
         });
         return thread;
