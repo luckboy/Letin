@@ -32,14 +32,12 @@ namespace letin
           ::sem_init(&continuing_sem, 0, 0);
         }
 
-        virtual ~ThreadStopCont();
+        ~ThreadStopCont()
+        {
+          ::sem_destroy(&continuing_sem);
+          ::sem_destroy(&stopping_sem);
+        }
       };
-
-      ThreadStopCont::~ThreadStopCont()
-      {
-        ::sem_destroy(&continuing_sem);
-        ::sem_destroy(&stopping_sem);
-      }
 
       static mutex thread_stop_cont_mutex;
       static volatile bool is_stopping = false;
