@@ -131,7 +131,7 @@ namespace letin
         ThreadContext *context = new ThreadContext();
         Thread thread(context);
         context->set_gc(_M_gc);
-        context->start([this, i, &fun, context]() {
+        context->start([this, i, fun, context]() {
           Thread thread2(context);
           try {
             fun(start_in_thread(i, *context)); 

@@ -11,6 +11,7 @@
 #include <thread>
 #include <letin/vm.hpp>
 #include "impl_gc_base.hpp"
+#include "thread_stop_cont.hpp"
 #include "vm.hpp"
 
 using namespace std;
@@ -21,18 +22,37 @@ namespace letin
   {
     namespace impl
     {
+      ImplGarbageCollectorBase::Threads::Threads(set<ThreadContext *> &contexts) :
+        _M_stop_cont(priv::new_thread_stop_cont()), contexts(contexts) {}
+
+      ImplGarbageCollectorBase::Threads::~Threads() { priv::delete_thread_stop_cont(_M_stop_cont); }
+
+      void ImplGarbageCollectorBase::Threads::lock()
+      {
+        priv::stop_threads(_M_stop_cont, [this](function<void (thread &)> fun) {
+          for(auto context : contexts) fun(context->system_thread());
+        });
+      }
+
+      void ImplGarbageCollectorBase::Threads::unlock()
+      {
+        priv::continue_threads(_M_stop_cont, [this](function<void (thread &)> fun) {
+          for(auto context : contexts) fun(context->system_thread());
+        });
+      }
+
       ImplGarbageCollectorBase::~ImplGarbageCollectorBase() { stop(); }
 
       void ImplGarbageCollectorBase::add_thread_context(ThreadContext *context)
       {
         lock_guard<GarbageCollector> gaurd(*this);
-        _M_thread_contexts.contexts.insert(context);
+        _M_thread_contexts.insert(context);
       }
 
       void ImplGarbageCollectorBase::delete_thread_context(ThreadContext *context)
       {
         lock_guard<GarbageCollector> gaurd(*this);
-        _M_thread_contexts.contexts.erase(context);
+        _M_thread_contexts.erase(context);
       }
 
       void ImplGarbageCollectorBase::add_vm_context(VirtualMachineContext *context)

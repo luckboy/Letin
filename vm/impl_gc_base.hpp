@@ -19,24 +19,36 @@ namespace letin
 {
   namespace vm
   {
+    namespace priv
+    {
+      class ThreadStopCont;
+    }
+
     namespace impl
     {
       class ImplGarbageCollectorBase : public GarbageCollector
       {
       protected:
-        struct ThreadContexts
+        class Threads
         {
-          std::set<ThreadContext *> contexts;
+          priv::ThreadStopCont *_M_stop_cont;
+        public:
+          std::set<ThreadContext *> &contexts;
 
-          void lock() { for(auto context : contexts) context->stop(); }
+          Threads(std::set<ThreadContext *> &contexts);
 
-          void unlock() { for(auto context : contexts) context->cont(); }
+          ~Threads();
+
+          void lock();
+
+          void unlock();
         };
 
         std::thread _M_gc_thread;
         std::recursive_mutex _M_gc_mutex;
-        ThreadContexts _M_thread_contexts;
+        std::set<ThreadContext *> _M_thread_contexts;
         std::set<VirtualMachineContext *> _M_vm_contexts;
+        Threads _M_threads;
       private:
         bool _M_is_started;
         unsigned int _M_interval_usecs;
@@ -44,7 +56,8 @@ namespace letin
         std::condition_variable _M_interval_cv;
       public:
         ImplGarbageCollectorBase(Allocator *alloc, unsigned int interval_usecs) :
-          GarbageCollector(alloc), _M_is_started(false), _M_interval_usecs(interval_usecs) {}
+          GarbageCollector(alloc), _M_is_started(false), _M_interval_usecs(interval_usecs),
+          _M_threads(_M_thread_contexts) {}
 
         ~ImplGarbageCollectorBase();
       protected:

@@ -16,7 +16,6 @@
 #include <unordered_map>
 #include <letin/format.hpp>
 #include <letin/vm.hpp>
-#include "thread.hpp"
 
 namespace letin
 {
@@ -109,10 +108,6 @@ namespace letin
       std::thread &system_thread() { return _M_thread; }
 
       void start(std::function<void ()> fun) { _M_thread = std::thread(fun); }
-
-      void stop() { priv::stop_thread(_M_thread); }
-
-      void cont() { priv::continue_thread(_M_thread); }
 
       const Registers &regs() const { return _M_regs; }
 

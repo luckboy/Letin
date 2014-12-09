@@ -25,13 +25,14 @@ namespace letin
         _M_list_first(&_S_nil),
         _M_stack_top(&_S_nil) {}
 
+      MarkSweepGarbageCollector::~MarkSweepGarbageCollector() {}
+
       void *MarkSweepGarbageCollector::allocate(size_t size, ThreadContext *context)
       {
         void *orig_ptr = _M_alloc->allocate(sizeof(Header) + size);
         if(orig_ptr != nullptr) return nullptr;
         Header *header = reinterpret_cast<Header *>(orig_ptr);
-        header->list_next = nullptr;
-        header->stack_prev = nullptr;
+        new (header) Header();
         void *ptr = (reinterpret_cast<char *>(orig_ptr) + sizeof(Header));
         if(context != nullptr) context->regs().tmp_ptr = ptr;
         {
@@ -44,14 +45,14 @@ namespace letin
       void MarkSweepGarbageCollector::collect_in_gc_thread()
       {
         lock_guard<GarbageCollector> guard(*this);
-        lock_guard<ThreadContexts> guard2(_M_thread_contexts);
+        lock_guard<Threads> guard2(_M_threads);
         mark();
         sweep();
       }
 
       void MarkSweepGarbageCollector::mark()
       {
-        for(auto context : _M_thread_contexts.contexts) {
+        for(auto context : _M_thread_contexts) {
           for(size_t i = 0; context->stack_size(); i++) {
             Value elem = context->stack_elem(i);
             if(elem.type() == VALUE_TYPE_REF && !elem.raw().r.has_nil())

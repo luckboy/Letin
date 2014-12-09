@@ -8,6 +8,7 @@
 #ifndef _THREAD_HPP
 #define _THREAD_HPP
 
+#include <functional>
 #include <thread>
 
 namespace letin
@@ -16,13 +17,19 @@ namespace letin
   {
     namespace priv
     {
-      void initialize_threads();
-      
-      void finalize_threads();
+      class ThreadStopCont;
 
-      void stop_thread(std::thread &thr);
+      void initialize_thread_stop_cont();
 
-      void continue_thread(std::thread &thr);
+      void finalize_thread_stop_cont();
+
+      ThreadStopCont *new_thread_stop_cont();
+
+      void delete_thread_stop_cont(ThreadStopCont *stop_cont);
+
+      void stop_threads(ThreadStopCont *stop_cont, std::function<void (std::function<void (std::thread &)>)> fun);
+
+      void continue_threads(ThreadStopCont *stop_cont, std::function<void (std::function<void (std::thread &)>)> fun);
     }
   }
 }
