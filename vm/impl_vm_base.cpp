@@ -28,11 +28,13 @@ namespace letin
 
       bool ImplVirtualMachineBase::load(void *ptr, size_t size)
       {
-        lock_guard<GarbageCollector> guard(*_M_gc);
         unique_ptr<Program> prog(_M_loader->load(ptr, size));
+        _M_env.set_fun_count(prog->fun_count());
+        _M_env.set_var_count(prog->var_count());
+        lock_guard<GarbageCollector> guard(*_M_gc);
         for(size_t i = 0; i < prog->fun_count(); i++) {
           format::Function &fun = prog->fun(i);
-          _M_env.add_fun(i, Function(fun.arg_count, prog->code() + fun.addr, fun.instr_count));
+          _M_env.set_fun(i, Function(fun.arg_count, prog->code() + fun.addr, fun.instr_count));
         }
         unordered_map<uint32_t, Object *> objects;
         for(auto data_addr : prog->data_addrs()) {
@@ -105,16 +107,16 @@ namespace letin
           format::Value &var_value = prog->var(i);
           switch(var_value.type) {
             case VALUE_TYPE_INT:
-              _M_env.add_var(i, Value(var_value.i));
+              _M_env.set_var(i, Value(var_value.i));
               break;
             case VALUE_TYPE_FLOAT:
-              _M_env.add_var(i, Value(format_double_to_double(var_value.f)));
+              _M_env.set_var(i, Value(format_double_to_double(var_value.f)));
               break;
             case VALUE_TYPE_REF:
             {
               auto iter = objects.find(var_value.addr);
               if(iter == objects.end()) return false;
-              _M_env.add_var(i, Value(Reference(iter->second)));
+              _M_env.set_var(i, Value(Reference(iter->second)));
               break;
             }
             default:
@@ -128,7 +130,7 @@ namespace letin
 
       Thread ImplVirtualMachineBase::start(size_t i, function<void (const ReturnValue &)> fun)
       {
-        ThreadContext *context = new ThreadContext();
+        ThreadContext *context = new ThreadContext(_M_env);
         Thread thread(context);
         context->set_gc(_M_gc);
         context->start([this, i, fun, context]() {

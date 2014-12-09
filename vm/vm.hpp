@@ -13,7 +13,6 @@
 #include <functional>
 #include <set>
 #include <thread>
-#include <unordered_map>
 #include <letin/format.hpp>
 #include <letin/vm.hpp>
 
@@ -92,9 +91,13 @@ namespace letin
       Registers _M_regs;
       Value *_M_stack;
       std::size_t _M_stack_size;
+      const Function *_M_funs;
+      std::size_t _M_fun_count;
+      const Value *_M_vars;
+      std::size_t _M_var_count;
       bool _M_is_active;
     public:
-      ThreadContext(std::size_t stack_size = 32 * 1024);
+      ThreadContext(const VirtualMachineContext &vm_context, std::size_t stack_size = 32 * 1024);
 
       ~ThreadContext() { if(_M_gc != nullptr) _M_gc->delete_thread_context(this); delete[] _M_stack; }
 
@@ -116,6 +119,14 @@ namespace letin
       const Value &stack_elem(std::size_t i) const { return _M_stack[i]; }
 
       std::size_t stack_size() const { return _M_stack_size; }
+
+      const Function &fun(std::size_t i) const { return _M_funs[i]; }
+
+      std::size_t fun_count() const { return _M_fun_count; }
+
+      const Value &var(std::size_t i) const { return _M_vars[i]; }
+
+      std::size_t var_count() const { return _M_var_count; }
 
       std::size_t lvbp() const { return _M_regs.abp + _M_regs.ac + 3; }
 
@@ -160,11 +171,22 @@ namespace letin
 
     class VirtualMachineContext
     {
+    protected:
       VirtualMachineContext() {}
     public:
       virtual ~VirtualMachineContext();
 
-      virtual const std::unordered_map<std::size_t, Value> &vars() const = 0;
+      virtual const Function *funs() const = 0;
+
+      virtual Function *funs() = 0;
+
+      virtual std::size_t fun_count() const = 0;
+
+      virtual const Value *vars() const = 0;
+
+      virtual Value *vars() = 0;
+
+      virtual std::size_t var_count() const = 0;
     };
   }
 }

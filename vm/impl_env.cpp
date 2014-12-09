@@ -19,18 +19,26 @@ namespace letin
       ImplEnvironment::~ImplEnvironment() {}
 
       Function ImplEnvironment::fun(size_t i)
-      { return _M_funs.find(i) != _M_funs.end() ? _M_funs[i] : Function(); }
+      { return (_M_funs != nullptr && i < _M_fun_count) ? _M_funs[i] : Function(); }
 
       Value ImplEnvironment::var(size_t i)
-      { return _M_vars.find(i) != _M_vars.end() ? _M_vars[i] : Value(); }
+      { return (_M_vars != nullptr && i < _M_var_count) ? _M_vars[i] : Value(); }
 
-      const unordered_map<size_t, Value> &ImplEnvironment::vars() const { return _M_vars; }
+      const Function *ImplEnvironment::funs() const { return _M_funs.get(); }
 
-      void ImplEnvironment::add_fun(size_t i, const Function &fun)
-      { _M_funs.insert(make_pair(i, fun)); }
+      Function *ImplEnvironment::funs() { return _M_funs.get(); }
 
-      void ImplEnvironment::add_var(size_t i, const Value &value)
-      { _M_vars.insert(make_pair(i, value)); }
+      size_t ImplEnvironment::fun_count() const { return _M_fun_count; }
+
+      const Value *ImplEnvironment::vars() const { return _M_vars.get(); }
+
+      Value *ImplEnvironment::vars() { return _M_vars.get(); }
+
+      size_t ImplEnvironment::var_count() const { return _M_var_count; }
+
+      void ImplEnvironment::set_fun(size_t i, const Function &fun) { _M_funs[i] = fun; }
+
+      void ImplEnvironment::set_var(size_t i, const Value &value) { _M_vars[i] = value; }
     }
   }
 }

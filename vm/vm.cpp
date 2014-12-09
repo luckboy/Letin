@@ -182,7 +182,9 @@ namespace letin
     // A ThreadContext class.
     //
 
-    ThreadContext::ThreadContext(size_t stack_size)
+    ThreadContext::ThreadContext(const VirtualMachineContext &context, size_t stack_size) :
+      _M_funs(context.funs()), _M_fun_count(context.fun_count()),
+      _M_vars(context.vars()), _M_var_count(context.var_count())
     {
       _M_gc = nullptr;
       _M_regs.abp = _M_regs.ac = _M_regs.lvc = _M_regs.abp2 = _M_regs.ac2 = 0;

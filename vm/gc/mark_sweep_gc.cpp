@@ -64,9 +64,9 @@ namespace letin
             ptr_to_header(context->regs().tmp_ptr)->stack_prev = &_S_nil;
         }
         for(auto context : _M_vm_contexts) {
-          for(auto pair : context->vars()) {
-            if(pair.second.type() == VALUE_TYPE_REF && !pair.second.raw().r.has_nil())
-              mark_from_object(pair.second.raw().r.ptr());
+          for(size_t i = 0; i < context->var_count(); i++) {
+            if(context->vars()[i].type() == VALUE_TYPE_REF && !context->vars()[i].raw().r.has_nil())
+              mark_from_object(context->vars()[i].raw().r.ptr());
           }
         }
       }
