@@ -6,6 +6,7 @@
  *   the full licensing terms.                                              *
  ****************************************************************************/
 #include <sys/stat.h>
+#include <atomic>
 #include <fstream>
 #include <limits>
 #include <memory>
@@ -234,16 +235,19 @@ namespace letin
     bool ThreadContext::enter_to_fun(size_t i)
     {
       if(_M_regs.abp2 + _M_regs.ac2 + 3 < _M_stack_size) {
-        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 0] = Value(_M_regs.abp, _M_regs.ac);
-        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 1] = Value(_M_regs.lvc, _M_regs.ip - 1);
-        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 2] = Value(static_cast<int64_t>(_M_regs.fp));
+        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 0].safely_assign_for_gc(Value(_M_regs.abp, _M_regs.ac));
+        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 1].safely_assign_for_gc(Value(_M_regs.lvc, _M_regs.ip - 1));
+        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 2].safely_assign_for_gc(Value(static_cast<int64_t>(_M_regs.fp)));
+        atomic_thread_fence(memory_order_release);
         _M_regs.abp = _M_regs.abp2;
         _M_regs.ac = _M_regs.ac2;
         _M_regs.abp2 = lvbp();
         _M_regs.lvc = _M_regs.ac2 = 0;
+        _M_regs.sec = _M_regs.abp2;
         _M_regs.fp = i;
         _M_regs.ip = 0;
         _M_regs.after_leaving_flag = false;
+        atomic_thread_fence(memory_order_release);
         return true;
       } else
         return false;
@@ -261,9 +265,11 @@ namespace letin
         _M_regs.abp = _M_stack[fbp + 0].raw().p.first;
         _M_regs.ac = _M_stack[fbp + 0].raw().p.second;
         _M_regs.lvc = _M_stack[fbp + 1].raw().p.first;
+        _M_regs.sec = _M_regs.abp2;
         _M_regs.ip = _M_stack[fbp + 1].raw().p.second;
         _M_regs.fp = static_cast<size_t>(_M_stack[fbp + 2].raw().i);
         _M_regs.after_leaving_flag = true;
+        atomic_thread_fence(memory_order_release);
         return true;
       } else
         return false;
@@ -271,11 +277,12 @@ namespace letin
 
     void ThreadContext::set_error(int error)
     {
-      _M_regs.abp = _M_regs.ac = _M_regs.lvc = _M_regs.abp2 = _M_regs.ac2 = 0;
+      _M_regs.abp = _M_regs.ac = _M_regs.lvc = _M_regs.abp2 = _M_regs.ac2 = _M_regs.sec = 0;
       _M_regs.fp = static_cast<size_t>(-1);
       _M_regs.ip = 0;
       _M_regs.rv = ReturnValue(0, 0.0, Reference(), error);
       _M_regs.after_leaving_flag = false;
+      atomic_thread_fence(memory_order_release);
     }
 
     //

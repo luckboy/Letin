@@ -34,6 +34,9 @@ namespace letin
         Header *_M_list_first;
         Header *_M_stack_top;
 
+        bool is_emtpy_list()
+        { return _M_list_first == &_S_nil; }
+
         void add_header(Header *header)
         { header->list_next = _M_list_first; _M_list_first = header; }
 
@@ -63,10 +66,10 @@ namespace letin
 
         ~MarkSweepGarbageCollector();
 
+        void collect();
+
         void *allocate(std::size_t size, ThreadContext *context);
-      protected:
-        void collect_in_gc_thread();
-      private:
+
         void mark();
 
         void sweep();

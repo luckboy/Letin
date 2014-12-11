@@ -60,9 +60,7 @@ namespace letin
           _M_threads(_M_thread_contexts) {}
 
         ~ImplGarbageCollectorBase();
-      protected:
-        virtual void collect_in_gc_thread() = 0;
-      public:
+
         void add_thread_context(ThreadContext *context);
 
         void delete_thread_context(ThreadContext *context);

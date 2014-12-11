@@ -78,6 +78,7 @@ namespace letin
       std::uint32_t lvc;
       std::uint32_t abp2;
       std::uint32_t ac2;
+      std::uint32_t sec;
       std::size_t fp;
       std::uint32_t ip;
       ReturnValue rv;
@@ -143,8 +144,10 @@ namespace letin
       bool push_local_var(const Value &value)
       {
         if(_M_regs.abp2 < _M_stack_size) {
-          _M_stack[_M_regs.abp2] = value;
+          _M_stack[_M_regs.abp2].safely_assign_for_gc(value);
           _M_regs.abp2++;
+          _M_regs.sec++;
+          std::atomic_thread_fence(std::memory_order_release);
           return true;
         } else
           return false;
@@ -153,14 +156,21 @@ namespace letin
       bool push_arg(const Value &value)
       {
         if(_M_regs.abp2 + _M_regs.ac2 < _M_stack_size) {
-          _M_stack[_M_regs.abp2 + _M_regs.ac2] = value;
+          _M_stack[_M_regs.abp2 + _M_regs.ac2].safely_assign_for_gc(value);
           _M_regs.ac2++;
+          _M_regs.sec++;
+          std::atomic_thread_fence(std::memory_order_release);
           return true;
         } else
           return false;
       }
 
-      void pop_args() { _M_regs.ac2 = 0; }
+      void pop_args()
+      {
+        _M_regs.ac2 = 0;
+        _M_regs.sec = _M_regs.abp2;
+        std::atomic_thread_fence(std::memory_order_release);
+      }
 
       const Value &pushed_arg(std::size_t i) const { return _M_stack[_M_regs.abp2 + i]; }
 

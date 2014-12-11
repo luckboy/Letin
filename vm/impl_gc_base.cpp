@@ -86,7 +86,7 @@ namespace letin
                 } while(_M_interval_cv.wait_for(lock, chrono::milliseconds(_M_interval_usecs)) != cv_status::timeout);
               }
               // Collects.
-              collect_in_gc_thread();
+              collect();
             }
           });
         }

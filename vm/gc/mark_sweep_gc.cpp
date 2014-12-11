@@ -5,6 +5,7 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
+#include <atomic>
 #include <mutex>
 #include <letin/vm.hpp>
 #include "mark_sweep_gc.hpp"
@@ -25,24 +26,17 @@ namespace letin
         _M_list_first(&_S_nil),
         _M_stack_top(&_S_nil) {}
 
-      MarkSweepGarbageCollector::~MarkSweepGarbageCollector() {}
-
-      void *MarkSweepGarbageCollector::allocate(size_t size, ThreadContext *context)
+      MarkSweepGarbageCollector::~MarkSweepGarbageCollector()
       {
-        void *orig_ptr = _M_alloc->allocate(sizeof(Header) + size);
-        if(orig_ptr != nullptr) return nullptr;
-        Header *header = reinterpret_cast<Header *>(orig_ptr);
-        new (header) Header();
-        void *ptr = (reinterpret_cast<char *>(orig_ptr) + sizeof(Header));
-        if(context != nullptr) context->regs().tmp_ptr = ptr;
-        {
-          lock_guard<GarbageCollector> guard(*this);
-          add_header(header);
+        Header *header = _M_list_first;
+        while(!is_emtpy_list()) {
+          Header *next = header->list_next;
+          _M_alloc->free(reinterpret_cast<void *>(header));
+          header = next;
         }
-        return ptr;
       }
 
-      void MarkSweepGarbageCollector::collect_in_gc_thread()
+      void MarkSweepGarbageCollector::collect()
       {
         lock_guard<GarbageCollector> guard(*this);
         lock_guard<Threads> guard2(_M_threads);
@@ -50,10 +44,27 @@ namespace letin
         sweep();
       }
 
+      void *MarkSweepGarbageCollector::allocate(size_t size, ThreadContext *context)
+      {
+        void *orig_ptr = _M_alloc->allocate(sizeof(Header) + size);
+        if(orig_ptr != nullptr) return nullptr;
+        Header *header = reinterpret_cast<Header *>(orig_ptr);
+        new (header) Header();
+        atomic_thread_fence(memory_order_release);
+        void *ptr = (reinterpret_cast<char *>(orig_ptr) + sizeof(Header));
+        if(context != nullptr) context->regs().tmp_ptr = ptr;
+        atomic_thread_fence(memory_order_release);
+        {
+          lock_guard<GarbageCollector> guard(*this);
+          add_header(header);
+        }
+        return ptr;
+      }
+
       void MarkSweepGarbageCollector::mark()
       {
         for(auto context : _M_thread_contexts) {
-          for(size_t i = 0; context->stack_size(); i++) {
+          for(size_t i = 0; i < context->regs().sec; i++) {
             Value elem = context->stack_elem(i);
             if(elem.type() == VALUE_TYPE_REF && !elem.raw().r.has_nil())
               mark_from_object(elem.raw().r.ptr());

@@ -8,6 +8,7 @@
 #ifndef _LETIN_VM_HPP
 #define _LETIN_VM_HPP
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -108,6 +109,16 @@ namespace letin
       double f() const { return _M_raw.type == VALUE_TYPE_FLOAT ? _M_raw.f : 0.0; }
 
       Reference r() const { return _M_raw.type == VALUE_TYPE_REF ? _M_raw.r : Reference(); }
+      
+      void safely_assign_for_gc(const Value &value)
+      {
+        _M_raw.type = VALUE_TYPE_ERROR;
+        std::atomic_thread_fence(std::memory_order_release);
+        _M_raw.i = value.raw().i;
+        std::atomic_thread_fence(std::memory_order_release);
+        _M_raw.type = value.type();
+        std::atomic_thread_fence(std::memory_order_release);
+      }
     };
 
     struct ObjectRaw
@@ -294,6 +305,8 @@ namespace letin
       GarbageCollector(Allocator *alloc) : _M_alloc(alloc) {}
     public:
       virtual ~GarbageCollector();
+
+      virtual void collect();
     protected:
       virtual void *allocate(std::size_t size, ThreadContext *context = nullptr) = 0;
     public:

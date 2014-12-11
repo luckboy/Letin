@@ -6,6 +6,7 @@
  *   the full licensing terms.                                              *
  ****************************************************************************/
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <letin/const.hpp>
@@ -29,7 +30,7 @@ namespace letin
       // Static inline functions.
       //
 
-      inline static bool get_int(ThreadContext &context, int64_t &i, const Value &value)
+      static inline bool get_int(ThreadContext &context, int64_t &i, const Value &value)
       {
         if(value.type() != VALUE_TYPE_INT) {
           context.set_error(ERROR_INCORRECT_VALUE);
@@ -39,7 +40,7 @@ namespace letin
         return true;
       }
 
-      inline static bool get_int(ThreadContext &context, int64_t &i, uint32_t arg_type, Argument arg)
+      static inline bool get_int(ThreadContext &context, int64_t &i, uint32_t arg_type, Argument arg)
       {
         switch(arg_type) {
           case ARG_TYPE_LVAR:
@@ -69,7 +70,7 @@ namespace letin
         }
       }
 
-      inline static bool get_float(ThreadContext &context, double &f, const Value &value)
+      static inline bool get_float(ThreadContext &context, double &f, const Value &value)
       {
         if(value.type() == VALUE_TYPE_FLOAT) {
           context.set_error(ERROR_INCORRECT_VALUE);
@@ -79,7 +80,7 @@ namespace letin
         return true;
       }
 
-      inline static bool get_float(ThreadContext &context, double &f, uint32_t arg_type, Argument arg)
+      static inline bool get_float(ThreadContext &context, double &f, uint32_t arg_type, Argument arg)
       {
         switch(arg_type) {
           case opcode::ARG_TYPE_LVAR:
@@ -109,7 +110,7 @@ namespace letin
         }
       }
 
-      inline static bool get_ref(ThreadContext &context, Reference &r, const Value &value)
+      static inline bool get_ref(ThreadContext &context, Reference &r, const Value &value)
       {
         if(value.type() != VALUE_TYPE_REF) {
           context.set_error(ERROR_INCORRECT_VALUE);
@@ -119,7 +120,7 @@ namespace letin
         return true;
       }
 
-      inline static bool get_ref(ThreadContext &context, Reference &r, uint32_t arg_type, Argument arg)
+      static inline bool get_ref(ThreadContext &context, Reference &r, uint32_t arg_type, Argument arg)
       {
         switch(arg_type) {
           case opcode::ARG_TYPE_LVAR:
@@ -146,7 +147,7 @@ namespace letin
         }
       }
 
-      inline static Object *new_object(ThreadContext &context, int type, size_t length)
+      static inline Object *new_object(ThreadContext &context, int type, size_t length)
       {
         Object *object = context.gc()->new_object(type, length, &context);
         if(object == nullptr) {
@@ -156,7 +157,7 @@ namespace letin
         return object;
       }
 
-      inline static bool check_value_type(ThreadContext &context, const Value &value, int type)
+      static inline bool check_value_type(ThreadContext &context, const Value &value, int type)
       {
         if(value.type() != type) {
           context.set_error(ERROR_INCORRECT_OBJECT);
@@ -165,7 +166,7 @@ namespace letin
         return true;
       }
 
-      inline static bool check_object_type(ThreadContext &context, const Object &object, int type)
+      static inline bool check_object_type(ThreadContext &context, const Object &object, int type)
       {
         if(object.type() != type) {
           context.set_error(ERROR_INCORRECT_OBJECT);
@@ -174,7 +175,7 @@ namespace letin
         return true;
       }
 
-      inline static bool check_object_elem_index(ThreadContext &context, const Object &object, size_t i)
+      static inline bool check_object_elem_index(ThreadContext &context, const Object &object, size_t i)
       {
         if(i >= object.length()) {
           context.set_error(ERROR_INDEX_OF_OUT_BOUNDS);
@@ -183,7 +184,7 @@ namespace letin
         return true;
       }
 
-      inline static bool add_object_lengths(ThreadContext &context, size_t &length, size_t length1, size_t length2)
+      static inline bool add_object_lengths(ThreadContext &context, size_t &length, size_t length1, size_t length2)
       {
         length = length1 + length2;
         if((length1 | length2) >= length) {
@@ -193,7 +194,7 @@ namespace letin
         return true;
       }
 
-      inline static bool push_arg(ThreadContext &context, const Value value)
+      static inline bool push_arg(ThreadContext &context, const Value value)
       {
         if(!context.push_arg(value)) {
           context.set_error(ERROR_STACK_OVERFLOW);
@@ -203,7 +204,7 @@ namespace letin
       }
 
       //
-      // An InterpretingVirtualMachine class.
+      // An InterpreterVirtualMachine class.
       //
 
       InterpreterVirtualMachine::~InterpreterVirtualMachine() {}
@@ -267,12 +268,14 @@ namespace letin
           }
           case INSTR_RETRY:
             if(context.regs().ac == context.regs().ac2) {
-              for(size_t i = 0; i < context.regs().ac; i++) context.arg(i) = context.pushed_arg(i);
+              for(size_t i = 0; i < context.regs().ac; i++)
+                context.arg(i).safely_assign_for_gc(context.pushed_arg(i));
               context.pop_args_and_local_vars();
             } else
               context.set_error(ERROR_INCORRECT_ARG_COUNT);
             break;
         }
+        atomic_thread_fence(memory_order_release);
         return true;
       }
 
@@ -610,6 +613,7 @@ namespace letin
               if(!check_value_type(context, context.arg(i), VALUE_TYPE_REF)) return Value();
               object->raw().rs[i] = context.arg(i).raw().r;
             }
+            atomic_thread_fence(memory_order_release);
             return Value(Reference(object));
           }
           case OP_RTUPLE:
@@ -617,6 +621,7 @@ namespace letin
             Object *object = new_object(context, OBJECT_TYPE_TUPLE, context.regs().ac2);
             if(object == nullptr) return Value();
             for(size_t i = 0; context.regs().ac2; i++) object->raw().tes[i] = context.arg(i);
+            atomic_thread_fence(memory_order_release);
             return Value(Reference(object));
           }
           case OP_RIANTH8:
@@ -858,6 +863,7 @@ namespace letin
             if(object == nullptr) return Value();
             copy_n(r1->raw().rs, r1->length(), object->raw().rs);
             copy_n(r2->raw().rs, r2->length(), object->raw().rs + r1->length());
+            atomic_thread_fence(memory_order_release);
             return Value(Reference(object));
           }
           case OP_RTCAT:
@@ -873,6 +879,7 @@ namespace letin
             if(object == nullptr) return Value();
             copy_n(r1->raw().tes, r1->length(), object->raw().tes);
             copy_n(r2->raw().tes, r2->length(), object->raw().tes + r1->length());
+            atomic_thread_fence(memory_order_release);
             return Value(Reference(object));
           }
           case OP_RTYPE:
