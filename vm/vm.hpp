@@ -78,10 +78,11 @@ namespace letin
       std::uint32_t lvc;
       std::uint32_t abp2;
       std::uint32_t ac2;
-      Function *fun;
+      std::size_t fp;
       std::uint32_t ip;
       ReturnValue rv;
       void *tmp_ptr;
+      bool after_leaving_flag;
     };
 
     class ThreadContext
@@ -93,13 +94,14 @@ namespace letin
       std::size_t _M_stack_size;
       const Function *_M_funs;
       std::size_t _M_fun_count;
-      const Value *_M_vars;
-      std::size_t _M_var_count;
-      bool _M_is_active;
+      const Value *_M_global_vars;
+      std::size_t _M_global_var_count;
     public:
       ThreadContext(const VirtualMachineContext &vm_context, std::size_t stack_size = 32 * 1024);
 
       ~ThreadContext() { if(_M_gc != nullptr) _M_gc->delete_thread_context(this); delete[] _M_stack; }
+
+      GarbageCollector *gc() { return _M_gc; }
 
       void set_gc(GarbageCollector *gc)
       {
@@ -124,9 +126,9 @@ namespace letin
 
       std::size_t fun_count() const { return _M_fun_count; }
 
-      const Value &var(std::size_t i) const { return _M_vars[i]; }
+      const Value &global_var(std::size_t i) const { return _M_global_vars[i]; }
 
-      std::size_t var_count() const { return _M_var_count; }
+      std::size_t global_var_count() const { return _M_global_var_count; }
 
       std::size_t lvbp() const { return _M_regs.abp + _M_regs.ac + 3; }
 
@@ -158,15 +160,21 @@ namespace letin
           return false;
       }
 
-      bool enter_to_fun();
+      void pop_args() { _M_regs.ac2 = 0; }
+
+      const Value &pushed_arg(std::size_t i) const { return _M_stack[_M_regs.abp2 + i]; }
+
+      Value &pushed_arg(std::size_t i) { return _M_stack[_M_regs.abp2 + i]; }
+      
+      void pop_args_and_local_vars() { _M_regs.abp2 = lvbp(); _M_regs.lvc = _M_regs.ac2 = 0; }
+
+      bool enter_to_fun(std::size_t i);
 
       bool leave_from_fun();
 
       void in() { _M_regs.lvc = _M_regs.abp2 - lvbp(); }
-      
-      bool is_active() const { _M_is_active; }
-      
-      void deactive() { _M_is_active = false; }
+
+      void set_error(int error);
     };
 
     class VirtualMachineContext

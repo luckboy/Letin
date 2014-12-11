@@ -93,6 +93,41 @@ namespace letin
     }
 
     //
+    // A ReturnValue class.
+    //
+
+    ReturnValue &ReturnValue::operator=(const Value value)
+    {
+      switch(value.type()) {
+        case VALUE_TYPE_INT:
+          _M_raw.i = value.raw().i;
+          _M_raw.f = 0.0;
+          _M_raw.r = Reference();
+          _M_raw.error = ERROR_SUCCESS;
+          return *this;
+        case VALUE_TYPE_FLOAT:
+          _M_raw.i = 0;
+          _M_raw.f = value.raw().f;
+          _M_raw.r = Reference();
+          _M_raw.error = ERROR_SUCCESS;
+          return *this;
+        case VALUE_TYPE_REF:
+          _M_raw.i = 0;
+          _M_raw.f = 0.0;
+          _M_raw.r = value.raw().r;
+          _M_raw.error = ERROR_SUCCESS;
+          return *this;
+        default:
+          _M_raw.i = 0;
+          _M_raw.f = 0.0;
+          _M_raw.r = Reference();
+          _M_raw.error = ERROR_INCORRECT_VALUE;
+          return *this;
+      }
+    }
+
+
+    //
     // A Thread class.
     //
 
@@ -184,28 +219,31 @@ namespace letin
 
     ThreadContext::ThreadContext(const VirtualMachineContext &context, size_t stack_size) :
       _M_funs(context.funs()), _M_fun_count(context.fun_count()),
-      _M_vars(context.vars()), _M_var_count(context.var_count())
+      _M_global_vars(context.vars()), _M_global_var_count(context.var_count())
     {
       _M_gc = nullptr;
       _M_regs.abp = _M_regs.ac = _M_regs.lvc = _M_regs.abp2 = _M_regs.ac2 = 0;
-      _M_regs.fun = nullptr;
+      _M_regs.fp = static_cast<size_t>(-1);
       _M_regs.ip = 0;
       _M_regs.rv = ReturnValue();
+      _M_regs.after_leaving_flag = false;
       _M_stack = new Value[stack_size];
       _M_stack_size = stack_size;
-      _M_is_active = true;
     }
 
-    bool ThreadContext::enter_to_fun()
+    bool ThreadContext::enter_to_fun(size_t i)
     {
       if(_M_regs.abp2 + _M_regs.ac2 + 3 < _M_stack_size) {
         _M_stack[_M_regs.abp2 + _M_regs.ac2 + 0] = Value(_M_regs.abp, _M_regs.ac);
-        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 1] = Value(_M_regs.lvc, _M_regs.ip);
-        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 2] = Value(_M_regs.fun);
+        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 1] = Value(_M_regs.lvc, _M_regs.ip - 1);
+        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 2] = Value(static_cast<int64_t>(_M_regs.fp));
         _M_regs.abp = _M_regs.abp2;
         _M_regs.ac = _M_regs.ac2;
         _M_regs.abp2 = lvbp();
         _M_regs.lvc = _M_regs.ac2 = 0;
+        _M_regs.fp = i;
+        _M_regs.ip = 0;
+        _M_regs.after_leaving_flag = false;
         return true;
       } else
         return false;
@@ -217,17 +255,27 @@ namespace letin
       if(fbp + 3 < _M_stack_size ||
           _M_stack[fbp + 0].type() == VALUE_TYPE_PAIR ||
           _M_stack[fbp + 1].type() == VALUE_TYPE_PAIR ||
-          _M_stack[fbp + 2].type() == VALUE_TYPE_FUN) {
+          _M_stack[fbp + 2].type() == VALUE_TYPE_INT) {
         _M_regs.abp2 = _M_regs.abp;
         _M_regs.ac2 = 0;
         _M_regs.abp = _M_stack[fbp + 0].raw().p.first;
         _M_regs.ac = _M_stack[fbp + 0].raw().p.second;
         _M_regs.lvc = _M_stack[fbp + 1].raw().p.first;
         _M_regs.ip = _M_stack[fbp + 1].raw().p.second;
-        _M_regs.fun = _M_stack[fbp + 2].raw().fun;
+        _M_regs.fp = static_cast<size_t>(_M_stack[fbp + 2].raw().i);
+        _M_regs.after_leaving_flag = true;
         return true;
       } else
         return false;
+    }
+
+    void ThreadContext::set_error(int error)
+    {
+      _M_regs.abp = _M_regs.ac = _M_regs.lvc = _M_regs.abp2 = _M_regs.ac2 = 0;
+      _M_regs.fp = static_cast<size_t>(-1);
+      _M_regs.ip = 0;
+      _M_regs.rv = ReturnValue(0, 0.0, Reference(), error);
+      _M_regs.after_leaving_flag = false;
     }
 
     //

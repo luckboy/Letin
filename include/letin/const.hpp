@@ -13,8 +13,7 @@ namespace letin
   const int VALUE_TYPE_INT =            0;
   const int VALUE_TYPE_FLOAT =          1;
   const int VALUE_TYPE_REF =            2;
-  const int VALUE_TYPE_FUN =            3;
-  const int VALUE_TYPE_PAIR =           4;
+  const int VALUE_TYPE_PAIR =           3;
   const int VALUE_TYPE_ERROR =          -1;
 
   const int OBJECT_TYPE_IARRAY8 =       0;
@@ -27,11 +26,24 @@ namespace letin
   const int OBJECT_TYPE_TUPLE =         7;
   const int OBJECT_TYPE_ERROR =         -1;
   
-  const int ERROR_OUT_OF_MEM =          1;
-  const int ERROR_INVALID_OPCODE =      2;
-  const int ERROR_INVALID_ARG =         3;
-  const int ERROR_EXCEPTION =           4;
-  const int ERROR_NO_ENTRY =            5;
+  const int ERROR_SUCCESS =             0;
+  const int ERROR_NO_INSTR =            1;
+  const int ERROR_INCORRECT_INSTR =     2;
+  const int ERROR_INCORRECT_VALUE =     3;
+  const int ERROR_INCORRECT_OBJECT =    4;
+  const int ERROR_INCORRECT_FUN =       5;
+  const int ERROR_EMPTY_STACK =         6;
+  const int ERROR_STACK_OVERFLOW =      7;
+  const int ERROR_OUT_OF_MEMORY =       8;
+  const int ERROR_NO_FUN =              9;
+  const int ERROR_NO_GLOBAL_VAR =       10;
+  const int ERROR_NO_LOCAL_VAR =        11;
+  const int ERROR_NO_ARG =              12;
+  const int ERROR_INCORRECT_ARG_COUNT = 13;
+  const int ERROR_DIV_BY_ZERO =         14;
+  const int ERROR_INDEX_OF_OUT_BOUNDS = 15;
+  const int ERROR_EXCEPTION =           16;
+  const int ERROR_NO_ENTRY =            17;
 }
 
 #endif

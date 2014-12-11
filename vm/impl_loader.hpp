@@ -8,7 +8,6 @@
 #ifndef _IMPL_LOADER_HPP
 #define _IMPL_LOADER_HPP
 
-#include <cstddef>
 #include <letin/vm.hpp>
 
 namespace letin

@@ -20,6 +20,7 @@ namespace letin
     const std::uint32_t INSTR_JC =      0x03;
     const std::uint32_t INSTR_JUMP =    0x04;
     const std::uint32_t INSTR_ARG =     0x05;
+    const std::uint32_t INSTR_RETRY =   0x06;
 
     const std::uint32_t OP_ILOAD =      0x00;
     const std::uint32_t OP_ILOAD2 =     0x01;
@@ -90,16 +91,17 @@ namespace letin
     const std::uint32_t OP_RDFACAT =    0x42;
     const std::uint32_t OP_RRACAT =     0x43;
     const std::uint32_t OP_RTCAT =      0x44;
-    const std::uint32_t OP_ICALL =      0x45;
-    const std::uint32_t OP_FCALL =      0x46;
-    const std::uint32_t OP_RCALL =      0x47;
+    const std::uint32_t OP_RTYPE =      0x45;
+    const std::uint32_t OP_ICALL =      0x46;
+    const std::uint32_t OP_FCALL =      0x47;
+    const std::uint32_t OP_RCALL =      0x48;
 
     const std::uint32_t ARG_TYPE_LVAR = 0x0;
     const std::uint32_t ARG_TYPE_ARG =  0x1;
     const std::uint32_t ARG_TYPE_IMM =  0x2;
     const std::uint32_t ARG_TYPE_GVAR = 0x3;
 
-    inline std::uint32_t opcode(std::uint32_t instr, std::uint_32_t op, std::uint32_t arg_type1 = 0, std::uint32_t arg_type2 = 0)
+    inline std::uint32_t opcode(std::uint32_t instr, std::uint32_t op, std::uint32_t arg_type1 = 0, std::uint32_t arg_type2 = 0)
     {
       return (instr & 0xff) | ((op & 0xff) << 8) | ((arg_type1 & 0xf) << 16) | ((arg_type2 & 0xf) << 20);
     }

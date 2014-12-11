@@ -13,6 +13,7 @@
 #include <functional>
 #include <memory>
 #include <thread>
+#include <vector>
 #include <letin/const.hpp>
 #include <letin/format.hpp>
 
@@ -28,6 +29,7 @@ namespace letin
     class VirtualMachineContext;
     class GarbageCollector;
 
+    typedef format::Argument Argument;
     typedef format::Instruction Instruction;
 
     class Reference
@@ -41,6 +43,10 @@ namespace letin
       Reference(Object *ptr) : _M_ptr(ptr) {}
 
       Reference &operator=(Object *ptr) { _M_ptr = ptr; return *this; }
+      
+      bool operator==(Reference ref) { return _M_ptr == ref._M_ptr; }
+
+      bool operator!=(Reference ref) { return _M_ptr != ref._M_ptr; }
 
       Object &operator*() const { return *_M_ptr; }
 
@@ -60,7 +66,7 @@ namespace letin
         std::int64_t i;
         double f;
         Reference r;
-        Function *fun;
+        std::size_t fun;
         struct
         {
           uint32_t first;
@@ -85,8 +91,6 @@ namespace letin
       Value(double f) { _M_raw.type = VALUE_TYPE_FLOAT; _M_raw.f = f; }
 
       Value(Reference r) { _M_raw.type = VALUE_TYPE_REF; _M_raw.r = r; }
-
-      Value(Function *fun) { _M_raw.type = VALUE_TYPE_FUN; _M_raw.fun = fun; }
 
       Value(std::uint32_t first, std::uint32_t second)
       { _M_raw.type = VALUE_TYPE_PAIR; _M_raw.p.first = first; _M_raw.p.second = second; }
@@ -163,10 +167,14 @@ namespace letin
       ReturnValueRaw _M_raw;
     public:
       ReturnValue()
-      { _M_raw.i = 0; _M_raw.f = 0.0; _M_raw.r = Reference(); _M_raw.error = 0; }
+      { _M_raw.i = 0; _M_raw.f = 0.0; _M_raw.r = Reference(); _M_raw.error = ERROR_SUCCESS; }
 
       ReturnValue(std::int64_t i, double f, Reference r, int error)
       { _M_raw.i = i; _M_raw.f = f; _M_raw.r = r; _M_raw.error = error; }
+
+      ReturnValue(const Value &value) { *this = value; }
+
+      ReturnValue &operator=(const Value value);
 
       const ReturnValueRaw &raw() const { return _M_raw; }
 
@@ -235,7 +243,7 @@ namespace letin
       Loader *_M_loader;
       GarbageCollector *_M_gc;
 
-      VirtualMachine(GarbageCollector *gc) : _M_gc(gc) {}
+      VirtualMachine(Loader *loader, GarbageCollector *gc) : _M_loader(loader), _M_gc(gc) {}
     public:
       virtual ~VirtualMachine();
 
@@ -243,9 +251,9 @@ namespace letin
 
       bool load(const char *file_name);
 
-      virtual Thread start(std::size_t i, std::function<void (const ReturnValue &)> fun) = 0;
+      virtual Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun) = 0;
 
-      Thread start(std::function<void (const ReturnValue &)> fun) { return start(entry(), fun); }
+      Thread start(const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun) { return start(entry(), args, fun); }
 
       virtual Environment &env() = 0;
 

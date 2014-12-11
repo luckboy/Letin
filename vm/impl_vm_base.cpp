@@ -123,20 +123,20 @@ namespace letin
               return false;
           }
         }
-        _M_is_entry = ((prog->flags() & format::HEADER_FLAG_LIBRARY) != 0);
+        _M_has_entry = ((prog->flags() & format::HEADER_FLAG_LIBRARY) != 0);
         _M_entry = prog->entry();
         return true;
       }
 
-      Thread ImplVirtualMachineBase::start(size_t i, function<void (const ReturnValue &)> fun)
+      Thread ImplVirtualMachineBase::start(size_t i, const vector<Value> &args, function<void (const ReturnValue &)> fun)
       {
         ThreadContext *context = new ThreadContext(_M_env);
         Thread thread(context);
         context->set_gc(_M_gc);
-        context->start([this, i, fun, context]() {
+        context->start([this, i, fun, args, context]() {
           Thread thread2(context);
           try {
-            fun(start_in_thread(i, *context)); 
+            fun(start_in_thread(i, args, *context)); 
           } catch(...) {
             fun(ReturnValue(0, 0.0, Reference(), ERROR_EXCEPTION));
           }
@@ -146,7 +146,7 @@ namespace letin
 
       Environment &ImplVirtualMachineBase::env() { return _M_env; }
 
-      bool ImplVirtualMachineBase::is_entry() { return _M_is_entry; }
+      bool ImplVirtualMachineBase::has_entry() { return _M_has_entry; }
 
       size_t ImplVirtualMachineBase::entry() { return _M_entry; }
     }

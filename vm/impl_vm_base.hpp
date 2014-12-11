@@ -22,23 +22,22 @@ namespace letin
       {
       protected:
         ImplEnvironment _M_env;
-        bool _M_is_entry;
+        bool _M_has_entry;
         std::size_t _M_entry;
 
-        ImplVirtualMachineBase(GarbageCollector *gc) : VirtualMachine(gc) {}
+        ImplVirtualMachineBase(Loader *loader, GarbageCollector *gc) : VirtualMachine(loader, gc) {}
       public:
         ~ImplVirtualMachineBase();
 
         bool load(void *ptr, std::size_t size);
 
-        Thread start(std::size_t i, std::function<void (const ReturnValue &)> fun);
-
+        Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun);
       protected:
-        ReturnValue start_in_thread(std::size_t i, ThreadContext &context);
+        virtual ReturnValue start_in_thread(std::size_t i, const std::vector<Value> &args, ThreadContext &context);
       public:
         Environment &env();
 
-        bool is_entry();
+        bool has_entry();
 
         std::size_t entry();
       };

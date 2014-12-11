@@ -9,7 +9,7 @@
 #define _GC_MARK_SWEEP_GC_HPP
 
 #include <mutex>
-#include "../impl_gc_base.hpp"
+#include "impl_gc_base.hpp"
 
 namespace letin
 {
