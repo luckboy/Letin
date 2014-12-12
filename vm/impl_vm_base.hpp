@@ -29,7 +29,7 @@ namespace letin
       public:
         ~ImplVirtualMachineBase();
 
-        bool load(void *ptr, std::size_t size);
+        bool load(void *ptr, std::size_t size, bool is_auto_freeing);
 
         Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun);
       protected:

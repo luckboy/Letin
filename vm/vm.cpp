@@ -154,11 +154,11 @@ namespace letin
       if(stat(file_name, &stat_buf) == -1) return false;
       if(stat_buf.st_size > numeric_limits<size_t>::max()) return false;
       size_t size = stat_buf.st_size;
-      unique_ptr<char[]> ptr(new char[size]);
+      char *ptr = new char[size];
       ifstream ifs(file_name);
       if(ifs.good()) return false;
-      ifs.read(ptr.get(), size);
-      return load(reinterpret_cast<void *>(ptr.get()), size);
+      ifs.read(ptr, size);
+      return load(reinterpret_cast<void *>(ptr), size, true);
     }
 
     //

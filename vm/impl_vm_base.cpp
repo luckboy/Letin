@@ -26,11 +26,12 @@ namespace letin
     {
       ImplVirtualMachineBase::~ImplVirtualMachineBase() {}
 
-      bool ImplVirtualMachineBase::load(void *ptr, size_t size)
+      bool ImplVirtualMachineBase::load(void *ptr, size_t size, bool is_auto_freeing)
       {
         unique_ptr<Program> prog(_M_loader->load(ptr, size));
         _M_env.set_fun_count(prog->fun_count());
         _M_env.set_var_count(prog->var_count());
+        _M_env.set_auto_freeing(is_auto_freeing ? ptr : nullptr);
         lock_guard<GarbageCollector> guard(*_M_gc);
         for(size_t i = 0; i < prog->fun_count(); i++) {
           format::Function &fun = prog->fun(i);

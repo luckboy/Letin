@@ -26,6 +26,7 @@ namespace letin
         std::size_t _M_fun_count;
         std::unique_ptr<Value []> _M_vars;
         std::size_t _M_var_count;
+        std::unique_ptr<char []> _M_data_to_free;
       public:
         ImplEnvironment() : _M_funs(nullptr), _M_fun_count(0), _M_vars(nullptr), _M_var_count(0) {}
 
@@ -56,6 +57,9 @@ namespace letin
         void set_fun(std::size_t i, const Function &fun);
 
         void set_var(std::size_t i, const Value &value);
+
+        void set_auto_freeing(void *ptr)
+        { _M_data_to_free = std::unique_ptr<char []>(reinterpret_cast<char *>(ptr)); }
       };
     }
   }

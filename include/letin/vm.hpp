@@ -258,7 +258,7 @@ namespace letin
     public:
       virtual ~VirtualMachine();
 
-      virtual bool load(void *ptr, std::size_t size) = 0;
+      virtual bool load(void *ptr, std::size_t size, bool is_auto_freeing = false) = 0;
 
       bool load(const char *file_name);
 
