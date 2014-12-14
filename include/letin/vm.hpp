@@ -55,6 +55,8 @@ namespace letin
       
       bool has_nil() const { return _M_ptr == &_S_nil; }
 
+      bool is_null() const { return _M_ptr != nullptr; }
+
       const Object *ptr() const { return _M_ptr; }
 
       Object *ptr() { return _M_ptr; }

@@ -557,72 +557,72 @@ namespace letin
           }
           case OP_RIARRAY16:
           {
-            Object *object = new_object(context, OBJECT_TYPE_IARRAY16, context.regs().ac2);
-            if(object == nullptr) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_IARRAY16, context.regs().ac2));
+            if(r.is_null()) return Value();
             for(size_t i = 0; context.regs().ac2; i++) {
               if(!check_value_type(context, context.arg(i), VALUE_TYPE_INT)) return Value();
-              object->raw().is16[i] = context.arg(i).raw().i;
+              r->raw().is16[i] = context.arg(i).raw().i;
             }
-            return Value(Reference(object));
+            return Value(r);
           }
           case OP_RIARRAY32:
           {
-            Object *object = new_object(context, OBJECT_TYPE_IARRAY32, context.regs().ac2);
-            if(object == nullptr) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_IARRAY32, context.regs().ac2));
+            if(r.is_null()) return Value();
             for(size_t i = 0; context.regs().ac2; i++) {
               if(!check_value_type(context, context.arg(i), VALUE_TYPE_INT)) return Value();
-              object->raw().is32[i] = context.arg(i).raw().i;
+              r->raw().is32[i] = context.arg(i).raw().i;
             }
-            return Value(Reference(object));
+            return Value(r);
           }
           case OP_RIARRAY64:
           {
-            Object *object = new_object(context, OBJECT_TYPE_IARRAY64, context.regs().ac2);
-            if(object == nullptr) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_IARRAY64, context.regs().ac2));
+            if(r.is_null()) return Value();
             for(size_t i = 0; context.regs().ac2; i++) {
               if(!check_value_type(context, context.arg(i), VALUE_TYPE_INT)) return Value();
-              object->raw().is64[i] = context.arg(i).raw().i;
+              r->raw().is64[i] = context.arg(i).raw().i;
             }
-            return Value(Reference(object));
+            return Value(r);
           }
           case OP_RSFARRAY:
           {
-            Object *object = new_object(context, OBJECT_TYPE_IARRAY64, context.regs().ac2);
-            if(object == nullptr) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_SFARRAY, context.regs().ac2));
+            if(r.is_null()) return Value();
             for(size_t i = 0; context.regs().ac2; i++) {
               if(!check_value_type(context, context.arg(i), VALUE_TYPE_FLOAT)) return Value();
-              object->raw().sfs[i] = context.arg(i).raw().f;
+              r->raw().sfs[i] = context.arg(i).raw().f;
             }
-            return Value(Reference(object));
+            return Value(r);
           }
           case OP_RDFARRAY:
           {
-            Object *object = new_object(context, OBJECT_TYPE_SFARRAY, context.regs().ac2);
-            if(object == nullptr) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_DFARRAY, context.regs().ac2));
+            if(r.is_null()) return Value();
             for(size_t i = 0; context.regs().ac2; i++) {
               if(!check_value_type(context, context.arg(i), VALUE_TYPE_FLOAT)) return Value();
-              object->raw().dfs[i] = context.arg(i).raw().f;
+              r->raw().dfs[i] = context.arg(i).raw().f;
             }
-            return Value(Reference(object));
+            return Value(r);
           }
           case OP_RRARRAY:
           {
-            Object *object = new_object(context, OBJECT_TYPE_DFARRAY, context.regs().ac2);
-            if(object == nullptr) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_RARRAY, context.regs().ac2));
+            if(r.is_null()) return Value();
             for(size_t i = 0; context.regs().ac2; i++) {
               if(!check_value_type(context, context.arg(i), VALUE_TYPE_REF)) return Value();
-              object->raw().rs[i] = context.arg(i).raw().r;
+              r->raw().rs[i] = context.arg(i).raw().r;
             }
             atomic_thread_fence(memory_order_release);
-            return Value(Reference(object));
+            return Value(r);
           }
           case OP_RTUPLE:
           {
-            Object *object = new_object(context, OBJECT_TYPE_TUPLE, context.regs().ac2);
-            if(object == nullptr) return Value();
-            for(size_t i = 0; context.regs().ac2; i++) object->raw().tes[i] = context.arg(i);
+            Reference r(new_object(context, OBJECT_TYPE_TUPLE, context.regs().ac2));
+            if(r.is_null()) return Value();
+            for(size_t i = 0; context.regs().ac2; i++) r->raw().tes[i] = context.arg(i);
             atomic_thread_fence(memory_order_release);
-            return Value(Reference(object));
+            return Value(r);
           }
           case OP_RIANTH8:
           {
@@ -769,11 +769,11 @@ namespace letin
             if(!check_object_type(context, *r2, OBJECT_TYPE_IARRAY8)) return Value();
             size_t object_length;
             if(!add_object_lengths(context, object_length, r1->length(), r2->length())) return Value();
-            Object *object = new_object(context, OBJECT_TYPE_IARRAY8, object_length);
-            if(object == nullptr) return Value();
-            copy_n(r1->raw().is8, r1->length(), object->raw().is8);
-            copy_n(r2->raw().is8, r2->length(), object->raw().is8 + r1->length());
-            return Value(Reference(object));
+            Reference r(new_object(context, OBJECT_TYPE_IARRAY8, object_length));
+            if(r.is_null()) return Value();
+            copy_n(r1->raw().is8, r1->length(), r->raw().is8);
+            copy_n(r2->raw().is8, r2->length(), r->raw().is8 + r1->length());
+            return Value(r);
           }
           case OP_RIACAT16:
           {
@@ -784,11 +784,11 @@ namespace letin
             if(!check_object_type(context, *r2, OBJECT_TYPE_IARRAY16)) return Value();
             size_t object_length;
             if(!add_object_lengths(context, object_length, r1->length(), r2->length())) return Value();
-            Object *object = new_object(context, OBJECT_TYPE_IARRAY16, object_length);
-            if(object == nullptr) return Value();
-            copy_n(r1->raw().is16, r1->length(), object->raw().is16);
-            copy_n(r2->raw().is16, r2->length(), object->raw().is16 + r1->length());
-            return Value(Reference(object));
+            Reference r(new_object(context, OBJECT_TYPE_IARRAY16, object_length));
+            if(r.is_null()) return Value();
+            copy_n(r1->raw().is16, r1->length(), r->raw().is16);
+            copy_n(r2->raw().is16, r2->length(), r->raw().is16 + r1->length());
+            return Value(r);
           }
           case OP_RIACAT32:
           {
@@ -799,11 +799,11 @@ namespace letin
             if(!check_object_type(context, *r2, OBJECT_TYPE_IARRAY32)) return Value();
             size_t object_length;
             if(!add_object_lengths(context, object_length, r1->length(), r2->length())) return Value();
-            Object *object = new_object(context, OBJECT_TYPE_IARRAY32, object_length);
-            if(object == nullptr) return Value();
-            copy_n(r1->raw().is32, r1->length(), object->raw().is32);
-            copy_n(r2->raw().is32, r2->length(), object->raw().is32 + r1->length());
-            return Value(Reference(object));
+            Reference r(new_object(context, OBJECT_TYPE_IARRAY32, object_length));
+            if(r.is_null()) return Value();
+            copy_n(r1->raw().is32, r1->length(), r->raw().is32);
+            copy_n(r2->raw().is32, r2->length(), r->raw().is32 + r1->length());
+            return Value(r);
           }
           case OP_RIACAT64:
           {
@@ -814,11 +814,11 @@ namespace letin
             if(!check_object_type(context, *r2, OBJECT_TYPE_IARRAY64)) return Value();
             size_t object_length;
             if(!add_object_lengths(context, object_length, r1->length(), r2->length())) return Value();
-            Object *object = new_object(context, OBJECT_TYPE_IARRAY64, object_length);
-            if(object == nullptr) return Value();
-            copy_n(r1->raw().is64, r1->length(), object->raw().is64);
-            copy_n(r2->raw().is64, r2->length(), object->raw().is64 + r1->length());
-            return Value(Reference(object));
+            Reference r(new_object(context, OBJECT_TYPE_IARRAY64, object_length));
+            if(r.is_null()) return Value();
+            copy_n(r1->raw().is64, r1->length(), r->raw().is64);
+            copy_n(r2->raw().is64, r2->length(), r->raw().is64 + r1->length());
+            return Value(r);
           }
           case OP_RSFACAT:
           {
@@ -829,11 +829,11 @@ namespace letin
             if(!check_object_type(context, *r2, OBJECT_TYPE_SFARRAY)) return Value();
             size_t object_length;
             if(!add_object_lengths(context, object_length, r1->length(), r2->length())) return Value();
-            Object *object = new_object(context, OBJECT_TYPE_SFARRAY, object_length);
-            if(object == nullptr) return Value();
-            copy_n(r1->raw().sfs, r1->length(), object->raw().sfs);
-            copy_n(r2->raw().sfs, r2->length(), object->raw().sfs + r1->length());
-            return Value(Reference(object));
+            Reference r(new_object(context, OBJECT_TYPE_SFARRAY, object_length));
+            if(r.is_null()) return Value();
+            copy_n(r1->raw().sfs, r1->length(), r->raw().sfs);
+            copy_n(r2->raw().sfs, r2->length(), r->raw().sfs + r1->length());
+            return Value(r);
           }
           case OP_RDFACAT:
           {
@@ -844,11 +844,11 @@ namespace letin
             if(!check_object_type(context, *r2, OBJECT_TYPE_DFARRAY)) return Value();
             size_t object_length;
             if(!add_object_lengths(context, object_length, r1->length(), r2->length())) return Value();
-            Object *object = new_object(context, OBJECT_TYPE_DFARRAY, object_length);
-            if(object == nullptr) return Value();
-            copy_n(r1->raw().dfs, r1->length(), object->raw().dfs);
-            copy_n(r2->raw().dfs, r2->length(), object->raw().dfs + r1->length());
-            return Value(Reference(object));
+            Reference r(new_object(context, OBJECT_TYPE_DFARRAY, object_length));
+            if(r.is_null()) return Value();
+            copy_n(r1->raw().dfs, r1->length(), r->raw().dfs);
+            copy_n(r2->raw().dfs, r2->length(), r->raw().dfs + r1->length());
+            return Value(r);
           }
           case OP_RRACAT:
           {
@@ -859,12 +859,12 @@ namespace letin
             if(!check_object_type(context, *r2, OBJECT_TYPE_RARRAY)) return Value();
             size_t object_length;
             if(!add_object_lengths(context, object_length, r1->length(), r2->length())) return Value();
-            Object *object = new_object(context, OBJECT_TYPE_RARRAY, object_length);
-            if(object == nullptr) return Value();
-            copy_n(r1->raw().rs, r1->length(), object->raw().rs);
-            copy_n(r2->raw().rs, r2->length(), object->raw().rs + r1->length());
+            Reference r(new_object(context, OBJECT_TYPE_RARRAY, object_length));
+            if(r.is_null()) return Value();
+            copy_n(r1->raw().rs, r1->length(), r->raw().rs);
+            copy_n(r2->raw().rs, r2->length(), r->raw().rs + r1->length());
             atomic_thread_fence(memory_order_release);
-            return Value(Reference(object));
+            return Value(r);
           }
           case OP_RTCAT:
           {
@@ -875,12 +875,12 @@ namespace letin
             if(!check_object_type(context, *r2, OBJECT_TYPE_TUPLE)) return Value();
             size_t object_length;
             if(!add_object_lengths(context, object_length, r1->length(), r2->length())) return Value();
-            Object *object = new_object(context, OBJECT_TYPE_TUPLE, object_length);
-            if(object == nullptr) return Value();
-            copy_n(r1->raw().tes, r1->length(), object->raw().tes);
-            copy_n(r2->raw().tes, r2->length(), object->raw().tes + r1->length());
+            Reference r(new_object(context, OBJECT_TYPE_TUPLE, object_length));
+            if(r.is_null()) return Value();
+            copy_n(r1->raw().tes, r1->length(), r->raw().tes);
+            copy_n(r2->raw().tes, r2->length(), r->raw().tes + r1->length());
             atomic_thread_fence(memory_order_release);
-            return Value(Reference(object));
+            return Value(r);
           }
           case OP_RTYPE:
           {
