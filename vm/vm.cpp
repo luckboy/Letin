@@ -227,6 +227,7 @@ namespace letin
       _M_regs.fp = static_cast<size_t>(-1);
       _M_regs.ip = 0;
       _M_regs.rv = ReturnValue();
+      _M_regs.tmp_ptr = nullptr;
       _M_regs.after_leaving_flag = false;
       _M_stack = new Value[stack_size];
       _M_stack_size = stack_size;

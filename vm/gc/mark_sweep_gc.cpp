@@ -105,7 +105,7 @@ namespace letin
           Object *top_object = header_to_object(pop_header());
           switch(top_object->type()) {
             case OBJECT_TYPE_RARRAY:
-              for(size_t i = 0; top_object->length(); i++) {
+              for(size_t i = 0; i < top_object->length(); i++) {
                 Reference elem_ref = top_object->raw().rs[i];
                 if(!elem_ref.has_nil()) {
                   Header *elem_header = object_to_header(elem_ref.ptr());
@@ -114,7 +114,7 @@ namespace letin
               }
               break;
             case OBJECT_TYPE_TUPLE:
-              for(size_t i = 0; top_object->length(); i++) {
+              for(size_t i = 0; i < top_object->length(); i++) {
                 if(top_object->raw().tes[i].type() == VALUE_TYPE_REF) {
                   Reference elem_ref = top_object->raw().tes[i].raw().r;
                   if(!elem_ref.has_nil()) {

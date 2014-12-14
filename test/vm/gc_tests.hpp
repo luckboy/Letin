@@ -46,6 +46,7 @@ namespace letin
       {
         CPPUNIT_TEST_SUITE(GarbageCollectorTests);
         CPPUNIT_TEST(test_gc_collects_one_object);
+        CPPUNIT_TEST(test_gc_collects_many_objects);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         AllocatorWrapper *_M_alloc;
@@ -58,7 +59,10 @@ namespace letin
         ThreadContext *new_thread_context(const VirtualMachineContext &vm_context)
         {
           ThreadContext *context = new ThreadContext(vm_context);
-          context->start([this]() { _M_thread_context_mutex->lock(); });
+          context->start([this]() {
+            _M_thread_context_mutex->lock();
+            _M_thread_context_mutex->unlock();
+          });
           return context;
         }
 
@@ -82,6 +86,10 @@ namespace letin
         void tearDown();
 
         void test_gc_collects_one_object();
+        void test_gc_collects_many_objects();
+        void test_gc_collects_cycle_references();
+        void test_gc_does_not_collect_objects_in_thread_contexts();
+        void test_gc_does_not_collect_objects_in_vm_contexts();
       };
 
       DECL_IMPL_GC_TESTS(MarkSweepGarbageCollector);
