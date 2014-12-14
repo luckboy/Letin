@@ -268,9 +268,9 @@ namespace letin
 
       virtual Environment &env() = 0;
 
-      virtual bool is_entry();
+      virtual bool is_entry() = 0;
 
-      virtual std::size_t entry();
+      virtual std::size_t entry() = 0;
 
       GarbageCollector *gc() { return _M_gc; }
     };
@@ -306,7 +306,7 @@ namespace letin
     public:
       virtual ~GarbageCollector();
 
-      virtual void collect();
+      virtual void collect() = 0;
     protected:
       virtual void *allocate(std::size_t size, ThreadContext *context = nullptr) = 0;
     public:
@@ -329,6 +329,8 @@ namespace letin
       virtual void unlock() = 0;
 
       virtual std::thread &system_thread() = 0;
+      
+      virtual std::size_t header_size() = 0;
     };
 
     Loader *new_loader();
@@ -338,6 +340,10 @@ namespace letin
     GarbageCollector *new_garbage_collector(Allocator *alloc);
 
     VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc);
+    
+    void initialize_gc();
+
+    void finalize_gc();
   }
 }
 

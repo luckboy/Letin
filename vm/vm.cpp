@@ -12,6 +12,7 @@
 #include <memory>
 #include <letin/const.hpp>
 #include <letin/vm.hpp>
+#include "thread_stop_cont.hpp"
 #include "vm.hpp"
 
 using namespace std;
@@ -181,7 +182,6 @@ namespace letin
 
     Object *GarbageCollector::new_object(int type, size_t length, ThreadContext *context)
     {
-      size_t object_size = sizeof(Object);
       size_t elem_size;
       switch(type) {
         case OBJECT_TYPE_IARRAY8:
@@ -211,7 +211,7 @@ namespace letin
         default:
           return nullptr;
       }
-      return new(allocate((object_size - elem_size) + length * elem_size, context)) Object(type, length);
+      return new(allocate((sizeof(Object) - sizeof(Value)) + length * elem_size, context)) Object(type, length);
     }
 
     //
@@ -290,5 +290,13 @@ namespace letin
     //
 
     VirtualMachineContext::~VirtualMachineContext() {}
+    
+    //
+    // Other fuctions.
+    //
+    
+    void initialize_gc() { priv::initialize_thread_stop_cont(); }
+
+    void finalize_gc() { priv::finalize_thread_stop_cont(); }
   }
 }

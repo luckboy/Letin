@@ -45,7 +45,7 @@ namespace letin
       {}
 
       std::uint32_t flags() const { return _M_flags; }
-      
+
       std::size_t entry() const { return _M_entry; }
 
       const format::Function &fun(std::size_t i) const { return _M_funs[i]; }
@@ -67,7 +67,7 @@ namespace letin
       format::Object *data(std::size_t i) { return reinterpret_cast<format::Object *>(_M_data + i); }
 
       std::size_t data_size() const { return _M_data_size; }
-      
+
       const std::set<std::uint32_t>  &data_addrs() const { return _M_data_addrs; }
     };
 
@@ -106,9 +106,9 @@ namespace letin
 
       void set_gc(GarbageCollector *gc)
       {
-          if(_M_gc != nullptr) _M_gc->delete_thread_context(this);
-          _M_gc = gc;
-          _M_gc->add_thread_context(this);
+        if(_M_gc != nullptr) _M_gc->delete_thread_context(this);
+        _M_gc = gc;
+        _M_gc->add_thread_context(this);
       }
 
       std::thread &system_thread() { return _M_thread; }
@@ -175,7 +175,7 @@ namespace letin
       const Value &pushed_arg(std::size_t i) const { return _M_stack[_M_regs.abp2 + i]; }
 
       Value &pushed_arg(std::size_t i) { return _M_stack[_M_regs.abp2 + i]; }
-      
+
       void pop_args_and_local_vars() { _M_regs.abp2 = lvbp(); _M_regs.lvc = _M_regs.ac2 = 0; }
 
       bool enter_to_fun(std::size_t i);
@@ -210,3 +210,4 @@ namespace letin
 }
 
 #endif
+

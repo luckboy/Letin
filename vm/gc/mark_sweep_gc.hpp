@@ -62,7 +62,7 @@ namespace letin
         static Object *header_to_object(Header *header)
         { return reinterpret_cast<Object *>(reinterpret_cast<char *>(header) + sizeof(Header));}
       public:
-        MarkSweepGarbageCollector(Allocator *alloc, unsigned int interval_usecs);
+        MarkSweepGarbageCollector(Allocator *alloc, unsigned int interval_usecs = 100);
 
         ~MarkSweepGarbageCollector();
 
@@ -75,6 +75,8 @@ namespace letin
         void sweep();
 
         void mark_from_object(Object *object);
+
+        std::size_t header_size();
       };
     }
   }

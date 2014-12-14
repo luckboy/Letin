@@ -42,7 +42,7 @@ namespace letin
       static mutex thread_stop_cont_mutex;
       static volatile bool is_stopping = false;
       static volatile bool is_continuing = false;
-      static ThreadStopCont *thread_stop_cont;
+      static ThreadStopCont *volatile thread_stop_cont;
 
       static void usr1_handler(int signum)
       {
@@ -50,22 +50,24 @@ namespace letin
           ThreadStopCont *tmp_thread_stop_cont = thread_stop_cont;
           ::sem_post(&(tmp_thread_stop_cont->stopping_sem));
           sigset_t sigmask;
-          sigfillset(&sigmask);
-          sigdelset(&sigmask, SIGUSR2);
-          do sigpending(&sigmask); while(!is_continuing);
+          do {
+            sigfillset(&sigmask);
+            sigdelset(&sigmask, SIGUSR2);
+            sigsuspend(&sigmask);
+          } while(!is_continuing);
           ::sem_post(&(tmp_thread_stop_cont->continuing_sem));
         }
       }
 
       static void usr2_handler(int signum) {}
 
-      void initialize_thread_stop()
+      void initialize_thread_stop_cont()
       {
         signal(SIGUSR1, usr1_handler);
         signal(SIGUSR2, usr2_handler);
       }
 
-      void finalize_thread_stop() {}
+      void finalize_thread_stop_cont() {}
 
       ThreadStopCont *new_thread_stop_cont() { return new ThreadStopCont(); }
 
@@ -77,8 +79,8 @@ namespace letin
         is_stopping = true;
         thread_stop_cont = stop_cont;
         fun([](thread &thr) { ::pthread_kill(thr.native_handle(), SIGUSR1); });
-        is_stopping = false;
         fun([stop_cont](thread &thr) { ::sem_wait(&(stop_cont->stopping_sem)); });
+        is_stopping = false;
       }
 
       void continue_threads(ThreadStopCont *stop_cont, function<void (function<void (thread &)>)> fun)
@@ -86,8 +88,8 @@ namespace letin
         lock_guard<mutex> guard(thread_stop_cont_mutex);
         is_continuing = true;
         fun([](thread &thr) { ::pthread_kill(thr.native_handle(), SIGUSR2); });
-        is_continuing = false;
         fun([stop_cont](thread &thr) { ::sem_wait(&(stop_cont->continuing_sem)); });
+        is_stopping = false;
       }
     }
   }

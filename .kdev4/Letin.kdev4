@@ -15,6 +15,21 @@ CMake Binary=file:///usr/bin/cmake
 Environment Profile=default
 Install Directory=file:///usr/local
 
+[Launch]
+Launch Configurations=Launch Configuration 0
+
+[Launch][Launch Configuration 0]
+Configured Launch Modes=debug
+Configured Launchers=gdb
+Name=testvm
+Type=Native Application
+
+[Launch][Launch Configuration 0][Data]
+Configured from ProjectItem=Letin,test,vm,testvm
+Project Target=Letin,test,vm,testvm
+Working Directory=file:///home/luck/develop/prj/cpp/Letin/build/test/vm/
+isExecutable=false
+
 [MakeBuilder]
 Number Of Jobs=1
 

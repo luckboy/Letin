@@ -29,7 +29,7 @@ namespace letin
       MarkSweepGarbageCollector::~MarkSweepGarbageCollector()
       {
         Header *header = _M_list_first;
-        while(!is_emtpy_list()) {
+        while(header != &_S_nil) {
           Header *next = header->list_next;
           _M_alloc->free(reinterpret_cast<void *>(header));
           header = next;
@@ -47,7 +47,7 @@ namespace letin
       void *MarkSweepGarbageCollector::allocate(size_t size, ThreadContext *context)
       {
         void *orig_ptr = _M_alloc->allocate(sizeof(Header) + size);
-        if(orig_ptr != nullptr) return nullptr;
+        if(orig_ptr == nullptr) return nullptr;
         Header *header = reinterpret_cast<Header *>(orig_ptr);
         new (header) Header();
         atomic_thread_fence(memory_order_release);
@@ -90,9 +90,10 @@ namespace letin
             Header *next = (*header_ptr)->list_next;
             _M_alloc->free(reinterpret_cast<void *>(*header_ptr));
             *header_ptr = next;
-          } else
+          } else {
             (*header_ptr)->stack_prev = nullptr;
-          header_ptr = &((*header_ptr)->list_next);
+            header_ptr = &((*header_ptr)->list_next);
+          }
         }
       }
 
@@ -126,6 +127,8 @@ namespace letin
           }
         }
       }
+
+      size_t MarkSweepGarbageCollector::header_size() { return sizeof(Header); }
     }
   }
 }
