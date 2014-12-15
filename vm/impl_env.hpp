@@ -33,10 +33,16 @@ namespace letin
         ~ImplEnvironment();
 
         void set_fun_count(std::size_t fun_count)
-        { _M_funs = std::unique_ptr<Function []>(new Function[fun_count]); }
+        {
+          _M_funs = std::unique_ptr<Function []>(new Function[fun_count]);
+          _M_fun_count = fun_count;
+        }
 
         void set_var_count(std::size_t var_count)
-        { _M_vars = std::unique_ptr<Value []>(new Value[var_count]); }
+        { 
+          _M_vars = std::unique_ptr<Value []>(new Value[var_count]);
+          _M_var_count = var_count;
+        }
 
         Function fun(std::size_t i);
 

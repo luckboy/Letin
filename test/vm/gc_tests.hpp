@@ -47,6 +47,10 @@ namespace letin
         CPPUNIT_TEST_SUITE(GarbageCollectorTests);
         CPPUNIT_TEST(test_gc_collects_one_object);
         CPPUNIT_TEST(test_gc_collects_many_objects);
+        CPPUNIT_TEST(test_gc_collects_cycle_references);
+        CPPUNIT_TEST(test_gc_does_not_collect_objects_in_thread_contexts);
+        CPPUNIT_TEST(test_gc_does_not_collect_objects_in_vm_contexts);
+        CPPUNIT_TEST(test_gc_destructor_free_all_objects);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         AllocatorWrapper *_M_alloc;
@@ -67,6 +71,9 @@ namespace letin
         }
 
         VirtualMachineContext *new_vm_context()
+        { return new impl::ImplEnvironment(); }
+
+        impl::ImplEnvironment *new_impl_env()
         { return new impl::ImplEnvironment(); }
 
         AllocatorOperation make_alloc(Reference ref)
@@ -90,6 +97,7 @@ namespace letin
         void test_gc_collects_cycle_references();
         void test_gc_does_not_collect_objects_in_thread_contexts();
         void test_gc_does_not_collect_objects_in_vm_contexts();
+        void test_gc_destructor_free_all_objects();
       };
 
       DECL_IMPL_GC_TESTS(MarkSweepGarbageCollector);
