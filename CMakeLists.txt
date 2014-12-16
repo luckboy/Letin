@@ -2,10 +2,19 @@ project(letin)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+find_package(Threads REQUIRED)
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+	if(CMAKE_USE_PTHREADS_INIT)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+	endif(CMAKE_USE_PTHREADS_INIT)
+endif(CMAKE_COMPILER_IS_GNUCXX)
 
 include_directories(include)
 
+add_subdirectory(comp)
 add_subdirectory(vm)
 
 if(BUILD_TESTING)
