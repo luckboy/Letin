@@ -17,6 +17,7 @@
 #include "vm.hpp"
 
 using namespace std;
+using namespace letin::util;
 
 namespace letin
 {

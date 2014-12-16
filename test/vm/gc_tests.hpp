@@ -5,8 +5,8 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
-#ifndef _GC_TEST_HPP
-#define _GC_TEST_HPP
+#ifndef _GC_TESTS_HPP
+#define _GC_TESTS_HPP
 
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
@@ -14,7 +14,6 @@
 #include <memory>
 #include <mutex>
 #include <vector>
-#include <unistd.h>
 #include <utility>
 #include <letin/vm.hpp>
 #include "alloc_wrapper.hpp"

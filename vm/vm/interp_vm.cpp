@@ -19,6 +19,7 @@
 
 using namespace std;
 using namespace letin::opcode;
+using namespace letin::util;
 
 namespace letin
 {
