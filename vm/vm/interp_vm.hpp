@@ -13,7 +13,6 @@
 #include <letin/vm.hpp>
 #include "impl_vm_base.hpp"
 #include "vm.hpp"
-#include "util.hpp"
 
 namespace letin
 {

@@ -1,0 +1,212 @@
+/****************************************************************************
+ *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *                                                                          *
+ *   This software is licensed under the GNU Lesser General Public          *
+ *   License v3 or later. See the LICENSE file and the GPL file for         *
+ *   the full licensing terms.                                              *
+ ****************************************************************************/
+#include <netinet/in.h>
+#include <algorithm>
+#include <numeric>
+#include <letin/opcode.hpp>
+#include "helper.hpp"
+
+using namespace std;
+using namespace letin::opcode;
+using namespace letin::util;
+
+namespace letin
+{
+  namespace vm
+  {
+    namespace test
+    {
+      //
+      // An ObjectHelper class.
+      //
+
+      void *ObjectHelper::ptr() const
+      {
+        uint8_t *ptr = new uint8_t[size()];
+        format::Object *object = reinterpret_cast<format::Object *>(ptr);
+        object->type = htonl(_M_type);
+        object->length = htonl(_M_values.size());
+        switch(_M_type)
+        {
+          case OBJECT_TYPE_IARRAY8:
+            for(size_t i = 0; i < _M_values.size(); i++)
+              object->is8[i] = _M_values[i].i;
+            break;
+          case OBJECT_TYPE_IARRAY16:
+            for(size_t i = 0; i < _M_values.size(); i++)
+              object->is16[i] = _M_values[i].i;
+            break;
+          case OBJECT_TYPE_IARRAY32:
+            for(size_t i = 0; i < _M_values.size(); i++)
+              object->is32[i] = _M_values[i].i;
+            break;
+          case OBJECT_TYPE_IARRAY64:
+            for(size_t i = 0; i < _M_values.size(); i++)
+              object->is64[i] = _M_values[i].i;
+            break;
+          case OBJECT_TYPE_SFARRAY:
+            for(size_t i = 0; i < _M_values.size(); i++) {
+              format::Double format_f = _M_values[i].f;
+              format_f.dword = ntohll(format_f.dword);
+              double f = format_double_to_double(format_f);
+              object->sfs[i].word = htonl(float_to_format_float(f).word);
+            }
+            break;
+          case OBJECT_TYPE_DFARRAY:
+            for(size_t i = 0; i < _M_values.size(); i++)
+              object->dfs[i] = _M_values[i].f;
+            break;
+          case OBJECT_TYPE_RARRAY:
+            for(size_t i = 0; i < _M_values.size(); i++)
+              object->rs[i] = _M_values[i].addr;
+            break;
+          case OBJECT_TYPE_TUPLE:
+            for(size_t i = 0; i < _M_values.size(); i++)
+              object->tes[i] = _M_values[i];
+            break;
+        }
+        return reinterpret_cast<void *>(ptr);
+      }
+
+      size_t ObjectHelper::size() const
+      {
+        size_t elem_size = 0;
+        switch(_M_type) {
+          case OBJECT_TYPE_IARRAY8:
+            elem_size = 1;
+            break;
+          case OBJECT_TYPE_IARRAY16:
+            elem_size = 2;
+            break;
+          case OBJECT_TYPE_IARRAY32:
+            elem_size = 4;
+            break;
+          case OBJECT_TYPE_IARRAY64:
+            elem_size = 8;
+            break;
+          case OBJECT_TYPE_SFARRAY:
+            elem_size = 4;
+            break;
+          case OBJECT_TYPE_DFARRAY:
+            elem_size = 8;
+            break;
+          case OBJECT_TYPE_RARRAY:
+            elem_size = 4;
+            break;
+          case OBJECT_TYPE_TUPLE:
+            elem_size = 12;
+            break;
+        }
+        return (sizeof(format::Object) - 12) + _M_values.size() * elem_size;
+      }
+
+      //
+      // A ProgramHelper class.
+      //
+
+      void *ProgramHelper::ptr() const
+      {
+        uint8_t *tmp_ptr = new uint8_t[size()];
+        void *ptr = reinterpret_cast<void *>(tmp_ptr);
+        format::Header *header = reinterpret_cast<format::Header *>(tmp_ptr);
+        copy(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, header->magic);
+        tmp_ptr += sizeof(format::Header);
+        header->entry = htonl(_M_entry);
+        header->flags = 0;
+        header->fun_count = htonl(_M_funs.size());
+        header->var_count = htonl(_M_vars.size());
+        header->code_size = htonl(_M_instrs.size());
+        header->data_size = htonl(_M_data_size);
+
+        format::Function *funs = reinterpret_cast<format::Function *>(tmp_ptr);
+        tmp_ptr += sizeof(format::Function) * _M_funs.size();
+        copy(_M_funs.begin(), _M_funs.end(), funs);
+
+        format::Value *vars = reinterpret_cast<format::Value *>(tmp_ptr);
+        tmp_ptr += sizeof(format::Value) * _M_vars.size();
+        copy(_M_vars.begin(), _M_vars.end(), vars);
+        
+        format::Instruction *code = reinterpret_cast<format::Instruction *>(tmp_ptr);
+        tmp_ptr += sizeof(format::Instruction) * _M_instrs.size();
+        copy(_M_instrs.begin(), _M_instrs.end(), code);
+        
+        for(auto &pair : _M_object_pairs) {
+          copy_n(pair.ptr.get(), pair.size, tmp_ptr);
+          tmp_ptr += pair.size;
+        }
+        return ptr;
+      }
+      
+      size_t ProgramHelper::size() const
+      {
+        return sizeof(format::Header) +
+               _M_funs.size() * sizeof(format::Function) +
+               _M_vars.size() * sizeof(format::Value) +
+               _M_instrs.size() * sizeof(format::Instruction) +
+               accumulate(_M_object_pairs.begin(), _M_object_pairs.end(), 0, 
+                          [](size_t x, const ObjectPair &p) { return x + p.size; });
+      }
+
+      //
+      // Other functions.
+      //
+
+      format::Function make_function(uint32_t arg_count, uint32_t addr, uint32_t instr_count)
+      {
+
+        format::Function fun;
+        fun.addr = htonl(addr);
+        fun.arg_count = htonl(arg_count);
+        fun.instr_count = htonl(instr_count);
+        return fun;
+      }
+
+      format::Instruction make_instruction(uint32_t instr, uint32_t op, const Argument &arg1, const Argument &arg2)
+      {
+        format::Instruction tmp_instr;
+        tmp_instr.opcode = htonl(opcode::opcode(instr, op, arg1.type, arg2.type));
+        tmp_instr.arg1.i = htonl(arg1.format_arg.i);
+        tmp_instr.arg2.i = htonl(arg2.format_arg.i);
+        return tmp_instr;
+      }
+
+      format::Value make_int_value(int i)
+      {
+        format::Value value;
+        value.type = htonl(VALUE_TYPE_INT);
+        value.i = htonll(i);
+        return value;
+      }
+
+      format::Value make_int_value(std::int64_t i)
+      {
+        format::Value value;
+        value.type = htonl(VALUE_TYPE_INT);
+        value.i = htonll(i);
+        return value;
+      }
+
+      format::Value make_float_value(double f)
+      {
+        format::Value value;
+        value.type = htonl(VALUE_TYPE_INT);
+        value.f = double_to_format_double(f);
+        value.f.dword = htonll(value.f.dword);
+        return value;
+      }
+
+      format::Value make_ref_value(std::uint32_t addr)
+      {
+        format::Value value;
+        value.type = htonl(VALUE_TYPE_REF);
+        value.addr = htonll(addr);
+        return value;
+      }
+    }
+  }
+}

@@ -33,7 +33,7 @@ namespace letin
 
         Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun);
       protected:
-        virtual ReturnValue start_in_thread(std::size_t i, const std::vector<Value> &args, ThreadContext &context);
+        virtual ReturnValue start_in_thread(std::size_t i, const std::vector<Value> &args, ThreadContext &context) = 0;
       public:
         Environment &env();
 

@@ -79,7 +79,7 @@ namespace letin
       {
         std::int64_t    i;
         Double          f;
-        std::uint32_t   addr;
+        std::uint64_t   addr;
       };
       std::int32_t      type;
     };

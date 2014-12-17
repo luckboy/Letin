@@ -8,8 +8,8 @@
 #include <algorithm>
 #include <cstring>
 #include "gc_tests.hpp"
-#include "new_alloc.hpp"
 #include "mark_sweep_gc.hpp"
+#include "new_alloc.hpp"
 
 using namespace std;
 using namespace letin::vm;

@@ -30,6 +30,7 @@ namespace letin
       bool ImplVirtualMachineBase::load(void *ptr, size_t size, bool is_auto_freeing)
       {
         unique_ptr<Program> prog(_M_loader->load(ptr, size));
+        if(prog.get() == nullptr) return false;
         _M_env.set_fun_count(prog->fun_count());
         _M_env.set_var_count(prog->var_count());
         _M_env.set_auto_freeing(is_auto_freeing ? ptr : nullptr);
@@ -135,10 +136,10 @@ namespace letin
         ThreadContext *context = new ThreadContext(_M_env);
         Thread thread(context);
         context->set_gc(_M_gc);
-        context->start([this, i, fun, args, context]() {
-          Thread thread2(context);
+        context->start([this, i, fun, args, &thread]() {
+          Thread thread2(thread);
           try {
-            fun(start_in_thread(i, args, *context)); 
+            fun(start_in_thread(i, args, *(thread2.context()))); 
           } catch(...) {
             fun(ReturnValue(0, 0.0, Reference(), ERROR_EXCEPTION));
           }

@@ -123,7 +123,7 @@ namespace letin
 
     inline std::uint32_t opcode_to_arg_type2(std::uint32_t opcode)
     {
-      return (opcode >> 20) * 0xf;
+      return (opcode >> 20) & 0xf;
     }
   }
 }

@@ -236,6 +236,8 @@ namespace letin
       Thread(ThreadContext *context);
 
       std::thread &system_thread();
+      
+      ThreadContext *context();
     };
 
     class Environment
@@ -270,7 +272,7 @@ namespace letin
 
       virtual Environment &env() = 0;
 
-      virtual bool is_entry() = 0;
+      virtual bool has_entry() = 0;
 
       virtual std::size_t entry() = 0;
 

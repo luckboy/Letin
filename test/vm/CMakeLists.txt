@@ -3,6 +3,8 @@ include_directories(../../vm/alloc)
 include_directories(../../vm/gc)
 include_directories(../../vm/vm)
 include_directories(../../vm)
+include_directories(../..)
+
 
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}" vm_test_sources)
 

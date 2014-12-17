@@ -14,11 +14,10 @@
 #include <memory>
 #include <mutex>
 #include <vector>
-#include <utility>
 #include <letin/vm.hpp>
-#include "alloc_wrapper.hpp"
 #include "impl_env.hpp"
 #include "vm.hpp"
+#include "alloc_wrapper.hpp"
 
 #define DECL_IMPL_GC_TESTS(clazz)                                               \
 class clazz##Tests : public GarbageCollectorTests                               \
@@ -56,7 +55,6 @@ namespace letin
         GarbageCollector *_M_gc;
         std::mutex *_M_thread_context_mutex;
       public:
-
         virtual GarbageCollector *new_gc(Allocator *alloc) = 0;
 
         ThreadContext *new_thread_context(const VirtualMachineContext &vm_context)

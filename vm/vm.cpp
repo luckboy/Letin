@@ -135,7 +135,9 @@ namespace letin
 
     Thread::Thread(ThreadContext *context) : _M_context(context) {}
 
-    std::thread &Thread::system_thread() { return _M_context->system_thread(); }
+    thread &Thread::system_thread() { return _M_context->system_thread(); }
+
+    ThreadContext *Thread::context() { return _M_context.get(); }
 
     //
     // An Environment class.

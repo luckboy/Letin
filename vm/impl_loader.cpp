@@ -31,7 +31,7 @@ namespace letin
         size_t tmp_idx = 0;
         format::Header *header = reinterpret_cast<format::Header *>(tmp_ptr + tmp_idx);
         tmp_idx += sizeof(format::Header);
-        if(tmp_idx >= size) return nullptr;
+        if(tmp_idx > size) return nullptr;
         if(!equal(header->magic, header->magic + 8, format::HEADER_MAGIC)) return nullptr;
         header->flags = ntohl(header->flags);
         header->entry = ntohl(header->entry);
@@ -43,7 +43,7 @@ namespace letin
         format::Function *funs = reinterpret_cast<format::Function *>(tmp_ptr + tmp_idx);
         size_t fun_count = header->fun_count;
         tmp_idx += sizeof(format::Function) * fun_count;
-        if(tmp_idx >= size) return nullptr;
+        if(tmp_idx > size) return nullptr;
         for(size_t i = 0; i < fun_count; i++) {
           funs[i].addr = ntohl(funs[i].addr);
           funs[i].arg_count = ntohl(funs[i].arg_count);
@@ -53,7 +53,7 @@ namespace letin
         format::Value *vars = reinterpret_cast<format::Value *>(tmp_ptr + tmp_idx);
         size_t var_count = header->var_count;
         tmp_idx += sizeof(format::Value) * var_count;
-        if(tmp_idx >= size) return nullptr;
+        if(tmp_idx > size) return nullptr;
         set<uint32_t> var_addrs;
         for(size_t i = 0; i < var_count; i++) {
           vars[i].i = ntohll(vars[i].i);
@@ -67,7 +67,7 @@ namespace letin
         format::Instruction *code = reinterpret_cast<format::Instruction *>(tmp_ptr + tmp_idx);
         size_t code_size = header->code_size;
         tmp_idx += sizeof(format::Instruction) * code_size;
-        if(tmp_idx >= size) return nullptr;
+        if(tmp_idx > size) return nullptr;
         for(size_t i = 0; i < code_size; i++) {
           code[i].opcode = ntohl(code[i].opcode);
           code[i].arg1.i = ntohl(code[i].arg1.i);
@@ -75,9 +75,9 @@ namespace letin
         }
 
         uint8_t *data = tmp_ptr + tmp_idx;
-        size_t data_size = header->code_size;
+        size_t data_size = header->data_size;
         tmp_idx += data_size;
-        if(tmp_idx >= size) return nullptr;
+        if(tmp_idx > size) return nullptr;
         set<uint32_t> data_addrs;
         for(size_t i = 0; i != size - tmp_idx;) {
           if(i >= size - tmp_idx) return nullptr;

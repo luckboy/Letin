@@ -222,6 +222,7 @@ namespace letin
 
       bool InterpreterVirtualMachine::interpret_instr(ThreadContext &context)
       {
+        if(context.regs().fp == static_cast<size_t>(-1)) return false;
         const Function &fun = context.fun(context.regs().fp);
         if(context.regs().ip >= fun.raw().instr_count) context.set_error(ERROR_NO_INSTR);
         const Instruction &instr = fun.raw().instrs[context.regs().ip];
