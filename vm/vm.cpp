@@ -28,8 +28,57 @@ namespace letin
     Object Reference::_S_nil;
     
     //
+    // A Value class.
+    //
+
+    bool Value::operator==(const Value &value) const
+    {
+      if(_M_raw.type != value._M_raw.type) return false;
+      switch(_M_raw.type) {
+        case VALUE_TYPE_INT:
+          return _M_raw.i == value._M_raw.i;
+        case VALUE_TYPE_FLOAT:
+          return _M_raw.f == value._M_raw.f;
+        case VALUE_TYPE_REF:
+          return _M_raw.r == value._M_raw.r;
+        case VALUE_TYPE_PAIR:
+          return _M_raw.p.first == value._M_raw.p.first && _M_raw.p.first == value._M_raw.p.first;
+        case VALUE_TYPE_ERROR:
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    //
     // An Object class.
     //
+
+    bool Object::operator==(const Object &object) const
+    {
+      if(_M_raw.type != object._M_raw.type) return false;
+      if(_M_raw.length != object._M_raw.length) return false;
+      switch(_M_raw.type) {
+        case OBJECT_TYPE_IARRAY8:
+          return equal(_M_raw.is8, _M_raw.is8 + _M_raw.length, object._M_raw.is8);
+        case OBJECT_TYPE_IARRAY16:
+          return equal(_M_raw.is16, _M_raw.is16 + _M_raw.length, object._M_raw.is16);
+        case OBJECT_TYPE_IARRAY32:
+          return equal(_M_raw.is32, _M_raw.is32 + _M_raw.length, object._M_raw.is32);
+        case OBJECT_TYPE_IARRAY64:
+          return equal(_M_raw.is64, _M_raw.is64 + _M_raw.length, object._M_raw.is64);
+        case OBJECT_TYPE_SFARRAY:
+          return equal(_M_raw.sfs, _M_raw.sfs + _M_raw.length, object._M_raw.sfs);
+        case OBJECT_TYPE_DFARRAY:
+          return equal(_M_raw.dfs, _M_raw.dfs + _M_raw.length, object._M_raw.dfs);
+        case OBJECT_TYPE_RARRAY:
+          return equal(_M_raw.rs, _M_raw.rs + _M_raw.length, object._M_raw.rs);
+        case OBJECT_TYPE_TUPLE:
+          return equal(_M_raw.tes, _M_raw.tes + _M_raw.length, object._M_raw.tes);
+        default:
+          return false;
+      }
+    }
 
     Value Object::elem(size_t i) const
     {

@@ -161,7 +161,7 @@ namespace letin
       static inline bool check_value_type(ThreadContext &context, const Value &value, int type)
       {
         if(value.type() != type) {
-          context.set_error(ERROR_INCORRECT_OBJECT);
+          context.set_error(ERROR_INCORRECT_VALUE);
           return false;
         }
         return true;
@@ -554,9 +554,9 @@ namespace letin
           {
             Object *object = new_object(context, OBJECT_TYPE_IARRAY8, context.regs().ac2);
             if(object == nullptr) return Value();
-            for(size_t i = 0; context.regs().ac2; i++) {
-              if(!check_value_type(context, context.arg(i), VALUE_TYPE_INT)) return Value();
-              object->raw().is8[i] = context.arg(i).raw().i;
+            for(size_t i = 0; i < context.regs().ac2; i++) {
+              if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
+              object->raw().is8[i] = context.pushed_arg(i).raw().i;
             }
             return Value(Reference(object));
           }
@@ -564,9 +564,9 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY16, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; context.regs().ac2; i++) {
-              if(!check_value_type(context, context.arg(i), VALUE_TYPE_INT)) return Value();
-              r->raw().is16[i] = context.arg(i).raw().i;
+            for(size_t i = 0; i < context.regs().ac2; i++) {
+              if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
+              r->raw().is16[i] = context.pushed_arg(i).raw().i;
             }
             return Value(r);
           }
@@ -574,9 +574,9 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY32, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; context.regs().ac2; i++) {
-              if(!check_value_type(context, context.arg(i), VALUE_TYPE_INT)) return Value();
-              r->raw().is32[i] = context.arg(i).raw().i;
+            for(size_t i = 0; i < context.regs().ac2; i++) {
+              if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
+              r->raw().is32[i] = context.pushed_arg(i).raw().i;
             }
             return Value(r);
           }
@@ -584,9 +584,9 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY64, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; context.regs().ac2; i++) {
-              if(!check_value_type(context, context.arg(i), VALUE_TYPE_INT)) return Value();
-              r->raw().is64[i] = context.arg(i).raw().i;
+            for(size_t i = 0; i < context.regs().ac2; i++) {
+              if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
+              r->raw().is64[i] = context.pushed_arg(i).raw().i;
             }
             return Value(r);
           }
@@ -594,9 +594,9 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_SFARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; context.regs().ac2; i++) {
-              if(!check_value_type(context, context.arg(i), VALUE_TYPE_FLOAT)) return Value();
-              r->raw().sfs[i] = context.arg(i).raw().f;
+            for(size_t i = 0; i < context.regs().ac2; i++) {
+              if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_FLOAT)) return Value();
+              r->raw().sfs[i] = context.pushed_arg(i).raw().f;
             }
             return Value(r);
           }
@@ -604,9 +604,9 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_DFARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; context.regs().ac2; i++) {
-              if(!check_value_type(context, context.arg(i), VALUE_TYPE_FLOAT)) return Value();
-              r->raw().dfs[i] = context.arg(i).raw().f;
+            for(size_t i = 0; i < context.regs().ac2; i++) {
+              if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_FLOAT)) return Value();
+              r->raw().dfs[i] = context.pushed_arg(i).raw().f;
             }
             return Value(r);
           }
@@ -614,9 +614,9 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_RARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; context.regs().ac2; i++) {
-              if(!check_value_type(context, context.arg(i), VALUE_TYPE_REF)) return Value();
-              r->raw().rs[i] = context.arg(i).raw().r;
+            for(size_t i = 0; i < context.regs().ac2; i++) {
+              if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_REF)) return Value();
+              r->raw().rs[i] = context.pushed_arg(i).raw().r;
             }
             atomic_thread_fence(memory_order_release);
             return Value(r);
@@ -625,7 +625,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_TUPLE, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; context.regs().ac2; i++) r->raw().tes[i] = context.arg(i);
+            for(size_t i = 0; i < context.regs().ac2; i++) r->raw().tes[i] = context.pushed_arg(i);
             atomic_thread_fence(memory_order_release);
             return Value(r);
           }

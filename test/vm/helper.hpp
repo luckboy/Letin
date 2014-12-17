@@ -21,6 +21,7 @@
 #define LV(i)                   Argument(opcode::ARG_TYPE_LVAR, i)
 #define A(i)                    Argument(opcode::ARG_TYPE_ARG, i)
 #define GV(i)                   Argument(opcode::ARG_TYPE_GVAR, i)
+#define NA()                    Argument(0)
 
 #define INSTR(instr)            tmp_prog_helper.add_instr(instr)
 #define LET(op, arg1, arg2)     INSTR(make_instruction(opcode::INSTR_LET, opcode::OP_##op, arg1, arg2))

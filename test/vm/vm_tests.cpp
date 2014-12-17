@@ -5,6 +5,7 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
+#include <cstring>
 #include "impl_loader.hpp"
 #include "interp_vm.hpp"
 #include "mark_sweep_gc.hpp"
@@ -153,6 +154,63 @@ namespace letin
         Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
           is_success = (ERROR_SUCCESS == value.error());
           is_expected = (4.875 == value.f());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+      
+      void VirtualMachineTests::test_vm_executes_reference_instructions()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(ILOAD, IMM('a'), NA());
+        ARG(ILOAD, IMM('b'), NA());
+        ARG(ILOAD, IMM('c'), NA());
+        LET(RIARRAY8, NA(), NA());
+        ARG(ILOAD, IMM('d'), NA());
+        ARG(ILOAD, IMM('f'), NA());
+        LET(RIARRAY8, NA(), NA());
+        IN();
+        LET(RIACAT8, LV(0), LV(1));
+        IN();
+        ARG(ILOAD, IMM(1), NA());
+        ARG(RLOAD, LV(0), NA());
+        ARG(RLOAD, LV(1), NA());
+        ARG(RLOAD, LV(2), NA());
+        ARG(ILOAD, IMM(2), NA());
+        ARG(RIANTH8, LV(2), IMM(3));
+        ARG(RIALEN8, LV(0), NA());
+        RET(RTUPLE, NA(), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (OBJECT_TYPE_TUPLE == value.r()->type());
+          is_expected &= (7 == value.r()->length());
+          is_expected &= (Value(1) == value.r()->elem(0));
+          is_expected &= (VALUE_TYPE_REF == value.r()->elem(1).type());
+          Reference ref1(value.r()->elem(1).r());
+          is_expected &= (OBJECT_TYPE_IARRAY8 == ref1->type());
+          is_expected &= (3 == ref1->length());
+          is_expected &= (strncmp("abc", reinterpret_cast<char *>(ref1->raw().is8), 3) == 0);
+          is_expected &= (VALUE_TYPE_REF == value.r()->elem(2).type());
+          Reference ref2(value.r()->elem(2).r());
+          is_expected &= (OBJECT_TYPE_IARRAY8 == ref2->type());
+          is_expected &= (2 == ref2->length());
+          is_expected &= (strncmp("df", reinterpret_cast<char *>(ref2->raw().is8), 2) == 0);
+          Reference ref3(value.r()->elem(3).r());
+          is_expected &= (OBJECT_TYPE_IARRAY8 == ref3->type());
+          is_expected &= (5 == ref3->length());
+          is_expected &= (strncmp("abcdf", reinterpret_cast<char *>(ref3->raw().is8), 2) == 0);
+          is_expected &= (Value(2) == value.r()->elem(4));
+          is_expected &= (Value('d') == value.r()->elem(5));
+          is_expected &= (Value(3) == value.r()->elem(6));
         });
         thread.system_thread().join();
         CPPUNIT_ASSERT(is_success);

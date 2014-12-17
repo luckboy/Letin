@@ -43,6 +43,7 @@ namespace letin
         CPPUNIT_TEST(test_vm_executes_lets_and_ins);
         CPPUNIT_TEST(test_vm_executes_int_instructions);
         CPPUNIT_TEST(test_vm_executes_float_instructions);
+        CPPUNIT_TEST(test_vm_executes_reference_instructions);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;

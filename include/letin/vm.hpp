@@ -45,9 +45,9 @@ namespace letin
 
       Reference &operator=(Object *ptr) { _M_ptr = ptr; return *this; }
       
-      bool operator==(Reference ref) { return _M_ptr == ref._M_ptr; }
+      bool operator==(Reference ref) const { return _M_ptr == ref._M_ptr; }
 
-      bool operator!=(Reference ref) { return _M_ptr != ref._M_ptr; }
+      bool operator!=(Reference ref) const { return _M_ptr != ref._M_ptr; }
 
       Object &operator*() const { return *_M_ptr; }
 
@@ -97,6 +97,10 @@ namespace letin
 
       Value(std::uint32_t first, std::uint32_t second)
       { _M_raw.type = VALUE_TYPE_PAIR; _M_raw.p.first = first; _M_raw.p.second = second; }
+
+      bool operator==(const Value &value) const;
+
+      bool operator!=(const Value &value) const { return !(*this == value); }
 
       const ValueRaw &raw() const { return _M_raw; }
 
@@ -150,6 +154,10 @@ namespace letin
 
       Object(int type, std::size_t length) { _M_raw.type = type; _M_raw.length = length; }
 
+      bool operator==(const Object &object) const;
+
+      bool operator!=(const Object &object) const { return !(*this == object); }
+      
       const ObjectRaw &raw() const { return _M_raw; }
 
       ObjectRaw &raw() { return _M_raw; }
@@ -188,6 +196,11 @@ namespace letin
       ReturnValue(const Value &value) { *this = value; }
 
       ReturnValue &operator=(const Value value);
+
+      bool operator==(const ReturnValue &value) const
+      { return _M_raw.i == value._M_raw.i && _M_raw.f == value._M_raw.f && _M_raw.r == value._M_raw.r && _M_raw.error == value._M_raw.error; }
+
+      bool operator!=(const ReturnValue &value) const { return !(*this == value); }
 
       const ReturnValueRaw &raw() const { return _M_raw; }
 
