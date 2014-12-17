@@ -137,9 +137,9 @@ namespace letin
 
       Value &arg(std::size_t i) { return _M_stack[_M_regs.abp + i]; }
 
-      const Value &local_var(std::size_t i) const { _M_stack[lvbp() + i]; }
+      const Value &local_var(std::size_t i) const { return _M_stack[lvbp() + i]; }
 
-      Value &local_var(std::size_t i) { _M_stack[lvbp() + i]; }
+      Value &local_var(std::size_t i) { return _M_stack[lvbp() + i]; }
 
       bool push_local_var(const Value &value)
       {

@@ -24,12 +24,12 @@
 
 #define INSTR(instr)            tmp_prog_helper.add_instr(instr)
 #define LET(op, arg1, arg2)     INSTR(make_instruction(opcode::INSTR_LET, opcode::OP_##op, arg1, arg2))
-#define IN()                    INSTR(make_instruction(opcode::INSTR_IN, 0, HelperArgument(0), HelperArgument(0)))
+#define IN()                    INSTR(make_instruction(opcode::INSTR_IN, 0, Argument(0), Argument(0)))
 #define RET(op, arg1, arg2)     INSTR(make_instruction(opcode::INSTR_RET, opcode::OP_##op, arg1, arg2))
-#define JC(arg, i)              INSTR(make_instruction(opcode::INSTR_JC, 0, arg, HelperArgument(i)))
-#define JUMP(i)                 INSTR(make_instruction(opcode::INSTR_JUMP, 0, HelperArgument(i), HelperArgument(0)))
+#define JC(arg, i)              INSTR(make_instruction(opcode::INSTR_JC, 0, arg, Argument(i)))
+#define JUMP(i)                 INSTR(make_instruction(opcode::INSTR_JUMP, 0, Argument(i), Argument(0)))
 #define ARG(op, arg1, arg2)     INSTR(make_instruction(opcode::INSTR_ARG, opcode::OP_##op, arg1, arg2))
-#define RETRY()                 INSTR(make_instruction(opcode::INSTR_IN, 0, HelperArgument(0), HelperArgument(0)))
+#define RETRY()                 INSTR(make_instruction(opcode::INSTR_IN, 0, Argument(0), Argument(0)))
 
 #define FUN(arg_count)                                                          \
 {                                                                               \

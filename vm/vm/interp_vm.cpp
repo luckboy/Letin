@@ -224,7 +224,10 @@ namespace letin
       {
         if(context.regs().fp == static_cast<size_t>(-1)) return false;
         const Function &fun = context.fun(context.regs().fp);
-        if(context.regs().ip >= fun.raw().instr_count) context.set_error(ERROR_NO_INSTR);
+        if(context.regs().ip >= fun.raw().instr_count) {
+          context.set_error(ERROR_NO_INSTR);
+          return true;
+        }
         const Instruction &instr = fun.raw().instrs[context.regs().ip];
         context.regs().ip++;
         switch(opcode_to_instr(instr.opcode)) {
@@ -951,7 +954,7 @@ namespace letin
           context.set_error(ERROR_INCORRECT_FUN);
           return false;
         }
-        if(fun.arg_count() != context.regs().ac) {
+        if(fun.arg_count() != context.regs().ac2) {
           context.set_error(ERROR_INCORRECT_ARG_COUNT);
           return false;
         }
