@@ -47,11 +47,14 @@ namespace letin
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
         CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
         bool is_four = false;
-        Thread thread = _M_vm->start(vector<Value>(), [&is_four](const ReturnValue &value) {
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_four](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
           is_four = (4 == value.i());
         });
         thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
         CPPUNIT_ASSERT(is_four);
       }
       
@@ -73,16 +76,86 @@ namespace letin
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
         CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
         bool is_expected = false;
         vector<Value> args;
         args.push_back(Value(10));
         args.push_back(Value(5));
         args.push_back(Value(2));
         args.push_back(Value(8));
-        Thread thread = _M_vm->start(args, [&is_expected](const ReturnValue &value) {
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
           is_expected = (56 == value.i());
         });
         thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_executes_int_instructions()
+      {
+        PROG(prog_helper, 0);
+        FUN(3);
+        LET(IADD, A(0), A(1)); // 9 + 10 = 19
+        LET(ISUB, A(1), A(2)); // 10 - 8 = 2
+        LET(IMUL, A(2), A(0)); // 8 * 9 = 72
+        IN();
+        LET(IADD, LV(0), LV(1)); // 19 + 2 = 21
+        IN();
+        RET(IADD, LV(3), LV(2)); // 21 + 72 = 93
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(9));
+        args.push_back(Value(10));
+        args.push_back(Value(8));
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (93 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+      
+      void VirtualMachineTests::test_vm_executes_float_instructions()
+      {
+        PROG(prog_helper, 0);
+        FUN(6);
+        LET(FADD, A(0), A(1)); // 0.5 + 1.0 = 1.5
+        LET(FSUB, A(2), A(3)); // 1.25 - 1.5 = -0.25
+        LET(FMUL, A(4), A(5)); // 1.75 * 2 = 3.5
+        IN();
+        LET(FADD, LV(0), LV(1)); // 1.5 + (-0.25) = 1.25
+        IN();
+        LET(FMUL, LV(3), LV(2)); // 1.25 * 3.5 = 4.375
+        IN();
+        RET(FADD, LV(4), IMM(0.5f)); // 4.375 + 0.5 = 4.875
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(0.5));
+        args.push_back(Value(1.0));
+        args.push_back(Value(1.25));
+        args.push_back(Value(1.5));
+        args.push_back(Value(1.75));
+        args.push_back(Value(2.0));
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (4.875 == value.f());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
         CPPUNIT_ASSERT(is_expected);
       }
 

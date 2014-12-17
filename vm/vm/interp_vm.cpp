@@ -73,7 +73,7 @@ namespace letin
 
       static inline bool get_float(ThreadContext &context, double &f, const Value &value)
       {
-        if(value.type() == VALUE_TYPE_FLOAT) {
+        if(value.type() != VALUE_TYPE_FLOAT) {
           context.set_error(ERROR_INCORRECT_VALUE);
           return false;
         }

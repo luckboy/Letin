@@ -198,6 +198,8 @@ namespace letin
       double f() const { return _M_raw.f; }
 
       Reference r() const { return _M_raw.r; }
+      
+      int error() const { return _M_raw.error; }
     };
 
     struct FunctionRaw
