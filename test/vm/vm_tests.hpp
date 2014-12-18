@@ -50,6 +50,12 @@ namespace letin
         CPPUNIT_TEST(test_vm_executes_recursion);
         CPPUNIT_TEST(test_vm_executes_tail_recursion);
         CPPUNIT_TEST(test_vm_executes_many_threads);
+        CPPUNIT_TEST(test_vm_complains_on_non_existent_local_variable);
+        CPPUNIT_TEST(test_vm_complains_on_non_existent_argument);
+        CPPUNIT_TEST(test_vm_complains_on_division_by_zero);
+        CPPUNIT_TEST(test_vm_complains_on_incorrect_number_of_arguments);
+        CPPUNIT_TEST(test_vm_complains_on_non_existent_global_variable);
+        CPPUNIT_TEST(test_vm_executes_load2_instructions);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -74,11 +80,12 @@ namespace letin
         void test_vm_executes_recursion();
         void test_vm_executes_tail_recursion();
         void test_vm_executes_many_threads();
-        void test_vm_complains_on_non_existent_local_variables();
-        void test_vm_complains_on_non_existent_arguments();
+        void test_vm_complains_on_non_existent_local_variable();
+        void test_vm_complains_on_non_existent_argument();
         void test_vm_complains_on_division_by_zero();
         void test_vm_complains_on_incorrect_number_of_arguments();
-        void test_vm_complains_on_non_existent_global_variables();
+        void test_vm_complains_on_non_existent_global_variable();
+        void test_vm_executes_load2_instructions();
       };
 
       DECL_IMPL_VM_TESTS(InterpreterVirtualMachine);

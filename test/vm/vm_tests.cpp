@@ -10,11 +10,13 @@
 #include "interp_vm.hpp"
 #include "mark_sweep_gc.hpp"
 #include "new_alloc.hpp"
+#include "util.hpp"
 #include "vm_tests.hpp"
 #include "helper.hpp"
 
 using namespace std;
 using namespace letin::vm;
+using namespace letin::util;
 
 namespace letin
 {
@@ -363,6 +365,7 @@ namespace letin
           is_expected = (OBJECT_TYPE_TUPLE == value.r()->type());
           is_expected &= (2 == value.r()->length());
           is_expected &= (Value(11) == value.r()->elem(0));
+          is_expected &= (VALUE_TYPE_REF == value.r()->elem(1).type());
           Reference ref1(value.r()->elem(1).r());
           is_expected &= (OBJECT_TYPE_IARRAY8 == ref1->type());
           is_expected &= (12 == ref1->length());
@@ -503,6 +506,155 @@ namespace letin
         CPPUNIT_ASSERT(is_expected2);
         CPPUNIT_ASSERT(is_success3);
         CPPUNIT_ASSERT(is_expected3);
+      }
+
+      void VirtualMachineTests::test_vm_complains_on_non_existent_local_variable()
+      {
+        PROG(prog_helper, 0);
+        FUN(2);
+        LET(IADD, A(0), A(1));
+        LET(IMUL, A(0), A(1));
+        IN();
+        LET(IADD, LV(0), LV(1));
+        LET(IADD, LV(1), LV(2));
+        RET(ILOAD, LV(2), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        vector<Value> args;
+        args.push_back(Value(1));
+        args.push_back(Value(2));
+        Thread thread = _M_vm->start(args, [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_NO_LOCAL_VAR == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+
+      void VirtualMachineTests::test_vm_complains_on_non_existent_argument()
+      {
+        PROG(prog_helper, 0);
+        FUN(2);
+        LET(IADD, A(0), A(1));
+        LET(IMUL, A(1), A(2));
+        LET(IDIV, A(2), A(0));
+        IN();
+        RET(IADD, LV(0), LV(1));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        vector<Value> args;
+        args.push_back(Value(1));
+        args.push_back(Value(2));
+        Thread thread = _M_vm->start(args, [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_NO_ARG == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+
+      void VirtualMachineTests::test_vm_complains_on_division_by_zero()
+      {
+        PROG(prog_helper, 0);
+        FUN(2);
+        RET(IDIV, A(0), A(1));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        vector<Value> args;
+        args.push_back(Value(10));
+        args.push_back(Value(0));
+        Thread thread = _M_vm->start(args, [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_DIV_BY_ZERO == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+
+      void VirtualMachineTests::test_vm_complains_on_incorrect_number_of_arguments()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        ARG(ILOAD, IMM(3), NA());
+        LET(ICALL, IMM(1), NA());
+        RET(IADD, LV(0), IMM(10));
+        END_FUN();
+        FUN(2);
+        RET(IADD, A(0), A(1));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_INCORRECT_ARG_COUNT == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+      
+      void VirtualMachineTests::test_vm_complains_on_non_existent_global_variable()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        RET(ILOAD, GV(10), NA());
+        END_FUN();
+        VAR_I(10);
+        VAR_F(0.25);
+        VAR_R(0);
+        OBJECT(IARRAY8);
+        I('a'); I('b'); I('c'); I('d'); I('e'); I('f');
+        END_OBJECT();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_NO_GLOBAL_VAR == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+
+      void VirtualMachineTests::test_vm_executes_load2_instructions()
+      {
+        double x = 0.123456789;
+        format::Double format_x = double_to_format_double(x);
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(ILOAD2, IMM(0x11223344), IMM(0x55667788));
+        ARG(FLOAD2, IMM(static_cast<int32_t>(format_x.dword >> 32)), IMM(static_cast<int32_t>(format_x.dword & 0xffffffffL)));
+        RET(RTUPLE, NA(), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (OBJECT_TYPE_TUPLE == value.r()->type());
+          is_expected &= (2 == value.r()->length());
+          is_expected &= (Value(static_cast<int64_t>(0x1122334455667788LL)) == value.r()->elem(0));
+          is_expected &= (Value(0.123456789) == value.r()->elem(1));
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
       }
 
       DEF_IMPL_VM_TESTS(InterpreterVirtualMachine);
