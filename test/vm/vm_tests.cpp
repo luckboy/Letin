@@ -204,6 +204,7 @@ namespace letin
           is_expected &= (OBJECT_TYPE_IARRAY8 == ref2->type());
           is_expected &= (2 == ref2->length());
           is_expected &= (strncmp("df", reinterpret_cast<char *>(ref2->raw().is8), 2) == 0);
+          is_expected &= (VALUE_TYPE_REF == value.r()->elem(3).type());
           Reference ref3(value.r()->elem(3).r());
           is_expected &= (OBJECT_TYPE_IARRAY8 == ref3->type());
           is_expected &= (5 == ref3->length());
@@ -254,12 +255,118 @@ namespace letin
           is_expected &= (strncmp("abcdef", reinterpret_cast<char *>(ref1->raw().is8), 6) == 0);
           is_expected &= (Value(11) == value.r()->elem(1));
           is_expected &= (Value(0.5) == value.r()->elem(2));
+          is_expected &= (VALUE_TYPE_REF == value.r()->elem(3).type());
           Reference ref2(value.r()->elem(3).r());
           is_expected &= (OBJECT_TYPE_SFARRAY == ref2->type());
           is_expected &= (3 == ref2->length());
           is_expected &= (0.1f == ref2->raw().sfs[0]);
           is_expected &= (0.2f == ref2->raw().sfs[1]);
           is_expected &= (0.4f == ref2->raw().sfs[2]);
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_executes_jumps()
+      {
+        PROG(prog_helper, 0);
+        FUN(4);
+        JC(A(0), 4);
+        LET(IADD, A(2), IMM(10)); // 2 + 10 = 12
+        IN();
+        LET(IMUL, A(3), IMM(5)); // 4 * 5 = 20
+        JUMP(3);
+        LET(IADD, A(2), IMM(5)); // 2 + 5 = 7
+        IN();
+        LET(IMUL, A(3), IMM(10)); // 4 * 10 = 40
+        IN();
+        JC(A(1), 2);
+        LET(IADD, LV(0), LV(1)); // 12 + 20 = 32 or 7 + 40 = 47
+        JUMP(1);
+        LET(IMUL, LV(0), LV(1)); // 12 * 20 = 240 or 7 * 40 = 280
+        IN();
+        RET(ILOAD, LV(2), NA()); // 47
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(1));
+        args.push_back(Value(0));
+        args.push_back(Value(2));
+        args.push_back(Value(4));
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (47 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+      
+      void VirtualMachineTests::test_vm_invokes_functions()
+      {
+        PROG(prog_helper, 2);
+        FUN(2);
+        LET(IADD, A(0), A(1)); // 2 + 3 = 5
+        ARG(ILOAD, A(0), NA());
+        ARG(ILOAD, A(1), NA());
+        LET(ICALL, IMM(3), NA()); // 2 * 3 = 6
+        IN();
+        RET(IADD, LV(0), LV(1)); // 5 + 6 = 11
+        END_FUN();
+        FUN(2);
+        LET(RIACAT8, A(0), A(1)); // "abc" + "def" = "abcdef"
+        ARG(RLOAD, A(0), NA());
+        ARG(RLOAD, A(1), NA());
+        LET(RCALL, IMM(4), NA()); // "def" + "abc" = "defabc"
+        IN();
+        RET(RIACAT8, LV(0), LV(1)); // "abcdef" + "defabc" = "abcdefdefabc"
+        END_FUN();
+        FUN(0);
+        ARG(ILOAD, IMM(2), NA());
+        ARG(ILOAD, IMM(3), NA());
+        LET(ICALL, IMM(0), NA());
+        ARG(RLOAD, GV(0), NA());
+        ARG(RLOAD, GV(1), NA());
+        LET(RCALL, IMM(1), NA());
+        IN();
+        ARG(ILOAD, LV(0), NA());
+        ARG(RLOAD, LV(1), NA());
+        RET(RTUPLE, NA(), NA()); // (30, "abcdefdefabc")
+        END_FUN();
+        FUN(2);
+        RET(IMUL, A(0), A(1));
+        END_FUN();
+        FUN(2);
+        RET(RIACAT8, A(1), A(0));
+        END_FUN();
+        VAR_R(0);
+        VAR_R(11);
+        OBJECT(IARRAY8);
+        I('a'); I('b'); I('c');
+        END_OBJECT();
+        OBJECT(IARRAY8);
+        I('d'); I('e'); I('f');
+        END_OBJECT();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        bool is_success = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (OBJECT_TYPE_TUPLE == value.r()->type());
+          is_expected &= (2 == value.r()->length());
+          is_expected &= (Value(11) == value.r()->elem(0));
+          Reference ref1(value.r()->elem(1).r());
+          is_expected &= (OBJECT_TYPE_IARRAY8 == ref1->type());
+          is_expected &= (12 == ref1->length());
+          is_expected &= (strncmp("abcdefdefabc", reinterpret_cast<char *>(ref1->raw().is8), 12) == 0);
         });
         thread.system_thread().join();
         CPPUNIT_ASSERT(is_success);
