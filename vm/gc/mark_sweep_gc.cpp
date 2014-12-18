@@ -38,8 +38,8 @@ namespace letin
 
       void MarkSweepGarbageCollector::collect()
       {
-        lock_guard<GarbageCollector> guard(*this);
-        lock_guard<Threads> guard2(_M_threads);
+        //lock_guard<GarbageCollector> guard(*this);
+        //lock_guard<Threads> guard2(_M_threads);
         mark();
         sweep();
       }

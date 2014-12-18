@@ -75,13 +75,14 @@ namespace letin
 
     struct Value
     {
+      std::int32_t      type;
+      std::uint32_t     __pad;
       union
       {
         std::int64_t    i;
         Double          f;
         std::uint64_t   addr;
       };
-      std::int32_t      type;
     };
 
     union Argument

@@ -56,10 +56,10 @@ namespace letin
         if(tmp_idx > size) return nullptr;
         set<uint32_t> var_addrs;
         for(size_t i = 0; i < var_count; i++) {
-          vars[i].i = ntohll(vars[i].i);
           vars[i].type = ntohl(vars[i].type);
-          if(vars[i].type != VALUE_TYPE_INT ||
-              vars[i].type != VALUE_TYPE_FLOAT ||
+          vars[i].i = ntohll(vars[i].i);
+          if(vars[i].type != VALUE_TYPE_INT &&
+              vars[i].type != VALUE_TYPE_FLOAT &&
               vars[i].type != VALUE_TYPE_REF) return nullptr;
           if(vars[i].type == VALUE_TYPE_REF) var_addrs.insert(vars[i].addr);
         }
@@ -76,16 +76,15 @@ namespace letin
 
         uint8_t *data = tmp_ptr + tmp_idx;
         size_t data_size = header->data_size;
-        tmp_idx += data_size;
-        if(tmp_idx > size) return nullptr;
         set<uint32_t> data_addrs;
         for(size_t i = 0; i != size - tmp_idx;) {
-          if(i >= size - tmp_idx) return nullptr;
+          if(i > size - tmp_idx) return nullptr;
           if(var_addrs.find(i) != var_addrs.end()) var_addrs.erase(i);
           data_addrs.insert(i);
-          format::Object *object = reinterpret_cast<format::Object *>(tmp_ptr + i);
+          format::Object *object = reinterpret_cast<format::Object *>(data + i);
           object->type = ntohl(object->type);
           object->length = ntohl(object->length);
+          i += sizeof(format::Object) - sizeof(format::Value);
           switch(object->type) {
             case OBJECT_TYPE_IARRAY8:
               i += object->length;
@@ -116,13 +115,13 @@ namespace letin
               break;
             case OBJECT_TYPE_TUPLE:
               for(size_t j = 0; j < object->length; j++) {
-                object->tes[j].i = ntohll(object->tes[j].i);
                 object->tes[j].type = ntohl(object->tes[j].type);
-                if(object->tes[j].type != VALUE_TYPE_INT ||
-                    object->tes[j].type != VALUE_TYPE_FLOAT ||
+                object->tes[j].i = ntohll(object->tes[j].i);
+                if(object->tes[j].type != VALUE_TYPE_INT &&
+                    object->tes[j].type != VALUE_TYPE_FLOAT &&
                     object->tes[j].type != VALUE_TYPE_REF) return nullptr;
               }
-              i += object->length * 12;
+              i += object->length * sizeof(format::Value);
               break;
             default:
               return nullptr;

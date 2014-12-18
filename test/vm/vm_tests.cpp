@@ -207,10 +207,59 @@ namespace letin
           Reference ref3(value.r()->elem(3).r());
           is_expected &= (OBJECT_TYPE_IARRAY8 == ref3->type());
           is_expected &= (5 == ref3->length());
-          is_expected &= (strncmp("abcdf", reinterpret_cast<char *>(ref3->raw().is8), 2) == 0);
+          is_expected &= (strncmp("abcdf", reinterpret_cast<char *>(ref3->raw().is8), 5) == 0);
           is_expected &= (Value(2) == value.r()->elem(4));
           is_expected &= (Value('d') == value.r()->elem(5));
           is_expected &= (Value(3) == value.r()->elem(6));
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+      
+      void VirtualMachineTests::test_vm_gets_global_variables()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(RLOAD, GV(0), NA());
+        ARG(ILOAD, GV(1), NA());
+        ARG(FLOAD, GV(2), NA());
+        ARG(RLOAD, GV(3), NA());
+        RET(RTUPLE, NA(), NA());
+        END_FUN();
+        VAR_R(0);
+        VAR_I(11);
+        VAR_F(0.5);
+        VAR_R(14);
+        OBJECT(IARRAY8);
+        I('a'); I('b'); I('c'); I('d'); I('e'); I('f');
+        END_OBJECT();
+        OBJECT(SFARRAY);
+        F(0.1); F(0.2); F(0.4);
+        END_OBJECT();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (OBJECT_TYPE_TUPLE == value.r()->type());
+          is_expected &= (4 == value.r()->length());
+          is_expected &= (VALUE_TYPE_REF == value.r()->elem(0).type());
+          Reference ref1(value.r()->elem(0).r());
+          is_expected &= (OBJECT_TYPE_IARRAY8 == ref1->type());
+          is_expected &= (6 == ref1->length());
+          is_expected &= (strncmp("abcdef", reinterpret_cast<char *>(ref1->raw().is8), 6) == 0);
+          is_expected &= (Value(11) == value.r()->elem(1));
+          is_expected &= (Value(0.5) == value.r()->elem(2));
+          Reference ref2(value.r()->elem(3).r());
+          is_expected &= (OBJECT_TYPE_SFARRAY == ref2->type());
+          is_expected &= (3 == ref2->length());
+          is_expected &= (0.1f == ref2->raw().sfs[0]);
+          is_expected &= (0.2f == ref2->raw().sfs[1]);
+          is_expected &= (0.4f == ref2->raw().sfs[2]);
         });
         thread.system_thread().join();
         CPPUNIT_ASSERT(is_success);

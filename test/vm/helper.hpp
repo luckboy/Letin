@@ -50,7 +50,7 @@
 
 #define OBJECT(type)                                                            \
 {                                                                               \
-  ObjectHelper tmp_object_helper(VALUE_TYPE_##type)
+  ObjectHelper tmp_object_helper(OBJECT_TYPE_##type)
 #define END_OBJECT()                                                            \
   tmp_prog_helper.add_object(tmp_object_helper.ptr(), tmp_object_helper.size());\
 }

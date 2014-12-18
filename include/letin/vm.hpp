@@ -64,6 +64,7 @@ namespace letin
 
     struct ValueRaw
     {
+      int type;
       union
       {
         std::int64_t i;
@@ -76,7 +77,6 @@ namespace letin
           uint32_t second;
         } p;
       };
-      int type;
 
       ValueRaw() {}
     };

@@ -35,15 +35,15 @@ namespace letin
         {
           case OBJECT_TYPE_IARRAY8:
             for(size_t i = 0; i < _M_values.size(); i++)
-              object->is8[i] = _M_values[i].i;
+              object->is8[i] = ntohll(_M_values[i].i);
             break;
           case OBJECT_TYPE_IARRAY16:
             for(size_t i = 0; i < _M_values.size(); i++)
-              object->is16[i] = _M_values[i].i;
+              object->is16[i] = htons(ntohll(_M_values[i].i));
             break;
           case OBJECT_TYPE_IARRAY32:
             for(size_t i = 0; i < _M_values.size(); i++)
-              object->is32[i] = _M_values[i].i;
+              object->is32[i] = htonl(ntohll(_M_values[i].i));
             break;
           case OBJECT_TYPE_IARRAY64:
             for(size_t i = 0; i < _M_values.size(); i++)
@@ -99,10 +99,10 @@ namespace letin
             elem_size = 4;
             break;
           case OBJECT_TYPE_TUPLE:
-            elem_size = 12;
+            elem_size = sizeof(format::Value);
             break;
         }
-        return (sizeof(format::Object) - 12) + _M_values.size() * elem_size;
+        return (sizeof(format::Object) - sizeof(format::Value)) + _M_values.size() * elem_size;
       }
 
       //
@@ -179,14 +179,16 @@ namespace letin
       {
         format::Value value;
         value.type = htonl(VALUE_TYPE_INT);
+        value.__pad = 0;
         value.i = htonll(i);
         return value;
       }
 
-      format::Value make_int_value(std::int64_t i)
+      format::Value make_int_value(int64_t i)
       {
         format::Value value;
         value.type = htonl(VALUE_TYPE_INT);
+        value.__pad = 0;
         value.i = htonll(i);
         return value;
       }
@@ -194,16 +196,18 @@ namespace letin
       format::Value make_float_value(double f)
       {
         format::Value value;
-        value.type = htonl(VALUE_TYPE_INT);
+        value.type = htonl(VALUE_TYPE_FLOAT);
         value.f = double_to_format_double(f);
+        value.__pad = 0;
         value.f.dword = htonll(value.f.dword);
         return value;
       }
 
-      format::Value make_ref_value(std::uint32_t addr)
+      format::Value make_ref_value(uint32_t addr)
       {
         format::Value value;
         value.type = htonl(VALUE_TYPE_REF);
+        value.__pad = 0;
         value.addr = htonll(addr);
         return value;
       }

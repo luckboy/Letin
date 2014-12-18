@@ -21,7 +21,7 @@ namespace letin
     static inline std::uint64_t htonll(std::uint64_t x)
     {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-      return (static_cast<std::uint64_t>(htonl(x & 0xffffffffL)) << 32) & htonl(x >> 32);
+      return (static_cast<std::uint64_t>(htonl(x & 0xffffffffL)) << 32) | htonl(x >> 32);
 #elif  __BYTE_ORDER == __BIG_ENDIAN
       return x;
 #else
