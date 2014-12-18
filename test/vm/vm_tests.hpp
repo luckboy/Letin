@@ -47,6 +47,9 @@ namespace letin
         CPPUNIT_TEST(test_vm_gets_global_variables);
         CPPUNIT_TEST(test_vm_executes_jumps);
         CPPUNIT_TEST(test_vm_invokes_functions);
+        CPPUNIT_TEST(test_vm_executes_recursion);
+        CPPUNIT_TEST(test_vm_executes_tail_recursion);
+        CPPUNIT_TEST(test_vm_executes_many_threads);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;

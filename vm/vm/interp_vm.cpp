@@ -278,6 +278,7 @@ namespace letin
               context.pop_args_and_local_vars();
             } else
               context.set_error(ERROR_INCORRECT_ARG_COUNT);
+            context.regs().ip = 0;
             break;
         }
         atomic_thread_fence(memory_order_release);

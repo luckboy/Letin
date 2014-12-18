@@ -372,6 +372,138 @@ namespace letin
         CPPUNIT_ASSERT(is_success);
         CPPUNIT_ASSERT(is_expected);
       }
+      
+      void VirtualMachineTests::test_vm_executes_recursion()
+      {
+        PROG(prog_helper, 0);
+        FUN(1);
+        LET(ILE, A(0), IMM(1));
+        IN();
+        JC(LV(0), 6);
+        ARG(ISUB, A(0), IMM(1));
+        LET(ICALL, IMM(0), NA());
+        ARG(ISUB, A(0), IMM(2));
+        LET(ICALL, IMM(0), NA());
+        IN();
+        RET(IADD, LV(1), LV(2));
+        RET(ILOAD, A(0), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(10));
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (55 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+      
+      void VirtualMachineTests::test_vm_executes_tail_recursion()
+      {
+        PROG(prog_helper, 0);
+        FUN(3);
+        LET(IGT, A(1), A(0));
+        IN();
+        JC(LV(0), 4);
+        ARG(ILOAD, A(0), NA());
+        ARG(IADD, A(1), IMM(1));
+        ARG(IMUL, A(2), A(1));
+        RETRY();
+        RET(ILOAD, A(2), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(10));
+        args.push_back(Value(1));
+        args.push_back(Value(1));
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (3628800 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+      
+      void VirtualMachineTests::test_vm_executes_many_threads()
+      {
+        PROG(prog_helper, 0);
+        FUN(3);
+        LET(IGT, A(1), A(0));
+        IN();
+        JC(LV(0), 4);
+        ARG(ILOAD, A(0), NA());
+        ARG(IADD, A(1), IMM(1));
+        ARG(IADD, A(2), A(1));
+        RETRY();
+        RET(ILOAD, A(2), NA());
+        END_FUN();
+        FUN(3);
+        LET(IGT, A(1), A(0));
+        IN();
+        JC(LV(0), 4);
+        ARG(ILOAD, A(0), NA());
+        ARG(IADD, A(1), IMM(1));
+        ARG(ISUB, A(2), A(1));
+        RETRY();
+        RET(ILOAD, A(2), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success1 = false;
+        bool is_expected1 = false;
+        vector<Value> args1;
+        args1.push_back(Value(7500));
+        args1.push_back(Value(1));
+        args1.push_back(Value(0));
+        Thread thread1 = _M_vm->start(0, args1, [&is_success1, &is_expected1](const ReturnValue &value) {
+          is_success1 = (ERROR_SUCCESS == value.error());
+          is_expected1 = (28128750 == value.i());
+        });
+        bool is_success2 = false;
+        bool is_expected2 = false;
+        vector<Value> args2;
+        args2.push_back(Value(10000));
+        args2.push_back(Value(1));
+        args2.push_back(Value(0));
+        Thread thread2 = _M_vm->start(1, args2, [&is_success2, &is_expected2](const ReturnValue &value) {
+          is_success2 = (ERROR_SUCCESS == value.error());
+          is_expected2 = (-50005000 == value.i());
+        });
+        bool is_success3 = false;
+        bool is_expected3 = false;
+        vector<Value> args3;
+        args3.push_back(Value(5000));
+        args3.push_back(Value(1));
+        args3.push_back(Value(0));
+        Thread thread3 = _M_vm->start(0, args3, [&is_success3, &is_expected3](const ReturnValue &value) {
+          is_success3 = (ERROR_SUCCESS == value.error());
+          is_expected3 = (12502500 == value.i());
+        });
+        thread1.system_thread().join();
+        thread2.system_thread().join();
+        thread3.system_thread().join();
+        CPPUNIT_ASSERT(is_success1);
+        CPPUNIT_ASSERT(is_expected1);
+        CPPUNIT_ASSERT(is_success2);
+        CPPUNIT_ASSERT(is_expected2);
+        CPPUNIT_ASSERT(is_success3);
+        CPPUNIT_ASSERT(is_expected3);
+      }
 
       DEF_IMPL_VM_TESTS(InterpreterVirtualMachine);
     }
