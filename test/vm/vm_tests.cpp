@@ -233,7 +233,7 @@ namespace letin
         VAR_R(0);
         VAR_I(11);
         VAR_F(0.5);
-        VAR_R(14);
+        VAR_R(16);
         OBJECT(IARRAY8);
         I('a'); I('b'); I('c'); I('d'); I('e'); I('f');
         END_OBJECT();
@@ -348,7 +348,7 @@ namespace letin
         RET(RIACAT8, A(1), A(0));
         END_FUN();
         VAR_R(0);
-        VAR_R(11);
+        VAR_R(16);
         OBJECT(IARRAY8);
         I('a'); I('b'); I('c');
         END_OBJECT();

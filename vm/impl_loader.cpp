@@ -30,7 +30,7 @@ namespace letin
         uint8_t *tmp_ptr = reinterpret_cast<uint8_t *>(ptr);
         size_t tmp_idx = 0;
         format::Header *header = reinterpret_cast<format::Header *>(tmp_ptr + tmp_idx);
-        tmp_idx += sizeof(format::Header);
+        tmp_idx += align(sizeof(format::Header), 8);
         if(tmp_idx > size) return nullptr;
         if(!equal(header->magic, header->magic + 8, format::HEADER_MAGIC)) return nullptr;
         header->flags = ntohl(header->flags);
@@ -42,7 +42,7 @@ namespace letin
 
         format::Function *funs = reinterpret_cast<format::Function *>(tmp_ptr + tmp_idx);
         size_t fun_count = header->fun_count;
-        tmp_idx += sizeof(format::Function) * fun_count;
+        tmp_idx += align(sizeof(format::Function) * fun_count, 8);
         if(tmp_idx > size) return nullptr;
         for(size_t i = 0; i < fun_count; i++) {
           funs[i].addr = ntohl(funs[i].addr);
@@ -52,7 +52,7 @@ namespace letin
 
         format::Value *vars = reinterpret_cast<format::Value *>(tmp_ptr + tmp_idx);
         size_t var_count = header->var_count;
-        tmp_idx += sizeof(format::Value) * var_count;
+        tmp_idx += align(sizeof(format::Value) * var_count, 8);
         if(tmp_idx > size) return nullptr;
         set<uint32_t> var_addrs;
         for(size_t i = 0; i < var_count; i++) {
@@ -66,7 +66,7 @@ namespace letin
 
         format::Instruction *code = reinterpret_cast<format::Instruction *>(tmp_ptr + tmp_idx);
         size_t code_size = header->code_size;
-        tmp_idx += sizeof(format::Instruction) * code_size;
+        tmp_idx += align(sizeof(format::Instruction) * code_size, 8);
         if(tmp_idx > size) return nullptr;
         for(size_t i = 0; i < code_size; i++) {
           code[i].opcode = ntohl(code[i].opcode);
@@ -77,8 +77,8 @@ namespace letin
         uint8_t *data = tmp_ptr + tmp_idx;
         size_t data_size = header->data_size;
         set<uint32_t> data_addrs;
-        for(size_t i = 0; i != size - tmp_idx;) {
-          if(i > size - tmp_idx) return nullptr;
+        for(size_t i = 0; i < size - tmp_idx;) {
+          if(i >= size - tmp_idx) return nullptr;
           if(var_addrs.find(i) != var_addrs.end()) var_addrs.erase(i);
           data_addrs.insert(i);
           format::Object *object = reinterpret_cast<format::Object *>(data + i);
@@ -87,31 +87,31 @@ namespace letin
           i += sizeof(format::Object) - sizeof(format::Value);
           switch(object->type) {
             case OBJECT_TYPE_IARRAY8:
-              i += object->length;
+              i += align(object->length, 8);
               break;
             case OBJECT_TYPE_IARRAY16:
               for(size_t j = 0; j < object->length; j++) object->is16[j] = ntohs(object->is16[j]);
-              i += object->length * 2;
+              i += align(object->length * 2, 8);
               break;
             case OBJECT_TYPE_IARRAY32:
               for(size_t j = 0; j < object->length; j++) object->is32[j] = ntohl(object->is32[j]);
-              i += object->length * 4;
+              i += align(object->length * 4, 8);
               break;
             case OBJECT_TYPE_IARRAY64:
               for(size_t j = 0; j < object->length; j++) object->is64[j] = ntohll(object->is64[j]);
-              i += object->length * 8;
+              i += align(object->length * 8, 8);
               break;
             case OBJECT_TYPE_SFARRAY:
               for(size_t j = 0; j < object->length; j++) object->sfs[j].word = ntohl(object->sfs[j].word);
-              i += object->length * 4;
+              i += align(object->length * 4, 8);
               break;
             case OBJECT_TYPE_DFARRAY:
               for(size_t j = 0; j < object->length; j++) object->dfs[j].dword = ntohll(object->dfs[j].dword);
-              i += object->length * 8;
+              i += align(object->length * 8, 8);
               break;
             case OBJECT_TYPE_RARRAY:
               for(size_t j = 0; j < object->length; j++) object->rs[j] = ntohl(object->rs[j]);
-              i += object->length * 4;
+              i += align(object->length * 4, 8);
               break;
             case OBJECT_TYPE_TUPLE:
               for(size_t j = 0; j < object->length; j++) {
@@ -121,7 +121,7 @@ namespace letin
                     object->tes[j].type != VALUE_TYPE_FLOAT &&
                     object->tes[j].type != VALUE_TYPE_REF) return nullptr;
               }
-              i += object->length * sizeof(format::Value);
+              i += align(object->length * sizeof(format::Value), 8);
               break;
             default:
               return nullptr;

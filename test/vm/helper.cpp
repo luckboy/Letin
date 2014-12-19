@@ -115,7 +115,7 @@ namespace letin
         void *ptr = reinterpret_cast<void *>(tmp_ptr);
         format::Header *header = reinterpret_cast<format::Header *>(tmp_ptr);
         copy(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, header->magic);
-        tmp_ptr += sizeof(format::Header);
+        tmp_ptr += align(sizeof(format::Header), 8);
         header->entry = htonl(_M_entry);
         header->flags = 0;
         header->fun_count = htonl(_M_funs.size());
@@ -124,20 +124,20 @@ namespace letin
         header->data_size = htonl(_M_data_size);
 
         format::Function *funs = reinterpret_cast<format::Function *>(tmp_ptr);
-        tmp_ptr += sizeof(format::Function) * _M_funs.size();
+        tmp_ptr += align(sizeof(format::Function) * _M_funs.size(), 8);
         copy(_M_funs.begin(), _M_funs.end(), funs);
 
         format::Value *vars = reinterpret_cast<format::Value *>(tmp_ptr);
-        tmp_ptr += sizeof(format::Value) * _M_vars.size();
+        tmp_ptr += align(sizeof(format::Value) * _M_vars.size(), 8);
         copy(_M_vars.begin(), _M_vars.end(), vars);
         
         format::Instruction *code = reinterpret_cast<format::Instruction *>(tmp_ptr);
-        tmp_ptr += sizeof(format::Instruction) * _M_instrs.size();
+        tmp_ptr += align(sizeof(format::Instruction) * _M_instrs.size(), 8);
         copy(_M_instrs.begin(), _M_instrs.end(), code);
         
         for(auto &pair : _M_object_pairs) {
           copy_n(pair.ptr.get(), pair.size, tmp_ptr);
-          tmp_ptr += pair.size;
+          tmp_ptr += align(pair.size, 8);
         }
         return ptr;
       }
@@ -145,11 +145,11 @@ namespace letin
       size_t ProgramHelper::size() const
       {
         return sizeof(format::Header) +
-               _M_funs.size() * sizeof(format::Function) +
-               _M_vars.size() * sizeof(format::Value) +
-               _M_instrs.size() * sizeof(format::Instruction) +
+               align(_M_funs.size() * sizeof(format::Function), 8) +
+               align(_M_vars.size() * sizeof(format::Value), 8) +
+               align(_M_instrs.size() * sizeof(format::Instruction), 8) +
                accumulate(_M_object_pairs.begin(), _M_object_pairs.end(), 0, 
-                          [](size_t x, const ObjectPair &p) { return x + p.size; });
+                          [](size_t x, const ObjectPair &p) { return x + align(p.size, 8); });
       }
 
       //

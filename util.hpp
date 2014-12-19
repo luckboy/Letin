@@ -115,6 +115,11 @@ namespace letin
 #endif
       return y;
     }
+
+    static inline std::size_t align(std::size_t x, std::size_t y)
+    {
+      return (((x + (y - 1)) / y) * y);
+    }
   }
 }
 
