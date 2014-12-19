@@ -930,6 +930,18 @@ namespace letin
               return Value(context.regs().rv.raw().r);
             }
           }
+          case OP_ITOF:
+          {
+            int64_t i;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(static_cast<double>(i));
+          }
+          case OP_FTOI:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(static_cast<std::int64_t>(f));
+          }
           default:
           {
             context.set_error(ERROR_INCORRECT_INSTR);

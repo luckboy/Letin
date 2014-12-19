@@ -95,6 +95,8 @@ namespace letin
     const std::uint32_t OP_ICALL =      0x46;
     const std::uint32_t OP_FCALL =      0x47;
     const std::uint32_t OP_RCALL =      0x48;
+    const std::uint32_t OP_ITOF =       0x49;
+    const std::uint32_t OP_FTOI =       0x4a;
 
     const std::uint32_t ARG_TYPE_LVAR = 0x0;
     const std::uint32_t ARG_TYPE_ARG =  0x1;
