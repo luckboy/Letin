@@ -940,7 +940,7 @@ namespace letin
           {
             double f;
             if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            return Value(static_cast<std::int64_t>(f));
+            return Value(static_cast<int64_t>(f));
           }
           default:
           {
