@@ -84,7 +84,7 @@ namespace letin
           format::Object *object = reinterpret_cast<format::Object *>(data + i);
           object->type = ntohl(object->type);
           object->length = ntohl(object->length);
-          i += sizeof(format::Object) - sizeof(format::Value);
+          i += sizeof(format::Object) - 8;
           switch(object->type) {
             case OBJECT_TYPE_IARRAY8:
               i += align(object->length, 8);
@@ -115,13 +115,12 @@ namespace letin
               break;
             case OBJECT_TYPE_TUPLE:
               for(size_t j = 0; j < object->length; j++) {
-                object->tes[j].type = ntohl(object->tes[j].type);
                 object->tes[j].i = ntohll(object->tes[j].i);
-                if(object->tes[j].type != VALUE_TYPE_INT &&
-                    object->tes[j].type != VALUE_TYPE_FLOAT &&
-                    object->tes[j].type != VALUE_TYPE_REF) return nullptr;
+                if(object->tuple_elem_types()[j] != VALUE_TYPE_INT &&
+                    object->tuple_elem_types()[j] != VALUE_TYPE_FLOAT &&
+                    object->tuple_elem_types()[j] != VALUE_TYPE_REF) return nullptr;
               }
-              i += align(object->length * sizeof(format::Value), 8);
+              i += align(object->length * 9, 8);
               break;
             default:
               return nullptr;

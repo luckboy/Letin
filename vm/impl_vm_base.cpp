@@ -83,23 +83,24 @@ namespace letin
               break;
             case OBJECT_TYPE_TUPLE:
               for(size_t i = 0; i < object->length(); i++) {
-                switch(data_object->tes[i].type) {
+                switch(data_object->tuple_elem_types()[i]) {
                   case VALUE_TYPE_INT:
-                    object->raw().tes[i] = Value(data_object->tes[i].i);
+                    object->raw().tes[i] = TupleElement(data_object->tes[i].i);
                     break;
                   case VALUE_TYPE_FLOAT:
-                    object->raw().tes[i] = Value(format_double_to_double(data_object->tes[i].f));
+                    object->raw().tes[i] = TupleElement(format_double_to_double(data_object->tes[i].f));
                     break;
                   case VALUE_TYPE_REF:
                   {
                     auto iter = objects.find(data_object->tes[i].addr);
                     if(iter == objects.end()) return false;
-                    object->raw().tes[i] = Value(Reference(iter->second));
+                    object->raw().tes[i] = TupleElement(Reference(iter->second));
                     break;
                   }
                   default:
                     return false;
                 }
+                object->raw().tuple_elem_types()[i] = data_object->tuple_elem_types()[i];
               }
               break;
             default:

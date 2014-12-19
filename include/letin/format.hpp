@@ -100,6 +100,13 @@ namespace letin
       Argument          arg1;
       Argument          arg2;
     };
+    
+    union TupleElement
+    {
+      std::int64_t    i;
+      Double          f;
+      std::uint64_t   addr;
+    };
 
     struct Object
     {
@@ -114,8 +121,13 @@ namespace letin
         Float           sfs[1];
         Double          dfs[1];
         std::uint32_t   rs[1];
-        Value           tes[1];
+        TupleElement    tes[1];
+        std::int8_t     tets[1];
       };
+      
+      const std::int8_t *tuple_elem_types() const { return &(tets[length * 8]); }
+
+      std::int8_t *tuple_elem_types() { return &(tets[length * 8]); }
     };
   }
 }

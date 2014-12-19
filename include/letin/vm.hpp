@@ -62,6 +62,43 @@ namespace letin
       Object *ptr() { return _M_ptr; }
     };
 
+    class TupleElementType
+    {
+      std::int8_t _M_raw;
+    public:
+      TupleElementType(int type) : _M_raw(type) {}
+
+      const std::int8_t &raw() const { return _M_raw; }
+
+      std::int8_t &raw() { return _M_raw; }
+    };
+
+    union TupleElementRaw
+    {
+      std::int64_t i;
+      double f;
+      Reference r;
+
+      TupleElementRaw() {}
+    };
+
+    class TupleElement
+    {
+      TupleElementRaw _M_raw;
+    public:
+      TupleElement(int i) { _M_raw.i = i; }
+
+      TupleElement(std::int64_t i) { _M_raw.i = i; }
+
+      TupleElement(double f) { _M_raw.f = f; }
+
+      TupleElement(Reference r) { _M_raw.r = r; }
+
+      const TupleElementRaw &raw() const { return _M_raw; }
+
+      TupleElementRaw &raw() { return _M_raw; }
+    };
+
     struct ValueRaw
     {
       int type;
@@ -98,6 +135,9 @@ namespace letin
       Value(std::uint32_t first, std::uint32_t second)
       { _M_raw.type = VALUE_TYPE_PAIR; _M_raw.p.first = first; _M_raw.p.second = second; }
 
+      Value(TupleElementType elem_type, TupleElement elem)
+      { _M_raw.type = elem_type.raw(); _M_raw.i = elem.raw().i; }
+
       bool operator==(const Value &value) const;
 
       bool operator!=(const Value &value) const { return !(*this == value); }
@@ -125,6 +165,10 @@ namespace letin
         _M_raw.type = value.type();
         std::atomic_thread_fence(std::memory_order_release);
       }
+
+      TupleElementType tuple_elem_type() const { return TupleElementType(_M_raw.type); }
+
+      TupleElement tuple_elem() const { return TupleElement(_M_raw.i); }
     };
 
     struct ObjectRaw
@@ -140,10 +184,17 @@ namespace letin
         float sfs[1];
         double dfs[1];
         Reference rs[1];
-        Value tes[1];
+        TupleElement tes[1];
+        TupleElementType tets[1];
       };
 
       ObjectRaw() {}
+
+      const TupleElementType *tuple_elem_types() const
+      { return &(tets[length * sizeof(TupleElement)]); }
+
+      TupleElementType *tuple_elem_types()
+      { return &(tets[length * sizeof(TupleElement)]); }
     };
 
     class Object
@@ -168,7 +219,7 @@ namespace letin
 
       Value elem(std::size_t i) const;
 
-      bool set_elem(std::size_t i, Value &value);
+      bool set_elem(std::size_t i, const Value &value);
 
       Value operator[](std::size_t i) const { elem(i); }
 

@@ -626,7 +626,10 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_TUPLE, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; i < context.regs().ac2; i++) r->raw().tes[i] = context.pushed_arg(i);
+            for(size_t i = 0; i < context.regs().ac2; i++) {
+              r->raw().tes[i] = context.pushed_arg(i).tuple_elem();
+              r->raw().tuple_elem_types()[i] = context.pushed_arg(i).tuple_elem_type();
+            }
             atomic_thread_fence(memory_order_release);
             return Value(r);
           }
@@ -708,7 +711,7 @@ namespace letin
             if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_TUPLE)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
-            return r->raw().tes[i];
+            return Value(r->raw().tuple_elem_types()[i], r->raw().tes[i]);
           }
           case OP_RIALEN8:
           {
@@ -885,6 +888,8 @@ namespace letin
             if(r.is_null()) return Value();
             copy_n(r1->raw().tes, r1->length(), r->raw().tes);
             copy_n(r2->raw().tes, r2->length(), r->raw().tes + r1->length());
+            copy_n(r1->raw().tuple_elem_types(), r1->length(), r->raw().tuple_elem_types());
+            copy_n(r2->raw().tuple_elem_types(), r2->length(), r->raw().tuple_elem_types() + r1->length());
             atomic_thread_fence(memory_order_release);
             return Value(r);
           }

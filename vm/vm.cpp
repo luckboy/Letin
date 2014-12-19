@@ -6,6 +6,7 @@
  *   the full licensing terms.                                              *
  ****************************************************************************/
 #include <sys/stat.h>
+#include <algorithm>
 #include <atomic>
 #include <fstream>
 #include <limits>
@@ -74,7 +75,12 @@ namespace letin
         case OBJECT_TYPE_RARRAY:
           return equal(_M_raw.rs, _M_raw.rs + _M_raw.length, object._M_raw.rs);
         case OBJECT_TYPE_TUPLE:
-          return equal(_M_raw.tes, _M_raw.tes + _M_raw.length, object._M_raw.tes);
+          for(size_t i = 0; i < _M_raw.length; i++) {
+            Value value1(_M_raw.tuple_elem_types()[i], _M_raw.tes[i]);
+            Value value2(object._M_raw.tuple_elem_types()[i], object._M_raw.tes[i]);
+            if(value1 != value2) return false;
+          }
+          return true;
         default:
           return false;
       }
@@ -98,13 +104,13 @@ namespace letin
         case OBJECT_TYPE_RARRAY:
           return Value(_M_raw.rs[i]);
         case OBJECT_TYPE_TUPLE:
-          return _M_raw.tes[i];
+          return Value(_M_raw.tuple_elem_types()[i], _M_raw.tes[i]);
         default:
           return Value();
       }
     }
 
-    bool Object::set_elem(size_t i, Value &value)
+    bool Object::set_elem(size_t i, const Value &value)
     {
       switch(type()) {
         case OBJECT_TYPE_IARRAY8:
@@ -136,7 +142,8 @@ namespace letin
           _M_raw.rs[i] = value.raw().r;
           return true;
         case OBJECT_TYPE_TUPLE:
-          _M_raw.tes[i] = value;
+          _M_raw.tes[i] = TupleElement(value.raw().i);
+          _M_raw.tuple_elem_types()[i] = TupleElementType(value.type());
           return true;
         default:
           return false;
@@ -257,12 +264,12 @@ namespace letin
           elem_size =  sizeof(Reference);
           break;
         case OBJECT_TYPE_TUPLE:
-          elem_size = sizeof(Value);
+          elem_size = sizeof(TupleElement) + sizeof(TupleElementType);
           break;
         default:
           return nullptr;
       }
-      return new(allocate((sizeof(Object) - sizeof(Value)) + length * elem_size, context)) Object(type, length);
+      return new(allocate((sizeof(Object) - max(sizeof(int64_t), sizeof(double))) + length * elem_size, context)) Object(type, length);
     }
 
     //
@@ -274,7 +281,7 @@ namespace letin
       _M_global_vars(context.vars()), _M_global_var_count(context.var_count())
     {
       _M_gc = nullptr;
-      _M_regs.abp = _M_regs.ac = _M_regs.lvc = _M_regs.abp2 = _M_regs.ac2 = 0;
+      _M_regs.abp = _M_regs.ac = _M_regs.lvc = _M_regs.abp2 = _M_regs.ac2 = _M_regs.sec = 0;
       _M_regs.fp = static_cast<size_t>(-1);
       _M_regs.ip = 0;
       _M_regs.rv = ReturnValue();

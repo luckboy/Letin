@@ -29,8 +29,8 @@ namespace letin
       {
         uint8_t *ptr = new uint8_t[size()];
         format::Object *object = reinterpret_cast<format::Object *>(ptr);
-        object->type = htonl(_M_type);
-        object->length = htonl(_M_values.size());
+        object->type = _M_type;
+        object->length = _M_values.size();
         switch(_M_type)
         {
           case OBJECT_TYPE_IARRAY8:
@@ -66,10 +66,14 @@ namespace letin
               object->rs[i] = _M_values[i].addr;
             break;
           case OBJECT_TYPE_TUPLE:
-            for(size_t i = 0; i < _M_values.size(); i++)
-              object->tes[i] = _M_values[i];
+            for(size_t i = 0; i < _M_values.size(); i++) {
+              object->tes[i].i = _M_values[i].i;
+              object->tuple_elem_types()[i] = ntohl(_M_values[i].type);
+            }
             break;
         }
+        object->type = htonl(object->type);
+        object->length = htonl(object->length);
         return reinterpret_cast<void *>(ptr);
       }
 
@@ -99,10 +103,10 @@ namespace letin
             elem_size = 4;
             break;
           case OBJECT_TYPE_TUPLE:
-            elem_size = sizeof(format::Value);
+            elem_size = 9;
             break;
         }
-        return (sizeof(format::Object) - sizeof(format::Value)) + _M_values.size() * elem_size;
+        return (sizeof(format::Object) - 8) + _M_values.size() * elem_size;
       }
 
       //

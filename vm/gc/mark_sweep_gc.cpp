@@ -115,7 +115,7 @@ namespace letin
               break;
             case OBJECT_TYPE_TUPLE:
               for(size_t i = 0; i < top_object->length(); i++) {
-                if(top_object->raw().tes[i].type() == VALUE_TYPE_REF) {
+                if(top_object->raw().tuple_elem_types()[i].raw() == VALUE_TYPE_REF) {
                   Reference elem_ref = top_object->raw().tes[i].raw().r;
                   if(!elem_ref.has_nil()) {
                     Header *elem_header = object_to_header(elem_ref.ptr());
