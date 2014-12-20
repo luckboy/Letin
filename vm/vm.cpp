@@ -15,6 +15,10 @@
 #include <string>
 #include <letin/const.hpp>
 #include <letin/vm.hpp>
+#include "alloc/new_alloc.hpp"
+#include "gc/mark_sweep_gc.hpp"
+#include "vm/interp_vm.hpp"
+#include "impl_loader.hpp"
 #include "thread_stop_cont.hpp"
 #include "vm.hpp"
 
@@ -454,7 +458,17 @@ namespace letin
     //
     // Other fuctions.
     //
-    
+
+    Loader *new_loader() { return new impl::ImplLoader(); }
+
+    Allocator *new_allocator() { return new impl::NewAllocator(); }
+
+    GarbageCollector *new_garbage_collector(Allocator *alloc)
+    { return new impl::MarkSweepGarbageCollector(alloc); }
+
+    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler)
+    { return new impl::InterpreterVirtualMachine(loader, gc, native_fun_handler); }
+
     void initialize_gc() { priv::initialize_thread_stop_cont(); }
 
     void finalize_gc() { priv::finalize_thread_stop_cont(); }

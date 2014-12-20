@@ -448,7 +448,7 @@ namespace letin
 
     GarbageCollector *new_garbage_collector(Allocator *alloc);
     
-    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *handler);
+    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler);
     
     void initialize_gc();
 
