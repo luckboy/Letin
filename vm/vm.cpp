@@ -11,6 +11,8 @@
 #include <fstream>
 #include <limits>
 #include <memory>
+#include <sstream>
+#include <string>
 #include <letin/const.hpp>
 #include <letin/vm.hpp>
 #include "thread_stop_cont.hpp"
@@ -273,6 +275,82 @@ namespace letin
     }
 
     //
+    // A NativeFunctionHandler class.
+    //
+
+    NativeFunctionHandler::~NativeFunctionHandler() {}
+
+    //
+    // A DefualtNativeFunctionHandler class.
+    //
+
+    DefaultNativeFunctionHandler::~DefaultNativeFunctionHandler() {}
+
+    ReturnValue DefaultNativeFunctionHandler::invoke(VirtualMachine *vm, ThreadContext *context, int nfi, const ArgumentList &args)
+    {
+      switch(nfi) {
+        case NATIVE_FUN_ATOI:
+        {
+          if(args.length() != 1)
+            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
+          if(args[0].type() != VALUE_TYPE_REF)
+            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+          if(args[0].r()->type() != OBJECT_TYPE_IARRAY8)
+            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
+          const char *s = reinterpret_cast<const char *>(args[0].r()->raw().is8);
+          istringstream iss(string(s, args[0].r()->length()));
+          int64_t i = 0;
+          iss >> i;
+          return ReturnValue(i, 0.0, Reference(), ERROR_SUCCESS);
+        }
+        case NATIVE_FUN_ITOA:
+        {
+          if(args.length() != 1)
+            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
+          if(args[0].type() != VALUE_TYPE_INT)
+            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+          ostringstream oss;
+          oss << args[0].i();
+          string str = oss.str();
+          Reference r = vm->gc()->new_object(OBJECT_TYPE_IARRAY8, str.length(), context);
+          copy(str.begin(), str.end(), reinterpret_cast<char *>(r->raw().is8));
+          return ReturnValue(0, 0.0, r, ERROR_SUCCESS);
+        }
+        case NATIVE_FUN_ATOF:
+        {
+          if(args.length() != 1)
+            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
+          if(args[0].type() != VALUE_TYPE_REF)
+            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+          if(args[0].r()->type() != OBJECT_TYPE_IARRAY8)
+            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
+          const char *s = reinterpret_cast<const char *>(args[0].r()->raw().is8);
+          istringstream iss(string(s, args[0].r()->length()));
+          double f = 0.0;
+          iss >> f;
+          return ReturnValue(0, f, Reference(), ERROR_SUCCESS);
+        }
+        case NATIVE_FUN_FTOA:
+        {
+          if(args.length() != 1)
+            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
+          if(args[0].type() != VALUE_TYPE_FLOAT)
+            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+          ostringstream oss;
+          oss << args[0].f();
+          string str = oss.str();
+          Reference r = vm->gc()->new_object(OBJECT_TYPE_IARRAY8, str.length(), context);
+          copy(str.begin(), str.end(), reinterpret_cast<char *>(r->raw().is8));
+          return ReturnValue(0, 0.0, r, ERROR_SUCCESS);
+        }
+        default:
+        {
+          return ReturnValue(0, 0.0, Reference(), ERROR_NO_NATIVE_FUN);
+        }
+      }
+    }
+
+    //
     // A ThreadContext class.
     //
 
@@ -281,6 +359,7 @@ namespace letin
       _M_global_vars(context.vars()), _M_global_var_count(context.var_count())
     {
       _M_gc = nullptr;
+      _M_native_fun_handler = nullptr;
       _M_regs.abp = _M_regs.ac = _M_regs.lvc = _M_regs.abp2 = _M_regs.ac2 = _M_regs.sec = 0;
       _M_regs.fp = static_cast<size_t>(-1);
       _M_regs.ip = 0;
@@ -345,11 +424,11 @@ namespace letin
     }
 
     //
-    // An VirtualMachineContext class.
+    // A VirtualMachineContext class.
     //
 
     VirtualMachineContext::~VirtualMachineContext() {}
-    
+
     //
     // Other fuctions.
     //

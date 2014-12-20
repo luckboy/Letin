@@ -947,6 +947,30 @@ namespace letin
             if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             return Value(static_cast<int64_t>(f));
           }
+          case OP_INCALL:
+          {
+            int64_t i;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, context.pushed_args());
+            if(rv.raw().error != ERROR_SUCCESS) context.set_error(rv.raw().error);
+            return Value(rv.raw().i);
+          }
+          case OP_FNCALL:
+          {
+            int64_t i;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, context.pushed_args());
+            if(rv.raw().error != ERROR_SUCCESS) context.set_error(rv.raw().error);
+            return Value(rv.raw().f);
+          }
+          case OP_RNCALL:
+          {
+            int64_t i;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, context.pushed_args());
+            if(rv.raw().error != ERROR_SUCCESS) context.set_error(rv.raw().error);
+            return Value(rv.raw().r);
+          }
           default:
           {
             context.set_error(ERROR_INCORRECT_INSTR);

@@ -44,6 +44,12 @@ namespace letin
   const int ERROR_INDEX_OF_OUT_BOUNDS = 15;
   const int ERROR_EXCEPTION =           16;
   const int ERROR_NO_ENTRY =            17;
+  const int ERROR_NO_NATIVE_FUN =       18;
+  
+  const int NATIVE_FUN_ATOI =           0;
+  const int NATIVE_FUN_ITOA =           1;
+  const int NATIVE_FUN_ATOF =           2;
+  const int NATIVE_FUN_FTOA =           3;
 }
 
 #endif

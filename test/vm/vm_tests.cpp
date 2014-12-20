@@ -29,12 +29,14 @@ namespace letin
         _M_loader = new impl::ImplLoader();
         _M_alloc = new impl::NewAllocator();
         _M_gc = new impl::MarkSweepGarbageCollector(_M_alloc);
-        _M_vm = new_vm(_M_loader, _M_gc);
+        _M_native_fun_handler = new DefaultNativeFunctionHandler();
+        _M_vm = new_vm(_M_loader, _M_gc, _M_native_fun_handler);
       }
       
       void VirtualMachineTests::tearDown()
       {
         delete _M_vm;
+        delete _M_native_fun_handler;
         delete _M_gc;
         delete _M_alloc;
         delete _M_loader;

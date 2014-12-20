@@ -23,8 +23,8 @@ namespace letin
       class InterpreterVirtualMachine : public ImplVirtualMachineBase
       {
       public:
-        InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc) :
-          ImplVirtualMachineBase(loader, gc) {}
+        InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler) :
+          ImplVirtualMachineBase(loader, gc, native_fun_handler) {}
 
         ~InterpreterVirtualMachine();
       protected:

@@ -89,6 +89,7 @@ namespace letin
     class ThreadContext
     {
       GarbageCollector *_M_gc;
+      NativeFunctionHandler *_M_native_fun_handler;
       std::thread _M_thread;
       Registers _M_regs;
       Value *_M_stack;
@@ -110,6 +111,10 @@ namespace letin
         _M_gc = gc;
         _M_gc->add_thread_context(this);
       }
+
+      NativeFunctionHandler *native_fun_handler() { return _M_native_fun_handler; }
+
+      void set_native_fun_handler(NativeFunctionHandler *native_fun_handler) { _M_native_fun_handler = native_fun_handler; }
 
       std::thread &system_thread() { return _M_thread; }
 
@@ -185,6 +190,8 @@ namespace letin
       void in() { _M_regs.lvc = _M_regs.abp2 - lvbp(); }
 
       void set_error(int error);
+      
+      ArgumentList pushed_args() const { return ArgumentList(_M_stack + _M_regs.abp2, _M_regs.ac2); }
     };
 
     class VirtualMachineContext

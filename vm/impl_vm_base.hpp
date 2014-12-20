@@ -25,7 +25,8 @@ namespace letin
         bool _M_has_entry;
         std::size_t _M_entry;
 
-        ImplVirtualMachineBase(Loader *loader, GarbageCollector *gc) : VirtualMachine(loader, gc) {}
+        ImplVirtualMachineBase(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler) :
+          VirtualMachine(loader, gc, native_fun_handler) {}
       public:
         ~ImplVirtualMachineBase();
 

@@ -21,13 +21,15 @@ class clazz##Tests : public VirtualMachineTests                                 
   CPPUNIT_TEST_SUB_SUITE(clazz##Tests, VirtualMachineTests);                    \
   CPPUNIT_TEST_SUITE_END();                                                     \
 public:                                                                         \
-  VirtualMachine *new_vm(Loader *loader, GarbageCollector *gc);                 \
+  VirtualMachine *new_vm(Loader *loader, GarbageCollector *gc,                  \
+                         NativeFunctionHandler *native_fun_handler);            \
 }
 
 #define DEF_IMPL_VM_TESTS(clazz)                                                \
 CPPUNIT_TEST_SUITE_REGISTRATION(clazz##Tests);                                  \
-VirtualMachine *clazz##Tests::new_vm(Loader *loader, GarbageCollector *gc)      \
-{ return new impl::clazz(loader, gc); }                                         \
+VirtualMachine *clazz##Tests::new_vm(Loader *loader, GarbageCollector *gc,      \
+                                     NativeFunctionHandler *native_fun_handler) \
+{ return new impl::clazz(loader, gc, native_fun_handler); }                     \
 class clazz##Tests
 
 namespace letin
@@ -61,9 +63,10 @@ namespace letin
         Loader *_M_loader;
         Allocator *_M_alloc;
         GarbageCollector *_M_gc;
+        NativeFunctionHandler *_M_native_fun_handler;
         VirtualMachine *_M_vm;
       public:
-        virtual VirtualMachine *new_vm(Loader *loader, GarbageCollector *gc) = 0;
+        virtual VirtualMachine *new_vm(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler) = 0;
         
         void setUp();
 

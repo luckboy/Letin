@@ -137,6 +137,7 @@ namespace letin
         ThreadContext *context = new ThreadContext(_M_env);
         Thread thread(context);
         context->set_gc(_M_gc);
+        context->set_native_fun_handler(_M_native_fun_handler);
         context->start([this, i, fun, args, &thread]() {
           Thread thread2(thread);
           try {

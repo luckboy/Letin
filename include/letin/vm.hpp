@@ -29,6 +29,7 @@ namespace letin
     class ThreadContext;
     class VirtualMachineContext;
     class GarbageCollector;
+    class NativeFunctionHandler;
 
     typedef format::Argument Argument;
     typedef format::Instruction Instruction;
@@ -305,6 +306,18 @@ namespace letin
       
       ThreadContext *context();
     };
+    
+    class ArgumentList
+    {
+      const Value *_M_args;
+      std::size_t _M_length;
+    public:
+      ArgumentList(const Value *args, std::size_t length) : _M_args(args), _M_length(length) {}
+
+      const Value &operator[](std::size_t i) const { return _M_args[i]; }
+
+      std::size_t length() const { return _M_length; }
+    };
 
     class Environment
     {
@@ -323,8 +336,10 @@ namespace letin
     protected:
       Loader *_M_loader;
       GarbageCollector *_M_gc;
+      NativeFunctionHandler *_M_native_fun_handler;
 
-      VirtualMachine(Loader *loader, GarbageCollector *gc) : _M_loader(loader), _M_gc(gc) {}
+      VirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler) :
+        _M_loader(loader), _M_gc(gc), _M_native_fun_handler(native_fun_handler) {}
     public:
       virtual ~VirtualMachine();
 
@@ -354,7 +369,7 @@ namespace letin
 
       virtual Program *load(void *ptr, std::size_t size) = 0;
     };
-
+    
     class Allocator
     {
     protected:
@@ -403,13 +418,33 @@ namespace letin
       virtual std::size_t header_size() = 0;
     };
 
+    class NativeFunctionHandler
+    {
+    protected:
+      NativeFunctionHandler() {}
+    public:
+      virtual ~NativeFunctionHandler();
+
+      virtual ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, const ArgumentList &args) = 0;
+    };
+
+    class DefaultNativeFunctionHandler : public NativeFunctionHandler
+    {
+    public:
+      DefaultNativeFunctionHandler() {}
+
+      ~DefaultNativeFunctionHandler();
+
+      ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, const ArgumentList &args);
+    };
+
     Loader *new_loader();
 
     Allocator *new_allocator();
 
     GarbageCollector *new_garbage_collector(Allocator *alloc);
-
-    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc);
+    
+    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *handler);
     
     void initialize_gc();
 
