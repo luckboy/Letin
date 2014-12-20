@@ -394,6 +394,8 @@ namespace letin
       virtual void collect() = 0;
     protected:
       virtual void *allocate(std::size_t size, ThreadContext *context = nullptr) = 0;
+
+      virtual void *allocate_immortal_area(std::size_t size) = 0;
     public:
       virtual void add_thread_context(ThreadContext *context) = 0;
 
@@ -404,6 +406,8 @@ namespace letin
       virtual void delete_vm_context(VirtualMachineContext *context) = 0;
 
       Object *new_object(int type, std::size_t length, ThreadContext *context = nullptr);
+
+      Object *new_immortal_object(int type, std::size_t length);
 
       virtual void start() = 0;
 

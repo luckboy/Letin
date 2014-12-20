@@ -24,16 +24,13 @@ namespace letin
           unsigned int interval_usecs) :
         ImplGarbageCollectorBase(alloc, interval_usecs),
         _M_list_first(&_S_nil),
-        _M_stack_top(&_S_nil) {}
+        _M_stack_top(&_S_nil),
+        _M_immortal_list_first(&_S_nil) {}
 
       MarkSweepGarbageCollector::~MarkSweepGarbageCollector()
       {
-        Header *header = _M_list_first;
-        while(header != &_S_nil) {
-          Header *next = header->list_next;
-          _M_alloc->free(reinterpret_cast<void *>(header));
-          header = next;
-        }
+        free_list(_M_list_first);
+        free_list(_M_immortal_list_first);
       }
 
       void MarkSweepGarbageCollector::collect()
@@ -57,6 +54,20 @@ namespace letin
         {
           lock_guard<GarbageCollector> guard(*this);
           add_header(header);
+        }
+        return ptr;
+      }
+
+      void *MarkSweepGarbageCollector::allocate_immortal_area(size_t size)
+      {
+        void *orig_ptr = _M_alloc->allocate(sizeof(Header) + size);
+        if(orig_ptr == nullptr) return nullptr;
+        Header *header = reinterpret_cast<Header *>(orig_ptr);
+        new (header) Header();
+        void *ptr = (reinterpret_cast<char *>(orig_ptr) + sizeof(Header));
+        {
+          lock_guard<GarbageCollector> guard(*this);
+          add_immortal_header(header);
         }
         return ptr;
       }

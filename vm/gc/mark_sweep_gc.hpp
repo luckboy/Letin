@@ -33,6 +33,7 @@ namespace letin
 
         Header *_M_list_first;
         Header *_M_stack_top;
+        Header *_M_immortal_list_first;
 
         bool is_emtpy_list()
         { return _M_list_first == &_S_nil; }
@@ -53,6 +54,9 @@ namespace letin
           return saved_stack_top;
         }
 
+        void add_immortal_header(Header *header)
+        { header->list_next = _M_immortal_list_first; _M_immortal_list_first = header; }
+
         static Header *ptr_to_header(void *ptr)
         { return reinterpret_cast<Header *>(reinterpret_cast<char *>(ptr) - sizeof(Header)); }
 
@@ -61,6 +65,15 @@ namespace letin
 
         static Object *header_to_object(Header *header)
         { return reinterpret_cast<Object *>(reinterpret_cast<char *>(header) + sizeof(Header));}
+
+        void free_list(Header *header)
+        {
+          while(header != &_S_nil) {
+            Header *next = header->list_next;
+            _M_alloc->free(reinterpret_cast<void *>(header));
+            header = next;
+          }
+        }
       public:
         MarkSweepGarbageCollector(Allocator *alloc, unsigned int interval_usecs = 100);
 
@@ -69,6 +82,8 @@ namespace letin
         void collect();
 
         void *allocate(std::size_t size, ThreadContext *context);
+
+        void *allocate_immortal_area(std::size_t size);
 
         void mark();
 

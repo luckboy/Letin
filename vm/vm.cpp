@@ -25,6 +25,44 @@ namespace letin
   namespace vm
   {
     //
+    // Static inline functions.
+    //
+
+    static inline size_t object_size(int type, size_t length)
+    {
+      size_t elem_size;
+      switch(type) {
+        case OBJECT_TYPE_IARRAY8:
+          elem_size = 1;
+          break;
+        case OBJECT_TYPE_IARRAY16:
+          elem_size = 2;
+          break;
+        case OBJECT_TYPE_IARRAY32:
+          elem_size = 4;
+          break;
+        case OBJECT_TYPE_IARRAY64:
+          elem_size = 8;
+          break;
+        case OBJECT_TYPE_SFARRAY:
+          elem_size = sizeof(float);
+          break;
+        case OBJECT_TYPE_DFARRAY:
+          elem_size = sizeof(double);
+          break;
+        case OBJECT_TYPE_RARRAY:
+          elem_size =  sizeof(Reference);
+          break;
+        case OBJECT_TYPE_TUPLE:
+          elem_size = sizeof(TupleElement) + sizeof(TupleElementType);
+          break;
+        default:
+          return 0;
+      }
+      return (sizeof(Object) - max(sizeof(int64_t), sizeof(double))) + length * elem_size;
+    }
+    
+    //
     // A Reference class.
     //
     
@@ -242,36 +280,20 @@ namespace letin
 
     Object *GarbageCollector::new_object(int type, size_t length, ThreadContext *context)
     {
-      size_t elem_size;
-      switch(type) {
-        case OBJECT_TYPE_IARRAY8:
-          elem_size = 1;
-          break;
-        case OBJECT_TYPE_IARRAY16:
-          elem_size = 2;
-          break;
-        case OBJECT_TYPE_IARRAY32:
-          elem_size = 4;
-          break;
-        case OBJECT_TYPE_IARRAY64:
-          elem_size = 8;
-          break;
-        case OBJECT_TYPE_SFARRAY:
-          elem_size = sizeof(float);
-          break;
-        case OBJECT_TYPE_DFARRAY:
-          elem_size = sizeof(double);
-          break;
-        case OBJECT_TYPE_RARRAY:
-          elem_size =  sizeof(Reference);
-          break;
-        case OBJECT_TYPE_TUPLE:
-          elem_size = sizeof(TupleElement) + sizeof(TupleElementType);
-          break;
-        default:
-          return nullptr;
-      }
-      return new(allocate((sizeof(Object) - max(sizeof(int64_t), sizeof(double))) + length * elem_size, context)) Object(type, length);
+      size_t size = object_size(type, length);
+      if(size != 0)
+        return new(allocate(size, context)) Object(type, length);
+      else
+        return nullptr;
+    }
+    
+    Object *GarbageCollector::new_immortal_object(int type, std::size_t length)
+    {
+      size_t size = object_size(type, length);
+      if(size != 0)
+        return new(allocate_immortal_area(size)) Object(type, length);
+      else
+        return nullptr;
     }
 
     //
