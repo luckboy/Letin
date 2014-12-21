@@ -8,6 +8,7 @@
 #ifndef _GC_MARK_SWEEP_GC_HPP
 #define _GC_MARK_SWEEP_GC_HPP
 
+#include <atomic>
 #include <mutex>
 #include "impl_gc_base.hpp"
 
@@ -39,7 +40,11 @@ namespace letin
         { return _M_list_first == &_S_nil; }
 
         void add_header(Header *header)
-        { header->list_next = _M_list_first; _M_list_first = header; }
+        {
+          header->list_next = _M_list_first;
+          std::atomic_thread_fence(std::memory_order_release);
+          _M_list_first = header;
+        }
 
         bool is_empty_stack()
         { return _M_stack_top == &_S_nil; }
@@ -55,7 +60,11 @@ namespace letin
         }
 
         void add_immortal_header(Header *header)
-        { header->list_next = _M_immortal_list_first; _M_immortal_list_first = header; }
+        {
+          header->list_next = _M_immortal_list_first;
+          std::atomic_thread_fence(std::memory_order_release);
+          _M_immortal_list_first = header;
+        }
 
         static Header *ptr_to_header(void *ptr)
         { return reinterpret_cast<Header *>(reinterpret_cast<char *>(ptr) - sizeof(Header)); }
