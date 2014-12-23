@@ -5,32 +5,28 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
-#include <vector>
-#include <letin/comp.hpp>
+#ifndef _IMPL_COMP_HPP
+#define _IMPL_COMP_HPP
 
-using namespace std;
+#include <letin/comp.hpp>
 
 namespace letin
 {
   namespace comp
   {
-    //
-    // A Program class.
-    //
-
-    Program::~Program() {}
-
-    //
-    // A Compiler class.
-    //
-    
-    Compiler::~Compiler() {}
-
-    Program *Compiler::compile(const char *file_name, vector<Error> &errors)
+    namespace impl
     {
-      vector<Source> sources;
-      sources.push_back(Source(file_name));
-      return compile(sources, errors);
+      class ImplCompiler : public Compiler
+      {
+      public:
+        ImplCompiler() {}
+
+        ~ImplCompiler();
+
+        Program *compile(const std::vector<Source> & sources, std::vector<Error> &errors);
+      };
     }
   }
 }
+
+#endif

@@ -27,10 +27,10 @@ namespace letin
         _M_istream(&is), _M_has_auto_freeing(false) {}
 
       SourceStream(const char *file_name) :
-        _M_istream(new std::ifstream(file_name)), _M_has_auto_freeing(false) {}
+        _M_istream(new std::ifstream(file_name)), _M_has_auto_freeing(true) {}
 
       SourceStream(const std::string &file_name) :
-        _M_istream(new std::ifstream(file_name)), _M_has_auto_freeing(false) {}
+        _M_istream(new std::ifstream(file_name)), _M_has_auto_freeing(true) {}
 
       ~SourceStream() { if(_M_has_auto_freeing) delete _M_istream; }
 
@@ -68,28 +68,38 @@ namespace letin
       }
     };
     
-    class Error
+    class Position
     {
       Source _M_source;
       std::size_t _M_line;
       std::size_t _M_column;
-      std::string _M_msg;
     public:
-      Error(const Source &source, int line, std::size_t column, const char *msg) :
-        _M_source(source), _M_line(line), _M_column(column), _M_msg(msg) {}
+      Position() {}
 
-      Error(const Source &source, int line, int column, const std::string &msg) :
-        _M_source(source), _M_line(line), _M_column(column), _M_msg(msg) {}
-      
+      Position(const Source &source, std::size_t line, std::size_t column) :
+        _M_source(source), _M_line(line), _M_column(column) {}
+  
       const Source &source() const { return _M_source; }
 
-      int line() const { return _M_line; }
+      std::size_t line() const { return _M_line; }
 
-      int column() const { return _M_column; }
-
-      std::string to_str() const;
+      std::size_t column() const { return _M_column; }
     };
     
+    class Error
+    {
+      Position _M_pos;
+      std::string _M_msg;
+    public:
+      Error(const Position &pos, const char *msg) : _M_pos(pos), _M_msg(msg) {}
+
+      Error(const Position &pos, const std::string &msg) : _M_pos(pos), _M_msg(msg) {}
+
+      const Position &pos() const { return _M_pos; }
+
+      const std::string &msg() const { return _M_msg; }
+    };
+
     class Program
     {
     protected:
@@ -101,11 +111,11 @@ namespace letin
 
       virtual std::size_t size() const = 0;
     };
-    
+
     class Compiler
     {
     protected:
-      Compiler();
+      Compiler() {}
     public:
       virtual ~Compiler();
       
