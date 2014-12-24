@@ -449,7 +449,7 @@ namespace letin
             errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
             return false;
           }
-          ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JC, 0, 0, 0));
+          ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JUMP, 0, 0, 0));
           ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
           ungen_fun.instrs[ip].arg2.i = 0;
         } else if(instr.instr() == "arg") {
