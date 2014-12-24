@@ -15,6 +15,7 @@
 #include <vector>
 #include <letin/const.hpp>
 #include <letin/format.hpp>
+#include <letin/opcode.hpp>
 #include "driver.hpp"
 #include "impl_comp.hpp"
 #include "impl_prog.hpp"
@@ -23,6 +24,7 @@
 #include "util.hpp"
 
 using namespace std;
+using namespace letin::opcode;
 using namespace letin::util;
 
 namespace letin
@@ -31,6 +33,100 @@ namespace letin
   {
     namespace impl
     {
+      //
+      // Operation descriptions.
+      //
+      
+      struct OperationDescription
+      {
+        int32_t op;
+        int arg_type1;
+        int arg_type2;
+        bool is_load2;
+      };
+      
+      static unordered_map<string, OperationDescription> op_descs {
+        { "iload",      { OP_ILOAD,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
+        { "iload2",     { OP_ILOAD2,    VALUE_TYPE_INT,         VALUE_TYPE_INT,         true } },
+        { "ineg",       { OP_INEG,      VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
+        { "iadd",       { OP_IADD,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "isub",       { OP_ISUB,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "imul",       { OP_IMUL,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "idiv",       { OP_IDIV,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "imod",       { OP_IMOD,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "inot",       { OP_INOT,      VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
+        { "iand",       { OP_IAND,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "ior",        { OP_IOR,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "ixor",       { OP_IXOR,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "ishl",       { OP_ISHL,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "ishr",       { OP_ISHR,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "ishru",      { OP_ISHRU,     VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "ieq",        { OP_IEQ,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "ine",        { OP_INE,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "ilt",        { OP_ILT,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "ige",        { OP_IGE,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "igt",        { OP_IGT,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "ile",        { OP_ILE,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
+        { "fload",      { OP_FLOAD,     VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR,       false } },
+        { "fload2",     { OP_FLOAD2,    VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       true } },
+        { "fneg",       { OP_FNEG,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR,       false } },
+        { "fadd",       { OP_FADD,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
+        { "fsub",       { OP_FDIV,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
+        { "fmul",       { OP_FMUL,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
+        { "fdiv",       { OP_FDIV,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
+        { "feq",        { OP_FEQ,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
+        { "fne",        { OP_FNE,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
+        { "flt",        { OP_FLT,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
+        { "fge",        { OP_FGE,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
+        { "fgt",        { OP_FGT,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
+        { "fle",        { OP_FLE,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
+        { "rload",      { OP_RLOAD,     VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
+        { "req",        { OP_REQ,       VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
+        { "rne",        { OP_RNE,       VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
+        { "riarray8",   { OP_RIARRAY8,  VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
+        { "riarray16",  { OP_RIARRAY16, VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
+        { "riarray32",  { OP_RIARRAY32, VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
+        { "riarray64",  { OP_RIARRAY64, VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
+        { "rsfarray",   { OP_RSFARRAY,  VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
+        { "rdfarray",   { OP_RDFARRAY,  VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
+        { "rrarray",    { OP_RRARRAY,   VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
+        { "rdfarray",   { OP_RTUPLE,    VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
+        { "rianth8",    { OP_RIANTH8,   VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
+        { "rianth16",   { OP_RIANTH16,  VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
+        { "rianth32",   { OP_RIANTH32,  VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
+        { "rianth64",   { OP_RIANTH64,  VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
+        { "rsfanth",    { OP_RSFANTH,   VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
+        { "rdfanth",    { OP_RDFANTH,   VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
+        { "rranth",     { OP_RRANTH,    VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
+        { "rtnth",      { OP_RTNTH,     VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
+        { "rialen8",    { OP_RIALEN8,   VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
+        { "rialen16",   { OP_RIALEN16,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
+        { "rialen32",   { OP_RIALEN32,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
+        { "rialen64",   { OP_RIALEN64,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
+        { "rsfalen",    { OP_RSFALEN,   VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
+        { "rdfalen",    { OP_RDFALEN,   VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
+        { "rralen",     { OP_RRALEN,    VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
+        { "rtlen",      { OP_RTLEN,     VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
+        { "riacat8",    { OP_RIACAT8,   VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
+        { "riacat16",   { OP_RIACAT16,  VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
+        { "riacat32",   { OP_RIACAT32,  VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
+        { "riacat64",   { OP_RIACAT64,  VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
+        { "rsfacat",    { OP_RSFACAT,   VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
+        { "rdfacat",    { OP_RDFACAT,   VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
+        { "rracat",     { OP_RRACAT,    VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
+        { "rtcat",      { OP_RTCAT,     VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
+        { "rtype",      { OP_RTYPE,     VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
+        { "icall",      { OP_ICALL,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
+        { "fcall",      { OP_FCALL,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
+        { "rcall",      { OP_RCALL,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
+        { "itof",       { OP_ITOF,      VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
+        { "ftoi",       { OP_FTOI,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR,       false } },
+        { "ftoi",       { OP_FTOI,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR,       false } },
+        { "incall",     { OP_INCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
+        { "fncall",     { OP_FNCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
+        { "rncall",     { OP_RNCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } }
+      };
+      
       //
       // Static functions.
       //
@@ -159,6 +255,17 @@ namespace letin
         return true;
       }
 
+      static bool get_instr_addr(const UngeneratedFunction &ungen_fun, uint32_t &addr, const string &ident, const Position &pos, vector<Error> &errors)
+      {
+        auto iter = ungen_fun.instr_addrs.find(ident);
+        if(iter == ungen_fun.instr_addrs.end()) {
+          errors.push_back(Error(pos, "undefined label " + ident));
+          return false;
+        }
+        addr = iter->second;
+        return true;
+      }
+
       static bool value_to_format_value(const UngeneratedProgram &ungen_prog, const Value &value, format::Value &format_value, vector<Error> &errors)
       {
         switch(value.type()) {
@@ -188,9 +295,182 @@ namespace letin
         }
       }
 
-      static bool generate_instr(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &fun, uint32_t ip, Instruction &instr, vector<Error> &errors)
+      static bool arg_to_format_arg(const UngeneratedProgram &ungen_prog, const Argument &arg, format::Argument &format_arg, uint32_t &format_arg_type, int value_type, const Position &instr_pos, vector<Error> errors)
       {
-        return false;
+        if(value_type == VALUE_TYPE_ERROR) {
+          errors.push_back(Error(instr_pos, "incorrect number of arguments"));
+          return false;
+        }
+        switch(arg.type()) {
+          case Argument::TYPE_IMM:
+            switch(value_type) {
+              case VALUE_TYPE_INT:
+                if(arg.v().type() == ArgumentValue::TYPE_INT) {
+                  format_arg.i = arg.v().i();
+                } else if(arg.v().type() == ArgumentValue::TYPE_FUN_ADDR) {
+                  uint32_t u;
+                  if(!get_fun_addr(ungen_prog, u, arg.v().fun(), arg.pos(), errors)) return false;
+                  format_arg.i = static_cast<int32_t>(u);
+                } else {
+                  errors.push_back(Error(arg.pos(), "incorrect argument"));
+                  return false;
+                }
+                break;
+              case VALUE_TYPE_FLOAT:
+                if(arg.v().type() == ArgumentValue::TYPE_FLOAT) {
+                  format_arg.f = float_to_format_float(arg.v().f());
+                } else {
+                  errors.push_back(Error(arg.pos(), "incorrect argument"));
+                  return false;
+                }
+                break;
+              case VALUE_TYPE_REF:
+                errors.push_back(Error(arg.pos(), "incorrect argument"));
+                return false;
+            }
+            format_arg_type = ARG_TYPE_IMM;
+            return true;
+          case Argument::TYPE_LVAR:
+            format_arg.lvar = arg.lvar();
+            format_arg_type = ARG_TYPE_LVAR;
+            return true;
+          case Argument::TYPE_ARG:
+            format_arg.arg = arg.arg();
+            format_arg_type = ARG_TYPE_ARG;
+            return true;
+          case Argument::TYPE_IDENT:
+            if(!get_var_addr(ungen_prog, format_arg.gvar, arg.ident(), arg.pos(), errors)) return false;
+            format_arg_type = ARG_TYPE_GVAR;
+            return true;
+        }
+      }
+
+      static bool generate_instr_with_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int code, vector<Error> &errors)
+      {
+        if(instr.op() == nullptr) {
+          errors.push_back(Error(instr.pos(), "no operation"));
+          return false;
+        }
+        auto iter = op_descs.find(instr.op()->name());
+        if(iter == op_descs.end()) {
+          errors.push_back(Error(instr.pos(), "unknown operation"));
+          return false;
+        }
+        const OperationDescription &op_desc = iter->second;
+        uint32_t arg_type1, arg_type2;
+        if(instr.arg1() != nullptr) {
+          if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type1, op_desc.arg_type2, instr.pos(), errors))
+            return false;
+        } else {
+          if(op_desc.arg_type1 != VALUE_TYPE_ERROR) {
+            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+            return false;
+          }
+          ungen_fun.instrs[ip].arg1.i = 0;
+        }
+        if(instr.arg2() != nullptr) {
+          if(!arg_to_format_arg(ungen_prog, *(instr.arg2()), ungen_fun.instrs[ip].arg2, arg_type2, op_desc.arg_type2, instr.pos(), errors))
+            return false;
+        } else {
+          if(op_desc.arg_type1 != VALUE_TYPE_ERROR) {
+            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+            return false;
+          }
+          ungen_fun.instrs[ip].arg2.i = 0;
+        }
+        return true;
+      }
+
+      static bool generate_instr(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, vector<Error> &errors)
+      {
+        if(instr.instr() == "let") {
+          if(!generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_LET, errors)) return false;
+          return true;
+        } else if(instr.instr() == "in") {
+          if(instr.op() != nullptr) {
+            errors.push_back(Error(instr.pos(), "instruction can't have operation"));
+            return false;
+          }
+          if(instr.arg1() != nullptr || instr.arg2() != nullptr) {
+            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+            return false;
+          }
+          ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_IN, 0, 0, 0));
+          ungen_fun.instrs[ip].arg1.i = 0;
+          ungen_fun.instrs[ip].arg2.i = 0;
+          return true;
+        } else if(instr.instr() == "ret") {
+          if(!generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_RET, errors)) return false;
+          return true;
+        } else if(instr.instr() == "jc") {
+          if(instr.op() != nullptr) {
+            errors.push_back(Error(instr.pos(), "instruction can't have operation"));
+            return false;
+          }
+          uint32_t arg_type;
+          if(instr.arg1() != nullptr) {
+            if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type, VALUE_TYPE_INT, instr.pos(), errors))
+              return false;
+          } else {
+            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+            return false;
+          }
+          if(instr.arg2() != nullptr) {
+            if(instr.arg2()->type() == Argument::TYPE_IDENT) {
+              uint32_t instr_addr;
+              if(!get_instr_addr(ungen_fun, instr_addr, instr.arg2()->ident(), instr.arg2()->pos(), errors))
+                return false;
+              ungen_fun.instrs[ip].arg2.i = instr_addr - (ip + 1);
+            }
+          } else {
+            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+            return false;
+          }
+          ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JC, 0, arg_type, 0));
+          ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
+          ungen_fun.instrs[ip].arg2.i = htonl(ungen_fun.instrs[ip].arg2.i);
+        } else if(instr.instr() == "jump") {
+          if(instr.op() != nullptr) {
+            errors.push_back(Error(instr.pos(), "instruction can't have operation"));
+            return false;
+          }
+          if(instr.arg1() != nullptr) {
+            if(instr.arg1()->type() == Argument::TYPE_IDENT) {
+              uint32_t instr_addr;
+              if(!get_instr_addr(ungen_fun, instr_addr, instr.arg1()->ident(), instr.arg1()->pos(), errors))
+                return false;
+              ungen_fun.instrs[ip].arg1.i = instr_addr - (ip + 1);
+            }
+          } else {
+            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+            return false;
+          }
+          if(instr.arg2() != nullptr) {
+            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+            return false;
+          }
+          ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JC, 0, 0, 0));
+          ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
+          ungen_fun.instrs[ip].arg2.i = 0;
+        } else if(instr.instr() == "arg") {
+          if(!generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_ARG, errors)) return false;
+        } else if(instr.instr() == "retry") {
+          if(instr.op() != nullptr) {
+            errors.push_back(Error(instr.pos(), "instruction can't have operation"));
+            return false;
+          }
+          if(instr.arg1() != nullptr || instr.arg2() != nullptr) {
+            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+            return false;
+          }
+          ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_RETRY, 0, 0, 0));
+          ungen_fun.instrs[ip].arg1.i = 0;
+          ungen_fun.instrs[ip].arg2.i = 0;
+          return true;
+        } else {
+          errors.push_back(Error(instr.pos(), "unknown instruction"));
+          return false;
+        }
       }
 
       static Program *generate_prog(const ParseTree &tree, vector<Error> &errors)

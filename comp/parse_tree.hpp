@@ -316,6 +316,8 @@ namespace letin
         const Argument *arg1() const { return _M_arg1.get(); }
 
         const Argument *arg2() const { return _M_arg2.get(); }
+
+        const Position &pos() const { return _M_pos; }
       };
       
       class Label
