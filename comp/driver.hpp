@@ -20,10 +20,12 @@ namespace letin
       class Driver
       {
         Source _M_source;
-        ParseTree _M_parse_tree;
-        std::vector<Error> _M_errors;
+        ParseTree &_M_parse_tree;
+        std::vector<Error> &_M_errors;
+        std::string _M_file_name;
       public:
-        Driver() {}
+        Driver(ParseTree &parse_tree, std::vector<Error> &errors) :
+          _M_parse_tree(parse_tree), _M_errors(errors) {}
 
         virtual ~Driver();
         
@@ -31,6 +33,10 @@ namespace letin
 
         const Source &source() const { return _M_source; }
 
+        const std::string &file_name() const { return _M_file_name; }
+
+        std::string &file_name() { return _M_file_name; }
+        
         const ParseTree &parse_tree() const { return _M_parse_tree; }
         
         ParseTree &parse_tree() { return _M_parse_tree; }

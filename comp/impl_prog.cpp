@@ -5,9 +5,9 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
-#include "driver.hpp"
-#include "lexer.hpp"
-#include "parser.hpp"
+#include "impl_prog.hpp"
+
+using namespace std;
 
 namespace letin
 {
@@ -15,16 +15,11 @@ namespace letin
   {
     namespace impl
     {
-      Driver::~Driver() {}
+      ImplProgram::~ImplProgram() {}
 
-      bool Driver::parse(const Source &source)
-      {
-        SourceStream ss(source.open());
-        _M_file_name = source.file_name();
-        Lexer lexer(&(ss.istream()));
-        Parser parser(*this, lexer);
-        return parser.parse() != 0;
-      }
+      const void *ImplProgram::ptr() const { return reinterpret_cast<const void *>(_M_ptr.get()); }
+
+      size_t ImplProgram::size() const { return _M_size; }
     }
   }
 }

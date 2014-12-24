@@ -42,16 +42,37 @@ namespace letin
           case TYPE_FLOAT:
             _M_f = value._M_f;
             break;
-          case TYPE_REF:
-            new (&_M_object) unique_ptr<Object>(value._M_object.get());
-            break;
           case TYPE_FUN_ADDR:
             new (&_M_fun) string(value._M_fun);
             break;
         }
       }
       
-      void ArgumentValue::destruct_union()
+      //
+      // A Value class.
+      //
+      
+      Value::~Value() {}
+
+      void Value::copy_union(const Value &value)
+      {
+        switch(_M_type) {
+          case TYPE_INT:
+            _M_i = value._M_i;
+            break;
+          case TYPE_FLOAT:
+            _M_f = value._M_f;
+            break;
+          case TYPE_REF:
+            new (&_M_object) shared_ptr<Object>(value._M_object.get());
+            break;
+          case TYPE_FUN_ADDR:
+            new (&_M_fun) string(value._M_fun);
+            break;
+        }
+      }
+
+      void Value::destruct_union()
       {
         switch(_M_type) {
           case TYPE_REF:
@@ -64,13 +85,7 @@ namespace letin
             break;
         }
       }
-      
-      //
-      // A Value class.
-      //
-      
-      Value::~Value() {}
-      
+
       //
       // An Argument class.
       //
@@ -114,6 +129,12 @@ namespace letin
 
       Operation::~Operation() {}
 
+      //
+      // A Label class.
+      //
+      
+      Label::~Label() {}
+      
       //
       // An Instruction class.
       //

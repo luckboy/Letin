@@ -148,7 +148,7 @@ namespace letin
       
       size_t ProgramHelper::size() const
       {
-        return sizeof(format::Header) +
+        return align(sizeof(format::Header), 8) +
                align(_M_funs.size() * sizeof(format::Function), 8) +
                align(_M_vars.size() * sizeof(format::Value), 8) +
                align(_M_instrs.size() * sizeof(format::Instruction), 8) +

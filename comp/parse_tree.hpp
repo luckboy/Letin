@@ -38,15 +38,15 @@ namespace letin
 
       class ParseTree
       {
-        std::list<Definition> _M_defs;
+        std::shared_ptr< std::list<std::shared_ptr<Definition>>> _M_defs;
       public:
         ParseTree() {}
 
         virtual ~ParseTree();
 
-        const std::list<Definition> &defs() const { return _M_defs; }
+        const std::list<std::shared_ptr<Definition>> &defs() const { return *_M_defs; }
 
-        void add_def(const Definition &def) { _M_defs.push_back(def); }
+        void add_def(const std::shared_ptr<Definition> &def) { _M_defs->push_back(def); }
       };
 
       class ArgumentValue
@@ -56,10 +56,9 @@ namespace letin
         {
           TYPE_INT,
           TYPE_FLOAT,
-          TYPE_REF,
           TYPE_FUN_ADDR
         };
-      protected:
+      private:
         Type _M_type;
         union
         {
@@ -77,15 +76,14 @@ namespace letin
 
         ArgumentValue(const std::string &fun) : _M_type(TYPE_FUN_ADDR) { _M_fun = fun; }
 
-        ArgumentValue(Object *object) : _M_type(TYPE_REF) { _M_object = std::unique_ptr<Object>(object); }
-
-        ArgumentValue(const ArgumentValue &value) { *this = value; }
+        ArgumentValue(const ArgumentValue &value) : _M_type(value._M_type) { copy_union(value); }
 
         virtual ~ArgumentValue();
       private:
         void copy_union(const ArgumentValue &value);
 
-        void destruct_union();
+        void destruct_union()
+        { if(_M_type == TYPE_FUN_ADDR) _M_fun.std::string::~string(); }
       public:
         ArgumentValue &operator=(const ArgumentValue &value)
         {
@@ -102,31 +100,71 @@ namespace letin
         double f() const { return _M_type == TYPE_FLOAT ? _M_f : 0.0; }
 
         std::string fun() const { return _M_type == TYPE_FUN_ADDR ? _M_fun : std::string(); }
-
-        Object *object() const { return _M_object.get(); }
       };
 
-      class Value : public ArgumentValue
+      class Value
       {
+      public:
+        enum Type
+        {
+          TYPE_INT,
+          TYPE_FLOAT,
+          TYPE_REF,
+          TYPE_FUN_ADDR
+        };
+      private:
+        Type _M_type;
+        union
+        {
+          std::int64_t _M_i;
+          double _M_f;
+          std::string _M_fun;
+          std::unique_ptr<Object> _M_object;
+        };
         Position _M_pos;
       public:
         Value(int i, const Position &pos) :
-          ArgumentValue(i), _M_pos(pos) {}
-
+          _M_type(TYPE_INT), _M_pos(pos) { _M_i = i; }
+        
         Value(std::int64_t i, const Position &pos) :
-          ArgumentValue(i), _M_pos(pos) {}
+          _M_type(TYPE_INT), _M_pos(pos) { _M_i = i; }
 
         Value(double f, const Position &pos) :
-          ArgumentValue(f), _M_pos(pos) {}
+          _M_type(TYPE_FLOAT), _M_pos(pos) { _M_f = f; }
 
         Value(const std::string &fun, const Position &pos) :
-          ArgumentValue(fun), _M_pos(pos) {}
+          _M_type(TYPE_FUN_ADDR), _M_pos(pos) { _M_fun = fun; }
 
         Value(Object *object, const Position &pos) :
-          ArgumentValue(object), _M_pos(pos) {}
+          _M_type(TYPE_REF), _M_pos(pos) { _M_object = std::unique_ptr<Object>(object); }
+
+        Value(const Value &value) : _M_type(value._M_type), _M_pos(value._M_pos) { copy_union(value); }
 
         ~Value();
+      private:
+        void copy_union(const Value &value);
 
+        void destruct_union();
+      public:
+        Value &operator=(const Value &value)
+        {
+          destruct_union();
+          _M_type = value._M_type;
+          _M_pos = value._M_pos;
+          copy_union(value);
+          return *this;
+        }
+
+        Type type() const { return _M_type; }
+
+        std::int64_t i() const { return _M_type == TYPE_INT ? _M_i : 0; }
+
+        double f() const { return _M_type == TYPE_FLOAT ? _M_f : 0.0; }
+
+        std::string fun() const { return _M_type == TYPE_FUN_ADDR ? _M_fun : std::string(); }
+        
+        const Object *object() const { return _M_object.get(); }
+        
         const Position &pos() const { return _M_pos; }
       };
 
@@ -134,25 +172,26 @@ namespace letin
       class Object
       {
         std::string _M_type;
-        std::list<Value> _M_elems;
+        std::shared_ptr<std::list<Value>> _M_elems;
+        Position _M_pos;
       public:
-        Object(const std::string &str) : _M_type("iarray8")
-        { for(auto c : str) _M_elems.push_back(Value(static_cast<int>(c), Position())); }
+        Object(const std::string &str, const Position &pos) :
+          _M_type("iarray8"), _M_elems(new std::list<Value>()), _M_pos(pos)
+        { for(auto c : str) _M_elems->push_back(Value(static_cast<int>(c), Position())); }
 
-        Object(const std::string &type, const std::list<Value> &elems) : _M_type(type), _M_elems(elems) {}
+        Object(const std::string &type, const std::shared_ptr<std::list<Value>> &elems, const Position &pos) :
+          _M_type(type), _M_elems(elems), _M_pos(pos) {}
 
         virtual ~Object() {}
 
-        std::string type() const { return _M_type; }
+        const std::string &type() const { return _M_type; }
 
-        const std::list<Value> elems() const { return _M_elems; }
+        const std::list<Value> &elems() const { return *_M_elems; }
 
-        void add_elem(const Value &value) { _M_elems.push_back(value); }
+        const Position &pos() const { return _M_pos; }
       };
 
       enum IndexArgumentEnum { LVAR, ARG };
-
-      enum IdentifierArgumentEnum { GVAR, LABEL };
 
       class Argument
       {
@@ -191,7 +230,7 @@ namespace letin
         Argument(const std::string  &ident, const Position &pos) :
           _M_type(TYPE_IDENT), _M_pos(pos) { _M_ident = ident; }
 
-        Argument(const Argument &arg)  { *this = arg; }
+        Argument(const Argument &arg) : _M_type(arg._M_type), _M_pos(arg._M_pos) { copy_union(arg); }
 
         virtual ~Argument();
       private:
@@ -222,14 +261,14 @@ namespace letin
 
       class Operation
       {
-        std::string _M_ident;
+        std::string _M_name;
         Position _M_pos;
       public:
-        Operation(const std::string &ident, const Position &pos) : _M_ident(ident), _M_pos(pos) {}
+        Operation(const std::string &name, const Position &pos) : _M_name(name), _M_pos(pos) {}
 
         virtual ~Operation();
 
-        const std::string &ident() const { return _M_ident; }
+        const std::string &name() const { return _M_name; }
 
         const Position &pos() const { return _M_pos; }
       };
@@ -278,48 +317,72 @@ namespace letin
 
         const Argument *arg2() const { return _M_arg2.get(); }
       };
+      
+      class Label
+      {
+        std::string _M_ident;
+        Position _M_pos;
+      public:
+        Label(const std::string &ident, const Position &pos) : _M_ident(ident), _M_pos(pos) {}
+
+        virtual ~Label();
+
+        const std::string &ident() const { return _M_ident; }
+
+        const Position &pos() const { return _M_pos; }
+      };
+
 
       class FunctionLine
       {
-        std::unique_ptr<std::string> _M_label;
+        std::unique_ptr<Label> _M_label;
         std::unique_ptr<Instruction> _M_instr;
       public:
         FunctionLine() {}
 
-        FunctionLine(const std::string &label) : _M_label(new std::string(label)) {}
+        FunctionLine(const Label &label) : _M_label(new Label(label)) {}
 
         FunctionLine(const Instruction &instr) : _M_instr(new Instruction(instr)) {}
 
-        FunctionLine(const std::string &label, const Instruction &instr) :
-          _M_label(new std::string(label)), _M_instr(new Instruction(instr)) {}
+        FunctionLine(const Label &label, const Instruction &instr) :
+          _M_label(new Label(label)), _M_instr(new Instruction(instr)) {}
           
         FunctionLine(const FunctionLine &line) :
-          _M_label(new std::string(*(line._M_label))), _M_instr(new Instruction(*(line._M_instr))) {}
+          _M_label(new Label(*(line._M_label))), _M_instr(new Instruction(*(line._M_instr))) {}
 
-        const std::string *label() const { return _M_label.get(); }
+        const Label *label() const { return _M_label.get(); }
 
         const Instruction *instr() const { return _M_instr.get(); }
+      };
+
+      class Function
+      {
+        std::uint32_t _M_arg_count;
+        std::shared_ptr<std::list<FunctionLine>> _M_lines;
+        Position _M_pos;
+      public:
+        Function(std::uint32_t arg_count, const std::shared_ptr<std::list<FunctionLine>> &lines, const Position &pos) :
+          _M_arg_count(arg_count), _M_lines(lines) {}
+
+        std::uint32_t arg_count() const { return _M_arg_count; }
+
+        const std::list<FunctionLine> &lines() const { return *_M_lines; }
       };
 
       class FunctionDefinition : public Definition
       {
         std::string _M_ident;
-        std::uint32_t _M_arg_count;
-        std::list<FunctionLine> _M_lines;
+        Function _M_fun;
         Position _M_pos;
       public:
-        FunctionDefinition(const std::string &ident, std::uint32_t arg_count, const std::list<FunctionLine> &lines, const Position &pos) :
-          Definition(pos), _M_ident(ident), _M_arg_count(arg_count), _M_lines(lines) {}
+        FunctionDefinition(const std::string &ident, const Function &fun, const Position &pos) :
+          Definition(pos), _M_ident(ident), _M_fun(fun) {}
 
         ~FunctionDefinition();
 
         const std::string ident() const { return _M_ident; }
 
-        std::uint32_t arg_count() const { return _M_arg_count; }
-
-        const std::list<FunctionLine> &lines() const { return _M_lines; }
-
-        void add_line(const FunctionLine &line) { _M_lines.push_back(line); }
+        const Function &fun() const { return _M_fun; }
       };
 
       class VariableDefinition : public Definition
@@ -335,6 +398,17 @@ namespace letin
         const std::string &ident() const { return _M_ident; }
 
         const Value &value() const { return _M_value; }
+      };
+      
+      class EntryDefinition : public Definition
+      {
+        std::string _M_ident;
+      public:
+        EntryDefinition(const std::string &ident, const Position &pos) : Definition(pos), _M_ident(ident) {}
+        
+        ~EntryDefinition();
+
+        const std::string &ident() const { return _M_ident; }        
       };
     }
   }

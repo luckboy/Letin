@@ -46,13 +46,13 @@
 
 "a"[0-9]+ {
   std::istringstream iss(yytext + 1);
-  iss >> (lval->size);
+  iss >> (lval->u32);
   return token::A;
 }
 
 "lv"[0-9]+ {
   std::istringstream iss(yytext + 1);
-  iss >> (lval->size);
+  iss >> (lval->u32);
   return token::LV;
 }
 
@@ -88,14 +88,19 @@
   return token::FLOAT;
 }
 
-[_A-Za-z\$][_A-Za-z0-9\.\$]+ {
-  lval->str = new std::string(yytext);
-  return token::INSTR_IDENT;
+[A-Za-z][A-Za-z0-9]* {
+  lval->string = new std::string(yytext);
+  return token::NAME;
+}
+
+[_A-Za-z\$][_A-Za-z0-9\.\$]* {
+  lval->string = new std::string(yytext);
+  return token::IDENT;
 }
 
 "`"[^\`]+"`" {
-  lval->str = new std::string(yytext + 1, std::strlen(yytext) - 2);
-  return token::SPECIAL_IDENT;
+  lval->string = new std::string(yytext + 1, std::strlen(yytext) - 2);
+  return token::IDENT;
 }
 
 "("|")"|"["|"]"|","|"="|"&" {
