@@ -472,5 +472,56 @@ namespace letin
     void initialize_gc() { priv::initialize_thread_stop_cont(); }
 
     void finalize_gc() { priv::finalize_thread_stop_cont(); }
+    
+    ostream &operator<<(ostream &os, const Value &value)
+    {
+      switch(value.type()) {
+        case VALUE_TYPE_INT:
+          return os << value.i();
+        case VALUE_TYPE_FLOAT:
+          return os << value.f();
+        case VALUE_TYPE_REF:
+          return os << *(value.r());
+        default:
+          return os << "error";
+      }
+    }
+
+    ostream &operator<<(ostream &os, const Object &object)
+    {
+      switch(object.type()) {
+        case OBJECT_TYPE_IARRAY8:
+          os << "iarray8";
+          break;
+        case OBJECT_TYPE_IARRAY16:
+          os << "iarray16";
+          break;
+        case OBJECT_TYPE_IARRAY32:
+          os << "iarray32";
+          break;
+        case OBJECT_TYPE_IARRAY64:
+          os << "iarray64";
+          break;
+        case OBJECT_TYPE_SFARRAY:
+          os << "sfarray";
+          break;
+        case OBJECT_TYPE_DFARRAY:
+          os << "dfarray";
+          break;
+        case OBJECT_TYPE_RARRAY:
+          os << "rarray";
+          break;
+        case OBJECT_TYPE_TUPLE:
+          break;
+        default:
+          return os << "error";
+      }
+      os << (object.type() != OBJECT_TYPE_TUPLE ? "[" : "(");
+      for(size_t i = 0; i < object.length(); i++) {
+        os << object.elem(i);
+        if(i + 1 < object.length()) os << ", ";
+      }
+      return os << (object.type() != OBJECT_TYPE_TUPLE ? "]" : ")");
+    }
   }
 }

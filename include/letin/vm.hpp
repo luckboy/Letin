@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <thread>
 #include <vector>
@@ -453,6 +454,10 @@ namespace letin
     void initialize_gc();
 
     void finalize_gc();
+
+    std::ostream &operator<<(std::ostream &os, const Value &value);
+
+    std::ostream &operator<<(std::ostream &os, const Object &object);
   }
 }
 

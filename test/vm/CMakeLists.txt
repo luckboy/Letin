@@ -5,7 +5,6 @@ include_directories(../../vm/vm)
 include_directories(../../vm)
 include_directories(../..)
 
-
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}" vm_test_sources)
 
 find_library(vm_library NAMES letinvm PATHS "${PROJECT_BINARY_DIR}/vm" NO_DEFAULT_PATH)
