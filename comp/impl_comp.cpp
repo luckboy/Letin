@@ -36,15 +36,15 @@ namespace letin
       //
       // Operation descriptions.
       //
-      
+
       struct OperationDescription
       {
         int32_t op;
-        int arg_type1;
-        int arg_type2;
+        int arg_value_type1;
+        int arg_value_type2;
         bool is_load2;
       };
-      
+
       static unordered_map<string, OperationDescription> op_descs {
         { "iload",      { OP_ILOAD,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
         { "iload2",     { OP_ILOAD2,    VALUE_TYPE_INT,         VALUE_TYPE_INT,         true } },
@@ -126,7 +126,7 @@ namespace letin
         { "fncall",     { OP_FNCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
         { "rncall",     { OP_RNCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } }
       };
-      
+
       //
       // Static functions.
       //
@@ -345,7 +345,7 @@ namespace letin
         }
       }
 
-      static bool generate_instr_with_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int code, vector<Error> &errors)
+      static bool generate_instr_with_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int instr_opcode, vector<Error> &errors)
       {
         if(instr.op() == nullptr) {
           errors.push_back(Error(instr.pos(), "no operation"));
@@ -359,20 +359,20 @@ namespace letin
         const OperationDescription &op_desc = iter->second;
         uint32_t arg_type1, arg_type2;
         if(instr.arg1() != nullptr) {
-          if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type1, op_desc.arg_type2, instr.pos(), errors))
+          if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type1, op_desc.arg_value_type2, instr.pos(), errors))
             return false;
         } else {
-          if(op_desc.arg_type1 != VALUE_TYPE_ERROR) {
+          if(op_desc.arg_value_type1 != VALUE_TYPE_ERROR) {
             errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
             return false;
           }
           ungen_fun.instrs[ip].arg1.i = 0;
         }
         if(instr.arg2() != nullptr) {
-          if(!arg_to_format_arg(ungen_prog, *(instr.arg2()), ungen_fun.instrs[ip].arg2, arg_type2, op_desc.arg_type2, instr.pos(), errors))
+          if(!arg_to_format_arg(ungen_prog, *(instr.arg2()), ungen_fun.instrs[ip].arg2, arg_type2, op_desc.arg_value_type2, instr.pos(), errors))
             return false;
         } else {
-          if(op_desc.arg_type1 != VALUE_TYPE_ERROR) {
+          if(op_desc.arg_value_type1 != VALUE_TYPE_ERROR) {
             errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
             return false;
           }
@@ -381,92 +381,96 @@ namespace letin
         return true;
       }
 
+      static bool generate_instr_without_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int instr_opcode, vector<Error> &errors)
+      {
+        if(instr.op() != nullptr) {
+          errors.push_back(Error(instr.pos(), "instruction can't have operation"));
+          return false;
+        }
+        if(instr.arg1() != nullptr || instr.arg2() != nullptr) {
+          errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+          return false;
+        }
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(instr_opcode, 0, 0, 0));
+        ungen_fun.instrs[ip].arg1.i = 0;
+        ungen_fun.instrs[ip].arg2.i = 0;
+        return true;
+      }
+
+      static bool generate_jc(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, vector<Error> &errors)
+      {
+        if(instr.op() != nullptr) {
+          errors.push_back(Error(instr.pos(), "instruction can't have operation"));
+          return false;
+        }
+        uint32_t arg_type;
+        if(instr.arg1() != nullptr) {
+          if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type, VALUE_TYPE_INT, instr.pos(), errors))
+            return false;
+        } else {
+          errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+          return false;
+        }
+        if(instr.arg2() != nullptr) {
+          if(instr.arg2()->type() == Argument::TYPE_IDENT) {
+            uint32_t instr_addr;
+            if(!get_instr_addr(ungen_fun, instr_addr, instr.arg2()->ident(), instr.arg2()->pos(), errors))
+              return false;
+            ungen_fun.instrs[ip].arg2.i = instr_addr - (ip + 1);
+          }
+        } else {
+          errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+          return false;
+        }
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JC, 0, arg_type, 0));
+        ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
+        ungen_fun.instrs[ip].arg2.i = htonl(ungen_fun.instrs[ip].arg2.i);
+        return true;
+      }
+
+      static bool generate_jump(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, vector<Error> &errors)
+      {
+        if(instr.op() != nullptr) {
+          errors.push_back(Error(instr.pos(), "instruction can't have operation"));
+          return false;
+        }
+        if(instr.arg1() != nullptr) {
+          if(instr.arg1()->type() == Argument::TYPE_IDENT) {
+            uint32_t instr_addr;
+            if(!get_instr_addr(ungen_fun, instr_addr, instr.arg1()->ident(), instr.arg1()->pos(), errors))
+              return false;
+            ungen_fun.instrs[ip].arg1.i = instr_addr - (ip + 1);
+          }
+        } else {
+          errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+          return false;
+        }
+        if(instr.arg2() != nullptr) {
+          errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+          return false;
+        }
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JUMP, 0, 0, 0));
+        ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
+        ungen_fun.instrs[ip].arg2.i = 0;
+        return true;
+      }
+
       static bool generate_instr(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, vector<Error> &errors)
       {
         if(instr.instr() == "let") {
-          if(!generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_LET, errors)) return false;
-          return true;
+          return generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_LET, errors);
         } else if(instr.instr() == "in") {
-          if(instr.op() != nullptr) {
-            errors.push_back(Error(instr.pos(), "instruction can't have operation"));
-            return false;
-          }
-          if(instr.arg1() != nullptr || instr.arg2() != nullptr) {
-            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-            return false;
-          }
-          ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_IN, 0, 0, 0));
-          ungen_fun.instrs[ip].arg1.i = 0;
-          ungen_fun.instrs[ip].arg2.i = 0;
-          return true;
+          return generate_instr_without_op(ungen_prog, ungen_fun, ip, instr, INSTR_IN, errors);
         } else if(instr.instr() == "ret") {
-          if(!generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_RET, errors)) return false;
-          return true;
+          return generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_RET, errors);
         } else if(instr.instr() == "jc") {
-          if(instr.op() != nullptr) {
-            errors.push_back(Error(instr.pos(), "instruction can't have operation"));
-            return false;
-          }
-          uint32_t arg_type;
-          if(instr.arg1() != nullptr) {
-            if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type, VALUE_TYPE_INT, instr.pos(), errors))
-              return false;
-          } else {
-            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-            return false;
-          }
-          if(instr.arg2() != nullptr) {
-            if(instr.arg2()->type() == Argument::TYPE_IDENT) {
-              uint32_t instr_addr;
-              if(!get_instr_addr(ungen_fun, instr_addr, instr.arg2()->ident(), instr.arg2()->pos(), errors))
-                return false;
-              ungen_fun.instrs[ip].arg2.i = instr_addr - (ip + 1);
-            }
-          } else {
-            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-            return false;
-          }
-          ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JC, 0, arg_type, 0));
-          ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
-          ungen_fun.instrs[ip].arg2.i = htonl(ungen_fun.instrs[ip].arg2.i);
+          return generate_jc(ungen_prog, ungen_fun, ip, instr, errors);
         } else if(instr.instr() == "jump") {
-          if(instr.op() != nullptr) {
-            errors.push_back(Error(instr.pos(), "instruction can't have operation"));
-            return false;
-          }
-          if(instr.arg1() != nullptr) {
-            if(instr.arg1()->type() == Argument::TYPE_IDENT) {
-              uint32_t instr_addr;
-              if(!get_instr_addr(ungen_fun, instr_addr, instr.arg1()->ident(), instr.arg1()->pos(), errors))
-                return false;
-              ungen_fun.instrs[ip].arg1.i = instr_addr - (ip + 1);
-            }
-          } else {
-            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-            return false;
-          }
-          if(instr.arg2() != nullptr) {
-            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-            return false;
-          }
-          ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JUMP, 0, 0, 0));
-          ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
-          ungen_fun.instrs[ip].arg2.i = 0;
+          return generate_jump(ungen_prog, ungen_fun, ip, instr, errors);
         } else if(instr.instr() == "arg") {
-          if(!generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_ARG, errors)) return false;
+          return generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_ARG, errors);
         } else if(instr.instr() == "retry") {
-          if(instr.op() != nullptr) {
-            errors.push_back(Error(instr.pos(), "instruction can't have operation"));
-            return false;
-          }
-          if(instr.arg1() != nullptr || instr.arg2() != nullptr) {
-            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-            return false;
-          }
-          ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_RETRY, 0, 0, 0));
-          ungen_fun.instrs[ip].arg1.i = 0;
-          ungen_fun.instrs[ip].arg2.i = 0;
-          return true;
+          return generate_instr_without_op(ungen_prog, ungen_fun, ip, instr, INSTR_RETRY, errors);
         } else {
           errors.push_back(Error(instr.pos(), "unknown instruction"));
           return false;
