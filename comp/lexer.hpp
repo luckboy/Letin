@@ -26,6 +26,7 @@ namespace letin
         typedef Parser::token token;
         Parser::semantic_type *lval;
         Parser::location_type *loc;
+        std::string buffer;
       public:
         Lexer(std::istream *is) : LetinCompImplFlexLexer(is) {}
 

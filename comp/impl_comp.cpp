@@ -345,7 +345,7 @@ namespace letin
         }
       }
 
-      static bool generate_instr_with_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int instr_opcode, vector<Error> &errors)
+      static bool generate_instr_with_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int opcode_instr, vector<Error> &errors)
       {
         if(instr.op() == nullptr) {
           errors.push_back(Error(instr.pos(), "no operation"));
@@ -378,10 +378,13 @@ namespace letin
           }
           ungen_fun.instrs[ip].arg2.i = 0;
         }
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, 0, 0, 0));
+        ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
+        ungen_fun.instrs[ip].arg2.i = htonl(ungen_fun.instrs[ip].arg2.i);
         return true;
       }
 
-      static bool generate_instr_without_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int instr_opcode, vector<Error> &errors)
+      static bool generate_instr_without_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int opcode_instr, vector<Error> &errors)
       {
         if(instr.op() != nullptr) {
           errors.push_back(Error(instr.pos(), "instruction can't have operation"));
@@ -391,7 +394,7 @@ namespace letin
           errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
           return false;
         }
-        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(instr_opcode, 0, 0, 0));
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, 0, 0, 0));
         ungen_fun.instrs[ip].arg1.i = 0;
         ungen_fun.instrs[ip].arg2.i = 0;
         return true;

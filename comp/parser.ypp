@@ -75,6 +75,7 @@
 %token <string>         IDENT
 %token <u32>            LV
 %token <u32>            A
+%token                  ENTRY
 %type <string>          ident
 %type <arg_value>       arg_value
 %type <value>           value
@@ -86,6 +87,7 @@
 %type <fun_line>        fun_line
 %type <def>             fun_def
 %type <def>             var_def
+%type <def>             entry_def
 %type <values>          values
 %type <fun_lines>       fun_lines
 
@@ -110,6 +112,7 @@ input:
 
 def:            fun_def                         { driver.parse_tree().add_def(*$1); }
 |               var_def                         { driver.parse_tree().add_def(*$1); }
+|               entry_def                       { driver.parse_tree().add_def(*$1); }
 ;
 
 fun_def:        ident '(' INT ')' '=' onl '{' '\n' fun_lines '\n' '}' {
@@ -178,6 +181,11 @@ values:         values onl ',' onl value        { (*$1)->push_back(*$5); $$ = $1
 }
 |                                               {
   $$ = new std::shared_ptr<std::list<Value>>(new std::list<Value>());
+}
+;
+
+entry_def:      ENTRY ident                     {
+  $$ = new std::shared_ptr<Definition>(new EntryDefinition(*$2, P(@1)));
 }
 ;
 
