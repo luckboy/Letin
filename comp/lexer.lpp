@@ -51,6 +51,7 @@
   return token::STRING;
 }
 <IN_STRING>[^\\\"\n]            { buffer += yytext[0]; }
+<IN_CHAR,IN_STRING>"\n"         { buffer += '\n'; loc->lines(); }
 <IN_CHAR,IN_STRING>"\\a"        { buffer += '\a'; }
 <IN_CHAR,IN_STRING>"\\b"        { buffer += '\b'; }
 <IN_CHAR,IN_STRING>"\\t"        { buffer += '\t'; }
@@ -58,13 +59,14 @@
 <IN_CHAR,IN_STRING>"\\v"        { buffer += '\v'; }
 <IN_CHAR,IN_STRING>"\\f"        { buffer += '\f'; }
 <IN_CHAR,IN_STRING>"\\r"        { buffer += '\r'; }
-<IN_CHAR,IN_STRING>"\\"[0-7]{1,3} {
+<IN_CHAR,IN_STRING>"\\"[0-3]?[0-7]{1,2} {
   std::istringstream iss(yytext + 1);
   unsigned i;
-  iss >> i;
+  iss >> std::oct >> i;
   buffer += static_cast<char>(i);
 }
-<IN_CHAR,IN_STRING>"\\".        { buffer += yytext[1]; }
+<IN_CHAR,IN_STRING>"\\"[^\n]    { buffer += yytext[1]; }
+<IN_CHAR,IN_STRING>"\\\n"       { buffer += '\n'; loc->lines(); }
 
 ".entry"                        { return token::ENTRY; }
 
