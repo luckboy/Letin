@@ -49,7 +49,7 @@ int main(int argc, char **argv)
     cout << "i=" << value.i() << endl;
     cout << "f=" << value.f() << endl;
     if(value.r()->type() == OBJECT_TYPE_IARRAY8) {
-      cout << "\"";
+      cout << "r=\"";
       for(size_t i = 0; i < value.r()->length(); i++) {
         char c = value.r()->elem(i).i();
         switch(c) {
