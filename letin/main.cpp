@@ -17,12 +17,19 @@ using namespace std;
 using namespace letin;
 using namespace letin::vm;
 
+struct GarbageCollectionFinalization
+{
+  ~GarbageCollectionFinalization() { finalize_gc(); }
+};
+
 int main(int argc, char **argv)
 {
   if(argc < 2) {
     cerr << "Usage: " << argv[0] << " <file> [<argument> ...]" << endl;
     return 1;
   }
+  initialize_gc();
+  GarbageCollectionFinalization final_gc;
   unique_ptr<Loader> loader(new_loader());
   unique_ptr<Allocator> alloc(new_allocator());
   unique_ptr<GarbageCollector> gc(new_garbage_collector(alloc.get()));
