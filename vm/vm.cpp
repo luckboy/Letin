@@ -523,5 +523,51 @@ namespace letin
       }
       return os << (object.type() != OBJECT_TYPE_TUPLE ? "]" : ")");
     }
+
+    const char *error_to_string(int error)
+    {
+      switch(error) {
+        case ERROR_SUCCESS:
+          return "success";
+        case ERROR_NO_INSTR:
+          return "no instruction";
+        case ERROR_INCORRECT_INSTR:
+          return "incorrect instruction";
+        case ERROR_INCORRECT_VALUE:
+          return "incorrect value";
+        case ERROR_INCORRECT_OBJECT:
+          return "incorrect object";
+        case ERROR_INCORRECT_FUN:
+          return "incorrect function";
+        case ERROR_EMPTY_STACK:
+          return "empty stack";
+        case ERROR_STACK_OVERFLOW:
+          return "stack oveflow";
+        case ERROR_OUT_OF_MEMORY:
+          return "out of memory";
+        case ERROR_NO_FUN:
+          return "no function";
+        case ERROR_NO_LOCAL_VAR:
+          return "no local variable";
+        case ERROR_NO_GLOBAL_VAR:
+          return "no global variable";
+        case ERROR_NO_ARG:
+          return "no argument";
+        case ERROR_INCORRECT_ARG_COUNT:
+          return "incorrect number of arguments";
+        case ERROR_DIV_BY_ZERO:
+          return "division by zero";
+        case ERROR_INDEX_OF_OUT_BOUNDS:
+          return "index of out bounds";
+        case ERROR_EXCEPTION:
+          return "exception";
+        case ERROR_NO_ENTRY:
+          return "no entry";
+        case ERROR_NO_NATIVE_FUN:
+          return "no native function";
+        default:
+          return "unknown error";
+      }
+    }
   }
 }

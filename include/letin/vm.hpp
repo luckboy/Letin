@@ -458,6 +458,8 @@ namespace letin
     std::ostream &operator<<(std::ostream &os, const Value &value);
 
     std::ostream &operator<<(std::ostream &os, const Object &object);
+
+    const char *error_to_string(int error);
   }
 }
 

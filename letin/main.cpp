@@ -85,7 +85,7 @@ int main(int argc, char **argv)
       cout << "\"" << endl;
     } else
       cout << "r=" << value.r() << endl;
-    cout << "error=" << value.error() << endl;
+    cout << "error=" << value.error() << "(" << error_to_string(value.error()) << ")" << endl;
   });
   thread.system_thread().join();
   return 0;
