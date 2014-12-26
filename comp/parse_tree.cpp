@@ -152,6 +152,12 @@ namespace letin
       //
       
       VariableDefinition::~VariableDefinition() {}
+
+      //
+      // An EntryDefinition class.
+      //
+
+      EntryDefinition::~EntryDefinition() {}
     }
   }
 }

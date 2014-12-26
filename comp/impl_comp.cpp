@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <climits>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -42,89 +43,88 @@ namespace letin
         int32_t op;
         int arg_value_type1;
         int arg_value_type2;
-        bool is_load2;
       };
 
       static unordered_map<string, OperationDescription> op_descs {
-        { "iload",      { OP_ILOAD,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
-        { "iload2",     { OP_ILOAD2,    VALUE_TYPE_INT,         VALUE_TYPE_INT,         true } },
-        { "ineg",       { OP_INEG,      VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
-        { "iadd",       { OP_IADD,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "isub",       { OP_ISUB,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "imul",       { OP_IMUL,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "idiv",       { OP_IDIV,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "imod",       { OP_IMOD,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "inot",       { OP_INOT,      VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
-        { "iand",       { OP_IAND,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "ior",        { OP_IOR,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "ixor",       { OP_IXOR,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "ishl",       { OP_ISHL,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "ishr",       { OP_ISHR,      VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "ishru",      { OP_ISHRU,     VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "ieq",        { OP_IEQ,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "ine",        { OP_INE,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "ilt",        { OP_ILT,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "ige",        { OP_IGE,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "igt",        { OP_IGT,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "ile",        { OP_ILE,       VALUE_TYPE_INT,         VALUE_TYPE_INT,         false } },
-        { "fload",      { OP_FLOAD,     VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR,       false } },
-        { "fload2",     { OP_FLOAD2,    VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       true } },
-        { "fneg",       { OP_FNEG,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR,       false } },
-        { "fadd",       { OP_FADD,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
-        { "fsub",       { OP_FDIV,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
-        { "fmul",       { OP_FMUL,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
-        { "fdiv",       { OP_FDIV,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
-        { "feq",        { OP_FEQ,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
-        { "fne",        { OP_FNE,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
-        { "flt",        { OP_FLT,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
-        { "fge",        { OP_FGE,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
-        { "fgt",        { OP_FGT,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
-        { "fle",        { OP_FLE,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT,       false } },
-        { "rload",      { OP_RLOAD,     VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
-        { "req",        { OP_REQ,       VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
-        { "rne",        { OP_RNE,       VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
-        { "riarray8",   { OP_RIARRAY8,  VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
-        { "riarray16",  { OP_RIARRAY16, VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
-        { "riarray32",  { OP_RIARRAY32, VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
-        { "riarray64",  { OP_RIARRAY64, VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
-        { "rsfarray",   { OP_RSFARRAY,  VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
-        { "rdfarray",   { OP_RDFARRAY,  VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
-        { "rrarray",    { OP_RRARRAY,   VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
-        { "rdfarray",   { OP_RTUPLE,    VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR,       false } },
-        { "rianth8",    { OP_RIANTH8,   VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
-        { "rianth16",   { OP_RIANTH16,  VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
-        { "rianth32",   { OP_RIANTH32,  VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
-        { "rianth64",   { OP_RIANTH64,  VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
-        { "rsfanth",    { OP_RSFANTH,   VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
-        { "rdfanth",    { OP_RDFANTH,   VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
-        { "rranth",     { OP_RRANTH,    VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
-        { "rtnth",      { OP_RTNTH,     VALUE_TYPE_REF,         VALUE_TYPE_INT,         false } },
-        { "rialen8",    { OP_RIALEN8,   VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
-        { "rialen16",   { OP_RIALEN16,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
-        { "rialen32",   { OP_RIALEN32,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
-        { "rialen64",   { OP_RIALEN64,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
-        { "rsfalen",    { OP_RSFALEN,   VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
-        { "rdfalen",    { OP_RDFALEN,   VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
-        { "rralen",     { OP_RRALEN,    VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
-        { "rtlen",      { OP_RTLEN,     VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
-        { "riacat8",    { OP_RIACAT8,   VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
-        { "riacat16",   { OP_RIACAT16,  VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
-        { "riacat32",   { OP_RIACAT32,  VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
-        { "riacat64",   { OP_RIACAT64,  VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
-        { "rsfacat",    { OP_RSFACAT,   VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
-        { "rdfacat",    { OP_RDFACAT,   VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
-        { "rracat",     { OP_RRACAT,    VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
-        { "rtcat",      { OP_RTCAT,     VALUE_TYPE_REF,         VALUE_TYPE_REF,         false } },
-        { "rtype",      { OP_RTYPE,     VALUE_TYPE_REF,         VALUE_TYPE_ERROR,       false } },
-        { "icall",      { OP_ICALL,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
-        { "fcall",      { OP_FCALL,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
-        { "rcall",      { OP_RCALL,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
-        { "itof",       { OP_ITOF,      VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
-        { "ftoi",       { OP_FTOI,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR,       false } },
-        { "ftoi",       { OP_FTOI,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR,       false } },
-        { "incall",     { OP_INCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
-        { "fncall",     { OP_FNCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } },
-        { "rncall",     { OP_RNCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR,       false } }
+        { "iload",      { OP_ILOAD,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
+        { "iload2",     { OP_ILOAD2,    VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "ineg",       { OP_INEG,      VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
+        { "iadd",       { OP_IADD,      VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "isub",       { OP_ISUB,      VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "imul",       { OP_IMUL,      VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "idiv",       { OP_IDIV,      VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "imod",       { OP_IMOD,      VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "inot",       { OP_INOT,      VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
+        { "iand",       { OP_IAND,      VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "ior",        { OP_IOR,       VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "ixor",       { OP_IXOR,      VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "ishl",       { OP_ISHL,      VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "ishr",       { OP_ISHR,      VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "ishru",      { OP_ISHRU,     VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "ieq",        { OP_IEQ,       VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "ine",        { OP_INE,       VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "ilt",        { OP_ILT,       VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "ige",        { OP_IGE,       VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "igt",        { OP_IGT,       VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "ile",        { OP_ILE,       VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "fload",      { OP_FLOAD,     VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "fload2",     { OP_FLOAD2,    VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "fneg",       { OP_FNEG,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "fadd",       { OP_FADD,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "fsub",       { OP_FDIV,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "fmul",       { OP_FMUL,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "fdiv",       { OP_FDIV,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "feq",        { OP_FEQ,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "fne",        { OP_FNE,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "flt",        { OP_FLT,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "fge",        { OP_FGE,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "fgt",        { OP_FGT,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "fle",        { OP_FLE,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "rload",      { OP_RLOAD,     VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "req",        { OP_REQ,       VALUE_TYPE_REF,         VALUE_TYPE_REF } },
+        { "rne",        { OP_RNE,       VALUE_TYPE_REF,         VALUE_TYPE_REF } },
+        { "riarray8",   { OP_RIARRAY8,  VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
+        { "riarray16",  { OP_RIARRAY16, VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
+        { "riarray32",  { OP_RIARRAY32, VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
+        { "riarray64",  { OP_RIARRAY64, VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
+        { "rsfarray",   { OP_RSFARRAY,  VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
+        { "rdfarray",   { OP_RDFARRAY,  VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
+        { "rrarray",    { OP_RRARRAY,   VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
+        { "rdfarray",   { OP_RTUPLE,    VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
+        { "rianth8",    { OP_RIANTH8,   VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rianth16",   { OP_RIANTH16,  VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rianth32",   { OP_RIANTH32,  VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rianth64",   { OP_RIANTH64,  VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rsfanth",    { OP_RSFANTH,   VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rdfanth",    { OP_RDFANTH,   VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rranth",     { OP_RRANTH,    VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rtnth",      { OP_RTNTH,     VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rialen8",    { OP_RIALEN8,   VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "rialen16",   { OP_RIALEN16,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "rialen32",   { OP_RIALEN32,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "rialen64",   { OP_RIALEN64,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "rsfalen",    { OP_RSFALEN,   VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "rdfalen",    { OP_RDFALEN,   VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "rralen",     { OP_RRALEN,    VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "rtlen",      { OP_RTLEN,     VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "riacat8",    { OP_RIACAT8,   VALUE_TYPE_REF,         VALUE_TYPE_REF } },
+        { "riacat16",   { OP_RIACAT16,  VALUE_TYPE_REF,         VALUE_TYPE_REF } },
+        { "riacat32",   { OP_RIACAT32,  VALUE_TYPE_REF,         VALUE_TYPE_REF } },
+        { "riacat64",   { OP_RIACAT64,  VALUE_TYPE_REF,         VALUE_TYPE_REF } },
+        { "rsfacat",    { OP_RSFACAT,   VALUE_TYPE_REF,         VALUE_TYPE_REF } },
+        { "rdfacat",    { OP_RDFACAT,   VALUE_TYPE_REF,         VALUE_TYPE_REF } },
+        { "rracat",     { OP_RRACAT,    VALUE_TYPE_REF,         VALUE_TYPE_REF } },
+        { "rtcat",      { OP_RTCAT,     VALUE_TYPE_REF,         VALUE_TYPE_REF } },
+        { "rtype",      { OP_RTYPE,     VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "icall",      { OP_ICALL,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
+        { "fcall",      { OP_FCALL,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
+        { "rcall",      { OP_RCALL,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
+        { "itof",       { OP_ITOF,      VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
+        { "ftoi",       { OP_FTOI,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "ftoi",       { OP_FTOI,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "incall",     { OP_INCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
+        { "fncall",     { OP_FNCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
+        { "rncall",     { OP_RNCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR } }
       };
 
       //
@@ -306,6 +306,14 @@ namespace letin
             switch(value_type) {
               case VALUE_TYPE_INT:
                 if(arg.v().type() == ArgumentValue::TYPE_INT) {
+                  if(arg.v().i() < INT32_MIN) {
+                    errors.push_back(Error(instr_pos, "too small integer number"));
+                    return false;
+                  }
+                  if(arg.v().i() > INT32_MAX) {
+                    errors.push_back(Error(instr_pos, "too large integer number"));
+                    return false;
+                  }
                   format_arg.i = arg.v().i();
                 } else if(arg.v().type() == ArgumentValue::TYPE_FUN_ADDR) {
                   uint32_t u;
@@ -359,8 +367,29 @@ namespace letin
         const OperationDescription &op_desc = iter->second;
         uint32_t arg_type1, arg_type2;
         if(instr.arg1() != nullptr) {
-          if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type1, op_desc.arg_value_type2, instr.pos(), errors))
-            return false;
+          if(instr.arg1()->type() == Argument::TYPE_IMM && instr.arg2() == nullptr &&
+              op_desc.op == OP_ILOAD2) {
+            if(instr.arg1()->v().type() == ArgumentValue::TYPE_INT) {
+              ungen_fun.instrs[ip].arg1.i = instr.arg1()->v().i() >> 32;
+              ungen_fun.instrs[ip].arg2.i = instr.arg1()->v().i() & 0xffffffff;
+            } else {
+              errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+              return false;
+            }
+          } else if(instr.arg1()->type() == Argument::TYPE_IMM && instr.arg2() == nullptr &&
+              op_desc.op == OP_FLOAD2) {
+            if(instr.arg1()->v().type() == ArgumentValue::TYPE_FLOAT) {
+              format::Double format_f = double_to_format_double(instr.arg1()->v().f());
+              ungen_fun.instrs[ip].arg1.i = format_f.dword >> 32;
+              ungen_fun.instrs[ip].arg2.i = format_f.dword & 0xffffffff;
+            } else {
+              errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+              return false;
+            }
+          } else {
+            if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type1, op_desc.arg_value_type2, instr.pos(), errors))
+              return false;
+          }
         } else {
           if(op_desc.arg_value_type1 != VALUE_TYPE_ERROR) {
             errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
