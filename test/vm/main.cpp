@@ -7,12 +7,15 @@
  ****************************************************************************/
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
+#include <iostream>
 #include <letin/vm.hpp>
 
+using namespace std;
 using namespace letin::vm;
 
 int main()
 {
+  cout << "Testing letinvm library ..." << endl;
   initialize_gc();
   CppUnit::TextUi::TestRunner runner;  
   runner.addTest(CppUnit::TestFactoryRegistry::getRegistry().makeTest());

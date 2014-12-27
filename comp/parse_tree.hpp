@@ -40,7 +40,7 @@ namespace letin
       {
         std::shared_ptr< std::list<std::shared_ptr<Definition>>> _M_defs;
       public:
-        ParseTree() {}
+        ParseTree() : _M_defs(new std::list<std::shared_ptr<Definition>>()) {}
 
         virtual ~ParseTree();
 
@@ -65,7 +65,6 @@ namespace letin
           std::int64_t _M_i;
           double _M_f;
           std::string _M_fun;
-          std::unique_ptr<Object> _M_object;
         };
       public:
         ArgumentValue(int i) : _M_type(TYPE_INT) { _M_i = i; }
@@ -303,9 +302,11 @@ namespace letin
           _M_arg2(new Argument(arg2)), _M_pos(pos) {}
 
         Instruction(const Instruction &instr) :
-          _M_instr(instr._M_instr), _M_op(new Operation(*(instr._M_op))),
-          _M_arg1(new Argument(*(instr._M_arg1))),
-          _M_arg2(new Argument(*(instr._M_arg2))), _M_pos(instr._M_pos) {}
+          _M_instr(instr._M_instr),
+          _M_op(instr._M_op.get() != nullptr ? new Operation(*(instr._M_op)) : nullptr),
+          _M_arg1(instr._M_arg1.get() != nullptr ? new Argument(*(instr._M_arg1)) : nullptr),
+          _M_arg2(instr._M_arg2.get() != nullptr ? new Argument(*(instr._M_arg2)) : nullptr),
+          _M_pos(instr._M_pos) {}
 
         virtual ~Instruction();
 
@@ -350,7 +351,8 @@ namespace letin
           _M_label(new Label(label)), _M_instr(new Instruction(instr)) {}
           
         FunctionLine(const FunctionLine &line) :
-          _M_label(new Label(*(line._M_label))), _M_instr(new Instruction(*(line._M_instr))) {}
+          _M_label(line._M_label != nullptr ? new Label(*(line._M_label)) : nullptr),
+          _M_instr(line._M_instr != nullptr ? new Instruction(*(line._M_instr)) : nullptr) {}
 
         const Label *label() const { return _M_label.get(); }
 

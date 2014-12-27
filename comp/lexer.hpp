@@ -34,8 +34,8 @@ namespace letin
 
         int lex(Parser::semantic_type *lval, Parser::location_type *loc)
         {
-          lval = lval;
-          loc = loc;
+          this->lval = lval;
+          this->loc = loc;
           return yylex();
         }
       private:

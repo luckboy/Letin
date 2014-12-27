@@ -295,7 +295,7 @@ namespace letin
         }
       }
 
-      static bool arg_to_format_arg(const UngeneratedProgram &ungen_prog, const Argument &arg, format::Argument &format_arg, uint32_t &format_arg_type, int value_type, const Position &instr_pos, vector<Error> errors)
+      static bool arg_to_format_arg(const UngeneratedProgram &ungen_prog, const Argument &arg, format::Argument &format_arg, uint32_t &format_arg_type, int value_type, const Position &instr_pos, vector<Error> &errors)
       {
         if(value_type == VALUE_TYPE_ERROR) {
           errors.push_back(Error(instr_pos, "incorrect number of arguments"));
@@ -387,7 +387,7 @@ namespace letin
               return false;
             }
           } else {
-            if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type1, op_desc.arg_value_type2, instr.pos(), errors))
+            if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type1, op_desc.arg_value_type1, instr.pos(), errors))
               return false;
           }
         } else {
@@ -401,13 +401,13 @@ namespace letin
           if(!arg_to_format_arg(ungen_prog, *(instr.arg2()), ungen_fun.instrs[ip].arg2, arg_type2, op_desc.arg_value_type2, instr.pos(), errors))
             return false;
         } else {
-          if(op_desc.arg_value_type1 != VALUE_TYPE_ERROR) {
+          if(op_desc.arg_value_type2 != VALUE_TYPE_ERROR) {
             errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
             return false;
           }
           ungen_fun.instrs[ip].arg2.i = 0;
         }
-        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, 0, 0, 0));
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, op_desc.op, arg_type1, arg_type1));
         ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
         ungen_fun.instrs[ip].arg2.i = htonl(ungen_fun.instrs[ip].arg2.i);
         return true;
@@ -423,7 +423,7 @@ namespace letin
           errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
           return false;
         }
-        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, 0, 0, 0));
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, 0, ARG_TYPE_IMM, ARG_TYPE_IMM));
         ungen_fun.instrs[ip].arg1.i = 0;
         ungen_fun.instrs[ip].arg2.i = 0;
         return true;
@@ -454,7 +454,7 @@ namespace letin
           errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
           return false;
         }
-        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JC, 0, arg_type, 0));
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JC, 0, arg_type, ARG_TYPE_IMM));
         ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
         ungen_fun.instrs[ip].arg2.i = htonl(ungen_fun.instrs[ip].arg2.i);
         return true;
@@ -481,7 +481,7 @@ namespace letin
           errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
           return false;
         }
-        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JUMP, 0, 0, 0));
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JUMP, 0, ARG_TYPE_IMM, ARG_TYPE_IMM));
         ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
         ungen_fun.instrs[ip].arg2.i = 0;
         return true;
@@ -517,10 +517,10 @@ namespace letin
         Position entry_pos;
         size_t code_size, data_size;
         bool is_success = true;
-        for(auto & def : tree.defs()) {
+        for(auto &def : tree.defs()) {
           FunctionDefinition *fun_def = dynamic_cast<FunctionDefinition *>(def.get());
           if(fun_def != nullptr) {
-            if(ungen_prog.fun_pairs.find(fun_def->ident()) != ungen_prog.fun_pairs.end()) {
+            if(ungen_prog.fun_pairs.find(fun_def->ident()) == ungen_prog.fun_pairs.end()) {
               ungen_prog.fun_pairs.insert(make_pair(fun_def->ident(), make_pair(ungen_prog.fun_pairs.size(), fun_def->fun())));
             } else {
               errors.push_back(Error(fun_def->pos(), "already defined function " + fun_def->ident()));
@@ -529,7 +529,7 @@ namespace letin
           }
           VariableDefinition *var_def = dynamic_cast<VariableDefinition *>(def.get());
           if(var_def != nullptr) {
-            if(ungen_prog.var_pairs.find(fun_def->ident()) != ungen_prog.var_pairs.end()) {
+            if(ungen_prog.var_pairs.find(fun_def->ident()) == ungen_prog.var_pairs.end()) {
               ungen_prog.var_pairs.insert(make_pair(var_def->ident(), make_pair(ungen_prog.var_pairs.size(), var_def->value())));
             } else {
               errors.push_back(Error(fun_def->pos(), "already defined variable " + fun_def->ident()));
@@ -707,7 +707,7 @@ namespace letin
       Program *ImplCompiler::compile(const vector<Source> &sources, vector<Error> &errors)
       {
         unique_ptr<ParseTree> tree(parse(sources, errors));
-        if(tree.get() != nullptr) return nullptr;
+        if(tree.get() == nullptr) return nullptr;
         return generate_prog(*tree, errors);
       }
     }

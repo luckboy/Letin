@@ -16,7 +16,7 @@ Environment Profile=default
 Install Directory=file:///usr/local
 
 [Launch]
-Launch Configurations=Launch Configuration 0
+Launch Configurations=Launch Configuration 0,Launch Configuration 1
 
 [Launch][Launch Configuration 0]
 Configured Launch Modes=debug
@@ -28,6 +28,18 @@ Type=Native Application
 Configured from ProjectItem=Letin,test,vm,testvm
 Project Target=Letin,test,vm,testvm
 Working Directory=file:///home/luck/develop/prj/cpp/Letin/build/test/vm/
+isExecutable=false
+
+[Launch][Launch Configuration 1]
+Configured Launch Modes=debug
+Configured Launchers=gdb
+Name=testcomp
+Type=Native Application
+
+[Launch][Launch Configuration 1][Data]
+Configured from ProjectItem=Letin,test,comp,testcomp
+Project Target=Letin,test,comp,testcomp
+Working Directory=file:///home/luck/develop/prj/cpp/Letin/build/test/comp/
 isExecutable=false
 
 [MakeBuilder]

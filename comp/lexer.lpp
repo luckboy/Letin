@@ -77,12 +77,12 @@
 }
 
 "lv"[0-9]+                      {
-  std::istringstream iss(yytext + 1);
+  std::istringstream iss(yytext + 2);
   iss >> (lval->u32);
   return token::LV;
 }
 
-[+\-]?[1-9][0-9]+               {
+[+\-]?[1-9][0-9]*               {
   const char *str = (yytext[0] == '+' || yytext[0] == '-') ? yytext + 1 : yytext;
   std::istringstream iss(str);
   iss >> (lval->i);
@@ -90,7 +90,7 @@
   return token::INT;
 }
 
-[+\-]?"0"[0-7]+                 {
+[+\-]?"0"[0-7]*                 {
   const char *str = (yytext[0] == '+' || yytext[0] == '-') ? yytext + 1 : yytext;
   std::istringstream iss(str + 1);
   iss >> std::oct >> (lval->i);
@@ -129,11 +129,11 @@
   return token::IDENT;
 }
 
-"("|")"|"["|"]"|","|"="|"&"     { return yytext[0]; }
+"("|")"|"["|"]"|"{"|"}"|","|"="|"&" { return yytext[0]; }
 
 [ \t\r]                         { loc->step(); }
 
-"\n"+                           { loc->lines(); return '\n'; }
+"\n"+                           { loc->lines(std::strlen(yytext)); return '\n'; }
 
 %%
 

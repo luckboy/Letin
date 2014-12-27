@@ -5,26 +5,16 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
-#include "driver.hpp"
-#include "lexer.hpp"
-#include "parser.hpp"
+#include <cppunit/extensions/TestFactoryRegistry.h>
+#include <cppunit/ui/text/TestRunner.h>
+#include <iostream>
 
-namespace letin
+using namespace std;
+
+int main()
 {
-  namespace comp
-  {
-    namespace impl
-    {
-      Driver::~Driver() {}
-
-      bool Driver::parse(const Source &source)
-      {
-        SourceStream ss(source.open());
-        _M_file_name = source.file_name();
-        Lexer lexer(&(ss.istream()));
-        Parser parser(*this, lexer);
-        return parser.parse() == 0;
-      }
-    }
-  }
+  cout << "Testing letincomp library ..." << endl;
+  CppUnit::TextUi::TestRunner runner;  
+  runner.addTest(CppUnit::TestFactoryRegistry::getRegistry().makeTest());
+  return runner.run() ? 0 : 1;
 }
