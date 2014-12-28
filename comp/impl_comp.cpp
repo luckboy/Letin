@@ -553,6 +553,7 @@ namespace letin
           if(value.type() == Value::TYPE_REF)
             is_success &= add_object_pairs_from_object(ungen_prog, value.object(), errors);
         }
+
         if(!is_success) return nullptr;
 
         size_t size = prog_size_and_other_sizes(ungen_prog, code_size, data_size);
@@ -597,7 +598,7 @@ namespace letin
                 ungen_fun.instr_addrs.insert(make_pair(label.ident(), instr_count));
               } else {
                 errors.push_back(Error(label.pos(), "already defined label " + line.label()->ident()));
-                return nullptr;
+                is_success = false;
               }
             }
             if(line.instr() != nullptr) instr_count++;
@@ -606,7 +607,7 @@ namespace letin
           for(auto line : fun.lines()) {
             if(line.instr() != nullptr) {
               Instruction instr = *(line.instr());
-              if(!generate_instr(ungen_prog, ungen_fun, instr_count, instr, errors)) return nullptr;
+              if(!generate_instr(ungen_prog, ungen_fun, instr_count, instr, errors)) is_success = false;
               instr_count++;
             }
           }
@@ -639,16 +640,20 @@ namespace letin
             case OBJECT_TYPE_IARRAY32:
               for(auto & elem : object->elems()) {
                 format::Value format_value;
-                if(!value_to_format_value(ungen_prog, elem, format_value, errors)) return nullptr;
-                format_object->is32[j] = htonl(format_value.i);
+                if(value_to_format_value(ungen_prog, elem, format_value, errors))
+                  format_object->is32[j] = htonl(format_value.i);
+                else
+                  is_success = false;
                 j++;
               }
               break;
             case OBJECT_TYPE_IARRAY64:
               for(auto & elem : object->elems()) {
                 format::Value format_value;
-                if(!value_to_format_value(ungen_prog, elem, format_value, errors)) return nullptr;
-                format_object->is64[j] = htonll(format_value.i);
+                if(value_to_format_value(ungen_prog, elem, format_value, errors))
+                  format_object->is64[j] = htonll(format_value.i);
+                else
+                  is_success = false;
                 j++;
               }
               break;
@@ -667,17 +672,21 @@ namespace letin
             case OBJECT_TYPE_RARRAY:
               for(auto & elem : object->elems()) {
                 format::Value format_value;
-                if(!value_to_format_value(ungen_prog, elem, format_value, errors)) return nullptr;
-                format_object->rs[j] = htonl(format_value.addr);
+                if(value_to_format_value(ungen_prog, elem, format_value, errors))
+                  format_object->rs[j] = htonl(format_value.addr);
+                else
+                  is_success = false;
                 j++;
               }
               break;
             case OBJECT_TYPE_TUPLE:
               for(auto & elem : object->elems()) {
                 format::Value format_value;
-                if(!value_to_format_value(ungen_prog, elem, format_value, errors)) return nullptr;
-                format_object->tes[j].i = htonl(format_value.i);
-                format_object->tuple_elem_types()[j] = format_value.type;
+                if(value_to_format_value(ungen_prog, elem, format_value, errors)) {
+                  format_object->tes[j].i = htonl(format_value.i);
+                  format_object->tuple_elem_types()[j] = format_value.type;
+                } else
+                  is_success = false;
                 j++;
               }
               break;
@@ -689,10 +698,15 @@ namespace letin
 
         for(auto pair : ungen_prog.var_pairs) {
           const Value &value = pair.second.second;
-          if(!value_to_format_value(ungen_prog, value, vars[pair.second.first], errors)) return nullptr;
-          vars[pair.second.first].type =  htonl(vars[pair.second.first].type);
-          vars[pair.second.first].i =  htonll(vars[pair.second.first].i);
+          if(value_to_format_value(ungen_prog, value, vars[pair.second.first], errors)) {
+            vars[pair.second.first].type =  htonl(vars[pair.second.first].type);
+            vars[pair.second.first].i =  htonll(vars[pair.second.first].i);
+          } else
+            is_success = false;
         }
+
+        if(!is_success) return nullptr;
+
         Program *prog = new ImplProgram(reinterpret_cast<void *>(ptr.get()), size);
         ptr.release();
         return prog;
