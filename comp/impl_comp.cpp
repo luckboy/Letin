@@ -365,7 +365,7 @@ namespace letin
           return false;
         }
         const OperationDescription &op_desc = iter->second;
-        uint32_t arg_type1, arg_type2;
+        uint32_t arg_type1 = ARG_TYPE_IMM, arg_type2 = ARG_TYPE_IMM;
         if(instr.arg1() != nullptr) {
           if(instr.arg1()->type() == Argument::TYPE_IMM && instr.arg2() == nullptr &&
               op_desc.op == OP_ILOAD2) {
@@ -407,7 +407,7 @@ namespace letin
           }
           ungen_fun.instrs[ip].arg2.i = 0;
         }
-        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, op_desc.op, arg_type1, arg_type1));
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, op_desc.op, arg_type1, arg_type2));
         ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
         ungen_fun.instrs[ip].arg2.i = htonl(ungen_fun.instrs[ip].arg2.i);
         return true;

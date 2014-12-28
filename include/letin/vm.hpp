@@ -370,7 +370,7 @@ namespace letin
 
       virtual Program *load(void *ptr, std::size_t size) = 0;
     };
-    
+
     class Allocator
     {
     protected:

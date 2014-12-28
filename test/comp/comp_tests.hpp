@@ -39,7 +39,9 @@ namespace letin
       class CompilerTests : public CppUnit::TestFixture
       {
         CPPUNIT_TEST_SUITE(CompilerTests);
-        CPPUNIT_TEST(test_comp_compiles_simple_program);
+        CPPUNIT_TEST(test_compiler_compiles_simple_program);
+        CPPUNIT_TEST(test_compiler_compiles_int_instructions);
+        CPPUNIT_TEST(test_compiler_compiles_float_instructions);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Compiler *_M_comp;
@@ -50,7 +52,22 @@ namespace letin
 
         void tearDown();
         
-        void test_comp_compiles_simple_program();
+        void test_compiler_compiles_simple_program();
+        void test_compiler_compiles_int_instructions();
+        void test_compiler_compiles_float_instructions();
+        void test_compiler_compiles_jumps();
+        void test_compiler_compiles_many_functions();
+        void test_compiler_compiles_many_global_variables();
+        void test_compiler_compiles_objects();
+        void test_compiler_parses_program_with_comments();
+        void test_compiler_compiles_instruction_with_numbers();
+        void test_compiler_compiles_characters_and_strings();
+        void test_compiler_compiles_library();
+        void test_compiler_complain_on_syntax_error();
+        void test_compiler_complain_on_undefined_functions();
+        void test_compiler_complain_on_undefined_variables();
+        void test_compiler_complain_on_incorrect_number_of_arguments();
+        void test_compiler_compiles_load2_instructions();
       };
 
       DECL_IMPL_COMP_TESTS(ImplCompiler);
