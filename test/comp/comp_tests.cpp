@@ -35,7 +35,7 @@ f(1) = {\n\
 ");
         vector<Source> sources;
         sources.push_back(Source("test.ltns", iss));
-        vector<Error> errors;
+        list<Error> errors;
         unique_ptr<Program> prog(_M_comp->compile(sources, errors));
         CPPUNIT_ASSERT(nullptr != prog.get());
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());

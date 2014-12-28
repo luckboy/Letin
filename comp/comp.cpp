@@ -26,7 +26,7 @@ namespace letin
     
     Compiler::~Compiler() {}
 
-    Program *Compiler::compile(const char *file_name, vector<Error> &errors)
+    Program *Compiler::compile(const char *file_name, list<Error> &errors)
     {
       vector<Source> sources;
       sources.push_back(Source(file_name));

@@ -23,7 +23,7 @@ namespace letin
 
         ~ImplCompiler();
 
-        Program *compile(const std::vector<Source> & sources, std::vector<Error> &errors);
+        Program *compile(const std::vector<Source> & sources, std::list<Error> &errors);
       };
     }
   }

@@ -131,7 +131,7 @@ namespace letin
       // Static functions.
       //
 
-      static ParseTree *parse(const vector<Source> &sources, vector<Error> &errors)
+      static ParseTree *parse(const vector<Source> &sources, list<Error> &errors)
       {
         ParseTree *tree = new ParseTree();
         Driver driver(*tree, errors);
@@ -158,7 +158,7 @@ namespace letin
         unordered_map<string, uint32_t> instr_addrs;
       };
 
-      static bool check_object_elems(const Object *object, Value::Type type, vector<Error> &errors)
+      static bool check_object_elems(const Object *object, Value::Type type, list<Error> &errors)
       {
         for(auto & elem : object->elems()) {
           if(elem.type() != Value::TYPE_INT) {
@@ -169,7 +169,7 @@ namespace letin
         return true;
       }
 
-      static bool add_object_pairs_from_object(UngeneratedProgram &ungen_prog, const Object *object, vector<Error> &errors)
+      static bool add_object_pairs_from_object(UngeneratedProgram &ungen_prog, const Object *object, list<Error> &errors)
       {
         size_t header_size = sizeof(format::Object) - 8;
         if(object->type() == "iarray8") {
@@ -233,7 +233,7 @@ namespace letin
         return size;
       }
 
-      static bool get_fun_addr(const UngeneratedProgram &ungen_prog, uint32_t &addr, const string &ident, const Position &pos, vector<Error> &errors)
+      static bool get_fun_addr(const UngeneratedProgram &ungen_prog, uint32_t &addr, const string &ident, const Position &pos, list<Error> &errors)
       {
         auto iter = ungen_prog.fun_pairs.find(ident);
         if(iter == ungen_prog.fun_pairs.end()) {
@@ -244,7 +244,7 @@ namespace letin
         return true;
       }
 
-      static bool get_var_addr(const UngeneratedProgram &ungen_prog, uint32_t &addr, const string &ident, const Position &pos, vector<Error> &errors)
+      static bool get_var_addr(const UngeneratedProgram &ungen_prog, uint32_t &addr, const string &ident, const Position &pos, list<Error> &errors)
       {
         auto iter = ungen_prog.var_pairs.find(ident);
         if(iter == ungen_prog.var_pairs.end()) {
@@ -255,7 +255,7 @@ namespace letin
         return true;
       }
 
-      static bool get_instr_addr(const UngeneratedFunction &ungen_fun, uint32_t &addr, const string &ident, const Position &pos, vector<Error> &errors)
+      static bool get_instr_addr(const UngeneratedFunction &ungen_fun, uint32_t &addr, const string &ident, const Position &pos, list<Error> &errors)
       {
         auto iter = ungen_fun.instr_addrs.find(ident);
         if(iter == ungen_fun.instr_addrs.end()) {
@@ -266,7 +266,7 @@ namespace letin
         return true;
       }
 
-      static bool value_to_format_value(const UngeneratedProgram &ungen_prog, const Value &value, format::Value &format_value, vector<Error> &errors)
+      static bool value_to_format_value(const UngeneratedProgram &ungen_prog, const Value &value, format::Value &format_value, list<Error> &errors)
       {
         switch(value.type()) {
           case Value::TYPE_INT:
@@ -295,7 +295,7 @@ namespace letin
         }
       }
 
-      static bool arg_to_format_arg(const UngeneratedProgram &ungen_prog, const Argument &arg, format::Argument &format_arg, uint32_t &format_arg_type, int value_type, const Position &instr_pos, vector<Error> &errors)
+      static bool arg_to_format_arg(const UngeneratedProgram &ungen_prog, const Argument &arg, format::Argument &format_arg, uint32_t &format_arg_type, int value_type, const Position &instr_pos, list<Error> &errors)
       {
         if(value_type == VALUE_TYPE_ERROR) {
           errors.push_back(Error(instr_pos, "incorrect number of arguments"));
@@ -353,7 +353,7 @@ namespace letin
         }
       }
 
-      static bool generate_instr_with_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int opcode_instr, vector<Error> &errors)
+      static bool generate_instr_with_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int opcode_instr, list<Error> &errors)
       {
         if(instr.op() == nullptr) {
           errors.push_back(Error(instr.pos(), "no operation"));
@@ -413,7 +413,7 @@ namespace letin
         return true;
       }
 
-      static bool generate_instr_without_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int opcode_instr, vector<Error> &errors)
+      static bool generate_instr_without_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int opcode_instr, list<Error> &errors)
       {
         if(instr.op() != nullptr) {
           errors.push_back(Error(instr.pos(), "instruction can't have operation"));
@@ -429,7 +429,7 @@ namespace letin
         return true;
       }
 
-      static bool generate_jc(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, vector<Error> &errors)
+      static bool generate_jc(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, list<Error> &errors)
       {
         if(instr.op() != nullptr) {
           errors.push_back(Error(instr.pos(), "instruction can't have operation"));
@@ -460,7 +460,7 @@ namespace letin
         return true;
       }
 
-      static bool generate_jump(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, vector<Error> &errors)
+      static bool generate_jump(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, list<Error> &errors)
       {
         if(instr.op() != nullptr) {
           errors.push_back(Error(instr.pos(), "instruction can't have operation"));
@@ -487,7 +487,7 @@ namespace letin
         return true;
       }
 
-      static bool generate_instr(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, vector<Error> &errors)
+      static bool generate_instr(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, list<Error> &errors)
       {
         if(instr.instr() == "let") {
           return generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_LET, errors);
@@ -509,7 +509,7 @@ namespace letin
         }
       }
 
-      static Program *generate_prog(const ParseTree &tree, vector<Error> &errors)
+      static Program *generate_prog(const ParseTree &tree, list<Error> &errors)
       {
         UngeneratedProgram ungen_prog;
         string entry_ident;
@@ -704,7 +704,7 @@ namespace letin
 
       ImplCompiler::~ImplCompiler() {}
 
-      Program *ImplCompiler::compile(const vector<Source> &sources, vector<Error> &errors)
+      Program *ImplCompiler::compile(const vector<Source> &sources, list<Error> &errors)
       {
         unique_ptr<ParseTree> tree(parse(sources, errors));
         if(tree.get() == nullptr) return nullptr;

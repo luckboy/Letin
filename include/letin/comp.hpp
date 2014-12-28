@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <fstream>
 #include <iostream>
+#include <list>
 #include <string>
 #include <vector>
 
@@ -119,9 +120,9 @@ namespace letin
     public:
       virtual ~Compiler();
       
-      virtual Program *compile(const std::vector<Source> & sources, std::vector<Error> &errors) = 0;
+      virtual Program *compile(const std::vector<Source> & sources, std::list<Error> &errors) = 0;
 
-      Program *compile(const char *file_name, std::vector<Error> &errors);
+      Program *compile(const char *file_name, std::list<Error> &errors);
     };
   }
 }
