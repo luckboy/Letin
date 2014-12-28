@@ -116,7 +116,7 @@ def:            fun_def                         { driver.parse_tree().add_def(*$
 |               entry_def                       { driver.parse_tree().add_def(*$1); }
 ;
 
-fun_def:        ident '(' INT ')' '=' onl '{' '\n' fun_lines '\n' '}' {
+fun_def:        ident '(' A ')' '=' onl '{' '\n' fun_lines '\n' '}' {
   $$ = new std::shared_ptr<Definition>(new FunctionDefinition(*$1, Function($3, *$9, P(@1)), P(@1)));
 }
 ;

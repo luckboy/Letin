@@ -26,7 +26,7 @@ namespace letin
       {
         istringstream iss("\n\
 .entry f\n\
-f(1) = {\n\
+f(a1) = {\n\
         let iload(2)\n\
         let iload(2)\n\
         in\n\
@@ -60,7 +60,7 @@ f(1) = {\n\
       {
         istringstream iss("\n\
 .entry f\n\
-f(1) = {\n\
+f(a1) = {\n\
         let iload(-2)\n\
         let iload(0x1234abcd)\n\
         in\n\
@@ -99,7 +99,7 @@ f(1) = {\n\
       {
         istringstream iss("\n\
 .entry f\n\
-f(1) = {\n\
+f(a1) = {\n\
         let fload 0.123\n\
         let fload 123e10\n\
         in\n\
@@ -136,7 +136,7 @@ f(1) = {\n\
       void CompilerTests::test_compiler_compiles_jumps()
       {
          istringstream iss("\n\
-f(2) = {\n\
+f(a2) = {\n\
         let ieq a0, 1\n\
         in\n\
         jc lv0, label1\n\
@@ -189,14 +189,14 @@ label1: let iadd a0, 10\n\
       void CompilerTests::test_compiler_compiles_many_functions()
       {
         istringstream iss("\n\
-f(3) = {\n\
+f(a3) = {\n\
         let iadd a0, a1\n\
         let imul a0, a2\n\
         in\n\
         ret idiv lv0, lv1\n\
 }\n\
 \n\
-g(4) = {\n\
+g(a4) = {\n\
         arg iadd a0, a1\n\
         arg isub a1, a2\n\
         arg ineg a2\n\
@@ -210,7 +210,7 @@ g(4) = {\n\
         ret rtuple()\n\
 }\n\
 \n\
-h(2) = {\n\
+h(a2) = {\n\
         arg iload a0\n\
         arg iload a1\n\
         arg imul a0, a1\n\
