@@ -73,7 +73,7 @@ namespace letin
 
         ArgumentValue(double f) : _M_type(TYPE_FLOAT) { _M_f = f; }
 
-        ArgumentValue(const std::string &fun) : _M_type(TYPE_FUN_ADDR) { _M_fun = fun; }
+        ArgumentValue(const std::string &fun) : _M_type(TYPE_FUN_ADDR), _M_fun(fun) {}
 
         ArgumentValue(const ArgumentValue &value) : _M_type(value._M_type) { copy_union(value); }
 
@@ -132,10 +132,10 @@ namespace letin
           _M_type(TYPE_FLOAT), _M_pos(pos) { _M_f = f; }
 
         Value(const std::string &fun, const Position &pos) :
-          _M_type(TYPE_FUN_ADDR), _M_pos(pos) { _M_fun = fun; }
+          _M_type(TYPE_FUN_ADDR), _M_fun(fun), _M_pos(pos) {}
 
         Value(Object *object, const Position &pos) :
-          _M_type(TYPE_REF), _M_pos(pos) { _M_object = std::unique_ptr<Object>(object); }
+          _M_type(TYPE_REF), _M_object(std::unique_ptr<Object>(object)), _M_pos(pos) { }
 
         Value(const Value &value) : _M_type(value._M_type), _M_pos(value._M_pos) { copy_union(value); }
 
@@ -227,7 +227,7 @@ namespace letin
         }
 
         Argument(const std::string  &ident, const Position &pos) :
-          _M_type(TYPE_IDENT), _M_pos(pos) { _M_ident = ident; }
+          _M_type(TYPE_IDENT), _M_ident(ident), _M_pos(pos){}
 
         Argument(const Argument &arg) : _M_type(arg._M_type), _M_pos(arg._M_pos) { copy_union(arg); }
 

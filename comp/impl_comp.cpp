@@ -90,7 +90,7 @@ namespace letin
         { "rsfarray",   { OP_RSFARRAY,  VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
         { "rdfarray",   { OP_RDFARRAY,  VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
         { "rrarray",    { OP_RRARRAY,   VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
-        { "rdfarray",   { OP_RTUPLE,    VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
+        { "rtuple",     { OP_RTUPLE,    VALUE_TYPE_ERROR,       VALUE_TYPE_ERROR } },
         { "rianth8",    { OP_RIANTH8,   VALUE_TYPE_REF,         VALUE_TYPE_INT } },
         { "rianth16",   { OP_RIANTH16,  VALUE_TYPE_REF,         VALUE_TYPE_INT } },
         { "rianth32",   { OP_RIANTH32,  VALUE_TYPE_REF,         VALUE_TYPE_INT } },

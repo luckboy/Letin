@@ -42,6 +42,8 @@ namespace letin
         CPPUNIT_TEST(test_compiler_compiles_simple_program);
         CPPUNIT_TEST(test_compiler_compiles_int_instructions);
         CPPUNIT_TEST(test_compiler_compiles_float_instructions);
+        CPPUNIT_TEST(test_compiler_compiles_jumps);
+        CPPUNIT_TEST(test_compiler_compiles_many_functions);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Compiler *_M_comp;

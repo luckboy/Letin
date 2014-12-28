@@ -127,7 +127,7 @@ fun_lines:      fun_lines '\n' fun_line         { (*$1)->push_back(*$3); $$ = $1
 }
 ;
 
-fun_line:       label ':'  instr                { $$ = new FunctionLine(*$1, *$3); }
+fun_line:       label ':' instr                 { $$ = new FunctionLine(*$1, *$3); }
 |               label ':'                       { $$ = new FunctionLine(*$1); }
 |               instr                           { $$ = new FunctionLine(*$1); }
 |                                               { $$ = new FunctionLine(); }
