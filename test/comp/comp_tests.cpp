@@ -11,6 +11,7 @@
 
 using namespace std;
 using namespace letin::comp;
+using namespace letin::util;
 
 namespace letin
 {
@@ -259,6 +260,132 @@ h(a2) = {\n\
         ASSERT_ARG(IMUL, A(0), A(1), 2);
         ASSERT_RET(ICALL, IMM(0), NA(), 3);
         END_ASSERT_FUN();
+        END_ASSERT_PROG();
+      }
+
+      void CompilerTests::test_compiler_compiles_many_global_variables()
+      {
+        istringstream iss("\n\
+f(a0) = {\n\
+        ret iload g1\n\
+}\n\
+\n\
+g(a1) = {\n\
+        arg fload g2\n\
+        arg fload g3\n\
+        ret rtuple()\n\
+}\n\
+\n\
+g1 = 20\n\
+\n\
+g2 = 2.5\n\
+\n\
+g3 = 30\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+        ASSERT_PROG(static_cast<size_t>(48 + 24 + 48 + 48), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(2U);
+        ASSERT_HEADER_VAR_COUNT(3U);
+        ASSERT_HEADER_CODE_SIZE(4U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        // f
+        ASSERT_FUN(0U, 48U, 48U + 24U + 48U);
+        ASSERT_RET(ILOAD, GV(0), NA(), 0);
+        END_ASSERT_FUN();
+        // g
+        ASSERT_FUN(1U, 48U + 12U, 48U + 24U + 48U);
+        ASSERT_ARG(FLOAD, GV(1), NA(), 0);
+        ASSERT_ARG(ILOAD, GV(2), NA(), 1);
+        ASSERT_RET(RTUPLE, NA(), NA(), 2);
+        // g1
+        ASSERT_VAR_I(20, 48U + 24U);
+        // g2
+        ASSERT_VAR_F(2.5, 48U + 24U + 16U);
+        // g3
+        ASSERT_VAR_I(30, 48U + 24U + 32U);
+        END_ASSERT_FUN();
+        END_ASSERT_PROG();
+      }
+
+      void CompilerTests::test_compiler_compiles_objects()
+      {
+        istringstream iss("\n\
+g1 = [1, 2, 3, 5]\n\
+\n\
+g2 = (1, 4.5, 5)\n\
+\n\
+g3 = iarray32[19, 8, 7]\n\
+\n\
+g4 = tuple[\n\
+        10,\n\
+        [6, 7, 8],\n\
+        1.5,\n\
+        rarray[[1, 2], [4, 3]],\n\
+        1.4\n\
+]\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+        ASSERT_PROG(static_cast<size_t>(48 + 0 + 64 + 0 + 256), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(0U);
+        ASSERT_HEADER_VAR_COUNT(4U);
+        ASSERT_HEADER_CODE_SIZE(0U);
+        ASSERT_HEADER_DATA_SIZE(256U);
+        // g1
+        ASSERT_VAR_O(IARRAY64, 4, 48U, 48U + 64U);
+        ASSERT_I(1, 0);
+        ASSERT_I(2, 1);
+        ASSERT_I(3, 2); 
+        ASSERT_I(5, 3); 
+        END_ASSERT_VAR_O();
+        // g2
+        ASSERT_VAR_O(TUPLE, 3, 48U + 16U, 48U + 64U);
+        ASSERT_I(1, 0);
+        ASSERT_F(4.5, 1);
+        ASSERT_I(5, 2);
+        END_ASSERT_VAR_O();
+        // g3
+        ASSERT_VAR_O(IARRAY32, 3, 48U + 32U, 48U + 64U);
+        ASSERT_I(19, 0);
+        ASSERT_I(8, 1);
+        ASSERT_I(7, 2);
+        END_ASSERT_VAR_O();
+        // g4
+        ASSERT_VAR_O(TUPLE, 5, 48U + 48U, 48U + 64U);
+        ASSERT_I(10, 0);
+        ASSERT_O(IARRAY64, 3, 1, 48U + 64U);
+        ASSERT_I(6, 0);
+        ASSERT_I(7, 1);
+        ASSERT_I(8, 2);
+        END_ASSERT_O();
+        ASSERT_F(1.5, 2);
+        ASSERT_O(RARRAY, 2, 3, 48U + 64U);
+        ASSERT_O(IARRAY64, 2, 0, 48U + 64U);
+        ASSERT_I(1, 0);
+        ASSERT_I(2, 1);
+        END_ASSERT_O();
+        ASSERT_O(IARRAY64, 2, 1, 48U + 64U);
+        ASSERT_I(4, 0);
+        ASSERT_I(3, 1);
+        END_ASSERT_O();
+        END_ASSERT_O();
+        ASSERT_F(1.4, 4);
+        END_ASSERT_VAR_O();
         END_ASSERT_PROG();
       }
 

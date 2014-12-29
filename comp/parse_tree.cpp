@@ -64,7 +64,7 @@ namespace letin
             _M_f = value._M_f;
             break;
           case TYPE_REF:
-            new (&_M_object) shared_ptr<Object>(_M_object.get() != nullptr ? value._M_object.get() : nullptr);
+            new (&_M_object) shared_ptr<Object>(value._M_object.get() != nullptr ? value._M_object.get() : nullptr);
             break;
           case TYPE_FUN_ADDR:
             new (&_M_fun) string(value._M_fun);

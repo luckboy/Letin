@@ -37,18 +37,18 @@ namespace letin
       { return type == ntohl(object.type) && length == ntohl(object.length); }
       
       bool is_int_value(int64_t i, const format::Value &value)
-      { return VALUE_TYPE_INT == value.type && i == ntohll(value.i); }
+      { return VALUE_TYPE_INT == ntohl(value.type) && i == ntohll(value.i); }
 
       bool is_float_value(double f, const format::Value &value)
       { 
         format::Double tmp_format_f2 = value.f;
         tmp_format_f2.dword = ntohll(tmp_format_f2.dword);
         double f2 = format_double_to_double(tmp_format_f2);
-        return VALUE_TYPE_FLOAT == value.type && f == f2;
+        return VALUE_TYPE_FLOAT == ntohl(value.type) && f == f2;
       }
 
-      bool is_ref_value(uint32_t addr, const format::Value &value)
-      { return VALUE_TYPE_REF == value.type && addr == ntohll(value.addr); }
+      bool is_ref_value(const format::Value &value)
+      { return VALUE_TYPE_REF == ntohl(value.type); }
 
       bool is_int_value_in_object(int64_t i, const format::Object &object, size_t j)
       {
@@ -62,7 +62,7 @@ namespace letin
           case OBJECT_TYPE_IARRAY64:
             return i == ntohll(object.is64[j]);
           case OBJECT_TYPE_TUPLE:
-            return VALUE_TYPE_INT == object.tets[object.length + j] && i == ntohll(object.tes[j].i);
+            return VALUE_TYPE_INT == object.tets[ntohl(object.length) * 8 + j] && i == ntohll(object.tes[j].i);
           default:
             return false;
         }
@@ -87,7 +87,7 @@ namespace letin
           }
           case OBJECT_TYPE_TUPLE:
           {
-            if(VALUE_TYPE_INT != object.tets[object.length + j]) return false;
+            if(VALUE_TYPE_FLOAT != object.tets[ntohl(object.length) * 8 + j]) return false;
             format::Double tmp_format_f2 = object.tes[j].f;
             tmp_format_f2.dword = ntohll(tmp_format_f2.dword);
             double f2 = format_double_to_double(tmp_format_f2);
@@ -98,15 +98,27 @@ namespace letin
         }
       }
 
-      bool is_ref_value_in_object(uint32_t addr, const format::Object &object, size_t j)
+      bool is_ref_value_in_object(const format::Object &object, size_t j)
       {
         switch(ntohl(object.type)) {
           case OBJECT_TYPE_RARRAY:
-            return addr == ntohl(object.rs[j]);
+            return true;
           case OBJECT_TYPE_TUPLE:
-            return VALUE_TYPE_REF == object.tets[object.length + j] && addr == ntohll(object.tes[j].addr);
+            return VALUE_TYPE_REF == object.tets[ntohl(object.length) * 8 + j];
           default:
             return false;
+        }
+      }
+      
+      size_t object_addr_in_object(const format::Object &object, size_t j)
+      {
+        switch(ntohl(object.type)) {
+          case OBJECT_TYPE_RARRAY:
+            return ntohl(object.rs[j]);
+          case OBJECT_TYPE_TUPLE:
+            return VALUE_TYPE_REF == object.tets[ntohl(object.length) * 8 + j] ? ntohll(object.tes[j].addr) : 0;
+          default:
+            return 0;
         }
       }
     }

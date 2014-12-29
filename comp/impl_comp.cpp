@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <climits>
+#include <list>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -148,7 +149,7 @@ namespace letin
       {
         unordered_map<string, pair<uint32_t, Function>> fun_pairs;
         unordered_map<string, pair<uint32_t, Value>> var_pairs;
-        unordered_map<const Object *, pair<int, uint32_t>> object_pairs;
+        list<pair<const Object *, pair<int, uint32_t>>> object_pairs;
         unordered_map<const Object *, uint32_t> object_addrs;
       };
 
@@ -174,39 +175,39 @@ namespace letin
         size_t header_size = sizeof(format::Object) - 8;
         if(object->type() == "iarray8") {
           if(!check_object_elems(object, Value::TYPE_INT, errors)) return false;
-          ungen_prog.object_pairs.insert(make_pair(object, make_pair(OBJECT_TYPE_IARRAY8, header_size + object->elems().size())));
+          ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY8, header_size + object->elems().size())));
         } else if(object->type() == "iarray16") {
           if(!check_object_elems(object, Value::TYPE_INT, errors)) return false;
-          ungen_prog.object_pairs.insert(make_pair(object, make_pair(OBJECT_TYPE_IARRAY16, header_size + object->elems().size() * 2)));
+          ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY16, header_size + object->elems().size() * 2)));
         } else if(object->type() == "iarray32") {
-          if(!check_object_elems(object, Value::TYPE_INT, errors) ||
+          if(!check_object_elems(object, Value::TYPE_INT, errors) &&
               !check_object_elems(object, Value::TYPE_FUN_ADDR, errors)) return false;
-          ungen_prog.object_pairs.insert(make_pair(object, make_pair(OBJECT_TYPE_IARRAY32, header_size + object->elems().size() * 4)));
+          ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY32, header_size + object->elems().size() * 4)));
         } else if(object->type() == "iarray64") {
-          if(!check_object_elems(object, Value::TYPE_INT, errors) ||
+          if(!check_object_elems(object, Value::TYPE_INT, errors) &&
               !check_object_elems(object, Value::TYPE_FUN_ADDR, errors)) return false;
-          ungen_prog.object_pairs.insert(make_pair(object, make_pair(OBJECT_TYPE_IARRAY64, header_size + object->elems().size() * 8)));
+          ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY64, header_size + object->elems().size() * 8)));
         } else if(object->type() == "sfarray") {
           if(!check_object_elems(object, Value::TYPE_FLOAT, errors)) return false;
-          ungen_prog.object_pairs.insert(make_pair(object, make_pair(OBJECT_TYPE_SFARRAY, header_size + object->elems().size() * 4)));
+          ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_SFARRAY, header_size + object->elems().size() * 4)));
         } else if(object->type() == "dfarray") {
           if(!check_object_elems(object, Value::TYPE_FLOAT, errors)) return false;
-          ungen_prog.object_pairs.insert(make_pair(object, make_pair(OBJECT_TYPE_DFARRAY, header_size + object->elems().size() * 8)));
+          ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_DFARRAY, header_size + object->elems().size() * 8)));
         } else if(object->type() == "rarray") {
-          for(auto & elem : object->elems()) {
+          for(auto &elem : object->elems()) {
             if(elem.type() != Value::TYPE_REF) {
               errors.push_back(Error(elem.pos(), "incorrect value"));
               return false;
             }
             if(!add_object_pairs_from_object(ungen_prog, elem.object(), errors)) return false;
           }
-          ungen_prog.object_pairs.insert(make_pair(object, make_pair(OBJECT_TYPE_RARRAY, header_size + object->elems().size() * 4)));
+          ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_RARRAY, header_size + object->elems().size() * 4)));
         } else if(object->type() == "tuple") {
-          for(auto & elem : object->elems()) {
+          for(auto &elem : object->elems()) {
             if(elem.type() == Value::TYPE_REF)
               if(!add_object_pairs_from_object(ungen_prog, elem.object(), errors)) return false;
           }
-          ungen_prog.object_pairs.insert(make_pair(object, make_pair(OBJECT_TYPE_TUPLE, header_size + object->elems().size() * 9)));
+          ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_TUPLE, header_size + object->elems().size() * 9)));
         } else {
           errors.push_back(Error(object->pos(), "incorrect object type"));
           return false;
@@ -280,7 +281,7 @@ namespace letin
           case Value::TYPE_REF:
           {
             auto iter = ungen_prog.object_addrs.find(value.object());
-            format_value.type - VALUE_TYPE_REF;
+            format_value.type = VALUE_TYPE_REF;
             format_value.addr = iter->second;
             return true;
           }
@@ -529,7 +530,7 @@ namespace letin
           }
           VariableDefinition *var_def = dynamic_cast<VariableDefinition *>(def.get());
           if(var_def != nullptr) {
-            if(ungen_prog.var_pairs.find(fun_def->ident()) == ungen_prog.var_pairs.end()) {
+            if(ungen_prog.var_pairs.find(var_def->ident()) == ungen_prog.var_pairs.end()) {
               ungen_prog.var_pairs.insert(make_pair(var_def->ident(), make_pair(ungen_prog.var_pairs.size(), var_def->value())));
             } else {
               errors.push_back(Error(fun_def->pos(), "already defined variable " + fun_def->ident()));
@@ -624,21 +625,22 @@ namespace letin
           format_object->type = pair.second.first;
           format_object->length = object->elems().size();
           int j = 0;
+          ungen_prog.object_addrs.insert(make_pair(object, i));
           switch(pair.second.first) {
             case OBJECT_TYPE_IARRAY8:
-              for(auto & elem : object->elems()) {
+              for(auto &elem : object->elems()) {
                 format_object->is8[j] = elem.i();
                 j++;
               }
               break;
             case OBJECT_TYPE_IARRAY16:
-              for(auto & elem : object->elems()) {
+              for(auto &elem : object->elems()) {
                 format_object->is16[j] = htons(elem.i());
                 j++;
               }
               break;
             case OBJECT_TYPE_IARRAY32:
-              for(auto & elem : object->elems()) {
+              for(auto &elem : object->elems()) {
                 format::Value format_value;
                 if(value_to_format_value(ungen_prog, elem, format_value, errors))
                   format_object->is32[j] = htonl(format_value.i);
@@ -648,7 +650,7 @@ namespace letin
               }
               break;
             case OBJECT_TYPE_IARRAY64:
-              for(auto & elem : object->elems()) {
+              for(auto &elem : object->elems()) {
                 format::Value format_value;
                 if(value_to_format_value(ungen_prog, elem, format_value, errors))
                   format_object->is64[j] = htonll(format_value.i);
@@ -658,19 +660,19 @@ namespace letin
               }
               break;
             case OBJECT_TYPE_SFARRAY:
-              for(auto & elem : object->elems()) {
+              for(auto &elem : object->elems()) {
                 format_object->sfs[j].word = htonl(float_to_format_float(elem.f()).word);
                 j++;
               }
               break;
             case OBJECT_TYPE_DFARRAY:
-              for(auto & elem : object->elems()) {
+              for(auto &elem : object->elems()) {
                 format_object->dfs[j].dword = htonll(double_to_format_double(elem.f()).dword);
                 j++;
               }
               break;
             case OBJECT_TYPE_RARRAY:
-              for(auto & elem : object->elems()) {
+              for(auto &elem : object->elems()) {
                 format::Value format_value;
                 if(value_to_format_value(ungen_prog, elem, format_value, errors))
                   format_object->rs[j] = htonl(format_value.addr);
@@ -680,10 +682,10 @@ namespace letin
               }
               break;
             case OBJECT_TYPE_TUPLE:
-              for(auto & elem : object->elems()) {
+              for(auto &elem : object->elems()) {
                 format::Value format_value;
                 if(value_to_format_value(ungen_prog, elem, format_value, errors)) {
-                  format_object->tes[j].i = htonl(format_value.i);
+                  format_object->tes[j].i = htonll(format_value.i);
                   format_object->tuple_elem_types()[j] = format_value.type;
                 } else
                   is_success = false;
@@ -699,8 +701,8 @@ namespace letin
         for(auto pair : ungen_prog.var_pairs) {
           const Value &value = pair.second.second;
           if(value_to_format_value(ungen_prog, value, vars[pair.second.first], errors)) {
-            vars[pair.second.first].type =  htonl(vars[pair.second.first].type);
-            vars[pair.second.first].i =  htonll(vars[pair.second.first].i);
+            vars[pair.second.first].type = htonl(vars[pair.second.first].type);
+            vars[pair.second.first].i = htonll(vars[pair.second.first].i);
           } else
             is_success = false;
         }

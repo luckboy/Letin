@@ -49,31 +49,43 @@ CPPUNIT_ASSERT(is_instr(instr, op, arg1, arg2, tmp_instrs[j]))
 #define ASSERT_VAR_I(i, offset)                                                 \
 {                                                                               \
   const format::Value *tmp_value =                                              \
-    reinterpret_cast<const format::Function *>(tmp_ptr + offset);               \
+    reinterpret_cast<const format::Value *>(tmp_ptr + offset);                  \
   CPPUNIT_ASSERT(is_int_value(i, *tmp_value));                                  \
 }
 #define ASSERT_VAR_F(f, offset)                                                 \
 {                                                                               \
   const format::Value *tmp_value =                                              \
-    reinterpret_cast<const format::Function *>(tmp_ptr + offset);               \
+    reinterpret_cast<const format::Value *>(tmp_ptr + offset);                  \
   CPPUNIT_ASSERT(is_float_value(f, *tmp_value));                                \
 }
-#define ASSERT_VAR_R(addr, offset)                                              \
+#define ASSERT_VAR_O(type, length, var_offset, data_offset)                     \
 {                                                                               \
   const format::Value *tmp_value =                                              \
-    reinterpret_cast<const format::Function *>(tmp_ptr + offset);               \
-  CPPUNIT_ASSERT(is_ref_value(addr, *tmp_value));                               \
+    reinterpret_cast<const format::Value *>(tmp_ptr + var_offset);              \
+  CPPUNIT_ASSERT(is_ref_value(*tmp_value));                                     \
+  size_t tmp_object_offset = data_offset + ntohll(tmp_value->addr);             \
+  ASSERT_OBJECT(type, length, tmp_object_offset)
+#define END_ASSERT_VAR_O()                                                      \
+  END_ASSERT_OBJECT();                                                          \
 }
 
-#define ASSERT_I(i, j)                  CPPUNIT_ASSERT(is_int_value_in_object(i, tmp_object, j))
-#define ASSERT_F(f, j)                  CPPUNIT_ASSERT(is_float_value_in_object(f, tmp_object, j))
-#define ASSERT_R(addr, j)               CPPUNIT_ASSERT(is_ref_value_in_object(addr, tmp_object, j)
+#define ASSERT_I(i, j)                  CPPUNIT_ASSERT(is_int_value_in_object(i, *tmp_object, j))
+#define ASSERT_F(f, j)                  CPPUNIT_ASSERT(is_float_value_in_object(f, *tmp_object, j))
+#define ASSERT_O(type, length, j, data_offset)                                  \
+{                                                                               \
+  CPPUNIT_ASSERT(is_ref_value_in_object(*tmp_object, j));                       \
+  size_t tmp_object_offset = data_offset +                                      \
+    object_addr_in_object(*tmp_object, j);                                      \
+  ASSERT_OBJECT(type, length, tmp_object_offset)
+#define END_ASSERT_O()                                                          \
+  END_ASSERT_OBJECT();                                                          \
+}
 
 #define ASSERT_OBJECT(type, length, offset)                                     \
 {                                                                               \
   const format::Object *tmp_object =                                            \
     reinterpret_cast<const format::Object *>(tmp_ptr + offset);                 \
-  CPPUNIT_ASSERT(is_object(type, length, *tmp_object))
+  CPPUNIT_ASSERT(is_object(OBJECT_TYPE_##type, length, *tmp_object))
 #define END_ASSERT_OBJECT()                                                     \
 }
 
@@ -127,13 +139,15 @@ namespace letin
 
       bool is_float_value(double f, const format::Value &value);
 
-      bool is_ref_value(std::uint32_t addr, const format::Value &value);
+      bool is_ref_value(const format::Value &value);
 
       bool is_int_value_in_object(std::int64_t i, const format::Object &object, std::size_t j);
 
       bool is_float_value_in_object(double f, const format::Object &object, std::size_t j);
 
-      bool is_ref_value_in_object(std::uint32_t addr, const format::Object &object, std::size_t j);
+      bool is_ref_value_in_object(const format::Object &object, std::size_t j);
+
+      std::size_t object_addr_in_object(const format::Object &object, std::size_t j);
     }
   }
 }

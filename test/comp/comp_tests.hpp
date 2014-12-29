@@ -44,6 +44,8 @@ namespace letin
         CPPUNIT_TEST(test_compiler_compiles_float_instructions);
         CPPUNIT_TEST(test_compiler_compiles_jumps);
         CPPUNIT_TEST(test_compiler_compiles_many_functions);
+        CPPUNIT_TEST(test_compiler_compiles_many_global_variables);
+        CPPUNIT_TEST(test_compiler_compiles_objects);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Compiler *_M_comp;
