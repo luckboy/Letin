@@ -549,7 +549,7 @@ namespace letin
             }
           }
         }
-        for(auto pair : ungen_prog.var_pairs) {
+        for(auto &pair : ungen_prog.var_pairs) {
           const Value &value = pair.second.second;
           if(value.type() == Value::TYPE_REF)
             is_success &= add_object_pairs_from_object(ungen_prog, value.object(), errors);
@@ -586,7 +586,7 @@ namespace letin
         tmp_ptr += align(data_size, 8);
 
         size_t instr_addr = 0;
-        for(auto pair : ungen_prog.fun_pairs) {
+        for(auto &pair : ungen_prog.fun_pairs) {
           UngeneratedFunction ungen_fun;
           ungen_fun.instr_addrs = unordered_map<string, uint32_t>();
           const Function &fun = pair.second.second;
@@ -619,7 +619,7 @@ namespace letin
         }
 
         size_t i = 0;
-        for(auto pair : ungen_prog.object_pairs) {
+        for(auto &pair : ungen_prog.object_pairs) {
           const Object *object = pair.first;
           format::Object *format_object = reinterpret_cast<format::Object *>(data + i);
           format_object->type = pair.second.first;
@@ -698,7 +698,7 @@ namespace letin
           i += align(pair.second.second, 8);
         }
 
-        for(auto pair : ungen_prog.var_pairs) {
+        for(auto &pair : ungen_prog.var_pairs) {
           const Value &value = pair.second.second;
           if(value_to_format_value(ungen_prog, value, vars[pair.second.first], errors)) {
             vars[pair.second.first].type = htonl(vars[pair.second.first].type);

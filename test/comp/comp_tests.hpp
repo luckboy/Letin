@@ -64,12 +64,12 @@ namespace letin
         void test_compiler_compiles_many_global_variables();
         void test_compiler_compiles_objects();
         void test_compiler_parses_program_with_comments();
-        void test_compiler_compiles_instruction_with_numbers();
         void test_compiler_compiles_characters_and_strings();
-        void test_compiler_compiles_library();
         void test_compiler_complain_on_syntax_error();
         void test_compiler_complain_on_undefined_functions();
+        void test_compiler_complain_on_already_functions();
         void test_compiler_complain_on_undefined_variables();
+        void test_compiler_complain_on_already_variables();
         void test_compiler_complain_on_incorrect_number_of_arguments();
         void test_compiler_compiles_load2_instructions();
       };

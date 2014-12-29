@@ -35,7 +35,7 @@ namespace letin
       
       void ArgumentValue::copy_union(const ArgumentValue &value)
       {
-        switch(_M_type) {
+        switch(value._M_type) {
           case TYPE_INT:
             _M_i = value._M_i;
             break;
@@ -52,11 +52,11 @@ namespace letin
       // A Value class.
       //
       
-      Value::~Value() {}
+      Value::~Value() { destruct_union(); }
 
       void Value::copy_union(const Value &value)
       {
-        switch(_M_type) {
+        switch(value._M_type) {
           case TYPE_INT:
             _M_i = value._M_i;
             break;
@@ -64,7 +64,7 @@ namespace letin
             _M_f = value._M_f;
             break;
           case TYPE_REF:
-            new (&_M_object) shared_ptr<Object>(value._M_object.get() != nullptr ? value._M_object.get() : nullptr);
+            _M_object = (value._M_object != nullptr ? new Object(*(value._M_object)) : nullptr);
             break;
           case TYPE_FUN_ADDR:
             new (&_M_fun) string(value._M_fun);
@@ -76,7 +76,7 @@ namespace letin
       {
         switch(_M_type) {
           case TYPE_REF:
-            _M_object.~unique_ptr<Object>();
+            if(_M_object != nullptr) delete _M_object;
             break;
           case TYPE_FUN_ADDR:
             _M_fun.~string();
@@ -87,6 +87,12 @@ namespace letin
       }
 
       //
+      // An Object class.
+      //
+
+      Object::~Object() {}
+
+      //
       // An Argument class.
       //
 
@@ -94,7 +100,7 @@ namespace letin
 
       void Argument::copy_union(const Argument &arg)
       {
-        switch(_M_type) {
+        switch(arg._M_type) {
           case TYPE_IMM:
             new (&_M_v) ArgumentValue(arg._M_v);
             break;

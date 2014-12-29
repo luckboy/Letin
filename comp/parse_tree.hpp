@@ -86,9 +86,11 @@ namespace letin
       public:
         ArgumentValue &operator=(const ArgumentValue &value)
         {
-          destruct_union();
-          _M_type = value._M_type;
-          copy_union(value);
+          if(this != &value) {
+            destruct_union();
+            _M_type = value._M_type;
+            copy_union(value);
+          }
           return *this;
         }
 
@@ -118,7 +120,7 @@ namespace letin
           std::int64_t _M_i;
           double _M_f;
           std::string _M_fun;
-          std::unique_ptr<Object> _M_object;
+          Object *_M_object;
         };
         Position _M_pos;
       public:
@@ -135,7 +137,7 @@ namespace letin
           _M_type(TYPE_FUN_ADDR), _M_fun(fun), _M_pos(pos) {}
 
         Value(Object *object, const Position &pos) :
-          _M_type(TYPE_REF), _M_object(std::unique_ptr<Object>(object)), _M_pos(pos) { }
+          _M_type(TYPE_REF), _M_object(object), _M_pos(pos) { }
 
         Value(const Value &value) : _M_type(value._M_type), _M_pos(value._M_pos) { copy_union(value); }
 
@@ -147,10 +149,12 @@ namespace letin
       public:
         Value &operator=(const Value &value)
         {
-          destruct_union();
-          _M_type = value._M_type;
-          _M_pos = value._M_pos;
-          copy_union(value);
+          if(this != &value) {
+            destruct_union();
+            _M_type = value._M_type;
+            _M_pos = value._M_pos;
+            copy_union(value);
+          }
           return *this;
         }
 
@@ -162,7 +166,7 @@ namespace letin
 
         std::string fun() const { return _M_type == TYPE_FUN_ADDR ? _M_fun : std::string(); }
         
-        const Object *object() const { return _M_object.get(); }
+        const Object *object() const { return _M_object; }
         
         const Position &pos() const { return _M_pos; }
       };
@@ -180,8 +184,8 @@ namespace letin
 
         Object(const std::string &type, const std::shared_ptr<std::list<Value>> &elems, const Position &pos) :
           _M_type(type), _M_elems(elems), _M_pos(pos) {}
-
-        virtual ~Object() {}
+         
+        virtual ~Object();
 
         const std::string &type() const { return _M_type; }
 
@@ -239,9 +243,11 @@ namespace letin
       public:
         Argument &operator=(const Argument &arg)
         {
-          destruct_union();
-          _M_type = arg._M_type;
-          copy_union(arg);
+          if(this != &arg) {
+            destruct_union();
+            _M_type = arg._M_type;
+            copy_union(arg);
+          }
           return *this;
         }
 

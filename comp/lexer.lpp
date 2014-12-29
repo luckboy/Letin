@@ -33,7 +33,7 @@
 "//"[^\n]*
 
 "/*"                            { BEGIN(IN_COMMENT); }
-<IN_COMMENT>"*/"                { loc->step(); BEGIN(INITIAL); }
+<IN_COMMENT>"*""/"              { loc->step(); BEGIN(INITIAL); }
 <IN_COMMENT>[^\n]
 <IN_COMMENT>"\n"                { loc->lines(); }
 
