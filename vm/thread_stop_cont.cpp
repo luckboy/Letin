@@ -50,11 +50,11 @@ namespace letin
           ThreadStopCont *tmp_thread_stop_cont = thread_stop_cont;
           ::sem_post(&(tmp_thread_stop_cont->stopping_sem));
           sigset_t sigmask;
-          do {
+          while(!is_continuing) {
             sigfillset(&sigmask);
             sigdelset(&sigmask, SIGUSR2);
             sigsuspend(&sigmask);
-          } while(!is_continuing);
+          }
           ::sem_post(&(tmp_thread_stop_cont->continuing_sem));
         }
       }

@@ -571,6 +571,7 @@ namespace letin
         if(is_entry) {
           header->flags = 0;
           if(!get_fun_addr(ungen_prog, header->entry, entry_ident, entry_pos, errors)) return nullptr;
+          header->entry = htonl(header->entry);
         } else {
           header->flags = htonl(format::HEADER_FLAG_LIBRARY);
           header->entry = 0;

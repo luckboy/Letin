@@ -218,7 +218,7 @@ namespace letin
         Position _M_pos;
       public:
         Argument(const ArgumentValue &v, const Position &pos) :
-          _M_type(TYPE_IMM), _M_pos(pos) { _M_v = v; }
+          _M_type(TYPE_IMM), _M_pos(pos), _M_v(v) {}
 
         Argument(IndexArgumentEnum arg_enum, std::uint32_t i, const Position &pos) :
           _M_pos(pos)

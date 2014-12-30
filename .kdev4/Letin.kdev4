@@ -10,13 +10,13 @@ ProjectRootRelative=./
 
 [CMake][CMake Build Directory 0]
 Build Directory Path=file:///home/luck/develop/prj/cpp/Letin/build
-Build Type=Debug
+Build Type=
 CMake Binary=file:///usr/bin/cmake
 Environment Profile=default
-Install Directory=file:///usr/local
+Install Directory=file:///home/luck/letin
 
 [Launch]
-Launch Configurations=Launch Configuration 0,Launch Configuration 1
+Launch Configurations=Launch Configuration 0,Launch Configuration 1,Launch Configuration 2,Launch Configuration 3
 
 [Launch][Launch Configuration 0]
 Configured Launch Modes=debug
@@ -40,6 +40,52 @@ Type=Native Application
 Configured from ProjectItem=Letin,test,comp,testcomp
 Project Target=Letin,test,comp,testcomp
 Working Directory=file:///home/luck/develop/prj/cpp/Letin/build/test/comp/
+isExecutable=false
+
+[Launch][Launch Configuration 2]
+Configured Launch Modes=debug
+Configured Launchers=gdb
+Name=letinc
+Type=Native Application
+
+[Launch][Launch Configuration 2][Data]
+Arguments=-o hello.letin fib.letins
+Configured from ProjectItem=Letin,letinc,letinc
+Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x00)
+Dependency Action=Nothing
+EnvironmentGroup=default
+Executable=file:///home/luck/develop/prj/cpp/Letin/
+External Terminal=konsole --noclose --workdir %workdir -e %exe
+Project Target=Letin,letinc,letinc
+Use External Terminal=false
+Working Directory=file:///home/luck/develop/prj/cpp/Letin/examples
+isExecutable=false
+
+[Launch][Launch Configuration 3]
+Configured Launch Modes=execute
+Configured Launchers=nativeAppLauncher
+Name=letin
+Type=Native Application
+
+[Launch][Launch Configuration 3][Data]
+Arguments=fib.letin 30
+Configured from ProjectItem=Letin,letin,letin
+Debugger Shell=
+Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x00)
+Dependency Action=Nothing
+Display Demangle Names=true
+Display Static Members=false
+EnvironmentGroup=default
+Executable=file:///home/luck/develop/prj/cpp/Letin/
+External Terminal=konsole --noclose --workdir %workdir -e %exe
+GDB Path=
+Project Target=Letin,letin,letin
+Remote GDB Config Script=
+Remote GDB Run Script=file:///home/luck/develop/gdb/gdb.script
+Remote GDB Shell Script=
+Start With=ApplicationOutput
+Use External Terminal=false
+Working Directory=file:///home/luck/develop/prj/cpp/Letin/examples/
 isExecutable=false
 
 [MakeBuilder]

@@ -92,7 +92,7 @@
 
 [+\-]?"0"[0-7]*                 {
   const char *str = (yytext[0] == '+' || yytext[0] == '-') ? yytext + 1 : yytext;
-  std::istringstream iss(str + 1);
+  std::istringstream iss(str);
   iss >> std::oct >> (lval->i);
   if(yytext[0] == '-') lval->i = -lval->i;
   return token::INT;

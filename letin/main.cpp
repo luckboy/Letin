@@ -43,15 +43,16 @@ int main(int argc, char **argv)
     cerr << "error: no entry" << endl;
     return 1;
   }
-  Reference ref(vm->gc()->new_immortal_object(OBJECT_TYPE_RARRAY, argc - 1));
-  for(size_t i = 1; i < argc; i++) {
+  Reference ref(vm->gc()->new_immortal_object(OBJECT_TYPE_RARRAY, argc - 2));
+  for(size_t i = 2; i < argc; i++) {
     size_t arg_length = strlen(argv[i]);
     Reference arg_ref(vm->gc()->new_immortal_object(OBJECT_TYPE_IARRAY8, arg_length));
     for(size_t j = 0; j < arg_length; j++) arg_ref->set_elem(j, Value(argv[i][j]));
-    ref->set_elem(i - 1, Value(arg_ref));
+    ref->set_elem(i - 2, Value(arg_ref));
   }
   vector<Value> args;
   args.push_back(Value(ref));
+  gc->start();
   Thread thread = vm->start(args, [](const ReturnValue &value) {
     cout << "i=" << value.i() << endl;
     cout << "f=" << value.f() << endl;
@@ -61,38 +62,38 @@ int main(int argc, char **argv)
         char c = value.r()->elem(i).i();
         switch(c) {
           case '\a':
-            cout << "\\a" << endl;
+            cout << "\\a";
             break;
           case '\b':
-            cout << "\\b" << endl;
+            cout << "\\b";
             break;
           case '\t':
-            cout << "\\t" << endl;
+            cout << "\\t";
             break;
           case '\n':
-            cout << "\\n" << endl;
+            cout << "\\n";
             break;
           case '\v':
-            cout << "\\v" << endl;
+            cout << "\\v";
             break;
           case '\f':
-            cout << "\\f" << endl;
+            cout << "\\f";
             break;
           case '\r':
-            cout << "\\r" << endl;
+            cout << "\\r";
             break;
           default:
             if(isprint(c))
-              cout << c << endl;
+              cout << c;
             else
-              cout << "\\" << oct << c << endl;
+              cout << "\\" << oct << c;
             break;
         }
       }
       cout << "\"" << endl;
     } else
       cout << "r=" << value.r() << endl;
-    cout << "error=" << value.error() << "(" << error_to_string(value.error()) << ")" << endl;
+    cout << "error=" << value.error() << " (" << error_to_string(value.error()) << ")" << endl;
   });
   thread.system_thread().join();
   return 0;

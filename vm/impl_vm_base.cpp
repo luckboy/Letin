@@ -127,7 +127,7 @@ namespace letin
               return false;
           }
         }
-        _M_has_entry = ((prog->flags() & format::HEADER_FLAG_LIBRARY) != 0);
+        _M_has_entry = ((prog->flags() & format::HEADER_FLAG_LIBRARY) == 0);
         _M_entry = prog->entry();
         return true;
       }
