@@ -1,0 +1,24 @@
+.entry main
+
+fib(a1) = {
+	let ile a0, 1
+	in
+	jc lv0, label
+	arg isub a0, 1
+	let icall &fib
+	arg isub a0, 2
+	let icall &fib
+	in
+	ret iadd lv1, lv2
+label:	ret iload a0
+}
+
+main(a1) = {
+	let rranth a0, 0
+	in
+	arg rload lv0
+	let incall 0
+	in
+	arg iload lv1
+	ret icall &fib
+}

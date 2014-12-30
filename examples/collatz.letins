@@ -1,0 +1,35 @@
+.entry main
+
+collatz(a2) = {
+	arg iload a0
+	let riarray64()
+	in
+	let riacat64 a1, lv0
+	let ieq a0, 1
+	in
+	jc lv2, label1
+	let imod a0, 2
+	in
+	jc lv3, label2
+	arg idiv a0, 2
+	jump label3
+label2:	let imul a0, 3
+	in
+	arg iadd lv4, 1
+label3:	arg rload lv1
+	retry
+label1:	ret rload lv1
+}
+
+main(a1) = {
+	let rranth a0, 0
+	in
+	arg rload lv0
+	let incall 0
+	in
+	let riarray64()
+	in
+	arg iload lv1
+	arg rload lv2
+	ret rcall &collatz
+}
