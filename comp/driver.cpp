@@ -22,6 +22,10 @@ namespace letin
         SourceStream ss(source.open());
         _M_source = source;
         _M_file_name = source.file_name();
+        if(!ss.istream().good()) {
+          _M_errors.push_back(Error(Position(source, 1, 1), "can't open file"));
+          return false;
+        }
         Lexer lexer(&(ss.istream()));
         Parser parser(*this, lexer);
         return parser.parse() == 0;

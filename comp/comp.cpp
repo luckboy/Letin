@@ -7,6 +7,7 @@
  ****************************************************************************/
 #include <vector>
 #include <letin/comp.hpp>
+#include "impl_comp.hpp"
 
 using namespace std;
 
@@ -36,6 +37,8 @@ namespace letin
     //
     // Other functions.
     //
+
+    Compiler *new_compiler() { return new impl::ImplCompiler(); }
 
     ostream &operator<<(ostream &os, const Position &pos)
     {

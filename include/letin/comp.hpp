@@ -125,6 +125,8 @@ namespace letin
       Program *compile(const char *file_name, std::list<Error> &errors);
     };
 
+    Compiler *new_compiler();
+
     std::ostream &operator<<(std::ostream &os, const Position &pos);
     
     std::ostream &operator<<(std::ostream &os, const Error &error);

@@ -16,6 +16,7 @@ include_directories(include)
 
 add_subdirectory(comp)
 add_subdirectory(vm)
+add_subdirectory(letinc)
 add_subdirectory(letin)
 
 if(BUILD_TESTING)

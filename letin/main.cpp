@@ -36,7 +36,7 @@ int main(int argc, char **argv)
   unique_ptr<NativeFunctionHandler> native_fun_handler(new DefaultNativeFunctionHandler());
   unique_ptr<VirtualMachine> vm(new_virtual_machine(loader.get(), gc.get(), native_fun_handler.get()));
   if(!vm->load(argv[1])) {
-    cerr << "error: no file or incorrect file format" << endl;
+    cerr << "error: can't open file or file format is incorrect" << endl;
     return 1;
   }
   if(!vm->has_entry()) {
