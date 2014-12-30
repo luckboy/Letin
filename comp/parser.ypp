@@ -109,6 +109,7 @@
 input:
 |               input '\n' def
 |               input '\n'
+|               def
 ;
 
 def:            fun_def                         { driver.parse_tree().add_def(*$1); }
