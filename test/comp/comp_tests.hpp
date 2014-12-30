@@ -46,6 +46,14 @@ namespace letin
         CPPUNIT_TEST(test_compiler_compiles_many_functions);
         CPPUNIT_TEST(test_compiler_compiles_many_global_variables);
         CPPUNIT_TEST(test_compiler_compiles_objects);
+        CPPUNIT_TEST(test_compiler_parses_program_with_comments);
+        CPPUNIT_TEST(test_compiler_compiles_characters_and_strings);
+        CPPUNIT_TEST(test_compiler_complain_on_syntax_error);
+        CPPUNIT_TEST(test_compiler_complain_on_undefined_functions);
+        CPPUNIT_TEST(test_compiler_complain_on_already_functions);
+        CPPUNIT_TEST(test_compiler_complain_on_undefined_variables);
+        CPPUNIT_TEST(test_compiler_complain_on_already_variables);
+        CPPUNIT_TEST(test_compiler_compiles_load2_instructions);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Compiler *_M_comp;

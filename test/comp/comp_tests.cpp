@@ -5,6 +5,7 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
+#include <string>
 #include "comp_tests.hpp"
 #include "impl_comp.hpp"
 #include "helper.hpp"
@@ -389,6 +390,263 @@ g4 = tuple[\n\
         END_ASSERT_PROG();
       }
 
+      void CompilerTests::test_compiler_parses_program_with_comments()
+      {
+        istringstream iss("\n\
+// line comment\n\
+f(a1) = {\n\
+/* some text\n\
+ * c-style comment\n\
+ * some text */\n\
+        ret iload 1\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+      }
+
+      void CompilerTests::test_compiler_compiles_characters_and_strings()
+      {
+        istringstream iss("\n\
+f(a0) = {\n\
+        ret iload 'a'\n\
+}\n\
+g1 = '\321'\n\
+g2 = \"some text\n\43and something\"\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+        ASSERT_PROG(static_cast<size_t>(48 + 16 + 32 + 16 + 32), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(1U);
+        ASSERT_HEADER_VAR_COUNT(2U);
+        ASSERT_HEADER_CODE_SIZE(1U);
+        ASSERT_HEADER_DATA_SIZE(32U);
+        ASSERT_FUN(0U, 48U, 48U + 16U + 32U);
+        ASSERT_RET(ILOAD, IMM('a'), NA(), 0);
+        END_ASSERT_FUN();
+        ASSERT_VAR_I('\321', 48U + 16U);
+        ASSERT_VAR_O(IARRAY8, 24U, 48U + 16U + 16U, 48U + 16U + 32U + 16U);
+        ASSERT_I('s', 0);
+        ASSERT_I('o', 1);
+        ASSERT_I('m', 2);
+        ASSERT_I('e', 3);
+        ASSERT_I(' ', 4);
+        ASSERT_I('t', 5);
+        ASSERT_I('e', 6);
+        ASSERT_I('x', 7);
+        ASSERT_I('t', 8);
+        ASSERT_I('\n', 9);
+        ASSERT_I('\43', 10);
+        ASSERT_I('a', 11);
+        ASSERT_I('n', 12);
+        ASSERT_I('d', 13);
+        ASSERT_I(' ', 14);
+        ASSERT_I('s', 15);
+        ASSERT_I('o', 16);
+        ASSERT_I('m', 17);
+        ASSERT_I('e', 18);
+        ASSERT_I('t', 19);
+        ASSERT_I('h', 20);
+        ASSERT_I('i', 21); 
+        ASSERT_I('n', 22);
+        ASSERT_I('g', 23);
+        END_ASSERT_VAR_O();
+        END_ASSERT_PROG();
+      }
+      
+      void CompilerTests::test_compiler_complain_on_syntax_error()
+      {
+        istringstream iss("f = {}");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr == prog.get());
+        vector<Error> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), errors.size());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
+        CPPUNIT_ASSERT(1 == error_vector[0].pos().line());
+        CPPUNIT_ASSERT(1 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("syntax error") == error_vector[0].msg());
+      }
+
+      void CompilerTests::test_compiler_complain_on_undefined_functions()
+      {
+        istringstream iss("\n\
+f(a1) = {\n\
+        arg iload &g\n\
+        arg iload &h\n\
+        arg iload a0\n\
+        ret riarray64()\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr == prog.get());
+        vector<Error> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(2), errors.size());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
+        CPPUNIT_ASSERT(3 == error_vector[0].pos().line());
+        CPPUNIT_ASSERT(13 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("undefined function g") == error_vector[0].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[1].pos().source().file_name());
+        CPPUNIT_ASSERT(4 == error_vector[1].pos().line());
+        CPPUNIT_ASSERT(13 == error_vector[1].pos().column());
+        CPPUNIT_ASSERT(string("undefined function h") == error_vector[1].msg());
+      }
+
+      void CompilerTests::test_compiler_complain_on_already_functions()
+      {
+        istringstream iss("\n\
+f(a1) = {\n\
+        ret iload 1\n\
+}\n\
+g(a1) = {\n\
+        ret iload 2\n\
+}\n\
+h(a1) = {\n\
+        ret iload 3\n\
+}\n\
+f(a1) = {\n\
+        ret iload 4\n\
+}\n\
+h(a1) = {\n\
+        ret iload 5\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr == prog.get());
+        vector<Error> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(2), errors.size());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
+        CPPUNIT_ASSERT(11 == error_vector[0].pos().line());
+        CPPUNIT_ASSERT(1 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("already defined function f") == error_vector[0].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[1].pos().source().file_name());
+        CPPUNIT_ASSERT(14 == error_vector[1].pos().line());
+        CPPUNIT_ASSERT(1 == error_vector[1].pos().column());
+        CPPUNIT_ASSERT(string("already defined function h") == error_vector[1].msg());
+      }
+      
+      void CompilerTests::test_compiler_complain_on_undefined_variables()
+      {
+        istringstream iss("\n\
+f(a0) = {\n\
+        arg iload g1\n\
+        arg iload g2\n\
+        arg iload g4\n\
+        ret riarray64()\n\
+}\n\
+\n\
+g5 = 1\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr == prog.get());
+        vector<Error> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(3), errors.size());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
+        CPPUNIT_ASSERT(3 == error_vector[0].pos().line());
+        CPPUNIT_ASSERT(13 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("undefined variable g1") == error_vector[0].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[1].pos().source().file_name());
+        CPPUNIT_ASSERT(4 == error_vector[1].pos().line());
+        CPPUNIT_ASSERT(13 == error_vector[1].pos().column());
+        CPPUNIT_ASSERT(string("undefined variable g2") == error_vector[1].msg());
+        CPPUNIT_ASSERT(5 == error_vector[2].pos().line());
+        CPPUNIT_ASSERT(13 == error_vector[2].pos().column());
+        CPPUNIT_ASSERT(string("undefined variable g4") == error_vector[2].msg());
+      }
+
+      void CompilerTests::test_compiler_complain_on_already_variables()
+      {
+        istringstream iss("\n\
+g1 = 1\n\
+g2 = 2\n\
+g1 = 11\n\
+g3 = 3\n\
+g4 = 4\n\
+g4 = 44\n\
+g2 = 22\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr == prog.get());
+        vector<Error> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(3), errors.size());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
+        CPPUNIT_ASSERT(4 == error_vector[0].pos().line());
+        CPPUNIT_ASSERT(1 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("already defined variable g1") == error_vector[0].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[1].pos().source().file_name());
+        CPPUNIT_ASSERT(7 == error_vector[1].pos().line());
+        CPPUNIT_ASSERT(1 == error_vector[1].pos().column());
+        CPPUNIT_ASSERT(string("already defined variable g4") == error_vector[1].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[1].pos().source().file_name());
+        CPPUNIT_ASSERT(8 == error_vector[2].pos().line());
+        CPPUNIT_ASSERT(1 == error_vector[2].pos().column());
+        CPPUNIT_ASSERT(string("already defined variable g2") == error_vector[2].msg());
+      }
+
+      void CompilerTests::test_compiler_compiles_load2_instructions()
+      {
+istringstream iss("\n\
+.entry f\n\
+f(a0) = {\n\
+        arg iload2(0x1122334455667788)\n\
+        arg fload2(3.1415927)\n\
+        ret rtuple()\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        for(auto error : errors) cout << error << endl;
+        format::Double f = double_to_format_double(3.1415927);
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+        ASSERT_PROG(static_cast<size_t>(48 + 16 + 40), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(0U);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(1U);
+        ASSERT_HEADER_VAR_COUNT(0U);
+        ASSERT_HEADER_CODE_SIZE(3U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        ASSERT_FUN(0U, 48U, 48U + 16U);
+        ASSERT_ARG(ILOAD2, IMM(0x11223344), IMM(0x55667788), 0);
+        ASSERT_ARG(FLOAD2, IMM(static_cast<int32_t>(f.dword >> 32)), IMM(static_cast<int32_t>(f.dword & 0xffffffff)), 1);
+        ASSERT_RET(RTUPLE, NA(), NA(), 2);
+        END_ASSERT_FUN();
+        END_ASSERT_PROG();
+      }
+      
       DEF_IMPL_COMP_TESTS(ImplCompiler);
     }
   }

@@ -367,12 +367,14 @@ namespace letin
         }
         const OperationDescription &op_desc = iter->second;
         uint32_t arg_type1 = ARG_TYPE_IMM, arg_type2 = ARG_TYPE_IMM;
+        bool is_ignored_arg2 = false;
         if(instr.arg1() != nullptr) {
           if(instr.arg1()->type() == Argument::TYPE_IMM && instr.arg2() == nullptr &&
               op_desc.op == OP_ILOAD2) {
             if(instr.arg1()->v().type() == ArgumentValue::TYPE_INT) {
               ungen_fun.instrs[ip].arg1.i = instr.arg1()->v().i() >> 32;
               ungen_fun.instrs[ip].arg2.i = instr.arg1()->v().i() & 0xffffffff;
+              is_ignored_arg2 = true;
             } else {
               errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
               return false;
@@ -383,6 +385,7 @@ namespace letin
               format::Double format_f = double_to_format_double(instr.arg1()->v().f());
               ungen_fun.instrs[ip].arg1.i = format_f.dword >> 32;
               ungen_fun.instrs[ip].arg2.i = format_f.dword & 0xffffffff;
+              is_ignored_arg2 = true;
             } else {
               errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
               return false;
@@ -398,15 +401,17 @@ namespace letin
           }
           ungen_fun.instrs[ip].arg1.i = 0;
         }
-        if(instr.arg2() != nullptr) {
-          if(!arg_to_format_arg(ungen_prog, *(instr.arg2()), ungen_fun.instrs[ip].arg2, arg_type2, op_desc.arg_value_type2, instr.pos(), errors))
-            return false;
-        } else {
-          if(op_desc.arg_value_type2 != VALUE_TYPE_ERROR) {
-            errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-            return false;
+        if(!is_ignored_arg2) {
+          if(instr.arg2() != nullptr) {
+            if(!arg_to_format_arg(ungen_prog, *(instr.arg2()), ungen_fun.instrs[ip].arg2, arg_type2, op_desc.arg_value_type2, instr.pos(), errors))
+              return false;
+          } else {
+            if(op_desc.arg_value_type2 != VALUE_TYPE_ERROR) {
+              errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+              return false;
+            }
+            ungen_fun.instrs[ip].arg2.i = 0;
           }
-          ungen_fun.instrs[ip].arg2.i = 0;
         }
         ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, op_desc.op, arg_type1, arg_type2));
         ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
@@ -533,7 +538,7 @@ namespace letin
             if(ungen_prog.var_pairs.find(var_def->ident()) == ungen_prog.var_pairs.end()) {
               ungen_prog.var_pairs.insert(make_pair(var_def->ident(), make_pair(ungen_prog.var_pairs.size(), var_def->value())));
             } else {
-              errors.push_back(Error(fun_def->pos(), "already defined variable " + fun_def->ident()));
+              errors.push_back(Error(var_def->pos(), "already defined variable " + var_def->ident()));
               is_success = false;
             }
           }

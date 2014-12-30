@@ -32,5 +32,21 @@ namespace letin
       sources.push_back(Source(file_name));
       return compile(sources, errors);
     }
+
+    //
+    // Other functions.
+    //
+
+    ostream &operator<<(ostream &os, const Position &pos)
+    {
+      os << pos.source().file_name() << ": " << pos.line() << "." << pos.column();
+      return os;
+    }
+
+    ostream &operator<<(ostream &os, const Error &error)
+    {
+      os << error.pos() << ": " << error.msg();
+      return os;
+    }
   }
 }

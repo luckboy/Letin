@@ -20,6 +20,7 @@ namespace letin
       bool Driver::parse(const Source &source)
       {
         SourceStream ss(source.open());
+        _M_source = source;
         _M_file_name = source.file_name();
         Lexer lexer(&(ss.istream()));
         Parser parser(*this, lexer);
