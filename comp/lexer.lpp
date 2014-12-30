@@ -72,12 +72,14 @@
 
 "a"[0-9]+                       {
   std::istringstream iss(yytext + 1);
+  lval->u32 = 0;
   iss >> (lval->u32);
   return token::A;
 }
 
 "lv"[0-9]+                      {
   std::istringstream iss(yytext + 2);
+  lval->u32 = 0;
   iss >> (lval->u32);
   return token::LV;
 }
@@ -85,6 +87,7 @@
 [+\-]?[1-9][0-9]*               {
   const char *str = (yytext[0] == '+' || yytext[0] == '-') ? yytext + 1 : yytext;
   std::istringstream iss(str);
+  lval->i = 0;
   iss >> (lval->i);
   if(yytext[0] == '-') lval->i = -lval->i;
   return token::INT;
@@ -93,6 +96,7 @@
 [+\-]?"0"[0-7]*                 {
   const char *str = (yytext[0] == '+' || yytext[0] == '-') ? yytext + 1 : yytext;
   std::istringstream iss(str);
+  lval->i = 0;
   iss >> std::oct >> (lval->i);
   if(yytext[0] == '-') lval->i = -lval->i;
   return token::INT;
@@ -101,6 +105,7 @@
 [+\-]?"0"[Xx][0-9A-Fa-f]+       {
   const char *str = (yytext[0] == '+' || yytext[0] == '-') ? yytext + 1 : yytext;
   std::istringstream iss(str + 2);
+  lval->i = 0;
   iss >> std::hex >> (lval->i);
   if(yytext[0] == '-') lval->i = -lval->i;
   return token::INT;
@@ -109,6 +114,7 @@
 [+\-]?(([0-9]+"."[0-9]*([Ee][+\-]?[0-9]+)?)|([0-9]+([Ee][+\-]?[0-9]+)?)) {
   const char *str = (yytext[0] == '+' || yytext[0] == '-') ? yytext + 1 : yytext;
   std::istringstream iss(str);
+  lval->f = 0.0;
   iss >> (lval->f);
   if(yytext[0] == '-') lval->f = -lval->f;
   return token::FLOAT;
