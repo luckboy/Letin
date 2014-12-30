@@ -478,7 +478,7 @@ g2 = \"some text\n\43and something\"\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), errors.size());
         CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
         CPPUNIT_ASSERT(1 == error_vector[0].pos().line());
-        CPPUNIT_ASSERT(1 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(5 == error_vector[0].pos().column());
         CPPUNIT_ASSERT(string("syntax error") == error_vector[0].msg());
       }
 
