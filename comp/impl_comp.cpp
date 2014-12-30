@@ -311,7 +311,7 @@ namespace letin
                     errors.push_back(Error(instr_pos, "too small integer number"));
                     return false;
                   }
-                  if(arg.v().i() > INT32_MAX) {
+                  if(arg.v().i() > static_cast<int64_t>(UINT32_MAX)) {
                     errors.push_back(Error(instr_pos, "too large integer number"));
                     return false;
                   }
@@ -634,18 +634,44 @@ namespace letin
           switch(pair.second.first) {
             case OBJECT_TYPE_IARRAY8:
               for(auto &elem : object->elems()) {
+                if(elem.i() < INT8_MIN) {
+                  errors.push_back(Error(elem.pos(), "too small integer number"));
+                  is_success = false;
+                }
+                if(elem.i() > static_cast<int64_t>(UINT8_MAX)) {
+                  errors.push_back(Error(elem.pos(), "too large integer number"));
+                  is_success = false;
+                }
                 format_object->is8[j] = elem.i();
                 j++;
               }
               break;
             case OBJECT_TYPE_IARRAY16:
               for(auto &elem : object->elems()) {
+                if(elem.i() < INT16_MIN) {
+                  errors.push_back(Error(elem.pos(), "too small integer number"));
+                  is_success = false;
+                }
+                if(elem.i() > static_cast<int64_t>(UINT16_MAX)) {
+                  errors.push_back(Error(elem.pos(), "too large integer number"));
+                  is_success = false;
+                }
                 format_object->is16[j] = htons(elem.i());
                 j++;
               }
               break;
             case OBJECT_TYPE_IARRAY32:
               for(auto &elem : object->elems()) {
+                if(elem.type() != Value::TYPE_FUN_ADDR) {
+                  if(elem.i() < INT32_MIN) {
+                    errors.push_back(Error(elem.pos(), "too small integer number"));
+                    is_success = false;
+                  }
+                  if(elem.i() > static_cast<int64_t>(UINT32_MAX)) {
+                    errors.push_back(Error(elem.pos(), "too large integer number"));
+                    is_success = false;
+                  }
+                }
                 format::Value format_value;
                 if(value_to_format_value(ungen_prog, elem, format_value, errors))
                   format_object->is32[j] = htonl(format_value.i);
