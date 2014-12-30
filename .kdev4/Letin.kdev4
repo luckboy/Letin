@@ -10,7 +10,7 @@ ProjectRootRelative=./
 
 [CMake][CMake Build Directory 0]
 Build Directory Path=file:///home/luck/develop/prj/cpp/Letin/build
-Build Type=
+Build Type=Debug
 CMake Binary=file:///usr/bin/cmake
 Environment Profile=default
 Install Directory=file:///home/luck/letin
@@ -68,7 +68,7 @@ Name=letin
 Type=Native Application
 
 [Launch][Launch Configuration 3][Data]
-Arguments=fib.letin 30
+Arguments=collatz.letin 11
 Configured from ProjectItem=Letin,letin,letin
 Debugger Shell=
 Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x00)
@@ -81,7 +81,7 @@ External Terminal=konsole --noclose --workdir %workdir -e %exe
 GDB Path=
 Project Target=Letin,letin,letin
 Remote GDB Config Script=
-Remote GDB Run Script=file:///home/luck/develop/gdb/gdb.script
+Remote GDB Run Script=
 Remote GDB Shell Script=
 Start With=ApplicationOutput
 Use External Terminal=false

@@ -188,7 +188,7 @@ namespace letin
       static inline bool add_object_lengths(ThreadContext &context, size_t &length, size_t length1, size_t length2)
       {
         length = length1 + length2;
-        if((length1 | length2) >= length) {
+        if((length1 | length2) > length) {
           context.set_error(ERROR_OUT_OF_MEMORY);
           return false;
         }
