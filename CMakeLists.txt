@@ -19,6 +19,8 @@ add_subdirectory(vm)
 add_subdirectory(letinc)
 add_subdirectory(letin)
 
+install(DIRECTORY include/letin DESTINATION include)
+
 if(BUILD_TESTING)
 	enable_testing()
 

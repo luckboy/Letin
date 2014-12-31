@@ -13,5 +13,11 @@ list(APPEND comp_sources ${BISON_parser_OUTPUTS})
 list(APPEND comp_sources ${FLEX_lexer_OUTPUTS})
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}" comp_sources)
 
-add_library(letincomp ${comp_sources})
+add_library(letincomp SHARED ${comp_sources})
 add_dependencies(letincomp lexer parser)
+
+add_library(letincomp_static STATIC ${comp_sources})
+add_dependencies(letincomp_static lexer parser)
+set_target_properties(letincomp_static PROPERTIES OUTPUT_NAME letincomp)
+
+install(TARGETS letincomp letincomp_static DESTINATION lib)

@@ -7,7 +7,8 @@ include_directories(../..)
 
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}" vm_test_sources)
 
-find_library(vm_library NAMES letinvm PATHS "${PROJECT_BINARY_DIR}/vm" NO_DEFAULT_PATH)
+set(letinvm_static_name "${CMAKE_STATIC_LIBRARY_PREFIX}letinvm${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set(vm_static_library "${PROJECT_BINARY_DIR}/vm/letinvm_static_name")
 list(APPEND vm_test_libraries "${vm_library}")
 list(APPEND vm_test_libraries ${CPPUNIT_LIBRARIES})
 
