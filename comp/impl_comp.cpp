@@ -565,6 +565,7 @@ namespace letin
         size_t size = prog_size_and_other_sizes(ungen_prog, code_size, data_size);
         unique_ptr<uint8_t []> ptr(new uint8_t[size]);
         uint8_t *tmp_ptr = ptr.get();
+        fill_n(tmp_ptr, size, 0);
         format::Header *header = reinterpret_cast<format::Header *>(tmp_ptr);
         tmp_ptr += align(sizeof(format::Header), 8);
         copy(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, header->magic);
