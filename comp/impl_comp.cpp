@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -759,6 +759,9 @@ namespace letin
         if(tree.get() == nullptr) return nullptr;
         return generate_prog(*tree, errors);
       }
+
+      void ImplCompiler::add_include_dir(const string &dir_name)
+      { _M_include_dirs.push_back(dir_name); }
     }
   }
 }

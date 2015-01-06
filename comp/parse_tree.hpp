@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -14,6 +14,7 @@
 #include <memory>
 #include <string>
 #include <letin/comp.hpp>
+#include "num_value.hpp"
 
 namespace letin
 {
@@ -72,6 +73,8 @@ namespace letin
         ArgumentValue(std::int64_t i) : _M_type(TYPE_INT) { _M_i = i; }
 
         ArgumentValue(double f) : _M_type(TYPE_FLOAT) { _M_f = f; }
+
+        ArgumentValue(const NumberValue &value);
 
         ArgumentValue(const std::string &fun) : _M_type(TYPE_FUN_ADDR), _M_fun(fun) {}
 
@@ -132,6 +135,8 @@ namespace letin
 
         Value(double f, const Position &pos) :
           _M_type(TYPE_FLOAT), _M_pos(pos) { _M_f = f; }
+
+        Value(const NumberValue &value, const Position &pos);
 
         Value(const std::string &fun, const Position &pos) :
           _M_type(TYPE_FUN_ADDR), _M_fun(fun), _M_pos(pos) {}

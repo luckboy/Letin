@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -68,7 +68,7 @@ namespace letin
           return SourceStream(_M_file_name);
       }
     };
-    
+
     class Position
     {
       Source _M_source;
@@ -86,7 +86,7 @@ namespace letin
 
       std::size_t column() const { return _M_column; }
     };
-    
+
     class Error
     {
       Position _M_pos;
@@ -123,12 +123,16 @@ namespace letin
       virtual Program *compile(const std::vector<Source> &sources, std::list<Error> &errors) = 0;
 
       Program *compile(const char *file_name, std::list<Error> &errors);
+      
+      virtual void add_include_dir(const std::string &dir_name) = 0;
+
+      void add_include_dir(const char *dir_name) { add_include_dir(dir_name); };
     };
 
     Compiler *new_compiler();
 
     std::ostream &operator<<(std::ostream &os, const Position &pos);
-    
+
     std::ostream &operator<<(std::ostream &os, const Error &error);
   }
 }

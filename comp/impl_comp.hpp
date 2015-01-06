@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -18,12 +18,15 @@ namespace letin
     {
       class ImplCompiler : public Compiler
       {
+        std::vector<std::string> _M_include_dirs;
       public:
         ImplCompiler() {}
 
         ~ImplCompiler();
 
         Program *compile(const std::vector<Source> & sources, std::list<Error> &errors);
+
+        void add_include_dir(const std::string &dir_name);
       };
     }
   }

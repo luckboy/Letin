@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -18,9 +18,9 @@ namespace letin
       //
       // A Definition class.
       //
-      
+
       Definition::~Definition() {}
-      
+
       //
       // A ParseTree class.
       //
@@ -30,9 +30,20 @@ namespace letin
       //
       // An ArgumentValue class.
       //
+
+      ArgumentValue::ArgumentValue(const NumberValue &value)
+      {
+        if(value.type() == NumberValue::TYPE_FLOAT) {
+          _M_type = TYPE_FLOAT;
+          _M_f = value.f();
+        } else {
+          _M_type = TYPE_INT;
+          _M_i = value.i();
+        }
+      }
       
       ArgumentValue::~ArgumentValue() { destruct_union(); }
-      
+
       void ArgumentValue::copy_union(const ArgumentValue &value)
       {
         switch(value._M_type) {
@@ -51,7 +62,18 @@ namespace letin
       //
       // A Value class.
       //
-      
+
+      Value::Value(const NumberValue &value, const Position &pos) : _M_pos(pos)
+      {
+        if(value.type() == NumberValue::TYPE_FLOAT) {
+          _M_type = TYPE_FLOAT;
+          _M_f = value.f();
+        } else {
+          _M_type = TYPE_INT;
+          _M_i = value.i();
+        }
+      }
+
       Value::~Value() { destruct_union(); }
 
       void Value::copy_union(const Value &value)
@@ -128,7 +150,7 @@ namespace letin
             break;
         }
       }
-      
+
       //
       // An Operation class.
       //
@@ -138,9 +160,9 @@ namespace letin
       //
       // A Label class.
       //
-      
+
       Label::~Label() {}
-      
+
       //
       // An Instruction class.
       //
@@ -150,13 +172,13 @@ namespace letin
       //
       // A FunctionDefinition class.
       //
-      
+
       FunctionDefinition::~FunctionDefinition() {}
-      
+
       //
       // A VariableDefinition class.
       //
-      
+
       VariableDefinition::~VariableDefinition() {}
 
       //

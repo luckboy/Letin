@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -8,6 +8,8 @@
 #ifndef _DRIVER_HPP
 #define _DRIVER_HPP
 
+#include <unordered_map>
+#include <utility>
 #include <letin/comp.hpp>
 #include "parse_tree.hpp"
 
@@ -23,6 +25,7 @@ namespace letin
         ParseTree &_M_parse_tree;
         std::list<Error> &_M_errors;
         std::string _M_file_name;
+        std::unordered_map<std::string, NumberValue> _M_value_defs;
       public:
         Driver(ParseTree &parse_tree, std::list<Error> &errors) :
           _M_parse_tree(parse_tree), _M_errors(errors) {}
@@ -30,6 +33,8 @@ namespace letin
         virtual ~Driver();
         
         bool parse(const Source &source);
+
+        bool parse_included_file(const std::string &file_name);
 
         const Source &source() const { return _M_source; }
 
@@ -44,6 +49,15 @@ namespace letin
         const std::list<Error> &errors() const { return _M_errors; }
 
         void add_error(const Error &error) { _M_errors.push_back(error); }
+
+        bool has_value_def(const std::string &ident) const
+        { return _M_value_defs.find(ident) != _M_value_defs.end(); }
+
+        const NumberValue &value_def(const std::string &ident)
+        { return _M_value_defs[ident]; }
+
+        void add_value_def(const std::string &ident, const NumberValue &value)
+        { _M_value_defs.insert(std::make_pair(ident, value)); }
       };
     }
   }
