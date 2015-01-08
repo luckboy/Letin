@@ -6,7 +6,7 @@ find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
 
 flex_target(lexer lexer.lpp "${CMAKE_CURRENT_BINARY_DIR}/lexer.cpp")
-bison_target(parser parser.ypp "${CMAKE_CURRENT_BINARY_DIR}/parser.cpp" COMPILE_FLAGS "-L c++ -Wconflicts-sr")
+bison_target(parser parser.ypp "${CMAKE_CURRENT_BINARY_DIR}/parser.cpp" COMPILE_FLAGS "-L c++ -r all")
 add_flex_bison_dependency(lexer parser)
 
 list(APPEND comp_sources ${BISON_parser_OUTPUTS})

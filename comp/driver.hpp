@@ -24,6 +24,7 @@ namespace letin
         Source _M_source;
         ParseTree &_M_parse_tree;
         std::list<Error> &_M_errors;
+        std::vector<std::string> _M_include_dirs;
         std::string _M_file_name;
         std::unordered_map<std::string, NumberValue> _M_value_defs;
       public:

@@ -93,7 +93,6 @@
   std::istringstream iss(str);
   lval->i = 0;
   iss >> (lval->i);
-  if(yytext[0] == '-') lval->i = -lval->i;
   return token::INT;
 }
 
@@ -102,7 +101,6 @@
   std::istringstream iss(str);
   lval->i = 0;
   iss >> std::oct >> (lval->i);
-  if(yytext[0] == '-') lval->i = -lval->i;
   return token::INT;
 }
 
@@ -111,7 +109,6 @@
   std::istringstream iss(str + 2);
   lval->i = 0;
   iss >> std::hex >> (lval->i);
-  if(yytext[0] == '-') lval->i = -lval->i;
   return token::INT;
 }
 
@@ -120,7 +117,6 @@
   std::istringstream iss(str);
   lval->f = 0.0;
   iss >> (lval->f);
-  if(yytext[0] == '-') lval->f = -lval->f;
   return token::FLOAT;
 }
 

@@ -5,7 +5,7 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
-%skeleton "lalr1.cc"
+%skeleton "glr.cc"
 %defines
 %define api.namespace { letin::comp::impl }
 %define parser_class_name { Parser }
@@ -34,13 +34,18 @@
   }
 }
 
-%param { Driver &driver }
-%param { Lexer &lexer }
+%param { letin::comp::impl::Driver &driver }
+%param { letin::comp::impl::Lexer &lexer }
 
 %code {
-  static int yylex(letin::comp::impl::Parser::semantic_type *lval, letin::comp::impl::Parser::location_type *loc, letin::comp::impl::Driver &driver, letin::comp::impl::Lexer &lexer); 
+#define yyparse         LetinCompImplparse
 
-  static letin::comp::Position loc_to_pos(const letin::comp::Source &source, const letin::comp::impl::Parser::location_type &loc);
+  using namespace letin::comp;
+  using namespace letin::comp::impl;
+
+  static int yylex(Parser::semantic_type *lval, Parser::location_type *loc, letin::comp::impl::Driver &driver, letin::comp::impl::Lexer &lexer); 
+
+  static Position loc_to_pos(const Source &source, const Parser::location_type &loc);
 }
 
 %locations
@@ -94,7 +99,6 @@
 %type <def>             entry_def
 %type <values>          values
 %type <fun_lines>       fun_lines
-%type <num_value>       simple_expr
 %type <num_value>       expr
 
 %destructor { delete $$; }      <string>
@@ -123,6 +127,8 @@
 %left                   '+' '-'
 %left                   '*' '/' '%'
 %left                   PLUS NEG NOT LNOT 
+
+%glr-parser
 
 %%
 
@@ -160,25 +166,25 @@ label:          ident                           { $$ = new Label(*$1, P(@1)); }
 ;
 
 instr:          NAME op arg ',' arg             { $$ = new Instruction(*$1, *$2, *$3, *$5, P(@1)); }
-|               NAME op arg                     { $$ = new Instruction(*$1, *$2, *$3, P(@1)); }
+|               NAME op arg %dprec 2            { $$ = new Instruction(*$1, *$2, *$3, P(@1)); }
 |               NAME op '(' arg ',' arg ')'     { $$ = new Instruction(*$1, *$2, *$4, *$6, P(@1)); }
-|               NAME op '(' arg ')'             { $$ = new Instruction(*$1, *$2, *$4, P(@1)); }
+|               NAME op '(' arg ')' %dprec 3    { $$ = new Instruction(*$1, *$2, *$4, P(@1)); }
 |               NAME op '(' ')'                 { $$ = new Instruction(*$1, *$2, P(@1)); }
 |               NAME arg ',' arg                { $$ = new Instruction(*$1, *$2, *$4, P(@1)); }
-|               NAME arg                        { $$ = new Instruction(*$1, *$2, P(@1)); }
+|               NAME arg %dprec 1               { $$ = new Instruction(*$1, *$2, P(@1)); }
 |               NAME                            { $$ = new Instruction(*$1, P(@1)); }
 ;
 
 op:             NAME                            { $$ = new Operation(*$1, P(@1)); }
 ;
 
-arg:            arg_value                       { $$ = new Argument(*$1, P(@1)); }
+arg:            arg_value %dprec 1              { $$ = new Argument(*$1, P(@1)); }
 |               LV                              { $$ = new Argument(LVAR, $1, P(@1)); }
 |               A                               { $$ = new Argument(ARG, $1, P(@1)); }
-|               ident                           { $$ = new Argument(*$1, P(@1)); }
+|               ident %dprec 2                  { $$ = new Argument(*$1, P(@1)); }
 ;
 
-arg_value:      simple_expr                     { $$ = new ArgumentValue($1); }
+arg_value:      expr                            { $$ = new ArgumentValue(*$1); }
 |               '&' ident                       { $$ = new ArgumentValue(*$2); }
 ;
 
@@ -187,9 +193,9 @@ var_def:        ident '=' onl value             {
 }
 ;
 
-value:          expr                            { $$ = new Value($1, P(@1)); }
+value:          expr %dprec 1                   { $$ = new Value(*$1, P(@1)); }
+|               object %dprec 2                 { $$ = new Value(new Object(*$1), P(@1)); }
 |               '&' ident                       { $$ = new Value(*$2, P(@1)); }
-|               object                          { $$ = new Value(new Object(*$1), P(@1)); }
 ;
 
 object:         STRING                          { $$ = new Object(*$1, P(@1)); }
@@ -214,7 +220,7 @@ entry_def:      ENTRY ident                     {
 
 value_def:      DEFINE ident expr               {
   if(driver.has_value_def(*$2)) {
-    error(@1, "already defined value");
+    yyparser.error(@1, "already defined value");
     YYERROR;
   } else
     driver.add_value_def(*$2, *$3);
@@ -232,21 +238,21 @@ ident:          NAME
 |               IDENT
 ;
 
-simple_expr:    '+' expr %prec PLUS             { $$ = $2; }
+expr:           '+' expr %prec PLUS             { $$ = $2; }
 |               '-' expr %prec NEG              { $$ = new NumberValue(-*$2); }
 |               expr '+' expr                   { $$ = new NumberValue(*$1 + *$3); }
 |               expr '-' expr                   { $$ = new NumberValue(*$1 - *$3); }
 |               expr '*' expr                   { $$ = new NumberValue(*$1 * *$3); }
 |               expr '/' expr                   {
   if($1->type() == NumberValue::TYPE_INT && $3->type() == NumberValue::TYPE_INT && $3->i() == 0) {
-    error(@2, "division by zero");
+    yyparser.error(@2, "division by zero");
     YYERROR;
   }
   $$ = new NumberValue(*$1 / *$3);
 }
 |               expr '%' expr                   {
   if($1->type() == NumberValue::TYPE_INT && $3->type() == NumberValue::TYPE_INT && $3->i() == 0) {
-    error(@2, "division by zero");
+    yyparser.error(@2, "division by zero");
     YYERROR;
   } else
     $$ = new NumberValue(*$1 % *$3);
@@ -268,16 +274,14 @@ simple_expr:    '+' expr %prec PLUS             { $$ = $2; }
 |               expr BARBAR expr                { $$ = new NumberValue(*$1 != 0 || *$3 != 0); }
 |               expr '?' expr ':' expr          { $$ = new NumberValue(*$1 != 0 ? $3 : $5); }
 |               num_value
-;
-
-expr:           simple_expr
 |               ident                           {
   if(!driver.has_value_def(*$1)) {
-    error(@1, "undefined value");
+    yyparser.error(@1, "undefined value");
     YYERROR;
   } else
     $$ = new NumberValue(driver.value_def(*$1));
 }
+|               '(' expr ')'                    { $$ = $2; }
 ;
 
 num_value:      INT                             { $$ = new NumberValue($1); }
@@ -300,8 +304,8 @@ namespace letin
   }
 }
 
-static letin::comp::Position loc_to_pos(const letin::comp::Source &source, const letin::comp::impl::Parser::location_type &loc)
-{ return letin::comp::Position(source, loc.begin.line, loc.begin.column); }
+static Position loc_to_pos(const Source &source, const Parser::location_type &loc)
+{ return Position(source, loc.begin.line, loc.begin.column); }
 
-static int yylex(letin::comp::impl::Parser::semantic_type *lval, letin::comp::impl::Parser::location_type *loc, letin::comp::impl::Driver &driver, letin::comp::impl::Lexer &lexer)
+static int yylex(Parser::semantic_type *lval, Parser::location_type *loc, Driver &driver, Lexer &lexer)
 { return lexer.lex(lval, loc); }
