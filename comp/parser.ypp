@@ -116,6 +116,7 @@
 %destructor { delete $$; }      <fun_lines>
 
 %right                  '?'
+%left                   ':'
 %left                   BARBAR
 %left                   AMPAMP
 %left                   '|'
@@ -272,7 +273,7 @@ expr:           '+' expr %prec PLUS             { $$ = $2; }
 |               '!' expr %prec LNOT             { $$ = new NumberValue(*$2 == 0); }
 |               expr AMPAMP expr                { $$ = new NumberValue(*$1 != 0 && *$3 != 0); }
 |               expr BARBAR expr                { $$ = new NumberValue(*$1 != 0 || *$3 != 0); }
-|               expr '?' expr ':' expr          { $$ = new NumberValue(*$1 != 0 ? $3 : $5); }
+|               expr '?' expr ':' expr          { $$ = new NumberValue(*$1 != 0 ? *$3 : *$5); }
 |               num_value
 |               ident                           {
   if(!driver.has_value_def(*$1)) {

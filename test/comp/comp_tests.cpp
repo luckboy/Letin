@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -627,7 +627,6 @@ f(a0) = {\n\
         sources.push_back(Source("test.letins", iss));
         list<Error> errors;
         unique_ptr<Program> prog(_M_comp->compile(sources, errors));
-        for(auto error : errors) cout << error << endl;
         format::Double f = double_to_format_double(3.1415927);
         CPPUNIT_ASSERT(nullptr != prog.get());
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
@@ -646,7 +645,86 @@ f(a0) = {\n\
         END_ASSERT_FUN();
         END_ASSERT_PROG();
       }
-      
+
+      void CompilerTests::test_compiler_evaluates_defined_values()
+      {
+        istringstream iss("\n\
+.define d1 1 + 2\n\
+.define d2 d1 * 3\n\
+.define d3 d1 << 4\n\
+.define d4 d2 * 7.0 + d3 * 11.0\n\
+.define d5 (d1 + 1) * d2\n\
+\n\
+g1 = d1\n\
+\n\
+g2 = d2\n\
+\n\
+g3 = d3\n\
+\n\
+g4 = d4\n\
+\n\
+g5 = d5\n\
+");        
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        ASSERT_PROG(static_cast<size_t>(48 + 0 + 80), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(0U);
+        ASSERT_HEADER_VAR_COUNT(5U);
+        ASSERT_HEADER_CODE_SIZE(0U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        ASSERT_VAR_I(3, 48U);
+        ASSERT_VAR_I(9, 48U + 16U);
+        ASSERT_VAR_I(48, 48U + 32U);
+        ASSERT_VAR_F(591.0, 48U + 48U);
+        ASSERT_VAR_I(36, 48U + 64U);
+        END_ASSERT_PROG();
+      }
+
+      void CompilerTests::test_compiler_evaluates_instruction_argument_values()
+      {
+        istringstream iss("\n\
+.define d1 1 + 2\n\
+.define d2 d1 * 2\n\
+\n\
+f(a0) = {\n\
+        let iload 1 ? 10  + 1 : 5 + 2\n\
+        let iadd 5 + d1, d2 * 2\n\
+        let iload((d2))\n\
+        let iload d1 - 3 ? 10 * 2 : 5 * 3\n\
+        in\n\
+        ret iload lv1\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+        ASSERT_PROG(static_cast<size_t>(48 + 16 + 72), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(1U);
+        ASSERT_HEADER_VAR_COUNT(0U);
+        ASSERT_HEADER_CODE_SIZE(6U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        ASSERT_FUN(0U, 48U, 48U + 16U);
+        ASSERT_LET(ILOAD, IMM(11), NA(), 0);
+        ASSERT_LET(IADD, IMM(8), IMM(12), 1);
+        ASSERT_LET(ILOAD, IMM(6), NA(), 2);
+        ASSERT_LET(ILOAD, IMM(15), NA(), 3);
+        ASSERT_IN(4);
+        ASSERT_RET(ILOAD, LV(1), NA(), 5);
+        END_ASSERT_FUN();
+        END_ASSERT_PROG();
+      }
+
       DEF_IMPL_COMP_TESTS(ImplCompiler);
     }
   }
