@@ -465,7 +465,7 @@ g2 = \"some text\n\43and something\"\n\
         END_ASSERT_PROG();
       }
       
-      void CompilerTests::test_compiler_complain_on_syntax_error()
+      void CompilerTests::test_compiler_complains_on_syntax_error()
       {
         istringstream iss("f = {}");
         vector<Source> sources;
@@ -482,7 +482,7 @@ g2 = \"some text\n\43and something\"\n\
         CPPUNIT_ASSERT(string("syntax error") == error_vector[0].msg());
       }
 
-      void CompilerTests::test_compiler_complain_on_undefined_functions()
+      void CompilerTests::test_compiler_complains_on_undefined_functions()
       {
         istringstream iss("\n\
 f(a1) = {\n\
@@ -510,7 +510,7 @@ f(a1) = {\n\
         CPPUNIT_ASSERT(string("undefined function h") == error_vector[1].msg());
       }
 
-      void CompilerTests::test_compiler_complain_on_already_functions()
+      void CompilerTests::test_compiler_complains_on_already_functions()
       {
         istringstream iss("\n\
 f(a1) = {\n\
@@ -546,8 +546,8 @@ h(a1) = {\n\
         CPPUNIT_ASSERT(1 == error_vector[1].pos().column());
         CPPUNIT_ASSERT(string("already defined function h") == error_vector[1].msg());
       }
-      
-      void CompilerTests::test_compiler_complain_on_undefined_variables()
+
+      void CompilerTests::test_compiler_complains_on_undefined_variables()
       {
         istringstream iss("\n\
 f(a0) = {\n\
@@ -580,7 +580,7 @@ g5 = 1\n\
         CPPUNIT_ASSERT(string("undefined variable g4") == error_vector[2].msg());
       }
 
-      void CompilerTests::test_compiler_complain_on_already_variables()
+      void CompilerTests::test_compiler_complains_on_already_variables()
       {
         istringstream iss("\n\
 g1 = 1\n\
@@ -732,7 +732,7 @@ g5 = 0 ? 1 : 0 ? 2 : 3\n\
         END_ASSERT_PROG();
       }
 
-      void CompilerTests::test_compiler_complain_on_undefined_value()
+      void CompilerTests::test_compiler_complains_on_undefined_value()
       {
         istringstream iss("\n\
 f(a0) = {\n\
@@ -753,7 +753,7 @@ f(a0) = {\n\
         CPPUNIT_ASSERT(string("undefined value") == error_vector[0].msg());
       }
 
-      void CompilerTests::test_compiler_complain_on_already_defined_value()
+      void CompilerTests::test_compiler_complains_on_already_defined_value()
       {
         istringstream iss("\n\
 .define d1 1\n\
