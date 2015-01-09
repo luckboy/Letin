@@ -194,8 +194,8 @@ var_def:        ident '=' onl value             {
 }
 ;
 
-value:          expr %dprec 1                   { $$ = new Value(*$1, P(@1)); }
-|               object %dprec 2                 { $$ = new Value(new Object(*$1), P(@1)); }
+value:          expr %dprec 2                   { $$ = new Value(*$1, P(@1)); }
+|               object %dprec 1                 { $$ = new Value(new Object(*$1), P(@1)); }
 |               '&' ident                       { $$ = new Value(*$2, P(@1)); }
 ;
 

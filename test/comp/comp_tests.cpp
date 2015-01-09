@@ -648,41 +648,6 @@ f(a0) = {\n\
 
       void CompilerTests::test_compiler_evaluates_defined_values()
       {
-        istringstream iss("\n\
-.define d1 1 + 2\n\
-.define d2 d1 * 3\n\
-.define d3 d1 << 4\n\
-.define d4 d2 * 7.0 + d3 * 11.0\n\
-.define d5 (d1 + 1) * d2\n\
-\n\
-g1 = d1\n\
-\n\
-g2 = d2\n\
-\n\
-g3 = d3\n\
-\n\
-g4 = d4\n\
-\n\
-g5 = d5\n\
-");        
-        vector<Source> sources;
-        sources.push_back(Source("test.letins", iss));
-        list<Error> errors;
-        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
-        ASSERT_PROG(static_cast<size_t>(48 + 0 + 80), (*(prog.get())));
-        ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
-        ASSERT_HEADER_ENTRY(0U);
-        ASSERT_HEADER_FUN_COUNT(0U);
-        ASSERT_HEADER_VAR_COUNT(5U);
-        ASSERT_HEADER_CODE_SIZE(0U);
-        ASSERT_HEADER_DATA_SIZE(0U);
-        ASSERT_VAR_I(3, 48U);
-        ASSERT_VAR_I(9, 48U + 16U);
-        ASSERT_VAR_I(48, 48U + 32U);
-        ASSERT_VAR_F(591.0, 48U + 48U);
-        ASSERT_VAR_I(36, 48U + 64U);
-        END_ASSERT_PROG();
       }
 
       void CompilerTests::test_compiler_evaluates_instruction_argument_values()
@@ -723,6 +688,91 @@ f(a0) = {\n\
         ASSERT_RET(ILOAD, LV(1), NA(), 5);
         END_ASSERT_FUN();
         END_ASSERT_PROG();
+      }
+
+      void CompilerTests::test_compiler_evaluates_global_variable_values()
+      {
+        istringstream iss("\n\
+.define d1 1.5 * 2\n\
+.define d2 d1 * 3\n\
+.define d3 10\n\
+\n\
+g1 = d1 + d2\n\
+\n\
+g2 = (10 + d3 * 4)\n\
+\n\
+g3 = [2 + d3, 3 * d3 + 4, 0x11 << 2]\n\
+\n\
+g4 = d3 == 10 ? 1 * 2 != 2 ? 1 : 2 : 3\n\
+\n\
+g5 = 0 ? 1 : 0 ? 2 : 3\n\
+");        
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        ASSERT_PROG(static_cast<size_t>(48 + 0 + 80 + 32), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(0U);
+        ASSERT_HEADER_VAR_COUNT(5U);
+        ASSERT_HEADER_CODE_SIZE(0U);
+        ASSERT_HEADER_DATA_SIZE(32U);
+        ASSERT_VAR_F(12.0, 48U);
+        ASSERT_VAR_I(50, 48U + 16U);
+        ASSERT_VAR_O(IARRAY64, 3, 48U + 32U, 48U + 80U);
+        ASSERT_I(12, 0);
+        ASSERT_I(34, 1);
+        ASSERT_I(0x44, 2);
+        END_ASSERT_VAR_O();
+        ASSERT_VAR_I(2, 48U + 48U);
+        ASSERT_VAR_I(3, 48U + 64U);
+        END_ASSERT_PROG();
+      }
+
+      void CompilerTests::test_compiler_complain_on_undefined_value()
+      {
+        istringstream iss("\n\
+f(a0) = {\n\
+        ret iload((d1))\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr == prog.get());
+        vector<Error> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), errors.size());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
+        CPPUNIT_ASSERT(3 == error_vector[0].pos().line());
+        CPPUNIT_ASSERT(14 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("undefined value") == error_vector[0].msg());
+      }
+
+      void CompilerTests::test_compiler_complain_on_already_defined_value()
+      {
+        istringstream iss("\n\
+.define d1 1\n\
+.define d2 2\n\
+.define d3 3\n\
+.define d2 4\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr == prog.get());
+        vector<Error> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), errors.size());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
+        CPPUNIT_ASSERT(5 == error_vector[0].pos().line());
+        CPPUNIT_ASSERT(1 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("already defined value") == error_vector[0].msg());
       }
 
       DEF_IMPL_COMP_TESTS(ImplCompiler);

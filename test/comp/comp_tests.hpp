@@ -56,6 +56,9 @@ namespace letin
         CPPUNIT_TEST(test_compiler_compiles_load2_instructions);
         CPPUNIT_TEST(test_compiler_evaluates_defined_values);
         CPPUNIT_TEST(test_compiler_evaluates_instruction_argument_values);
+        CPPUNIT_TEST(test_compiler_evaluates_global_variable_values);
+        CPPUNIT_TEST(test_compiler_complain_on_undefined_value);
+        CPPUNIT_TEST(test_compiler_complain_on_already_defined_value);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Compiler *_M_comp;
@@ -85,6 +88,8 @@ namespace letin
         void test_compiler_evaluates_defined_values();
         void test_compiler_evaluates_instruction_argument_values();
         void test_compiler_evaluates_global_variable_values();
+        void test_compiler_complain_on_undefined_value();
+        void test_compiler_complain_on_already_defined_value();
       };
 
       DECL_IMPL_COMP_TESTS(ImplCompiler);
