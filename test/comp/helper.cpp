@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -19,8 +19,8 @@ namespace letin
   {
     namespace test
     {
-      bool is_fun(uint32_t arg_count, const format::Function &fun)
-      { return arg_count == ntohl(fun.arg_count); }
+      bool is_fun(uint32_t arg_count, uint32_t instr_count, const format::Function &fun)
+      { return arg_count == ntohl(fun.arg_count) && instr_count == ntohl(fun.instr_count); }
 
       bool is_instr(uint32_t instr, uint32_t op, const Argument &arg1, const Argument &arg2, const format::Instruction &format_instr)
       {

@@ -64,7 +64,7 @@ f(a1) = {\n\
         ASSERT_HEADER_VAR_COUNT(0U);
         ASSERT_HEADER_CODE_SIZE(4U);
         ASSERT_HEADER_DATA_SIZE(0U);
-        ASSERT_FUN(1U, 48U, 48U + 16U);
+        ASSERT_FUN(1U, 4U, 48U, 48U + 16U);
         ASSERT_LET(ILOAD, IMM(2), NA(), 0);
         ASSERT_LET(ILOAD, IMM(2), NA(), 1);
         ASSERT_IN(2);
@@ -101,7 +101,7 @@ f(a1) = {\n\
         ASSERT_HEADER_VAR_COUNT(0U);
         ASSERT_HEADER_CODE_SIZE(6U);
         ASSERT_HEADER_DATA_SIZE(0U);
-        ASSERT_FUN(1U, 48U, 48U + 16U);
+        ASSERT_FUN(1U, 6U, 48U, 48U + 16U);
         ASSERT_LET(ILOAD, IMM(-2), NA(), 0);
         ASSERT_LET(ILOAD, IMM(0x1234abcd), NA(), 1);
         ASSERT_IN(2);
@@ -139,7 +139,7 @@ f(a1) = {\n\
         ASSERT_HEADER_VAR_COUNT(0U);
         ASSERT_HEADER_CODE_SIZE(6U);
         ASSERT_HEADER_DATA_SIZE(0U);
-        ASSERT_FUN(1U, 48U, 48U + 16U);
+        ASSERT_FUN(1U, 6U, 48U, 48U + 16U);
         ASSERT_LET(FLOAD, IMM(0.123f), NA(), 0);
         ASSERT_LET(FLOAD, IMM(123e10f), NA(), 1);
         ASSERT_IN(2);
@@ -183,7 +183,7 @@ label1: let iadd a0, 10\n\
         ASSERT_HEADER_VAR_COUNT(0U);
         ASSERT_HEADER_CODE_SIZE(12U);
         ASSERT_HEADER_DATA_SIZE(0U);
-        ASSERT_FUN(2U, 48U, 48U + 16U);
+        ASSERT_FUN(2U, 12U, 48U, 48U + 16U);
         ASSERT_LET(IEQ, A(0), IMM(1), 0);
         ASSERT_IN(1);
         ASSERT_JC(LV(0), 5, 2);
@@ -249,14 +249,14 @@ h(a2) = {\n\
         ASSERT_HEADER_CODE_SIZE(19U);
         ASSERT_HEADER_DATA_SIZE(0U);
         // f
-        ASSERT_FUN(3U, 48U, 48U + 40U);
+        ASSERT_FUN(3U, 4U, 48U, 48U + 40U);
         ASSERT_LET(IADD, A(0), A(1), 0);
         ASSERT_LET(IMUL, A(0), A(2), 1);
         ASSERT_IN(2);
         ASSERT_RET(IDIV, LV(0), LV(1), 3);
         END_ASSERT_FUN();
         // g
-        ASSERT_FUN(4U, 48U + 12U, 48U + 40U);
+        ASSERT_FUN(4U, 11U, 48U + 12U, 48U + 40U);
         ASSERT_ARG(IADD, A(0), A(1), 0);
         ASSERT_ARG(IADD, A(1), A(2), 1);
         ASSERT_ARG(INEG, A(2), NA(), 2);
@@ -270,7 +270,7 @@ h(a2) = {\n\
         ASSERT_RET(RTUPLE, NA(), NA(), 10);
         END_ASSERT_FUN();
         // h
-        ASSERT_FUN(2U, 48U + 24U, 48U + 40U);
+        ASSERT_FUN(2U, 4U, 48U + 24U, 48U + 40U);
         ASSERT_ARG(ILOAD, A(0), NA(), 0);
         ASSERT_ARG(ILOAD, A(1), NA(), 1);
         ASSERT_ARG(IMUL, A(0), A(1), 2);
@@ -313,21 +313,21 @@ g3 = 30\n\
         ASSERT_HEADER_CODE_SIZE(4U);
         ASSERT_HEADER_DATA_SIZE(0U);
         // f
-        ASSERT_FUN(0U, 48U, 48U + 24U + 48U);
+        ASSERT_FUN(0U, 1U, 48U, 48U + 24U + 48U);
         ASSERT_RET(ILOAD, GV(0), NA(), 0);
         END_ASSERT_FUN();
         // g
-        ASSERT_FUN(1U, 48U + 12U, 48U + 24U + 48U);
+        ASSERT_FUN(1U, 3U, 48U + 12U, 48U + 24U + 48U);
         ASSERT_ARG(FLOAD, GV(1), NA(), 0);
         ASSERT_ARG(ILOAD, GV(2), NA(), 1);
         ASSERT_RET(RTUPLE, NA(), NA(), 2);
+        END_ASSERT_FUN();
         // g1
         ASSERT_VAR_I(20, 48U + 24U);
         // g2
         ASSERT_VAR_F(2.5, 48U + 24U + 16U);
         // g3
         ASSERT_VAR_I(30, 48U + 24U + 32U);
-        END_ASSERT_FUN();
         END_ASSERT_PROG();
       }
 
@@ -447,7 +447,7 @@ g2 = \"some text\n\43and something\"\n\
         ASSERT_HEADER_VAR_COUNT(2U);
         ASSERT_HEADER_CODE_SIZE(1U);
         ASSERT_HEADER_DATA_SIZE(32U);
-        ASSERT_FUN(0U, 48U, 48U + 16U + 32U);
+        ASSERT_FUN(0U, 1U, 48U, 48U + 16U + 32U);
         ASSERT_RET(ILOAD, IMM('a'), NA(), 0);
         END_ASSERT_FUN();
         ASSERT_VAR_I('\321', 48U + 16U);
@@ -653,7 +653,7 @@ f(a0) = {\n\
         ASSERT_HEADER_VAR_COUNT(0U);
         ASSERT_HEADER_CODE_SIZE(3U);
         ASSERT_HEADER_DATA_SIZE(0U);
-        ASSERT_FUN(0U, 48U, 48U + 16U);
+        ASSERT_FUN(0U, 3U, 48U, 48U + 16U);
         ASSERT_ARG(ILOAD2, IMM(0x11223344), IMM(0x55667788), 0);
         ASSERT_ARG(FLOAD2, IMM(static_cast<int32_t>(f.dword >> 32)), IMM(static_cast<int32_t>(f.dword & 0xffffffff)), 1);
         ASSERT_RET(RTUPLE, NA(), NA(), 2);
@@ -694,7 +694,7 @@ f(a0) = {\n\
         ASSERT_HEADER_VAR_COUNT(0U);
         ASSERT_HEADER_CODE_SIZE(6U);
         ASSERT_HEADER_DATA_SIZE(0U);
-        ASSERT_FUN(0U, 48U, 48U + 16U);
+        ASSERT_FUN(0U, 6U, 48U, 48U + 16U);
         ASSERT_LET(ILOAD, IMM(11), NA(), 0);
         ASSERT_LET(IADD, IMM(8), IMM(12), 1);
         ASSERT_LET(ILOAD, IMM(6), NA(), 2);
@@ -824,7 +824,7 @@ f(a1) = {\n\
         ASSERT_HEADER_VAR_COUNT(0U);
         ASSERT_HEADER_CODE_SIZE(3U);
         ASSERT_HEADER_DATA_SIZE(0U);
-        ASSERT_FUN(1U, 48U, 48U + 16U);
+        ASSERT_FUN(1U, 3U, 48U, 48U + 16U);
         ASSERT_LET(IADD, A(0), IMM(1), 0);
         ASSERT_IN(1);
         ASSERT_RET(IADD, LV(0), IMM(2), 2);
@@ -899,13 +899,13 @@ h(a0) = {\n\
         ASSERT_HEADER_VAR_COUNT(0U);
         ASSERT_HEADER_CODE_SIZE(9U);
         ASSERT_HEADER_DATA_SIZE(0U);
-        ASSERT_FUN(0U, 48U, 48U + 40U);
+        ASSERT_FUN(0U, 1U, 48U, 48U + 40U);
         ASSERT_RET(ILOAD, IMM(1), NA(), 0);
         END_ASSERT_FUN();
-        ASSERT_FUN(0U, 48U + 12U, 48U + 40U);
+        ASSERT_FUN(0U, 1U, 48U + 12U, 48U + 40U);
         ASSERT_RET(IADD, IMM(10), IMM(20), 0);
         END_ASSERT_FUN();
-        ASSERT_FUN(0U, 48U + 24U, 48U + 40U);
+        ASSERT_FUN(0U, 7U, 48U + 24U, 48U + 40U);
         ASSERT_LET(ICALL, IMM(1), NA(), 0);
         ASSERT_LET(ICALL, IMM(0), NA(), 1);
         ASSERT_IN(2);

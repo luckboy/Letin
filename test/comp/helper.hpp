@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -34,7 +34,7 @@ CPPUNIT_ASSERT(is_instr(instr, op, arg1, arg2, tmp_instrs[j]))
 #define ASSERT_ARG(op, arg1, arg2, j)   ASSERT_INSTR(opcode::INSTR_ARG, opcode::OP_##op, arg1, arg2, j)
 #define ASSERT_RETRY(j)                 ASSERT_INSTR(opcode::INSTR_IN, 0, Argument(0), Argument(0), j)
 
-#define ASSERT_FUN(arg_count, fun_offset, code_offset)                          \
+#define ASSERT_FUN(arg_count, instr_count, fun_offset, code_offset)             \
 {                                                                               \
   const format::Function *tmp_fun =                                             \
     reinterpret_cast<const format::Function *>(tmp_ptr + fun_offset);           \
@@ -42,7 +42,8 @@ CPPUNIT_ASSERT(is_instr(instr, op, arg1, arg2, tmp_instrs[j]))
   const format::Instruction *tmp_instrs =                                       \
     reinterpret_cast<const format::Instruction *>(tmp_ptr + code_offset) +      \
     tmp_instr_addr;                                                             \
-  CPPUNIT_ASSERT(is_fun(arg_count, *tmp_fun))
+  CPPUNIT_ASSERT(is_fun(arg_count, instr_count, *tmp_fun))
+  
 #define END_ASSERT_FUN()                                                        \
 }
 
@@ -129,7 +130,7 @@ namespace letin
         { format_arg.lvar = i; }
       };
 
-      bool is_fun(std::uint32_t arg_count, const format::Function &fun);
+      bool is_fun(std::uint32_t arg_count, std::uint32_t instr_count, const format::Function &fun);
 
       bool is_instr(std::uint32_t instr, std::uint32_t op, const Argument &arg1, const Argument &arg2, const format::Instruction &format_instr);
 
