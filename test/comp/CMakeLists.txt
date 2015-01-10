@@ -2,6 +2,8 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(../../comp)
 include_directories(../..)
 
+add_definitions(-DTEST_DIR="\\"${CMAKE_CURRENT_SOURCE_DIR}/test\\"")
+
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}" comp_test_sources)
 
 set(letincomp_static_name "${CMAKE_STATIC_LIBRARY_PREFIX}letincomp${CMAKE_STATIC_LIBRARY_SUFFIX}")

@@ -126,7 +126,7 @@ namespace letin
       
       virtual void add_include_dir(const std::string &dir_name) = 0;
 
-      void add_include_dir(const char *dir_name) { add_include_dir(dir_name); };
+      void add_include_dir(const char *dir_name) { add_include_dir(std::string(dir_name)); };
     };
 
     Compiler *new_compiler();

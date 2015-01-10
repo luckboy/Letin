@@ -132,10 +132,10 @@ namespace letin
       // Static functions.
       //
 
-      static ParseTree *parse(const vector<Source> &sources, list<Error> &errors)
+      static ParseTree *parse(const vector<Source> &sources, const vector<string> &include_dirs, list<Error> &errors)
       {
         ParseTree *tree = new ParseTree();
-        Driver driver(*tree, errors);
+        Driver driver(*tree, include_dirs, errors);
         for(auto source : sources) {
           if(!driver.parse(source)) {
             delete tree;
@@ -755,7 +755,7 @@ namespace letin
 
       Program *ImplCompiler::compile(const vector<Source> &sources, list<Error> &errors)
       {
-        unique_ptr<ParseTree> tree(parse(sources, errors));
+        unique_ptr<ParseTree> tree(parse(sources, _M_include_dirs, errors));
         if(tree.get() == nullptr) return nullptr;
         return generate_prog(*tree, errors);
       }

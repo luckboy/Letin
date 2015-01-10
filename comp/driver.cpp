@@ -39,7 +39,7 @@ namespace letin
         Source saved_source = _M_source;
         string saved_file_name = _M_file_name;
         bool result = true;
-        for(int i = -1; i < _M_include_dirs.size(); i++) {
+        for(int i = -1; i < static_cast<int>(_M_include_dirs.size()); i++) {
           _M_source = Source((i >= 0 ? _M_include_dirs[i] + "/" : string()) + file_name);
           _M_file_name = _M_source.file_name();
           SourceStream ss(_M_source.open());

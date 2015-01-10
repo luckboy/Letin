@@ -23,13 +23,14 @@ namespace letin
       {
         Source _M_source;
         ParseTree &_M_parse_tree;
+        const std::vector<std::string> &_M_include_dirs;
         std::list<Error> &_M_errors;
-        std::vector<std::string> _M_include_dirs;
         std::string _M_file_name;
         std::unordered_map<std::string, NumberValue> _M_value_defs;
       public:
-        Driver(ParseTree &parse_tree, std::list<Error> &errors) :
-          _M_parse_tree(parse_tree), _M_errors(errors) {}
+        Driver(ParseTree &parse_tree, const std::vector<std::string> &include_dirs,
+               std::list<Error> &errors) :
+          _M_parse_tree(parse_tree), _M_include_dirs(include_dirs), _M_errors(errors) {}
 
         virtual ~Driver();
         

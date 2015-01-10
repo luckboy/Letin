@@ -5,8 +5,10 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
+#include <fstream>
 #include <string>
 #include "comp_tests.hpp"
+#include "fs_util.hpp"
 #include "impl_comp.hpp"
 #include "helper.hpp"
 
@@ -14,15 +16,28 @@ using namespace std;
 using namespace letin::comp;
 using namespace letin::util;
 
+#define TEST_FILE(dir_name)     TEST_DIR "/" dir_name
+
 namespace letin
 {
   namespace comp
   {
     namespace test
     {
-      void CompilerTests::setUp() { _M_comp = new_comp(); }
+      void CompilerTests::setUp()
+      {
+        make_dir(TEST_DIR);
+        _M_comp = new_comp();
+        _M_comp->add_include_dir(TEST_DIR);
+      }
 
-      void CompilerTests::tearDown() { delete _M_comp; }
+      void CompilerTests::tearDown() {
+        delete _M_comp;
+        vector<string> paths;
+        list_file_paths(TEST_DIR, paths);
+        for(auto path : paths) remove_file(path.c_str());
+        remove_dir(TEST_DIR);
+      }
 
       void CompilerTests::test_compiler_compiles_simple_program()
       {
@@ -773,6 +788,48 @@ f(a0) = {\n\
         CPPUNIT_ASSERT(5 == error_vector[0].pos().line());
         CPPUNIT_ASSERT(1 == error_vector[0].pos().column());
         CPPUNIT_ASSERT(string("already defined value") == error_vector[0].msg());
+      }
+
+      void CompilerTests::test_compiler_includes_file()
+      {
+        {
+          ofstream ofs(TEST_FILE("inc1.letins"));
+          ofs << "\n\
+.define d1 1\n\
+.define d2 2\n\
+";
+        }
+        istringstream iss("\n\
+.include \"inc1.letins\"\n\
+\n\
+.entry f\n\
+\n\
+f(a1) = {\n\
+        let iadd a0, (d1)\n\
+        in\n\
+        ret iadd lv0, (d2)\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+        ASSERT_PROG(static_cast<size_t>(48 + 16 + 40), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(0U);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(1U);
+        ASSERT_HEADER_VAR_COUNT(0U);
+        ASSERT_HEADER_CODE_SIZE(3U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        ASSERT_FUN(1U, 48U, 48U + 16U);
+        ASSERT_LET(IADD, A(0), IMM(1), 0);
+        ASSERT_IN(1);
+        ASSERT_RET(IADD, LV(0), IMM(2), 2);
+        END_ASSERT_FUN();
+        END_ASSERT_PROG();
       }
 
       DEF_IMPL_COMP_TESTS(ImplCompiler);
