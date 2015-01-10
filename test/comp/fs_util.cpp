@@ -35,9 +35,6 @@ namespace letin
         return true;
       }
 
-      string concatenate_path(const char *dir_name, const char *name)
-      { return string(dir_name) + "/" + string(name); }
-
       bool remove_file(const char *file_name) { return unlink(file_name) != -1; }
 
       bool remove_dir(const char *dir_name) { return rmdir(dir_name) != -1;}

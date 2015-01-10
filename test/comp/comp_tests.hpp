@@ -60,6 +60,7 @@ namespace letin
         CPPUNIT_TEST(test_compiler_complains_on_undefined_value);
         CPPUNIT_TEST(test_compiler_complains_on_already_defined_value);
         CPPUNIT_TEST(test_compiler_includes_file);
+        CPPUNIT_TEST(test_compiler_includes_many_files);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Compiler *_M_comp;
@@ -92,6 +93,7 @@ namespace letin
         void test_compiler_complains_on_undefined_value();
         void test_compiler_complains_on_already_defined_value();
         void test_compiler_includes_file();
+        void test_compiler_includes_many_files();
       };
 
       DECL_IMPL_COMP_TESTS(ImplCompiler);

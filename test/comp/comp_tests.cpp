@@ -831,6 +831,91 @@ f(a1) = {\n\
         END_ASSERT_FUN();
         END_ASSERT_PROG();
       }
+      
+      void CompilerTests::test_compiler_includes_many_files()
+      {
+        {
+          ofstream ofs(TEST_FILE("inc1.letins"));
+          ofs << "\n\
+f(a0) = {\n\
+          ret iload 1\n\
+}\n\
+\n\
+.define d1 10\n\
+";
+        }
+        {
+          ofstream ofs(TEST_FILE("inc2.letins"));
+          ofs << "\n\
+.define d2 20\n\
+.include \"inc3.letins\"\n\
+.define d3 15\n\
+";
+        }
+        {
+          ofstream ofs(TEST_FILE("inc3.letins"));
+          ofs << "\n\
+g(a0) = {\n\
+        ret iadd (d1), (d2)\n\
+}\n\
+";
+        }
+        {
+          ofstream ofs(TEST_FILE("inc4.letins"));
+          ofs << "\n\
+.define d4 d3 * 2\n\
+.define d5 40\n\
+";
+        }
+        istringstream iss("\n\
+.include \"inc1.letins\"\n\
+.include \"inc2.letins\"\n\
+.include \"inc4.letins\"\n\
+\n\
+.entry h\n\
+\n\
+h(a0) = {\n\
+        let icall &g\n\
+        let icall &f\n\
+        in\n\
+        let iadd lv0, d4 + 0\n\
+        let iadd lv1, d5 + 0\n\
+        in\n\
+        ret iadd lv2, lv3\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        for(auto error : errors) cout << error << endl;
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+        ASSERT_PROG(static_cast<size_t>(48 + 40 + 112), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(0U);
+        ASSERT_HEADER_ENTRY(2U);
+        ASSERT_HEADER_FUN_COUNT(3U);
+        ASSERT_HEADER_VAR_COUNT(0U);
+        ASSERT_HEADER_CODE_SIZE(9U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        ASSERT_FUN(0U, 48U, 48U + 40U);
+        ASSERT_RET(ILOAD, IMM(1), NA(), 0);
+        END_ASSERT_FUN();
+        ASSERT_FUN(0U, 48U + 12U, 48U + 40U);
+        ASSERT_RET(IADD, IMM(10), IMM(20), 0);
+        END_ASSERT_FUN();
+        ASSERT_FUN(0U, 48U + 24U, 48U + 40U);
+        ASSERT_LET(ICALL, IMM(1), NA(), 0);
+        ASSERT_LET(ICALL, IMM(0), NA(), 1);
+        ASSERT_IN(2);
+        ASSERT_LET(IADD, LV(0), IMM(30), 3);
+        ASSERT_LET(IADD, LV(1), IMM(40), 4);
+        ASSERT_IN(5);
+        ASSERT_RET(IADD, LV(2), LV(3), 6);
+        END_ASSERT_FUN();
+        END_ASSERT_PROG();
+      }
 
       DEF_IMPL_COMP_TESTS(ImplCompiler);
     }

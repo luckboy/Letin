@@ -21,8 +21,6 @@ namespace letin
 
       bool list_file_paths(const char *dir_name, std::vector<std::string> &paths);
 
-      std::string concatenate_path(const char *dir_name, const char *name);
-
       bool remove_file(const char *file_name);
 
       bool remove_dir(const char *dir_name);
