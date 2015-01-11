@@ -79,7 +79,7 @@ namespace letin
 
       Position(const Source &source, std::size_t line, std::size_t column) :
         _M_source(source), _M_line(line), _M_column(column) {}
-  
+
       const Source &source() const { return _M_source; }
 
       std::size_t line() const { return _M_line; }

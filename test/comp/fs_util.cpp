@@ -8,7 +8,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <cstring>
+#include <string>
 #include <dirent.h>
+#include <limits>
+#include <memory>
 #include <unistd.h>
 #include "fs_util.hpp"
 
@@ -37,7 +40,18 @@ namespace letin
 
       bool remove_file(const char *file_name) { return unlink(file_name) != -1; }
 
-      bool remove_dir(const char *dir_name) { return rmdir(dir_name) != -1;}
+      bool remove_dir(const char *dir_name) { return rmdir(dir_name) != -1; }
+
+      bool change_dir(const char *dir_name) { return chdir(dir_name) != -1; }
+      
+      bool get_current_dir(string &str)
+      {
+        unique_ptr<char []> buf(new char[PATH_MAX + 1]);
+        if(getcwd(buf.get(), PATH_MAX + 1) == nullptr) return false;
+        str.clear();
+        str += buf.get();
+        return true;
+      }
     }
   }
 }

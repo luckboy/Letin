@@ -228,7 +228,12 @@ value_def:      DEFINE ident expr               {
 }
 ;
 
-include:        INCLUDE STRING                  { if(!driver.parse_included_file(*$2)) YYERROR; }
+include:        INCLUDE STRING                  {
+  if(!driver.parse_included_file(*$2)) {
+    yyparser.error(@2, "couldn't include file " + *$2);
+    YYERROR;
+  }
+}
 ;
 
 onl:

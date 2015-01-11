@@ -61,9 +61,12 @@ namespace letin
         CPPUNIT_TEST(test_compiler_complains_on_already_defined_value);
         CPPUNIT_TEST(test_compiler_includes_file);
         CPPUNIT_TEST(test_compiler_includes_many_files);
+        CPPUNIT_TEST(test_compiler_complains_on_non_existent_included_files);
+        CPPUNIT_TEST(test_compiler_complains_on_errors_in_included_files);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Compiler *_M_comp;
+        std::string _M_saved_dir_name;
       public:
         virtual Compiler *new_comp() = 0;
         
@@ -94,6 +97,8 @@ namespace letin
         void test_compiler_complains_on_already_defined_value();
         void test_compiler_includes_file();
         void test_compiler_includes_many_files();
+        void test_compiler_complains_on_non_existent_included_files();
+        void test_compiler_complains_on_errors_in_included_files();
       };
 
       DECL_IMPL_COMP_TESTS(ImplCompiler);

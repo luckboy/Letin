@@ -27,13 +27,15 @@ namespace letin
       void CompilerTests::setUp()
       {
         make_dir(TEST_DIR);
+        get_current_dir(_M_saved_dir_name);
+        change_dir(TEST_DIR);
         _M_comp = new_comp();
-        _M_comp->add_include_dir(TEST_DIR);
       }
 
       void CompilerTests::tearDown() {
         delete _M_comp;
         vector<string> paths;
+        change_dir(_M_saved_dir_name.c_str());
         list_file_paths(TEST_DIR, paths);
         for(auto path : paths) remove_file(path.c_str());
         remove_dir(TEST_DIR);
@@ -888,7 +890,6 @@ h(a0) = {\n\
         sources.push_back(Source("test.letins", iss));
         list<Error> errors;
         unique_ptr<Program> prog(_M_comp->compile(sources, errors));
-        for(auto error : errors) cout << error << endl;
         CPPUNIT_ASSERT(nullptr != prog.get());
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 40 + 112), (*(prog.get())));
@@ -915,6 +916,98 @@ h(a0) = {\n\
         ASSERT_RET(IADD, LV(2), LV(3), 6);
         END_ASSERT_FUN();
         END_ASSERT_PROG();
+      }
+
+      void CompilerTests::test_compiler_complains_on_non_existent_included_files()
+      {
+        {
+          ofstream ofs(TEST_FILE("inc1.letins"));
+          ofs << ".define d1 10";
+        }
+        {
+          ofstream ofs(TEST_FILE("inc2.letins"));
+          ofs << ".define d2 20";
+        }
+        {
+          ofstream ofs(TEST_FILE("inc4.letins"));
+          ofs << ".define d4 40";
+        }
+        istringstream iss("\n\
+.include \"inc1.letins\"\n\
+.include \"inc2.letins\"\n\
+.include \"inc3.letins\"\n\
+.include \"inc4.letins\"\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr == prog.get());
+        vector<Error> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), errors.size());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
+        CPPUNIT_ASSERT(4 == error_vector[0].pos().line());
+        CPPUNIT_ASSERT(3 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("couldn't include file inc3.letins") == error_vector[0].msg());
+      }
+      
+      void CompilerTests::test_compiler_complains_on_errors_in_included_files()
+      {
+        {
+          ofstream ofs(TEST_FILE("inc1.letins"));
+          ofs << "\n\
+f(a1) = {\n\
+          ret iadd a0, g1\n\
+}\n\
+";
+        }
+        {
+          ofstream ofs(TEST_FILE("inc2.letins"));
+          ofs << "\n\
+g(a0) = {\n\
+        ret iadd g2, g3\n\
+}\n\
+";
+        }
+        {
+          ofstream ofs(TEST_FILE("inc3.letins"));
+          ofs << ".define d4 40";
+        }
+        istringstream iss("\n\
+.include \"inc1.letins\"\n\
+\n\
+h(a0) = {\n\
+        ret iload g4\n\
+}\n\
+\n\
+.include \"inc2.letins\"\n\
+.include \"inc3.letins\"\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr == prog.get());
+        vector<Error> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(4), errors.size());
+        CPPUNIT_ASSERT(string("inc1.letins") == error_vector[0].pos().source().file_name());
+        CPPUNIT_ASSERT(3 == error_vector[0].pos().line());
+        CPPUNIT_ASSERT(18 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("undefined variable g1") == error_vector[0].msg());
+        CPPUNIT_ASSERT(string("inc2.letins") == error_vector[1].pos().source().file_name());
+        CPPUNIT_ASSERT(3 == error_vector[1].pos().line());
+        CPPUNIT_ASSERT(13 == error_vector[1].pos().column());
+        CPPUNIT_ASSERT(string("undefined variable g2") == error_vector[1].msg());
+        CPPUNIT_ASSERT(string("inc2.letins") == error_vector[2].pos().source().file_name());
+        CPPUNIT_ASSERT(3 == error_vector[2].pos().line());
+        CPPUNIT_ASSERT(16 == error_vector[2].pos().column());
+        CPPUNIT_ASSERT(string("undefined variable g3") == error_vector[2].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[3].pos().source().file_name());
+        CPPUNIT_ASSERT(5 == error_vector[3].pos().line());
+        CPPUNIT_ASSERT(13 == error_vector[3].pos().column());
+        CPPUNIT_ASSERT(string("undefined variable g4") == error_vector[3].msg());
       }
 
       DEF_IMPL_COMP_TESTS(ImplCompiler);

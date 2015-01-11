@@ -365,6 +365,7 @@ namespace letin
           errors.push_back(Error(instr.pos(), "unknown operation"));
           return false;
         }
+        bool is_success = true;
         const OperationDescription &op_desc = iter->second;
         uint32_t arg_type1 = ARG_TYPE_IMM, arg_type2 = ARG_TYPE_IMM;
         bool is_ignored_arg2 = false;
@@ -377,7 +378,7 @@ namespace letin
               is_ignored_arg2 = true;
             } else {
               errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-              return false;
+              is_success = false;
             }
           } else if(instr.arg1()->type() == Argument::TYPE_IMM && instr.arg2() == nullptr &&
               op_desc.op == OP_FLOAD2) {
@@ -388,31 +389,32 @@ namespace letin
               is_ignored_arg2 = true;
             } else {
               errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-              return false;
+              is_success = false;
             }
           } else {
             if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type1, op_desc.arg_value_type1, instr.pos(), errors))
-              return false;
+              is_success = false;
           }
         } else {
           if(op_desc.arg_value_type1 != VALUE_TYPE_ERROR) {
             errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-            return false;
+            is_success = false;
           }
           ungen_fun.instrs[ip].arg1.i = 0;
         }
         if(!is_ignored_arg2) {
           if(instr.arg2() != nullptr) {
             if(!arg_to_format_arg(ungen_prog, *(instr.arg2()), ungen_fun.instrs[ip].arg2, arg_type2, op_desc.arg_value_type2, instr.pos(), errors))
-              return false;
+              is_success = false;
           } else {
             if(op_desc.arg_value_type2 != VALUE_TYPE_ERROR) {
               errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-              return false;
+              is_success = false;
             }
             ungen_fun.instrs[ip].arg2.i = 0;
           }
         }
+        if(!is_success) return false;
         ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, op_desc.op, arg_type1, arg_type2));
         ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
         ungen_fun.instrs[ip].arg2.i = htonl(ungen_fun.instrs[ip].arg2.i);
@@ -441,25 +443,27 @@ namespace letin
           errors.push_back(Error(instr.pos(), "instruction can't have operation"));
           return false;
         }
+        bool is_success = true;
         uint32_t arg_type;
         if(instr.arg1() != nullptr) {
           if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type, VALUE_TYPE_INT, instr.pos(), errors))
-            return false;
+            is_success = false;
         } else {
           errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-          return false;
+          is_success = false;
         }
         if(instr.arg2() != nullptr) {
           if(instr.arg2()->type() == Argument::TYPE_IDENT) {
             uint32_t instr_addr;
             if(!get_instr_addr(ungen_fun, instr_addr, instr.arg2()->ident(), instr.arg2()->pos(), errors))
-              return false;
+              is_success = false;
             ungen_fun.instrs[ip].arg2.i = instr_addr - (ip + 1);
           }
         } else {
           errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
-          return false;
+          is_success = false;
         }
+        if(!is_success) return false;
         ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_JC, 0, arg_type, ARG_TYPE_IMM));
         ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
         ungen_fun.instrs[ip].arg2.i = htonl(ungen_fun.instrs[ip].arg2.i);
@@ -747,6 +751,19 @@ namespace letin
         return prog;
       }
 
+      static void sort_errors(list<Error> &errors)
+      {
+        errors.sort([](const Error &error1, const Error &error2) {
+          if(error1.pos().source().file_name() < error2.pos().source().file_name())
+            return true;
+          else if(error1.pos().source().file_name() == error2.pos().source().file_name())
+            if(error1.pos().line() < error2.pos().line())
+              return true;
+            else if(error1.pos().line() == error2.pos().line())
+              return error1.pos().column() < error2.pos().column();
+        });
+      }
+      
       //
       // An ImplCompiler class.
       //
@@ -756,8 +773,10 @@ namespace letin
       Program *ImplCompiler::compile(const vector<Source> &sources, list<Error> &errors)
       {
         unique_ptr<ParseTree> tree(parse(sources, _M_include_dirs, errors));
-        if(tree.get() == nullptr) return nullptr;
-        return generate_prog(*tree, errors);
+        Program *prog = nullptr;
+        if(tree.get() != nullptr) prog = generate_prog(*tree, errors);
+        sort_errors(errors);
+        return prog;
       }
 
       void ImplCompiler::add_include_dir(const string &dir_name)

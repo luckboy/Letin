@@ -45,7 +45,6 @@ namespace letin
           SourceStream ss(_M_source.open());
           if(!ss.istream().good()) {
             if(i + 1 >= _M_include_dirs.size()) {
-              _M_errors.push_back(Error(Position(_M_source, 1, 1), "can't open file"));
               result = false;
               break;
             }

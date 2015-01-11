@@ -24,6 +24,10 @@ namespace letin
       bool remove_file(const char *file_name);
 
       bool remove_dir(const char *dir_name);
+
+      bool change_dir(const char *dir_name);
+      
+      bool get_current_dir(std::string &str);
     }
   }
 }
