@@ -519,11 +519,11 @@ f(a1) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(2), errors.size());
         CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
         CPPUNIT_ASSERT(3 == error_vector[0].pos().line());
-        CPPUNIT_ASSERT(13 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(19 == error_vector[0].pos().column());
         CPPUNIT_ASSERT(string("undefined function g") == error_vector[0].msg());
         CPPUNIT_ASSERT(string("test.letins") == error_vector[1].pos().source().file_name());
         CPPUNIT_ASSERT(4 == error_vector[1].pos().line());
-        CPPUNIT_ASSERT(13 == error_vector[1].pos().column());
+        CPPUNIT_ASSERT(19 == error_vector[1].pos().column());
         CPPUNIT_ASSERT(string("undefined function h") == error_vector[1].msg());
       }
 
@@ -586,14 +586,14 @@ g5 = 1\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(3), errors.size());
         CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
         CPPUNIT_ASSERT(3 == error_vector[0].pos().line());
-        CPPUNIT_ASSERT(13 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(19 == error_vector[0].pos().column());
         CPPUNIT_ASSERT(string("undefined variable g1") == error_vector[0].msg());
         CPPUNIT_ASSERT(string("test.letins") == error_vector[1].pos().source().file_name());
         CPPUNIT_ASSERT(4 == error_vector[1].pos().line());
-        CPPUNIT_ASSERT(13 == error_vector[1].pos().column());
+        CPPUNIT_ASSERT(19 == error_vector[1].pos().column());
         CPPUNIT_ASSERT(string("undefined variable g2") == error_vector[1].msg());
         CPPUNIT_ASSERT(5 == error_vector[2].pos().line());
-        CPPUNIT_ASSERT(13 == error_vector[2].pos().column());
+        CPPUNIT_ASSERT(19 == error_vector[2].pos().column());
         CPPUNIT_ASSERT(string("undefined variable g4") == error_vector[2].msg());
       }
 
@@ -766,8 +766,8 @@ f(a0) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), errors.size());
         CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
         CPPUNIT_ASSERT(3 == error_vector[0].pos().line());
-        CPPUNIT_ASSERT(14 == error_vector[0].pos().column());
-        CPPUNIT_ASSERT(string("undefined value") == error_vector[0].msg());
+        CPPUNIT_ASSERT(20 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("undefined value d1") == error_vector[0].msg());
       }
 
       void CompilerTests::test_compiler_complains_on_already_defined_value()
@@ -788,8 +788,8 @@ f(a0) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), errors.size());
         CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
         CPPUNIT_ASSERT(5 == error_vector[0].pos().line());
-        CPPUNIT_ASSERT(1 == error_vector[0].pos().column());
-        CPPUNIT_ASSERT(string("already defined value") == error_vector[0].msg());
+        CPPUNIT_ASSERT(9 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("already defined value d2") == error_vector[0].msg());
       }
 
       void CompilerTests::test_compiler_includes_file()
@@ -948,7 +948,7 @@ h(a0) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), errors.size());
         CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
         CPPUNIT_ASSERT(4 == error_vector[0].pos().line());
-        CPPUNIT_ASSERT(3 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(10 == error_vector[0].pos().column());
         CPPUNIT_ASSERT(string("couldn't include file inc3.letins") == error_vector[0].msg());
       }
       
@@ -994,19 +994,19 @@ h(a0) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(4), errors.size());
         CPPUNIT_ASSERT(string("inc1.letins") == error_vector[0].pos().source().file_name());
         CPPUNIT_ASSERT(3 == error_vector[0].pos().line());
-        CPPUNIT_ASSERT(18 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(24 == error_vector[0].pos().column());
         CPPUNIT_ASSERT(string("undefined variable g1") == error_vector[0].msg());
         CPPUNIT_ASSERT(string("inc2.letins") == error_vector[1].pos().source().file_name());
         CPPUNIT_ASSERT(3 == error_vector[1].pos().line());
-        CPPUNIT_ASSERT(13 == error_vector[1].pos().column());
+        CPPUNIT_ASSERT(18 == error_vector[1].pos().column());
         CPPUNIT_ASSERT(string("undefined variable g2") == error_vector[1].msg());
         CPPUNIT_ASSERT(string("inc2.letins") == error_vector[2].pos().source().file_name());
         CPPUNIT_ASSERT(3 == error_vector[2].pos().line());
-        CPPUNIT_ASSERT(16 == error_vector[2].pos().column());
+        CPPUNIT_ASSERT(22 == error_vector[2].pos().column());
         CPPUNIT_ASSERT(string("undefined variable g3") == error_vector[2].msg());
         CPPUNIT_ASSERT(string("test.letins") == error_vector[3].pos().source().file_name());
         CPPUNIT_ASSERT(5 == error_vector[3].pos().line());
-        CPPUNIT_ASSERT(13 == error_vector[3].pos().column());
+        CPPUNIT_ASSERT(19 == error_vector[3].pos().column());
         CPPUNIT_ASSERT(string("undefined variable g4") == error_vector[3].msg());
       }
 

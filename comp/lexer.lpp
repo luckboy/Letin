@@ -14,7 +14,7 @@
 #include "driver.hpp"
 #include "lexer.hpp"
 
-#define YY_USER_ACTION          loc->columns();
+#define YY_USER_ACTION          loc->columns(std::strlen(yytext));
 %}
 
 %option c++

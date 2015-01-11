@@ -221,7 +221,7 @@ entry_def:      ENTRY ident                     {
 
 value_def:      DEFINE ident expr               {
   if(driver.has_value_def(*$2)) {
-    yyparser.error(@1, "already defined value");
+    yyparser.error(@2, "already defined value " + *$2);
     YYERROR;
   } else
     driver.add_value_def(*$2, *$3);
@@ -282,7 +282,7 @@ expr:           '+' expr %prec PLUS             { $$ = $2; }
 |               num_value
 |               ident                           {
   if(!driver.has_value_def(*$1)) {
-    yyparser.error(@1, "undefined value");
+    yyparser.error(@1, "undefined value " + *$1);
     YYERROR;
   } else
     $$ = new NumberValue(driver.value_def(*$1));
