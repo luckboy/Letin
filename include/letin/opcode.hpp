@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -21,6 +21,7 @@ namespace letin
     const std::uint32_t INSTR_JUMP =    0x04;
     const std::uint32_t INSTR_ARG =     0x05;
     const std::uint32_t INSTR_RETRY =   0x06;
+    const std::uint32_t INSTR_LETTUPLE = 0x07;
 
     const std::uint32_t OP_ILOAD =      0x00;
     const std::uint32_t OP_ILOAD2 =     0x01;
@@ -100,15 +101,50 @@ namespace letin
     const std::uint32_t OP_INCALL =     0x4b;
     const std::uint32_t OP_FNCALL =     0x4c;
     const std::uint32_t OP_RNCALL =     0x4d;
+    const std::uint32_t OP_RUIAFILL8 =  0x4e;
+    const std::uint32_t OP_RUIAFILL16 = 0x4f;
+    const std::uint32_t OP_RUIAFILL32 = 0x50;
+    const std::uint32_t OP_RUIAFILL64 = 0x51;
+    const std::uint32_t OP_RUSFAFILL =  0x52;
+    const std::uint32_t OP_RUDFAFILL =  0x53;
+    const std::uint32_t OP_RURAFILL =   0x54;
+    const std::uint32_t OP_RUTFILLI =   0x55;
+    const std::uint32_t OP_RUTFILLF =   0x56;
+    const std::uint32_t OP_RUTFILLR =   0x57;
+    const std::uint32_t OP_RUIANTH8 =   0x58;
+    const std::uint32_t OP_RUIANTH16 =  0x59;
+    const std::uint32_t OP_RUIANTH32 =  0x5a;
+    const std::uint32_t OP_RUIANTH64 =  0x5b;
+    const std::uint32_t OP_RUSFANTH =   0x5c;
+    const std::uint32_t OP_RUDFANTH =   0x5d;
+    const std::uint32_t OP_RURANTH =    0x5e;
+    const std::uint32_t OP_RUTNTH =     0x5f;
+    const std::uint32_t OP_RUIASNTH8 =  0x60;
+    const std::uint32_t OP_RUIASNTH16 = 0x61;
+    const std::uint32_t OP_RUIASNTH32 = 0x62;
+    const std::uint32_t OP_RUIASNTH64 = 0x63;
+    const std::uint32_t OP_RUSFASNTH =  0x64;
+    const std::uint32_t OP_RUDFASNTH =  0x65;
+    const std::uint32_t OP_RURASNTH =   0x66;
+    const std::uint32_t OP_RUTSNTH =    0x67;
+    const std::uint32_t OP_RUIALEN8 =   0x68;
+    const std::uint32_t OP_RUIALEN16 =  0x69;
+    const std::uint32_t OP_RUIALEN32 =  0x6a;
+    const std::uint32_t OP_RUIALEN64 =  0x6b;
+    const std::uint32_t OP_RUSFALEN =   0x6c;
+    const std::uint32_t OP_RUDFALEN =   0x6d;
+    const std::uint32_t OP_RURALEN =    0x6e;
+    const std::uint32_t OP_RUTLEN =     0x6f;
+    const std::uint32_t OP_RUTYPE =     0x70;
 
     const std::uint32_t ARG_TYPE_LVAR = 0x0;
     const std::uint32_t ARG_TYPE_ARG =  0x1;
     const std::uint32_t ARG_TYPE_IMM =  0x2;
     const std::uint32_t ARG_TYPE_GVAR = 0x3;
 
-    inline std::uint32_t opcode(std::uint32_t instr, std::uint32_t op, std::uint32_t arg_type1 = 0, std::uint32_t arg_type2 = 0)
+    inline std::uint32_t opcode(std::uint32_t instr, std::uint32_t op, std::uint32_t arg_type1 = 0, std::uint32_t arg_type2 = 0, std::uint32_t local_var_count = 2)
     {
-      return (instr & 0xff) | ((op & 0xff) << 8) | ((arg_type1 & 0xf) << 16) | ((arg_type2 & 0xf) << 20);
+      return (instr & 0xff) | ((op & 0xff) << 8) | ((arg_type1 & 0xf) << 16) | ((arg_type2 & 0xf) << 20) | ((local_var_count - 2) << 24);
     }
 
     inline std::uint32_t opcode_to_instr(std::uint32_t opcode)
@@ -129,6 +165,11 @@ namespace letin
     inline std::uint32_t opcode_to_arg_type2(std::uint32_t opcode)
     {
       return (opcode >> 20) & 0xf;
+    }
+
+    inline std::uint32_t opcode_to_local_var_count(std::uint32_t opcode)
+    {
+      return ((opcode >> 24) & 0xff) + 2;
     }
   }
 }

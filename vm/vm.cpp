@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -35,7 +35,7 @@ namespace letin
     static inline size_t object_size(int type, size_t length)
     {
       size_t elem_size;
-      switch(type) {
+      switch(type & ~OBJECT_TYPE_UNIQUE) {
         case OBJECT_TYPE_IARRAY8:
           elem_size = 1;
           break;
@@ -103,7 +103,7 @@ namespace letin
     {
       if(_M_raw.type != object._M_raw.type) return false;
       if(_M_raw.length != object._M_raw.length) return false;
-      switch(_M_raw.type) {
+      switch(_M_raw.type & ~OBJECT_TYPE_UNIQUE) {
         case OBJECT_TYPE_IARRAY8:
           return equal(_M_raw.is8, _M_raw.is8 + _M_raw.length, object._M_raw.is8);
         case OBJECT_TYPE_IARRAY16:
@@ -132,7 +132,7 @@ namespace letin
 
     Value Object::elem(size_t i) const
     {
-      switch(type()) {
+      switch(type() & ~OBJECT_TYPE_UNIQUE) {
         case OBJECT_TYPE_IARRAY8:
           return Value(_M_raw.is8[i]);
         case OBJECT_TYPE_IARRAY16:
@@ -156,7 +156,7 @@ namespace letin
 
     bool Object::set_elem(size_t i, const Value &value)
     {
-      switch(type()) {
+      switch(type() & ~OBJECT_TYPE_UNIQUE) {
         case OBJECT_TYPE_IARRAY8:
           if(value.type() != VALUE_TYPE_INT) return false;
           _M_raw.is8[i] = value.raw().i;
@@ -198,7 +198,7 @@ namespace letin
     // A ReturnValue class.
     //
 
-    ReturnValue &ReturnValue::operator=(const Value value)
+    ReturnValue &ReturnValue::operator=(const Value &value)
     {
       switch(value.type()) {
         case VALUE_TYPE_INT:
@@ -482,6 +482,8 @@ namespace letin
           return os << value.f();
         case VALUE_TYPE_REF:
           return os << *(value.r());
+        case VALUE_TYPE_CANCELED_REF:
+          return os << "canceled refernce";
         default:
           return os << "error";
       }
@@ -489,7 +491,8 @@ namespace letin
 
     ostream &operator<<(ostream &os, const Object &object)
     {
-      switch(object.type()) {
+      if((object.type() & ~OBJECT_TYPE_UNIQUE) != 0) os << "unique ";
+      switch(object.type() & ~OBJECT_TYPE_UNIQUE) {
         case OBJECT_TYPE_IARRAY8:
           os << "iarray8";
           break;
@@ -565,6 +568,10 @@ namespace letin
           return "no entry";
         case ERROR_NO_NATIVE_FUN:
           return "no native function";
+        case ERROR_UNIQUE_OBJECT:
+          return "unique object";
+        case ERROR_AGAIN_USED_UNIQUE:
+          return "again used unqiue object";
         default:
           return "unknown error";
       }

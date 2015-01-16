@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -46,7 +46,7 @@ namespace letin
         void *orig_ptr = _M_alloc->allocate(sizeof(Header) + size);
         if(orig_ptr == nullptr) return nullptr;
         Header *header = reinterpret_cast<Header *>(orig_ptr);
-        new (header) Header();
+        new(header) Header();
         atomic_thread_fence(memory_order_release);
         void *ptr = (reinterpret_cast<char *>(orig_ptr) + sizeof(Header));
         if(context != nullptr) context->regs().tmp_ptr = ptr;
@@ -63,7 +63,7 @@ namespace letin
         void *orig_ptr = _M_alloc->allocate(sizeof(Header) + size);
         if(orig_ptr == nullptr) return nullptr;
         Header *header = reinterpret_cast<Header *>(orig_ptr);
-        new (header) Header();
+        new(header) Header();
         void *ptr = (reinterpret_cast<char *>(orig_ptr) + sizeof(Header));
         {
           lock_guard<GarbageCollector> guard(*this);
@@ -114,7 +114,7 @@ namespace letin
         mark_and_push_header(header);
         while(!is_empty_stack()) {
           Object *top_object = header_to_object(pop_header());
-          switch(top_object->type()) {
+          switch(top_object->type() & ~OBJECT_TYPE_UNIQUE) {
             case OBJECT_TYPE_RARRAY:
               for(size_t i = 0; i < top_object->length(); i++) {
                 Reference elem_ref = top_object->raw().rs[i];
@@ -126,7 +126,8 @@ namespace letin
               break;
             case OBJECT_TYPE_TUPLE:
               for(size_t i = 0; i < top_object->length(); i++) {
-                if(top_object->raw().tuple_elem_types()[i].raw() == VALUE_TYPE_REF) {
+                if(top_object->raw().tuple_elem_types()[i].raw() == VALUE_TYPE_REF ||
+                    top_object->raw().tuple_elem_types()[i].raw() == VALUE_TYPE_CANCELED_REF) {
                   Reference elem_ref = top_object->raw().tes[i].raw().r;
                   if(!elem_ref.has_nil()) {
                     Header *elem_header = object_to_header(elem_ref.ptr());

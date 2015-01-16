@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -14,6 +14,7 @@ namespace letin
   const int VALUE_TYPE_FLOAT =          1;
   const int VALUE_TYPE_REF =            2;
   const int VALUE_TYPE_PAIR =           3;
+  const int VALUE_TYPE_CANCELED_REF =   4;
   const int VALUE_TYPE_ERROR =          -1;
 
   const int OBJECT_TYPE_IARRAY8 =       0;
@@ -24,6 +25,7 @@ namespace letin
   const int OBJECT_TYPE_DFARRAY =       5;
   const int OBJECT_TYPE_RARRAY =        6;
   const int OBJECT_TYPE_TUPLE =         7;
+  const int OBJECT_TYPE_UNIQUE =        256;
   const int OBJECT_TYPE_ERROR =         -1;
   
   const int ERROR_SUCCESS =             0;
@@ -45,6 +47,8 @@ namespace letin
   const int ERROR_EXCEPTION =           16;
   const int ERROR_NO_ENTRY =            17;
   const int ERROR_NO_NATIVE_FUN =       18;
+  const int ERROR_UNIQUE_OBJECT =       19;
+  const int ERROR_AGAIN_USED_UNIQUE =   20;
   
   const int NATIVE_FUN_ATOI =           0;
   const int NATIVE_FUN_ITOA =           1;

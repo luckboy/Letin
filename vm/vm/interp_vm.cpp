@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -111,12 +111,30 @@ namespace letin
         }
       }
 
-      static inline bool get_ref(ThreadContext &context, Reference &r, const Value &value)
+      static inline bool get_ref(ThreadContext &context, Reference &r, Value &value)
       {
         if(value.type() != VALUE_TYPE_REF) {
-          context.set_error(ERROR_INCORRECT_VALUE);
+          if(value.type() == VALUE_TYPE_CANCELED_REF)
+            context.set_error(ERROR_AGAIN_USED_UNIQUE);
+          else
+            context.set_error(ERROR_INCORRECT_VALUE);
           return false;
         }
+        if(value.raw().r->is_unique()) value.cancel_ref();
+        r = value.raw().r;
+        return true;
+      }
+
+      static inline bool get_ref_for_const_value(ThreadContext &context, Reference &r, const Value &value)
+      {
+        if(value.type() != VALUE_TYPE_REF) {
+          if(value.type() == VALUE_TYPE_CANCELED_REF)
+            context.set_error(ERROR_AGAIN_USED_UNIQUE);
+          else
+            context.set_error(ERROR_INCORRECT_VALUE);
+          return false;
+        }
+        if(value.raw().r->is_unique()) context.set_error(ERROR_UNIQUE_OBJECT);
         r = value.raw().r;
         return true;
       }
@@ -141,7 +159,7 @@ namespace letin
               context.set_error(ERROR_NO_GLOBAL_VAR);
               return false;
             }
-            return get_ref(context, r, context.global_var(arg.gvar));
+            return get_ref_for_const_value(context, r, context.global_var(arg.gvar));
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -158,6 +176,17 @@ namespace letin
         return object;
       }
 
+      static inline Object *new_unique_pair(ThreadContext &context, const Value &value1, const Value &value2)
+      {
+        Object *object = new_object(context, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2);
+        if(object == nullptr) return nullptr;
+        object->raw().tes[0] = value1.tuple_elem();
+        object->raw().tuple_elem_types()[0] = value1.tuple_elem_type();
+        object->raw().tes[1] = value2.tuple_elem();
+        object->raw().tuple_elem_types()[1] = value2.tuple_elem_type();
+        return object;
+      }
+
       static inline bool check_value_type(ThreadContext &context, const Value &value, int type)
       {
         if(value.type() != type) {
@@ -167,10 +196,28 @@ namespace letin
         return true;
       }
 
+      static inline bool check_shared_for_value(ThreadContext &context, const Value &value)
+      {
+        if(value.is_unique()) {
+          context.set_error(ERROR_UNIQUE_OBJECT);
+          return false;
+        }
+        return true;
+      }
+
       static inline bool check_object_type(ThreadContext &context, const Object &object, int type)
       {
         if(object.type() != type) {
           context.set_error(ERROR_INCORRECT_OBJECT);
+          return false;
+        }
+        return true;
+      }
+
+      static inline bool check_shared_for_object(ThreadContext &context, const Object &object)
+      {
+        if(object.is_unique()) {
+          context.set_error(ERROR_UNIQUE_OBJECT);
           return false;
         }
         return true;
@@ -199,6 +246,15 @@ namespace letin
       {
         if(!context.push_arg(value)) {
           context.set_error(ERROR_STACK_OVERFLOW);
+          return false;
+        }
+        return true;
+      }
+
+      static inline bool check_pushed_arg_count(ThreadContext &context, size_t count)
+      {
+        if(context.regs().ac2 >= count) {
+          context.set_error(ERROR_INCORRECT_ARG_COUNT);
           return false;
         }
         return true;
@@ -280,6 +336,26 @@ namespace letin
               context.set_error(ERROR_INCORRECT_ARG_COUNT);
             context.regs().ip = 0;
             break;
+          case INSTR_LETTUPLE:
+          {
+            Value value = interpret_op(context, instr);
+            context.pop_args();
+            if(!value.is_error()) {
+              Reference r;
+              if(get_ref(context, r, value))
+                if((r->type() & ~OBJECT_TYPE_UNIQUE) == OBJECT_TYPE_TUPLE) {
+                  uint32_t local_var_count = opcode_to_local_var_count(instr.opcode);
+                  if(r->length() == local_var_count) {
+                    for(size_t i = 0; i < local_var_count; i++)
+                      if(!context.push_local_var(value)) context.set_error(ERROR_STACK_OVERFLOW);
+                  } else
+                    context.set_error(ERROR_INCORRECT_OBJECT);
+                } else
+                  context.set_error(ERROR_INCORRECT_OBJECT);
+            }
+            context.regs().tmp_ptr = nullptr;
+            break;
+          }
         }
         atomic_thread_fence(memory_order_release);
         return true;
@@ -553,13 +629,13 @@ namespace letin
           }
           case OP_RIARRAY8:
           {
-            Object *object = new_object(context, OBJECT_TYPE_IARRAY8, context.regs().ac2);
-            if(object == nullptr) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_IARRAY8, context.regs().ac2));
+            if(r.is_null()) return Value();
             for(size_t i = 0; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
-              object->raw().is8[i] = context.pushed_arg(i).raw().i;
+              r->raw().is8[i] = context.pushed_arg(i).raw().i;
             }
-            return Value(Reference(object));
+            return Value(r);
           }
           case OP_RIARRAY16:
           {
@@ -617,6 +693,7 @@ namespace letin
             if(r.is_null()) return Value();
             for(size_t i = 0; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_REF)) return Value();
+              if(!check_shared_for_object(context, *(context.pushed_arg(i).raw().r))) return Value();
               r->raw().rs[i] = context.pushed_arg(i).raw().r;
             }
             atomic_thread_fence(memory_order_release);
@@ -627,6 +704,7 @@ namespace letin
             Reference r(new_object(context, OBJECT_TYPE_TUPLE, context.regs().ac2));
             if(r.is_null()) return Value();
             for(size_t i = 0; i < context.regs().ac2; i++) {
+              if(!check_shared_for_value(context, context.pushed_arg(i))) return Value();
               r->raw().tes[i] = context.pushed_arg(i).tuple_elem();
               r->raw().tuple_elem_types()[i] = context.pushed_arg(i).tuple_elem_type();
             }
@@ -970,6 +1048,407 @@ namespace letin
             ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, context.pushed_args());
             if(rv.raw().error != ERROR_SUCCESS) context.set_error(rv.raw().error);
             return Value(rv.raw().r);
+          }
+          case OP_RUIAFILL8:
+          {
+            int64_t i1, i2;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE, i1));
+            if(r.is_null()) return Value();
+            fill_n(r->raw().is8, i1, i2);
+            return Value(r);
+          }
+          case OP_RUIAFILL16:
+          {
+            int64_t i1, i2;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE, i1));
+            if(r.is_null()) return Value();
+            fill_n(r->raw().is16, i1, i2);
+            return Value(r);
+          }
+          case OP_RUIAFILL32:
+          {
+            int64_t i1, i2;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE, i1));
+            if(r.is_null()) return Value();
+            fill_n(r->raw().is32, i1, i2);
+            return Value(r);
+          }
+          case OP_RUIAFILL64:
+          {
+            int64_t i1, i2;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE, i1));
+            if(r.is_null()) return Value();
+            fill_n(r->raw().is64, i1, i2);
+            return Value(r);
+          }
+          case OP_RUSFAFILL:
+          {
+            int64_t i;
+            double f;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_float(context, f, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE, i));
+            if(r.is_null()) return Value();
+            fill_n(r->raw().sfs, i, f);
+            return Value(r);
+          }
+          case OP_RUDFAFILL:
+          {
+            int64_t i;
+            double f;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_float(context, f, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE, i));
+            if(r.is_null()) return Value();
+            fill_n(r->raw().dfs, i, f);
+            return Value(r);
+          }
+          case OP_RURAFILL:
+          {
+            int64_t i;
+            Reference r;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_ref(context, r, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_shared_for_object(context, *r)) return Value(); 
+            Reference r2(new_object(context, OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE, i));
+            if(r2.is_null()) return Value();
+            fill_n(r->raw().rs, i, r);
+            return Value(r2);
+          }
+          case OP_RUTFILLI:
+          {
+            int64_t i1, i2;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, i1));
+            if(r.is_null()) return Value();
+            fill_n(r->raw().tes, i1, TupleElement(i2));
+            fill_n(r->raw().tuple_elem_types(), i1, VALUE_TYPE_INT);
+            return Value(r);
+          }
+          case OP_RUTFILLF:
+          {
+            int64_t i;
+            double f;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_float(context, f, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            Reference r(new_object(context, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, i));
+            if(r.is_null()) return Value();
+            fill_n(r->raw().tes, i, TupleElement(f));
+            fill_n(r->raw().tuple_elem_types(), i, VALUE_TYPE_FLOAT);
+            return Value(r);
+          }
+          case OP_RUTFILLR:
+          {
+            int64_t i;
+            Reference r;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_ref(context, r, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            Reference r2(new_object(context, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, i));
+            if(r2.is_null()) return Value();
+            fill_n(r2->raw().tes, i, TupleElement(r));
+            fill_n(r2->raw().tuple_elem_types(), i, VALUE_TYPE_REF);
+            return Value(r2);
+          }
+          case OP_RUIANTH8:
+          {
+            Reference r;
+            int64_t i;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i)) return Value();
+            Reference r2(new_unique_pair(context, Value(r->raw().is8[i]), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUIANTH16:
+          {
+            Reference r;
+            int64_t i;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i)) return Value();
+            Reference r2(new_unique_pair(context, Value(r->raw().is16[i]), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUIANTH32:
+          {
+            Reference r;
+            int64_t i;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i)) return Value();
+            Reference r2(new_unique_pair(context, Value(r->raw().is32[i]), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUIANTH64:
+          {
+            Reference r;
+            int64_t i;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i)) return Value();
+            Reference r2(new_unique_pair(context, Value(r->raw().is64[i]), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUSFANTH:
+          {
+            Reference r;
+            int64_t i;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i)) return Value();
+            Reference r2(new_unique_pair(context, Value(r->raw().sfs[i]), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUDFANTH:
+          {
+            Reference r;
+            int64_t i;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i)) return Value();
+            Reference r2(new_unique_pair(context, Value(r->raw().dfs[i]), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RURANTH:
+          {
+            Reference r;
+            int64_t i;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i)) return Value();
+            if(!check_shared_for_object(context, *(r->raw().rs[i]))) return Value();
+            Reference r2(new_unique_pair(context, Value(r->raw().rs[i]), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUTNTH:
+          {
+            Reference r;
+            int64_t i;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i)) return Value();
+            Value value(r->raw().tuple_elem_types()[i], r->raw().tes[i]);
+            Reference r2(new_unique_pair(context, value, Value(r)));
+            if(r2.is_null()) return Value();
+            if(value.is_unique()) r->raw().tuple_elem_types()[i] = VALUE_TYPE_CANCELED_REF;
+            return Value(r2);
+          }
+          case OP_RUIASNTH8:
+          {
+            Reference r;
+            int64_t i1, i2;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i1, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_pushed_arg_count(context, 1)) return Value();
+            if(!get_int(context, i2, context.pushed_arg(0))) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i1)) return Value();
+            r->raw().is8[i1] = i2;
+            return Value(r);
+          }
+          case OP_RUIASNTH16:
+          {
+            Reference r;
+            int64_t i1, i2;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i1, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_pushed_arg_count(context, 1)) return Value();
+            if(!get_int(context, i2, context.pushed_arg(0))) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i1)) return Value();
+            r->raw().is16[i1] = i2;
+            return Value(r);
+          }
+          case OP_RUIASNTH32:
+          {
+            Reference r;
+            int64_t i1, i2;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i1, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_pushed_arg_count(context, 1)) return Value();
+            if(!get_int(context, i2, context.pushed_arg(0))) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i1)) return Value();
+            r->raw().is32[i1] = i2;
+            return Value(r);
+          }
+          case OP_RUIASNTH64:
+          {
+            Reference r;
+            int64_t i1, i2;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i1, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_pushed_arg_count(context, 1)) return Value();
+            if(!get_int(context, i2, context.pushed_arg(0))) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i1)) return Value();
+            r->raw().is64[i1] = i2;
+            return Value(r);
+          }
+          case OP_RUSFASNTH:
+          {
+            Reference r;
+            int64_t i;
+            double f;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_pushed_arg_count(context, 1)) return Value();
+            if(!get_float(context, f, context.pushed_arg(0))) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i)) return Value();
+            r->raw().sfs[i] = f;
+            return Value(r);
+          }
+          case OP_RUDFASNTH:
+          {
+            Reference r;
+            int64_t i;
+            double f;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_pushed_arg_count(context, 1)) return Value();
+            if(!get_float(context, f, context.pushed_arg(0))) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i)) return Value();
+            r->raw().dfs[i] = f;
+            return Value(r);
+          }
+          case OP_RURASNTH:
+          {
+            Reference r1, r2;
+            int64_t i;
+            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_pushed_arg_count(context, 1)) return Value();
+            if(!get_ref(context, r2, context.pushed_arg(0))) return Value();
+            if(!check_object_type(context, *r1, OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r1, i)) return Value();
+            r1->raw().rs[i] = r2;
+            atomic_thread_fence(memory_order_release);
+            return Value(r1);
+          }
+          case OP_RUTSNTH:
+          {
+            Reference r;
+            int64_t i;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!check_pushed_arg_count(context, 1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE)) return Value();
+            if(!check_object_elem_index(context, *r, i)) return Value();
+            Value value = context.pushed_arg(0);
+            if(context.pushed_arg(0).is_unique()) context.pushed_arg(0).cancel_ref();
+            r->raw().tuple_elem_types()[i] = VALUE_TYPE_ERROR;
+            atomic_thread_fence(memory_order_release);
+            r->raw().tes[i] = value.tuple_elem();
+            atomic_thread_fence(memory_order_release);
+            r->raw().tuple_elem_types()[i] = value.tuple_elem_type();
+            atomic_thread_fence(memory_order_release);
+            return Value(r);
+          }
+          case OP_RUIALEN8:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUIALEN16:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUIALEN32:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUIALEN64:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUSFALEN:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUDFALEN:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RURALEN:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUTLEN:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
+          }
+          case OP_RUTYPE:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            Reference r2(new_unique_pair(context, Value(r->type()), Value(r)));
+            if(r2.is_null()) return Value();
+            return Value(r2);
           }
           default:
           {

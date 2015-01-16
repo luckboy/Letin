@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -150,6 +150,8 @@ namespace letin
 
       bool is_error() const { return _M_raw.type == VALUE_TYPE_ERROR; }
 
+      bool is_unique() const;
+
       int type() const { return _M_raw.type; }
 
       std::int64_t i() const { return _M_raw.type == VALUE_TYPE_INT ? _M_raw.i : 0; }
@@ -171,6 +173,13 @@ namespace letin
       TupleElementType tuple_elem_type() const { return TupleElementType(_M_raw.type); }
 
       TupleElement tuple_elem() const { return TupleElement(_M_raw.i); }
+
+      bool cancel_ref()
+      {
+        if(_M_raw.type != VALUE_TYPE_REF) return false;
+        _M_raw.type = VALUE_TYPE_CANCELED_REF;
+        return true;
+      }
     };
 
     struct ObjectRaw
@@ -216,6 +225,8 @@ namespace letin
       ObjectRaw &raw() { return _M_raw; }
 
       bool is_error() const { return _M_raw.type == OBJECT_TYPE_ERROR; }
+      
+      bool is_unique() const { return (_M_raw.type & OBJECT_TYPE_UNIQUE) != 0; }
 
       int type() const { return _M_raw.type; }
 
@@ -227,6 +238,9 @@ namespace letin
 
       std::size_t length() const { return _M_raw.length; }
     };
+
+    inline bool Value::is_unique() const
+    { return _M_raw.type == VALUE_TYPE_REF && (_M_raw.r->type() & OBJECT_TYPE_UNIQUE) != 0; }
 
     struct ReturnValueRaw
     {
@@ -248,7 +262,7 @@ namespace letin
 
       ReturnValue(const Value &value) { *this = value; }
 
-      ReturnValue &operator=(const Value value);
+      ReturnValue &operator=(const Value &value);
 
       bool operator==(const ReturnValue &value) const
       { return _M_raw.i == value._M_raw.i && _M_raw.f == value._M_raw.f && _M_raw.r == value._M_raw.r && _M_raw.error == value._M_raw.error; }
