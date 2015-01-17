@@ -1031,6 +1031,8 @@ namespace letin
             if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, context.pushed_args());
             if(rv.raw().error != ERROR_SUCCESS) context.set_error(rv.raw().error);
+            atomic_thread_fence(memory_order_release);
+            context.regs().tmp_r = Reference();
             return Value(rv.raw().i);
           }
           case OP_FNCALL:
@@ -1039,6 +1041,8 @@ namespace letin
             if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, context.pushed_args());
             if(rv.raw().error != ERROR_SUCCESS) context.set_error(rv.raw().error);
+            atomic_thread_fence(memory_order_release);
+            context.regs().tmp_r = Reference();
             return Value(rv.raw().f);
           }
           case OP_RNCALL:
@@ -1047,6 +1051,8 @@ namespace letin
             if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, context.pushed_args());
             if(rv.raw().error != ERROR_SUCCESS) context.set_error(rv.raw().error);
+            atomic_thread_fence(memory_order_release);
+            context.regs().tmp_r = Reference();
             return Value(rv.raw().r);
           }
           case OP_RUIAFILL8:

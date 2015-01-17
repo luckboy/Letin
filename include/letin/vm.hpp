@@ -214,7 +214,7 @@ namespace letin
     public:
       Object() { _M_raw.type = OBJECT_TYPE_ERROR; _M_raw.length = 0; }
 
-      Object(int type, std::size_t length) { _M_raw.type = type; _M_raw.length = length; }
+      Object(int type, std::size_t length = 0) { _M_raw.type = type; _M_raw.length = length; }
 
       bool operator==(const Object &object) const;
 
@@ -225,7 +225,7 @@ namespace letin
       ObjectRaw &raw() { return _M_raw; }
 
       bool is_error() const { return _M_raw.type == OBJECT_TYPE_ERROR; }
-      
+
       bool is_unique() const { return (_M_raw.type & OBJECT_TYPE_UNIQUE) != 0; }
 
       int type() const { return _M_raw.type; }
@@ -324,12 +324,14 @@ namespace letin
     
     class ArgumentList
     {
-      const Value *_M_args;
+      Value *_M_args;
       std::size_t _M_length;
     public:
-      ArgumentList(const Value *args, std::size_t length) : _M_args(args), _M_length(length) {}
+      ArgumentList(Value *args, std::size_t length) : _M_args(args), _M_length(length) {}
 
       const Value &operator[](std::size_t i) const { return _M_args[i]; }
+
+      Value &operator[](std::size_t i) { return _M_args[i]; }
 
       std::size_t length() const { return _M_length; }
     };
@@ -444,7 +446,7 @@ namespace letin
     public:
       virtual ~NativeFunctionHandler();
 
-      virtual ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, const ArgumentList &args) = 0;
+      virtual ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList args) = 0;
     };
 
     class DefaultNativeFunctionHandler : public NativeFunctionHandler
@@ -454,7 +456,7 @@ namespace letin
 
       ~DefaultNativeFunctionHandler();
 
-      ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, const ArgumentList &args);
+      ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList args);
     };
 
     Loader *new_loader();

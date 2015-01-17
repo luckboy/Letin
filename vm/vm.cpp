@@ -60,18 +60,21 @@ namespace letin
         case OBJECT_TYPE_TUPLE:
           elem_size = sizeof(TupleElement) + sizeof(TupleElementType);
           break;
+        case OBJECT_TYPE_IO:
+          elem_size = 0;
+          break;
         default:
           return 0;
       }
       return (sizeof(Object) - max(sizeof(int64_t), sizeof(double))) + length * elem_size;
     }
-    
+
     //
     // A Reference class.
     //
-    
+
     Object Reference::_S_nil;
-    
+
     //
     // A Value class.
     //
@@ -290,7 +293,7 @@ namespace letin
       else
         return nullptr;
     }
-    
+
     Object *GarbageCollector::new_immortal_object(int type, std::size_t length)
     {
       size_t size = object_size(type, length);
@@ -312,67 +315,160 @@ namespace letin
 
     DefaultNativeFunctionHandler::~DefaultNativeFunctionHandler() {}
 
-    ReturnValue DefaultNativeFunctionHandler::invoke(VirtualMachine *vm, ThreadContext *context, int nfi, const ArgumentList &args)
+    ReturnValue DefaultNativeFunctionHandler::invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList args)
     {
-      switch(nfi) {
-        case NATIVE_FUN_ATOI:
-        {
-          if(args.length() != 1)
-            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
-          if(args[0].type() != VALUE_TYPE_REF)
-            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
-          if(args[0].r()->type() != OBJECT_TYPE_IARRAY8)
-            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
-          const char *s = reinterpret_cast<const char *>(args[0].r()->raw().is8);
-          istringstream iss(string(s, args[0].r()->length()));
-          int64_t i = 0;
-          iss >> i;
-          return ReturnValue(i, 0.0, Reference(), ERROR_SUCCESS);
+      try {
+        switch(nfi) {
+          case NATIVE_FUN_ATOI:
+          {
+            if(args.length() != 1)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
+            if(args[0].type() != VALUE_TYPE_REF)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+            if(args[0].r()->type() != OBJECT_TYPE_IARRAY8)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
+            const char *s = reinterpret_cast<const char *>(args[0].r()->raw().is8);
+            istringstream iss(string(s, args[0].r()->length()));
+            int64_t i = 0;
+            iss >> i;
+            return ReturnValue(i, 0.0, Reference(), ERROR_SUCCESS);
+          }
+          case NATIVE_FUN_ITOA:
+          {
+            if(args.length() != 1)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
+            if(args[0].type() != VALUE_TYPE_INT)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+            ostringstream oss;
+            oss << args[0].i();
+            string str = oss.str();
+            Reference r = vm->gc()->new_object(OBJECT_TYPE_IARRAY8, str.length(), context);
+            if(r.is_null())
+              return ReturnValue(0, 0.0, Reference(), ERROR_OUT_OF_MEMORY);
+            copy(str.begin(), str.end(), reinterpret_cast<char *>(r->raw().is8));
+            return ReturnValue(0, 0.0, r, ERROR_SUCCESS);
+          }
+          case NATIVE_FUN_ATOF:
+          {
+            if(args.length() != 1)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
+            if(args[0].type() != VALUE_TYPE_REF)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+            if(args[0].r()->type() != OBJECT_TYPE_IARRAY8)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
+            const char *s = reinterpret_cast<const char *>(args[0].r()->raw().is8);
+            istringstream iss(string(s, args[0].r()->length()));
+            double f = 0.0;
+            iss >> f;
+            return ReturnValue(0, f, Reference(), ERROR_SUCCESS);
+          }
+          case NATIVE_FUN_FTOA:
+          {
+            if(args.length() != 1)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
+            if(args[0].type() != VALUE_TYPE_FLOAT)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+            ostringstream oss;
+            oss << args[0].f();
+            string str = oss.str();
+            Reference r = vm->gc()->new_object(OBJECT_TYPE_IARRAY8, str.length(), context);
+            if(r.is_null())
+              return ReturnValue(0, 0.0, Reference(), ERROR_OUT_OF_MEMORY);
+            copy(str.begin(), str.end(), reinterpret_cast<char *>(r->raw().is8));
+            return ReturnValue(0, 0.0, r, ERROR_SUCCESS);
+          }
+          case NATIVE_FUN_GET_CHAR:
+          {
+            if(args.length() != 1)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
+            if(args[0].type() != VALUE_TYPE_REF)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+            if(args[0].r()->type() != (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE))
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
+            char c;
+            cin >> c;
+            Reference r = vm->gc()->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2, context);
+            if(r.is_null())
+              return ReturnValue(0, 0.0, Reference(), ERROR_OUT_OF_MEMORY);
+            r->set_elem(0, Value(c));
+            r->set_elem(1, args[0]);
+            args[0].cancel_ref();
+            return ReturnValue(0, 0.0, r, ERROR_SUCCESS);
+          }
+          case NATIVE_FUN_PUT_CHAR:
+          {
+            if(args.length() != 2)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
+            if(args[0].type() != VALUE_TYPE_INT)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+            if(args[1].type() != VALUE_TYPE_REF)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+            if(args[1].r()->type() != (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE))
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
+            cout << static_cast<char>(args[0].i());
+            Reference r = vm->gc()->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2, context);
+            if(r.is_null())
+              return ReturnValue(0, 0.0, Reference(), ERROR_OUT_OF_MEMORY);
+            r->set_elem(0, args[0]);
+            r->set_elem(1, args[1]);
+            args[1].cancel_ref();
+            return ReturnValue(0, 0.0, r, ERROR_SUCCESS);
+          }
+          case NATIVE_FUN_GET_LINE:
+          {
+            if(args.length() != 1)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
+            if(args[0].type() != VALUE_TYPE_REF)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+            if(args[0].r()->type() != (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE))
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
+            string str;
+            getline(cin, str);
+            context->regs().tmp_r = vm->gc()->new_object(OBJECT_TYPE_IARRAY8, str.length(), context);
+            if(context->regs().tmp_r.is_null())
+              return ReturnValue(0, 0.0, Reference(), ERROR_OUT_OF_MEMORY);
+            copy(str.begin(), str.end(), context->regs().tmp_r->raw().is8);
+            Reference r = vm->gc()->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2, context);
+            if(r.is_null())
+              return ReturnValue(0, 0.0, Reference(), ERROR_OUT_OF_MEMORY);
+            atomic_thread_fence(memory_order_release);
+            r->set_elem(0, Value(context->regs().tmp_r));
+            r->set_elem(1, args[0]);
+            args[0].cancel_ref();
+            atomic_thread_fence(memory_order_release);
+            context->regs().tmp_r = r;
+            return ReturnValue(0, 0.0, r, ERROR_SUCCESS);
+          }
+          case NATIVE_FUN_PUT_STRING:
+          {
+            if(args.length() != 2)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
+            if(args[0].type() != VALUE_TYPE_REF)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+            if(args[0].r()->type() != OBJECT_TYPE_IARRAY8)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
+            if(args[1].type() != VALUE_TYPE_REF)
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
+            if(args[1].r()->type() != (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE))
+              return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
+            cout.write(reinterpret_cast<const char *>(args[0].r()->raw().is8), args[0].r()->length());
+            Reference r = vm->gc()->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2, context);
+            if(r.is_null())
+              return ReturnValue(0, 0.0, Reference(), ERROR_OUT_OF_MEMORY);
+            r->set_elem(0, Value(static_cast<int64_t>(args[0].r()->length())));
+            r->set_elem(1, args[1]);
+            args[1].cancel_ref();
+            return ReturnValue(0, 0.0, r, ERROR_SUCCESS);
+          }
+          default:
+          {
+            return ReturnValue(0, 0.0, Reference(), ERROR_NO_NATIVE_FUN);
+          }
         }
-        case NATIVE_FUN_ITOA:
-        {
-          if(args.length() != 1)
-            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
-          if(args[0].type() != VALUE_TYPE_INT)
-            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
-          ostringstream oss;
-          oss << args[0].i();
-          string str = oss.str();
-          Reference r = vm->gc()->new_object(OBJECT_TYPE_IARRAY8, str.length(), context);
-          copy(str.begin(), str.end(), reinterpret_cast<char *>(r->raw().is8));
-          return ReturnValue(0, 0.0, r, ERROR_SUCCESS);
-        }
-        case NATIVE_FUN_ATOF:
-        {
-          if(args.length() != 1)
-            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
-          if(args[0].type() != VALUE_TYPE_REF)
-            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
-          if(args[0].r()->type() != OBJECT_TYPE_IARRAY8)
-            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
-          const char *s = reinterpret_cast<const char *>(args[0].r()->raw().is8);
-          istringstream iss(string(s, args[0].r()->length()));
-          double f = 0.0;
-          iss >> f;
-          return ReturnValue(0, f, Reference(), ERROR_SUCCESS);
-        }
-        case NATIVE_FUN_FTOA:
-        {
-          if(args.length() != 1)
-            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_ARG_COUNT);
-          if(args[0].type() != VALUE_TYPE_FLOAT)
-            return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
-          ostringstream oss;
-          oss << args[0].f();
-          string str = oss.str();
-          Reference r = vm->gc()->new_object(OBJECT_TYPE_IARRAY8, str.length(), context);
-          copy(str.begin(), str.end(), reinterpret_cast<char *>(r->raw().is8));
-          return ReturnValue(0, 0.0, r, ERROR_SUCCESS);
-        }
-        default:
-        {
-          return ReturnValue(0, 0.0, Reference(), ERROR_NO_NATIVE_FUN);
-        }
+      } catch(bad_alloc &e) {
+        return ReturnValue(0, 0.0, Reference(), ERROR_OUT_OF_MEMORY);
+      } catch(...) {
+        return ReturnValue(0, 0.0, Reference(), ERROR_EXCEPTION);
       }
     }
 
@@ -391,6 +487,7 @@ namespace letin
       _M_regs.ip = 0;
       _M_regs.rv = ReturnValue();
       _M_regs.tmp_ptr = nullptr;
+      _M_regs.tmp_r = Reference();
       _M_regs.after_leaving_flag = false;
       _M_stack = new Value[stack_size];
       _M_stack_size = stack_size;
@@ -472,7 +569,7 @@ namespace letin
     void initialize_gc() { priv::initialize_thread_stop_cont(); }
 
     void finalize_gc() { priv::finalize_thread_stop_cont(); }
-    
+
     ostream &operator<<(ostream &os, const Value &value)
     {
       switch(value.type()) {
@@ -516,6 +613,8 @@ namespace letin
           break;
         case OBJECT_TYPE_TUPLE:
           break;
+        case OBJECT_TYPE_IO:
+          return os << "io";
         default:
           return os << "error";
       }

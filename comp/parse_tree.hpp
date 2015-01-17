@@ -142,7 +142,7 @@ namespace letin
           _M_type(TYPE_FUN_ADDR), _M_fun(fun), _M_pos(pos) {}
 
         Value(Object *object, const Position &pos) :
-          _M_type(TYPE_REF), _M_object(object), _M_pos(pos) { }
+          _M_type(TYPE_REF), _M_object(object), _M_pos(pos) {}
 
         Value(const Value &value) : _M_type(value._M_type), _M_pos(value._M_pos) { copy_union(value); }
 

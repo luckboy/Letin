@@ -25,6 +25,7 @@ namespace letin
   const int OBJECT_TYPE_DFARRAY =       5;
   const int OBJECT_TYPE_RARRAY =        6;
   const int OBJECT_TYPE_TUPLE =         7;
+  const int OBJECT_TYPE_IO =            8;
   const int OBJECT_TYPE_UNIQUE =        256;
   const int OBJECT_TYPE_ERROR =         -1;
   
@@ -54,6 +55,10 @@ namespace letin
   const int NATIVE_FUN_ITOA =           1;
   const int NATIVE_FUN_ATOF =           2;
   const int NATIVE_FUN_FTOA =           3;
+  const int NATIVE_FUN_GET_CHAR =       4;
+  const int NATIVE_FUN_PUT_CHAR =       5;
+  const int NATIVE_FUN_GET_LINE =       6;
+  const int NATIVE_FUN_PUT_STRING =     7;
 }
 
 #endif
