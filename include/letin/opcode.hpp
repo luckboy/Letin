@@ -136,6 +136,14 @@ namespace letin
     const std::uint32_t OP_RURALEN =    0x6e;
     const std::uint32_t OP_RUTLEN =     0x6f;
     const std::uint32_t OP_RUTYPE =     0x70;
+    const std::uint32_t OP_RUIATOIA8 =  0x71;
+    const std::uint32_t OP_RUIATOIA16 = 0x72;
+    const std::uint32_t OP_RUIATOIA32 = 0x73;
+    const std::uint32_t OP_RUIATOIA64 = 0x74;
+    const std::uint32_t OP_RUSFATOSFA = 0x75;
+    const std::uint32_t OP_RUDFATODFA = 0x76;
+    const std::uint32_t OP_RURATORA   = 0x77;
+    const std::uint32_t OP_RUTTOT     = 0x78;
 
     const std::uint32_t ARG_TYPE_LVAR = 0x0;
     const std::uint32_t ARG_TYPE_ARG =  0x1;

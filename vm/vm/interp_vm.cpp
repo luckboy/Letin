@@ -1456,6 +1456,142 @@ namespace letin
             if(r2.is_null()) return Value();
             return Value(r2);
           }
+          case OP_RUIATOIA8:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_object(context, OBJECT_TYPE_IARRAY8, context.regs().ac2));
+            if(r2.is_null()) return Value();
+            copy_n(r->raw().is8, r->length(), r2->raw().is8);
+            context.regs().tmp_r = r2;
+            Reference r3(new_unique_pair(context, Value(r2), Value(r)));
+            if(r3.is_null()) return Value();
+            context.regs().rv = Value(r3);
+            atomic_thread_fence(memory_order_release);
+            context.regs().tmp_r = Reference();
+            return Value(r3);
+          }
+          case OP_RUIATOIA16:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_object(context, OBJECT_TYPE_IARRAY16, context.regs().ac2));
+            if(r2.is_null()) return Value();
+            copy_n(r->raw().is16, r->length(), r2->raw().is16);
+            context.regs().tmp_r = r2;
+            Reference r3(new_unique_pair(context, Value(r2), Value(r)));
+            if(r3.is_null()) return Value();
+            context.regs().rv = Value(r3);
+            atomic_thread_fence(memory_order_release);
+            context.regs().tmp_r = Reference();
+            return Value(r3);
+          }
+          case OP_RUIATOIA32:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_object(context, OBJECT_TYPE_IARRAY32, context.regs().ac2));
+            if(r2.is_null()) return Value();
+            copy_n(r->raw().is32, r->length(), r2->raw().is32);
+            context.regs().tmp_r = r2;
+            Reference r3(new_unique_pair(context, Value(r2), Value(r)));
+            if(r3.is_null()) return Value();
+            context.regs().rv = Value(r3);
+            atomic_thread_fence(memory_order_release);
+            context.regs().tmp_r = Reference();
+            return Value(r3);
+          }
+          case OP_RUIATOIA64:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_object(context, OBJECT_TYPE_IARRAY64, context.regs().ac2));
+            if(r2.is_null()) return Value();
+            copy_n(r->raw().is64, r->length(), r2->raw().is64);
+            context.regs().tmp_r = r2;
+            Reference r3(new_unique_pair(context, Value(r2), Value(r)));
+            if(r3.is_null()) return Value();
+            context.regs().rv = Value(r3);
+            atomic_thread_fence(memory_order_release);
+            context.regs().tmp_r = Reference();
+            return Value(r3);
+          }
+          case OP_RUSFATOSFA:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_object(context, OBJECT_TYPE_SFARRAY, context.regs().ac2));
+            if(r2.is_null()) return Value();
+            copy_n(r->raw().sfs, r->length(), r2->raw().sfs);
+            context.regs().tmp_r = r2;
+            Reference r3(new_unique_pair(context, Value(r2), Value(r)));
+            if(r3.is_null()) return Value();
+            context.regs().rv = Value(r3);
+            atomic_thread_fence(memory_order_release);
+            context.regs().tmp_r = Reference();
+            return Value(r3);
+          }
+          case OP_RUDFATODFA:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_object(context, OBJECT_TYPE_DFARRAY, context.regs().ac2));
+            if(r2.is_null()) return Value();
+            copy_n(r->raw().dfs, r->length(), r2->raw().dfs);
+            context.regs().tmp_r = r2;
+            Reference r3(new_unique_pair(context, Value(r2), Value(r)));
+            if(r3.is_null()) return Value();
+            context.regs().rv = Value(r3);
+            atomic_thread_fence(memory_order_release);
+            context.regs().tmp_r = Reference();
+            return Value(r3);
+          }
+          case OP_RURATORA:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_object(context, OBJECT_TYPE_RARRAY, context.regs().ac2));
+            if(r2.is_null()) return Value();
+            for(size_t i = 0; i < r->length(); i++) {
+              if(!check_shared_for_object(context, *(r2->raw().rs[i]))) return Value();
+              r2->raw().rs[i] = r->raw().rs[i];
+            }
+            context.regs().tmp_r = r2;
+            Reference r3(new_unique_pair(context, Value(r2), Value(r)));
+            if(r3.is_null()) return Value();
+            context.regs().rv = Value(r3);
+            atomic_thread_fence(memory_order_release);
+            context.regs().tmp_r = Reference();
+            return Value(r3);
+          }
+          case OP_RUTTOT:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(new_object(context, OBJECT_TYPE_TUPLE, context.regs().ac2));
+            if(r2.is_null()) return Value();
+            for(size_t i = 0; i < r->length(); i++) {
+              Value value(r->raw().tuple_elem_types()[i], r->raw().tes[i]);
+              if(!check_shared_for_value(context, value)) return Value();
+              r2->raw().tes[i] = r->raw().tes[i];
+              r2->raw().tuple_elem_types()[i] = r->raw().tuple_elem_types()[i];
+            }
+            context.regs().tmp_r = r2;
+            Reference r3(new_unique_pair(context, Value(r2), Value(r)));
+            if(r3.is_null()) return Value();
+            context.regs().rv = Value(r3);
+            atomic_thread_fence(memory_order_release);
+            context.regs().tmp_r = Reference();
+            return Value(r3);
+          }
           default:
           {
             context.set_error(ERROR_INCORRECT_INSTR);

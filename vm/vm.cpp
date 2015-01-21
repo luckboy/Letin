@@ -580,7 +580,7 @@ namespace letin
         case VALUE_TYPE_REF:
           return os << *(value.r());
         case VALUE_TYPE_CANCELED_REF:
-          return os << "canceled refernce";
+          return os << "canceled reference";
         default:
           return os << "error";
       }
