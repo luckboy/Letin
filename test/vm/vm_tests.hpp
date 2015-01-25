@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -58,6 +58,7 @@ namespace letin
         CPPUNIT_TEST(test_vm_complains_on_incorrect_number_of_arguments);
         CPPUNIT_TEST(test_vm_complains_on_non_existent_global_variable);
         CPPUNIT_TEST(test_vm_executes_load2_instructions);
+        CPPUNIT_TEST(test_vm_executes_instructions_for_unique_objects);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -71,7 +72,7 @@ namespace letin
         void setUp();
 
         void tearDown();
-        
+
         void test_vm_executes_simple_program();
         void test_vm_executes_lets_and_ins();
         void test_vm_executes_int_instructions();
@@ -89,6 +90,10 @@ namespace letin
         void test_vm_complains_on_incorrect_number_of_arguments();
         void test_vm_complains_on_non_existent_global_variable();
         void test_vm_executes_load2_instructions();
+        void test_vm_executes_instructions_for_unique_objects();
+        void test_vm_executes_lettuples();
+        void test_vm_complains_on_many_references_to_unique_object();
+        void test_vm_complains_on_unique_object();
       };
 
       DECL_IMPL_VM_TESTS(InterpreterVirtualMachine);

@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -657,6 +657,67 @@ namespace letin
         thread.system_thread().join();
         CPPUNIT_ASSERT(is_success);
         CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_executes_instructions_for_unique_objects()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        LET(RUIAFILL8, IMM(4), IMM('1'));
+        IN();
+        ARG(ILOAD, IMM('a'), NA());
+        LET(RUIASNTH8, LV(0), IMM(0));
+        IN();
+        ARG(ILOAD, IMM('b'), NA());
+        LET(RUIASNTH8, LV(1), IMM(1));
+        IN();
+        ARG(ILOAD, IMM('c'), NA());
+        LET(RUIASNTH8, LV(2), IMM(2));
+        IN();
+        LET(RUIAFILL8, IMM(3), IMM('2'));
+        IN();
+        ARG(ILOAD, IMM('d'), NA());
+        LET(RUIASNTH8, LV(4), IMM(0));
+        IN();
+        ARG(ILOAD, IMM('e'), NA());
+        LET(RUIASNTH8, LV(5), IMM(1));
+        IN();
+        LET(RUTFILLI, IMM(3), IMM(0));
+        IN();
+        ARG(RLOAD, LV(3), NA());
+        LET(RUTSNTH, LV(7), IMM(0));
+        IN();
+        ARG(RLOAD, LV(6), NA());
+        RET(RUTSNTH, LV(8), IMM(1));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = ((OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) == value.r()->type());
+          is_expected &= (3 == value.r()->length());
+          is_expected &= (VALUE_TYPE_REF == value.r()->elem(0).type());
+          is_expected &= ((OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE) == value.r()->elem(0).r()->type());
+          is_expected &= (4 == value.r()->elem(0).r()->length());
+          is_expected &= (Value('a') == value.r()->elem(0).r()->elem(0));
+          is_expected &= (Value('b') == value.r()->elem(0).r()->elem(1));
+          is_expected &= (Value('c') == value.r()->elem(0).r()->elem(2));
+          is_expected &= (Value('1') == value.r()->elem(0).r()->elem(3));
+          is_expected &= (VALUE_TYPE_REF == value.r()->elem(1).type());
+          is_expected &= ((OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE) == value.r()->elem(1).r()->type());
+          is_expected &= (3 == value.r()->elem(1).r()->length());
+          is_expected &= (Value('d') == value.r()->elem(1).r()->elem(0));
+          is_expected &= (Value('e') == value.r()->elem(1).r()->elem(1));
+          is_expected &= (Value('2') == value.r()->elem(1).r()->elem(2));
+          is_expected &= (Value(0) == value.r()->elem(2));
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);        
       }
 
       DEF_IMPL_VM_TESTS(InterpreterVirtualMachine);

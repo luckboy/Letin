@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -24,13 +24,14 @@
 #define NA()                    Argument(0)
 
 #define INSTR(instr)            tmp_prog_helper.add_instr(instr)
-#define LET(op, arg1, arg2)     INSTR(make_instruction(opcode::INSTR_LET, opcode::OP_##op, arg1, arg2))
-#define IN()                    INSTR(make_instruction(opcode::INSTR_IN, 0, Argument(0), Argument(0)))
-#define RET(op, arg1, arg2)     INSTR(make_instruction(opcode::INSTR_RET, opcode::OP_##op, arg1, arg2))
-#define JC(arg, i)              INSTR(make_instruction(opcode::INSTR_JC, 0, arg, Argument(i)))
-#define JUMP(i)                 INSTR(make_instruction(opcode::INSTR_JUMP, 0, Argument(i), Argument(0)))
-#define ARG(op, arg1, arg2)     INSTR(make_instruction(opcode::INSTR_ARG, opcode::OP_##op, arg1, arg2))
-#define RETRY()                 INSTR(make_instruction(opcode::INSTR_RETRY, 0, Argument(0), Argument(0)))
+#define LET(op, arg1, arg2)     INSTR(make_instruction(opcode::INSTR_LET, opcode::OP_##op, arg1, arg2, 2))
+#define IN()                    INSTR(make_instruction(opcode::INSTR_IN, 0, Argument(0), Argument(0), 2))
+#define RET(op, arg1, arg2)     INSTR(make_instruction(opcode::INSTR_RET, opcode::OP_##op, arg1, arg2, 2))
+#define JC(arg, i)              INSTR(make_instruction(opcode::INSTR_JC, 0, arg, Argument(i), 2))
+#define JUMP(i)                 INSTR(make_instruction(opcode::INSTR_JUMP, 0, Argument(i), Argument(0), 2))
+#define ARG(op, arg1, arg2)     INSTR(make_instruction(opcode::INSTR_ARG, opcode::OP_##op, arg1, arg2, 2))
+#define RETRY()                 INSTR(make_instruction(opcode::INSTR_RETRY, 0, Argument(0), Argument(0), 2))
+#define LETTUPLE(op, local_var_count, arg1, arg2) INSTR(make_instruction(opcode::INSTR_LETTUPLE, opcode::OP_##, arg1, arg2, local_var_count)) 
 
 #define FUN(arg_count)                                                          \
 {                                                                               \
@@ -148,7 +149,7 @@ namespace letin
 
       format::Function make_function(std::uint32_t arg_count, std::uint32_t addr, std::uint32_t instr_count);
 
-      format::Instruction make_instruction(std::uint32_t instr, std::uint32_t op, const Argument &arg1, const Argument &arg2);
+      format::Instruction make_instruction(std::uint32_t instr, std::uint32_t op, const Argument &arg1, const Argument &arg2, std::uint32_t local_var_count);
 
       format::Value make_int_value(int i);
 

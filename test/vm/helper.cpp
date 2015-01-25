@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -170,10 +170,10 @@ namespace letin
         return fun;
       }
 
-      format::Instruction make_instruction(uint32_t instr, uint32_t op, const Argument &arg1, const Argument &arg2)
+      format::Instruction make_instruction(uint32_t instr, uint32_t op, const Argument &arg1, const Argument &arg2, uint32_t local_var_count)
       {
         format::Instruction tmp_instr;
-        tmp_instr.opcode = htonl(opcode::opcode(instr, op, arg1.type, arg2.type));
+        tmp_instr.opcode = htonl(opcode::opcode(instr, op, arg1.type, arg2.type, local_var_count));
         tmp_instr.arg1.i = htonl(arg1.format_arg.i);
         tmp_instr.arg2.i = htonl(arg2.format_arg.i);
         return tmp_instr;

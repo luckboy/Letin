@@ -253,7 +253,7 @@ namespace letin
 
       static inline bool check_pushed_arg_count(ThreadContext &context, size_t count)
       {
-        if(context.regs().ac2 >= count) {
+        if(context.regs().ac2 != count) {
           context.set_error(ERROR_INCORRECT_ARG_COUNT);
           return false;
         }
