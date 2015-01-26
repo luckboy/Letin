@@ -762,6 +762,106 @@ namespace letin
         CPPUNIT_ASSERT(is_expected);        
       }
 
+      void VirtualMachineTests::test_vm_executes_lettuples_for_shared_tuples()
+      {
+        PROG(prog_helper, 0);
+        FUN(3);
+        ARG(ILOAD, A(0), NA());
+        ARG(ILOAD, A(1), NA());
+        ARG(ILOAD, A(2), NA());
+        LETTUPLE(RTUPLE, 3, NA(), NA());
+        IN();
+        ARG(IADD, LV(0), LV(1)); // 1 + 2 = 3
+        ARG(IADD, LV(1), LV(2)); // 2 + 3 = 5
+        LETTUPLE(RTUPLE, 2, NA(), NA());
+        IN();
+        RET(IMUL, LV(3), LV(4)); // 3 * 5 = 15
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(1));
+        args.push_back(Value(2));
+        args.push_back(Value(3));
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (15 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_complains_on_many_references_to_unique_object()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        LET(RUIAFILL32, IMM(4), IMM(0));
+        IN();
+        LET(RLOAD, LV(0), NA());
+        LET(ILOAD, IMM(10), NA());
+        IN();
+        RET(RLOAD, LV(0), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_AGAIN_USED_UNIQUE == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+      
+      void VirtualMachineTests::test_vm_complains_on_unique_object()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(ILOAD, IMM(0), NA());
+        ARG(RUIAFILL8, IMM(10), IMM(' '));
+        ARG(ILOAD, IMM(0), NA());
+        RET(RTUPLE, NA(), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_UNIQUE_OBJECT == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+
+      void VirtualMachineTests::test_vm_complains_on_incorrect_local_var_count()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        ARG(ILOAD, IMM(3), NA());
+        ARG(ILOAD, IMM(4), NA());
+        LETTUPLE(RTUPLE, 3, NA(), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_INCORRECT_OBJECT == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+
       DEF_IMPL_VM_TESTS(InterpreterVirtualMachine);
     }
   }

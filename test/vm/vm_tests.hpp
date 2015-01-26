@@ -60,6 +60,10 @@ namespace letin
         CPPUNIT_TEST(test_vm_executes_load2_instructions);
         CPPUNIT_TEST(test_vm_executes_instructions_for_unique_objects);
         CPPUNIT_TEST(test_vm_executes_lettuples);
+        CPPUNIT_TEST(test_vm_executes_lettuples_for_shared_tuples);
+        CPPUNIT_TEST(test_vm_complains_on_many_references_to_unique_object);
+        CPPUNIT_TEST(test_vm_complains_on_unique_object);
+        CPPUNIT_TEST(test_vm_complains_on_incorrect_local_var_count);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -93,8 +97,10 @@ namespace letin
         void test_vm_executes_load2_instructions();
         void test_vm_executes_instructions_for_unique_objects();
         void test_vm_executes_lettuples();
+        void test_vm_executes_lettuples_for_shared_tuples();
         void test_vm_complains_on_many_references_to_unique_object();
         void test_vm_complains_on_unique_object();
+        void test_vm_complains_on_incorrect_local_var_count();
       };
 
       DECL_IMPL_VM_TESTS(InterpreterVirtualMachine);
