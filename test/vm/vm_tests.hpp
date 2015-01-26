@@ -59,6 +59,7 @@ namespace letin
         CPPUNIT_TEST(test_vm_complains_on_non_existent_global_variable);
         CPPUNIT_TEST(test_vm_executes_load2_instructions);
         CPPUNIT_TEST(test_vm_executes_instructions_for_unique_objects);
+        CPPUNIT_TEST(test_vm_executes_lettuples);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;

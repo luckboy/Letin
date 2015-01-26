@@ -31,7 +31,7 @@
 #define JUMP(i)                 INSTR(make_instruction(opcode::INSTR_JUMP, 0, Argument(i), Argument(0), 2))
 #define ARG(op, arg1, arg2)     INSTR(make_instruction(opcode::INSTR_ARG, opcode::OP_##op, arg1, arg2, 2))
 #define RETRY()                 INSTR(make_instruction(opcode::INSTR_RETRY, 0, Argument(0), Argument(0), 2))
-#define LETTUPLE(op, local_var_count, arg1, arg2) INSTR(make_instruction(opcode::INSTR_LETTUPLE, opcode::OP_##, arg1, arg2, local_var_count)) 
+#define LETTUPLE(op, local_var_count, arg1, arg2) INSTR(make_instruction(opcode::INSTR_LETTUPLE, opcode::OP_##op, arg1, arg2, local_var_count)) 
 
 #define FUN(arg_count)                                                          \
 {                                                                               \

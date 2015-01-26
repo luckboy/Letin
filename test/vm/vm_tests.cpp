@@ -720,6 +720,48 @@ namespace letin
         CPPUNIT_ASSERT(is_expected);        
       }
 
+      void VirtualMachineTests::test_vm_executes_lettuples()
+      {
+        PROG(prog_helper, 0);
+        FUN(3);
+        LET(RUIAFILL32, IMM(4), A(0)); // a0
+        IN();
+        ARG(IADD, A(0), IMM(10)); // a0 + 10
+        LET(RUIASNTH32, LV(0), IMM(0));
+        IN();
+        ARG(IADD, A(0), IMM(20)); // a0 + 20
+        LET(RUIASNTH32, LV(1), IMM(1));
+        IN();
+        ARG(IADD, A(0), IMM(30)); // a0 + 30
+        LET(RUIASNTH32, LV(2), IMM(2));
+        IN();
+        LETTUPLE(RUIANTH32, 2, LV(3), A(1));
+        IN();
+        LETTUPLE(RUIANTH32, 2, LV(5), A(2));
+        IN();
+        LET(ILOAD, LV(4), NA());
+        IN();
+        RET(IMUL, LV(6), LV(8));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(5));
+        args.push_back(Value(0));
+        args.push_back(Value(3));
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (75 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);        
+      }
+
       DEF_IMPL_VM_TESTS(InterpreterVirtualMachine);
     }
   }

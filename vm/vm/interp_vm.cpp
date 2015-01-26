@@ -346,8 +346,10 @@ namespace letin
                 if((r->type() & ~OBJECT_TYPE_UNIQUE) == OBJECT_TYPE_TUPLE) {
                   uint32_t local_var_count = opcode_to_local_var_count(instr.opcode);
                   if(r->length() == local_var_count) {
-                    for(size_t i = 0; i < local_var_count; i++)
-                      if(!context.push_local_var(value)) context.set_error(ERROR_STACK_OVERFLOW);
+                    for(size_t i = 0; i < local_var_count; i++) {
+                      Value elem_value(r->raw().tuple_elem_types()[i], r->raw().tes[i]);
+                      if(!context.push_local_var(elem_value)) context.set_error(ERROR_STACK_OVERFLOW);
+                    }
                   } else
                     context.set_error(ERROR_INCORRECT_OBJECT);
                 } else
