@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -52,7 +52,7 @@ namespace letin
         _M_gc->collect();
         CPPUNIT_ASSERT_EQUAL(2UL, _M_alloc->alloc_ops().size());
         CPPUNIT_ASSERT(make_free(ref) == _M_alloc->alloc_ops()[1]);
-        _M_thread_context_mutex[0].unlock();
+        _M_thread_context_mutex->unlock();
         thread_context->system_thread().join();
       }
       
@@ -289,6 +289,97 @@ namespace letin
         CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref2)) == 1);
         CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref3)) == 1);
         CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref4)) == 1);
+        _M_thread_context_mutex->unlock();
+        thread_context->system_thread().join();
+      }
+
+      void GarbageCollectorTests::test_gc_collects_unique_objects()
+      {
+        unique_ptr<VirtualMachineContext> vm_context(new_vm_context());
+        unique_ptr<ThreadContext> thread_context(new_thread_context(*vm_context));
+        _M_gc->add_vm_context(vm_context.get());
+        _M_gc->add_thread_context(thread_context.get());
+        Reference ref1(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 6));
+        strcpy(reinterpret_cast<char *>(ref1->raw().is8), "test1");
+        Reference ref2(_M_gc->new_object(OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE, 6));
+        strcpy(reinterpret_cast<char *>(ref2->raw().is8), "test2");
+        Reference ref3(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 6));
+        strcpy(reinterpret_cast<char *>(ref3->raw().is8), "test3");
+        Reference ref4(_M_gc->new_object(OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE, 6));
+        strcpy(reinterpret_cast<char *>(ref4->raw().is8), "test4");
+        Reference ref5(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 6));
+        strcpy(reinterpret_cast<char *>(ref5->raw().is8), "test5");
+        Reference ref6(_M_gc->new_object(OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE, 3));
+        ref6->raw().rs[0] = ref1;
+        ref6->raw().rs[1] = ref2;
+        ref6->raw().rs[2] = ref3;
+        Reference ref7(_M_gc->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 4));
+        ref7->set_elem(0, Value(1));
+        ref7->set_elem(1, Value(ref3));
+        ref7->set_elem(2, Value(ref5));
+        ref7->set_elem(3, Value(0.5));
+        thread_context->regs().rv.raw().r = ref4;
+        thread_context->push_local_var(Value(ref6));
+        thread_context->push_arg(Value(ref7));
+        CPPUNIT_ASSERT_EQUAL(7UL, _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(make_alloc(ref1) == _M_alloc->alloc_ops()[0]);
+        CPPUNIT_ASSERT(make_alloc(ref2) == _M_alloc->alloc_ops()[1]);
+        CPPUNIT_ASSERT(make_alloc(ref3) == _M_alloc->alloc_ops()[2]);
+        CPPUNIT_ASSERT(make_alloc(ref4) == _M_alloc->alloc_ops()[3]);
+        CPPUNIT_ASSERT(make_alloc(ref5) == _M_alloc->alloc_ops()[4]);
+        CPPUNIT_ASSERT(make_alloc(ref6) == _M_alloc->alloc_ops()[5]);
+        CPPUNIT_ASSERT(make_alloc(ref7) == _M_alloc->alloc_ops()[6]);
+        _M_gc->collect();
+        CPPUNIT_ASSERT_EQUAL(7UL, _M_alloc->alloc_ops().size());
+        thread_context->regs().rv.raw().r = Reference();
+        thread_context->regs().abp2 = 0;
+        thread_context->regs().ac2 = 0;
+        thread_context->regs().sec = 0;
+        _M_gc->collect();
+        const vector<AllocatorOperation> &alloc_ops = _M_alloc->alloc_ops();
+        CPPUNIT_ASSERT_EQUAL(14UL, _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref1)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref2)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref3)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref4)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref5)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref6)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref7)) == 1);
+        _M_thread_context_mutex->unlock();
+        thread_context->system_thread().join();
+      }
+
+      void GarbageCollectorTests::test_gc_collects_objects_from_canceled_references()
+      {
+        unique_ptr<VirtualMachineContext> vm_context(new_vm_context());
+        unique_ptr<ThreadContext> thread_context(new_thread_context(*vm_context));
+        _M_gc->add_vm_context(vm_context.get());
+        _M_gc->add_thread_context(thread_context.get());
+        Reference ref1(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 6));
+        strcpy(reinterpret_cast<char *>(ref1->raw().is8), "test1");
+        Reference ref2(_M_gc->new_object(OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE, 6));
+        strcpy(reinterpret_cast<char *>(ref2->raw().is8), "test2");        
+        Reference ref3(_M_gc->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 3));
+        ref3->raw().tes[0] = TupleElement(ref1);
+        ref3->raw().tuple_elem_types()[0] = TupleElementType(VALUE_TYPE_CANCELED_REF);
+        ref3->raw().tes[1] = TupleElement(10);
+        ref3->raw().tuple_elem_types()[1] = TupleElementType(VALUE_TYPE_INT);
+        ref3->raw().tes[2] = TupleElement(ref2);
+        ref3->raw().tuple_elem_types()[2] = TupleElementType(VALUE_TYPE_CANCELED_REF);
+        thread_context->regs().rv.raw().r = ref3;
+        CPPUNIT_ASSERT_EQUAL(3UL, _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(make_alloc(ref1) == _M_alloc->alloc_ops()[0]);
+        CPPUNIT_ASSERT(make_alloc(ref2) == _M_alloc->alloc_ops()[1]);
+        CPPUNIT_ASSERT(make_alloc(ref3) == _M_alloc->alloc_ops()[2]);
+        _M_gc->collect();
+        CPPUNIT_ASSERT_EQUAL(3UL, _M_alloc->alloc_ops().size());
+        thread_context->regs().rv.raw().r = Reference();
+        _M_gc->collect();
+        const vector<AllocatorOperation> &alloc_ops = _M_alloc->alloc_ops();
+        CPPUNIT_ASSERT_EQUAL(6UL, _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref1)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref2)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref3)) == 1);
         _M_thread_context_mutex->unlock();
         thread_context->system_thread().join();
       }

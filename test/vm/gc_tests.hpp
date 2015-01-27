@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -49,6 +49,8 @@ namespace letin
         CPPUNIT_TEST(test_gc_does_not_collect_objects_in_thread_contexts);
         CPPUNIT_TEST(test_gc_does_not_collect_objects_in_vm_contexts);
         CPPUNIT_TEST(test_gc_destructor_free_all_objects);
+        CPPUNIT_TEST(test_gc_collects_unique_objects);
+        CPPUNIT_TEST(test_gc_collects_objects_from_canceled_references);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         AllocatorWrapper *_M_alloc;
@@ -95,6 +97,8 @@ namespace letin
         void test_gc_does_not_collect_objects_in_thread_contexts();
         void test_gc_does_not_collect_objects_in_vm_contexts();
         void test_gc_destructor_free_all_objects();
+        void test_gc_collects_unique_objects();
+        void test_gc_collects_objects_from_canceled_references();
       };
 
       DECL_IMPL_GC_TESTS(MarkSweepGarbageCollector);
