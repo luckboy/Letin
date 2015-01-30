@@ -164,6 +164,12 @@ namespace letin
       Label::~Label() {}
 
       //
+      // An InstructionPair class.
+      //
+
+      InstructionPair::~InstructionPair() {}
+
+      //
       // An Instruction class.
       //
 

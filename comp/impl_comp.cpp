@@ -122,10 +122,52 @@ namespace letin
         { "rcall",      { OP_RCALL,     VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
         { "itof",       { OP_ITOF,      VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
         { "ftoi",       { OP_FTOI,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
-        { "ftoi",       { OP_FTOI,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
         { "incall",     { OP_INCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
         { "fncall",     { OP_FNCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
-        { "rncall",     { OP_RNCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR } }
+        { "rncall",     { OP_RNCALL,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
+        { "ruiafill8",  { OP_RUIAFILL8, VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "ruiafill16", { OP_RUIAFILL16, VALUE_TYPE_INT,        VALUE_TYPE_INT } },
+        { "ruiafill32", { OP_RUIAFILL32, VALUE_TYPE_INT,        VALUE_TYPE_INT } },
+        { "ruiafill64", { OP_RUIAFILL64, VALUE_TYPE_INT,        VALUE_TYPE_INT } },
+        { "rusfafill",  { OP_RUSFAFILL, VALUE_TYPE_INT,         VALUE_TYPE_FLOAT } },
+        { "rudfafill",  { OP_RUDFAFILL, VALUE_TYPE_INT,         VALUE_TYPE_FLOAT } },
+        { "rurafill",   { OP_RURAFILL,  VALUE_TYPE_INT,         VALUE_TYPE_REF } },
+        { "rutfilli",   { OP_RUTFILLI,  VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "rutfillf",   { OP_RUTFILLF,  VALUE_TYPE_INT,         VALUE_TYPE_FLOAT } },
+        { "rutfillr",   { OP_RUTFILLR,  VALUE_TYPE_INT,         VALUE_TYPE_REF } },
+        { "ruianth8",   { OP_RUIANTH8,  VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "ruianth16",  { OP_RUIANTH16, VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "ruianth32",  { OP_RUIANTH32, VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "ruianth64",  { OP_RUIANTH64, VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rusfanth",   { OP_RUSFANTH,  VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rudfanth",   { OP_RUDFANTH,  VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "ruranth",    { OP_RURANTH,   VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rutnth",     { OP_RUTNTH,    VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "ruiasnth8",  { OP_RUIASNTH8, VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "ruiasnth16", { OP_RUIASNTH16, VALUE_TYPE_REF,        VALUE_TYPE_INT } },
+        { "ruiasnth32", { OP_RUIASNTH32, VALUE_TYPE_REF,        VALUE_TYPE_INT } },
+        { "ruiasnth64", { OP_RUIASNTH64, VALUE_TYPE_REF,        VALUE_TYPE_INT } },
+        { "rusfasnth",  { OP_RUSFASNTH, VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rudfasnth",  { OP_RUDFASNTH, VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rurasnth",   { OP_RURASNTH,  VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "rutsnth",    { OP_RUTSNTH,   VALUE_TYPE_REF,         VALUE_TYPE_INT } },
+        { "ruialen8",   { OP_RUIALEN8,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "ruialen16",  { OP_RUIALEN16, VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "ruialen32",  { OP_RUIALEN32, VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "ruialen64",  { OP_RUIALEN64, VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "rusfalen",   { OP_RUSFALEN,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "rudfalen",   { OP_RUDFALEN,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "ruralen",    { OP_RURALEN,   VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "rutlen",     { OP_RUTLEN,    VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "rutype",     { OP_RUTYPE,    VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "ruiatoia8",  { OP_RUIATOIA8, VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "ruiatoia16", { OP_RUIATOIA16, VALUE_TYPE_REF,        VALUE_TYPE_ERROR } },
+        { "ruiatoia32", { OP_RUIATOIA32, VALUE_TYPE_REF,        VALUE_TYPE_ERROR } },
+        { "ruiatoia64", { OP_RUIATOIA64, VALUE_TYPE_REF,        VALUE_TYPE_ERROR } },
+        { "rusfatosfa", { OP_RUSFATOSFA, VALUE_TYPE_REF,        VALUE_TYPE_ERROR } },
+        { "rudfatodfa", { OP_RUDFATODFA, VALUE_TYPE_REF,        VALUE_TYPE_ERROR } },
+        { "ruratora",   { OP_RURATORA,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "ruttot",     { OP_RUTTOT,    VALUE_TYPE_REF,         VALUE_TYPE_ERROR } }
       };
 
       //
@@ -414,8 +456,30 @@ namespace letin
             ungen_fun.instrs[ip].arg2.i = 0;
           }
         }
+        uint32_t local_var_count = 2;
+        if(opcode_instr == INSTR_LETTUPLE) {
+          if(instr.local_var_count() != nullptr) {
+            local_var_count = *(instr.local_var_count());
+            if(local_var_count < 2) {
+              errors.push_back(Error(instr.pos(), "too small number of local variables"));
+              is_success = false;
+            }
+            if(local_var_count > 258) {
+              errors.push_back(Error(instr.pos(), "too large number of local variables"));
+              is_success = false;
+            }
+          } else {
+            errors.push_back(Error(instr.pos(), "no number of local variables"));
+            is_success = false;
+          }
+        } else {
+          if(instr.local_var_count() != nullptr) {
+            errors.push_back(Error(instr.pos(), "number of local variables"));
+            is_success = false;
+          }
+        }
         if(!is_success) return false;
-        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, op_desc.op, arg_type1, arg_type2));
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, op_desc.op, arg_type1, arg_type2, local_var_count));
         ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
         ungen_fun.instrs[ip].arg2.i = htonl(ungen_fun.instrs[ip].arg2.i);
         return true;

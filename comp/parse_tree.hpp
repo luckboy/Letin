@@ -283,12 +283,34 @@ namespace letin
         const Position &pos() const { return _M_pos; }
       };
 
+      class InstructionPair
+      {
+        std::string _M_instr;
+        std::unique_ptr<std::uint32_t> _M_local_var_count;
+      public:
+        InstructionPair(const std::string &instr) : _M_instr(instr) {}
+
+        InstructionPair(const std::string &instr, std::uint32_t local_var_count) :
+          _M_instr(instr), _M_local_var_count(new std::uint32_t(local_var_count)) {}
+
+        InstructionPair(const InstructionPair &instr_pair) :
+          _M_instr(instr_pair._M_instr), 
+          _M_local_var_count(instr_pair._M_local_var_count.get() != nullptr ? new std::uint32_t(*(instr_pair._M_local_var_count)) : nullptr) {}
+
+        virtual ~InstructionPair();
+
+        const std::string &instr() const { return _M_instr; }
+
+        const std::uint32_t *local_var_count() const { return _M_local_var_count.get(); }
+      };
+
       class Instruction
       {
         std::string _M_instr;
         std::unique_ptr<Operation> _M_op;
         std::unique_ptr<Argument> _M_arg1;
         std::unique_ptr<Argument> _M_arg2;
+        std::unique_ptr<std::uint32_t> _M_local_var_count;
         Position _M_pos;
       public:
         Instruction(const std::string &instr, const Position &pos) :
@@ -312,11 +334,32 @@ namespace letin
           _M_instr(instr), _M_op(new Operation(op)), _M_arg1(new Argument(arg1)),
           _M_arg2(new Argument(arg2)), _M_pos(pos) {}
 
+        Instruction(const std::string &instr, const Operation &op, const Argument &arg1, const Argument &arg2, std::uint32_t local_var_count, const Position &pos) :
+          _M_instr(instr), _M_op(new Operation(op)), _M_arg1(new Argument(arg1)),
+          _M_arg2(new Argument(arg2)), _M_local_var_count(new std::uint32_t(local_var_count)), _M_pos(pos) {}
+
+        Instruction(const InstructionPair &instr_pair, const Operation &op, const Position &pos) :
+          _M_instr(instr_pair.instr()), _M_op(new Operation(op)),
+          _M_local_var_count(instr_pair.local_var_count() != nullptr ? new std::uint32_t(*(instr_pair.local_var_count())) : nullptr),
+          _M_pos(pos) {}
+
+        Instruction(const InstructionPair &instr_pair, const Operation &op, const Argument &arg, const Position &pos) :
+          _M_instr(instr_pair.instr()), _M_op(new Operation(op)), _M_arg1(new Argument(arg)),
+          _M_local_var_count(instr_pair.local_var_count() != nullptr ? new std::uint32_t(*(instr_pair.local_var_count())) : nullptr),
+          _M_pos(pos) {}
+
+        Instruction(const InstructionPair &instr_pair, const Operation &op, const Argument &arg1, const Argument &arg2, const Position &pos) :
+          _M_instr(instr_pair.instr()), _M_op(new Operation(op)), _M_arg1(new Argument(arg1)),
+          _M_arg2(new Argument(arg2)),
+          _M_local_var_count(instr_pair.local_var_count() != nullptr ? new std::uint32_t(*(instr_pair.local_var_count())) : nullptr),
+          _M_pos(pos) {}
+
         Instruction(const Instruction &instr) :
           _M_instr(instr._M_instr),
           _M_op(instr._M_op.get() != nullptr ? new Operation(*(instr._M_op)) : nullptr),
           _M_arg1(instr._M_arg1.get() != nullptr ? new Argument(*(instr._M_arg1)) : nullptr),
           _M_arg2(instr._M_arg2.get() != nullptr ? new Argument(*(instr._M_arg2)) : nullptr),
+          _M_local_var_count(instr._M_local_var_count.get() != nullptr ? new std::uint32_t(*(instr._M_local_var_count)) : nullptr),
           _M_pos(instr._M_pos) {}
 
         virtual ~Instruction();
@@ -329,6 +372,8 @@ namespace letin
 
         const Argument *arg2() const { return _M_arg2.get(); }
 
+        const std::uint32_t *local_var_count() const { return _M_local_var_count.get(); }
+        
         const Position &pos() const { return _M_pos; }
       };
       
