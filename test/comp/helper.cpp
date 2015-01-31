@@ -22,7 +22,7 @@ namespace letin
       bool is_fun(uint32_t arg_count, uint32_t instr_count, const format::Function &fun)
       { return arg_count == ntohl(fun.arg_count) && instr_count == ntohl(fun.instr_count); }
 
-      bool is_instr(uint32_t instr, uint32_t op, const Argument &arg1, const Argument &arg2, const format::Instruction &format_instr)
+      bool is_instr(uint32_t instr, uint32_t op, const Argument &arg1, const Argument &arg2, uint32_t local_var_count, const format::Instruction &format_instr)
       {
         uint32_t opcode = ntohl(format_instr.opcode);
         if(instr != opcode_to_instr(opcode)) return false;
@@ -30,6 +30,7 @@ namespace letin
         if(arg2.type != opcode_to_arg_type2(opcode)) return false;
         if(arg1.format_arg.i != ntohl(format_instr.arg1.i)) return false;
         if(arg2.format_arg.i != ntohl(format_instr.arg2.i)) return false;
+        if(local_var_count != opcode_to_local_var_count(opcode)) return false;
         return true;
       }
 

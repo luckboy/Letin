@@ -577,6 +577,8 @@ namespace letin
           return generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_ARG, errors);
         } else if(instr.instr() == "retry") {
           return generate_instr_without_op(ungen_prog, ungen_fun, ip, instr, INSTR_RETRY, errors);
+        } else if(instr.instr() == "lettuple") {
+          return generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_LETTUPLE, errors);
         } else {
           errors.push_back(Error(instr.pos(), "unknown instruction"));
           return false;

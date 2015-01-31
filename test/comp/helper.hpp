@@ -24,15 +24,17 @@
 #define GV(i)                           Argument(opcode::ARG_TYPE_GVAR, i)
 #define NA()                            Argument(0)
 
-#define ASSERT_INSTR(instr, op, arg1, arg2, j)                                  \
-CPPUNIT_ASSERT(is_instr(instr, op, arg1, arg2, tmp_instrs[j]))
-#define ASSERT_LET(op, arg1, arg2, j)   ASSERT_INSTR(opcode::INSTR_LET, opcode::OP_##op, arg1, arg2, j)
-#define ASSERT_IN(j)                    ASSERT_INSTR(opcode::INSTR_IN, 0, Argument(0), Argument(0), j)
-#define ASSERT_RET(op, arg1, arg2, j)   ASSERT_INSTR(opcode::INSTR_RET, opcode::OP_##op, arg1, arg2, j)
-#define ASSERT_JC(arg, i, j)            ASSERT_INSTR(opcode::INSTR_JC, 0, arg, Argument(i), j)
-#define ASSERT_JUMP(i, j)               ASSERT_INSTR(opcode::INSTR_JUMP, 0, Argument(i), Argument(0), j)
-#define ASSERT_ARG(op, arg1, arg2, j)   ASSERT_INSTR(opcode::INSTR_ARG, opcode::OP_##op, arg1, arg2, j)
-#define ASSERT_RETRY(j)                 ASSERT_INSTR(opcode::INSTR_IN, 0, Argument(0), Argument(0), j)
+#define ASSERT_INSTR(instr, op, arg1, arg2, local_var_count, j)                 \
+CPPUNIT_ASSERT(is_instr(instr, op, arg1, arg2, local_var_count, tmp_instrs[j]))
+#define ASSERT_LET(op, arg1, arg2, j)   ASSERT_INSTR(opcode::INSTR_LET, opcode::OP_##op, arg1, arg2, 2, j)
+#define ASSERT_IN(j)                    ASSERT_INSTR(opcode::INSTR_IN, 0, Argument(0), Argument(0), 2, j)
+#define ASSERT_RET(op, arg1, arg2, j)   ASSERT_INSTR(opcode::INSTR_RET, opcode::OP_##op, arg1, arg2, 2, j)
+#define ASSERT_JC(arg, i, j)            ASSERT_INSTR(opcode::INSTR_JC, 0, arg, Argument(i), 2, j)
+#define ASSERT_JUMP(i, j)               ASSERT_INSTR(opcode::INSTR_JUMP, 0, Argument(i), Argument(0), 2, j)
+#define ASSERT_ARG(op, arg1, arg2, j)   ASSERT_INSTR(opcode::INSTR_ARG, opcode::OP_##op, arg1, arg2, 2, j)
+#define ASSERT_RETRY(j)                 ASSERT_INSTR(opcode::INSTR_RETRY, 0, Argument(0), Argument(0), 2, j)
+#define ASSERT_LETTUPLE(local_var_count, op, arg1, arg2, j)                     \
+ASSERT_INSTR(opcode::INSTR_LETTUPLE, opcode::OP_##op, arg1, arg2, local_var_count, j)
 
 #define ASSERT_FUN(arg_count, instr_count, fun_offset, code_offset)             \
 {                                                                               \
@@ -132,7 +134,7 @@ namespace letin
 
       bool is_fun(std::uint32_t arg_count, std::uint32_t instr_count, const format::Function &fun);
 
-      bool is_instr(std::uint32_t instr, std::uint32_t op, const Argument &arg1, const Argument &arg2, const format::Instruction &format_instr);
+      bool is_instr(std::uint32_t instr, std::uint32_t op, const Argument &arg1, const Argument &arg2, std::uint32_t local_var_count, const format::Instruction &format_instr);
 
       bool is_object(std::int32_t type, std::uint32_t length, const format::Object &object);
       

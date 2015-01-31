@@ -1010,6 +1010,101 @@ h(a0) = {\n\
         CPPUNIT_ASSERT(string("undefined variable g4") == error_vector[3].msg());
       }
 
+      void CompilerTests::test_compiler_compiles_lettuples()
+      {
+        istringstream iss("\n\
+f(a5) = {\n\
+        arg iload a0\n\
+        arg iload a1\n\
+        lettuple(lv2) rtuple()\n\
+        arg iadd a0, a1\n\
+        arg iadd a1, a2\n\
+        arg iadd a2, a3\n\
+        arg iadd a3, a4\n\
+        lettuple(lv4) rtuple()\n\
+        lettuple(lv5) rutfilli 5, -1\n\
+        lettuple(lv3) rutfilli 3, 1\n\
+        in\n\
+        ret iload lv5\n\
+}\n\
+");        
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        for(auto error : errors) cout << error << endl;
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        ASSERT_PROG(static_cast<size_t>(48 + 16 + 144), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(1U);
+        ASSERT_HEADER_VAR_COUNT(0U);
+        ASSERT_HEADER_CODE_SIZE(12U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        ASSERT_FUN(5U, 12U, 48U, 48U + 16U);
+        ASSERT_ARG(ILOAD, A(0), NA(), 0);
+        ASSERT_ARG(ILOAD, A(1), NA(), 1);
+        ASSERT_LETTUPLE(2, RTUPLE, NA(), NA(), 2);
+        ASSERT_ARG(IADD, A(0), A(1), 3);
+        ASSERT_ARG(IADD, A(1), A(2), 4);
+        ASSERT_ARG(IADD, A(2), A(3), 5);
+        ASSERT_ARG(IADD, A(3), A(4), 6);
+        ASSERT_LETTUPLE(4, RTUPLE, NA(), NA(), 7);
+        ASSERT_LETTUPLE(5, RUTFILLI, IMM(5), IMM(-1), 8);
+        ASSERT_LETTUPLE(3, RUTFILLI, IMM(3), IMM(1), 9);
+        ASSERT_IN(10);
+        ASSERT_RET(ILOAD, LV(5), NA(), 11);
+        END_ASSERT_FUN();
+        END_ASSERT_PROG();
+      }
+
+      void CompilerTests::test_compiler_complains_on_no_number_of_local_variables()
+      {
+        istringstream iss("\n\
+f(a0) = {\n\
+        arg iload 1\n\
+        arg iload 2\n\
+        lettuple rtuple()\n\
+        in\n\
+        ret iload lv0\n\
+}\n\
+");        
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr == prog.get());
+        vector<Error> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), errors.size());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
+        CPPUNIT_ASSERT(5 == error_vector[0].pos().line());
+        CPPUNIT_ASSERT(9 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("no number of local variables") == error_vector[0].msg());
+      }
+
+      void CompilerTests::test_compiler_complains_on_number_of_local_variables()
+      {
+        istringstream iss("\n\
+f(a0) = {\n\
+        ret(lv2) iload a0\n\
+}\n\
+");        
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr == prog.get());
+        vector<Error> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), errors.size());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
+        CPPUNIT_ASSERT(3 == error_vector[0].pos().line());
+        CPPUNIT_ASSERT(9 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("number of local variables") == error_vector[0].msg());
+      }
+
       DEF_IMPL_COMP_TESTS(ImplCompiler);
     }
   }
