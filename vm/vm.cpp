@@ -315,7 +315,7 @@ namespace letin
 
     DefaultNativeFunctionHandler::~DefaultNativeFunctionHandler() {}
 
-    ReturnValue DefaultNativeFunctionHandler::invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList args)
+    ReturnValue DefaultNativeFunctionHandler::invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args)
     {
       try {
         switch(nfi) {

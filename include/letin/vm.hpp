@@ -446,7 +446,7 @@ namespace letin
     public:
       virtual ~NativeFunctionHandler();
 
-      virtual ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList args) = 0;
+      virtual ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args) = 0;
     };
 
     class DefaultNativeFunctionHandler : public NativeFunctionHandler
@@ -456,7 +456,7 @@ namespace letin
 
       ~DefaultNativeFunctionHandler();
 
-      ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList args);
+      ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args);
     };
 
     Loader *new_loader();
