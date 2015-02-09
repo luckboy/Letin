@@ -85,6 +85,7 @@ namespace letin
       void *tmp_ptr;
       Reference tmp_r;
       bool after_leaving_flag;
+      std::uint32_t tmp_ac2;
     };
 
     class ThreadContext
@@ -193,6 +194,34 @@ namespace letin
       void set_error(int error);
       
       ArgumentList pushed_args() const { return ArgumentList(_M_stack + _M_regs.abp2, _M_regs.ac2); }
+
+      void hide_args()
+      {
+        _M_regs.tmp_ac2 = _M_regs.ac2;
+        _M_regs.abp2 += _M_regs.tmp_ac2;
+        _M_regs.ac2 = 0;
+      }
+
+      void restore_abp2_and_ac2()
+      {
+        _M_regs.abp2 -= _M_regs.tmp_ac2;
+        _M_regs.ac2 = _M_regs.tmp_ac2;
+      }
+
+      bool push_tmp_ac2()
+      { return push_local_var(Value(static_cast<std::int64_t>(_M_regs.tmp_ac2))); }
+
+      bool pop_tmp_ac2()
+      {
+        if(_M_regs.abp2 > 0) {
+          _M_regs.sec--;
+          _M_regs.abp2--;
+          std::atomic_thread_fence(std::memory_order_release);
+          _M_regs.tmp_ac2 = _M_stack[_M_regs.abp2].raw().i;
+          return true;
+        } else
+          return false;
+      }
     };
 
     class VirtualMachineContext
