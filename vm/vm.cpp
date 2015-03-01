@@ -670,7 +670,7 @@ namespace letin
         case ERROR_UNIQUE_OBJECT:
           return "unique object";
         case ERROR_AGAIN_USED_UNIQUE:
-          return "again used unqiue object";
+          return "again used unique object";
         default:
           return "unknown error";
       }
