@@ -25,3 +25,12 @@ You can compile program by invoke the following command:
 You can run program by invoke the following command: 
 
     letin <file> [<argument> ...]
+
+## License
+
+This software is licensed under the GNU Lesser General Public License v3 or later. See the
+LICENSE file and the GPL file for the full licensing terms.
+
+The documentation of this software is licensed under the Creative Commons
+Attribution-ShareAlike 4.0 International Public License. See the DOCLICENSE file for the full
+licensing terms.
