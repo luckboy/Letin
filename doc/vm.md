@@ -65,8 +65,8 @@ An error of this value can be one of the following errors:
 | UNIQUE_OBJECT       | 19     | Unique object.                 |
 | AGAIN_USED_UNIQUE   | 20     | Again used unique object.      |
 
-The value of the first kind will be called the values and values of the second kind will be
-called the return value.
+The values of the first kind will be called the values and the values of the second kind will
+be called the return values.
 
 ### Objects
 
