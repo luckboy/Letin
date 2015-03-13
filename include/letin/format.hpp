@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -45,7 +45,9 @@ namespace letin
       std::uint32_t     var_count;
       std::uint32_t     code_size;
       std::uint32_t     data_size;
-      std::uint32_t     reserved[4];
+      std::uint32_t     reloc_count;
+      std::uint32_t     symbol_count;
+      std::uint32_t     reserved[2];
     };
 
     struct Float
@@ -103,9 +105,9 @@ namespace letin
     
     union TupleElement
     {
-      std::int64_t    i;
-      Double          f;
-      std::uint64_t   addr;
+      std::int64_t      i;
+      Double            f;
+      std::uint64_t     addr;
     };
 
     struct Object
@@ -124,10 +126,36 @@ namespace letin
         TupleElement    tes[1];
         std::int8_t     tets[1];
       };
-      
+
       const std::int8_t *tuple_elem_types() const { return &(tets[length * 8]); }
 
       std::int8_t *tuple_elem_types() { return &(tets[length * 8]); }
+    };
+
+    const std::uint32_t RELOC_TYPE_ARG1_FUN = 0;
+    const std::uint32_t RELOC_TYPE_ARG2_FUN = 1;
+    const std::uint32_t RELOC_TYPE_ARG1_VAR = 2;
+    const std::uint32_t RELOC_TYPE_ARG2_VAR = 3;
+    const std::uint32_t RELOC_TYPE_ELEM_FUN = 4;
+    const std::uint32_t RELOC_TYPE_SYMBOLIC = 256;
+    
+    struct Relocation
+    {
+      std::uint32_t     type;
+      std::uint32_t     addr;
+      std::uint32_t     symbol;
+    };
+
+    const std::uint8_t SYMBOL_TYPE_FUN = 0;
+    const std::uint8_t SYMBOL_TYPE_VAR = 1;
+    const std::uint8_t SYMBOL_TYPE_DEFINED = 16;
+
+    struct Symbol
+    {
+      std::uint32_t     index;
+      std::uint16_t     length;
+      std::uint8_t      type;
+      char              name[1];
     };
   }
 }

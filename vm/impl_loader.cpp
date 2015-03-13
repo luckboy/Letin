@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -39,6 +39,8 @@ namespace letin
         header->var_count = ntohl(header->var_count);
         header->code_size = ntohl(header->code_size);
         header->data_size = ntohl(header->data_size);
+        header->reloc_count = ntohl(header->reloc_count);
+        header->symbol_count = ntohl(header->symbol_count);
 
         format::Function *funs = reinterpret_cast<format::Function *>(tmp_ptr + tmp_idx);
         size_t fun_count = header->fun_count;
@@ -77,8 +79,10 @@ namespace letin
         uint8_t *data = tmp_ptr + tmp_idx;
         size_t data_size = header->data_size;
         set<uint32_t> data_addrs;
-        for(size_t i = 0; i < size - tmp_idx;) {
-          if(i >= size - tmp_idx) return nullptr;
+        tmp_idx += align(data_size, 8);
+        if(tmp_idx > size) return nullptr;
+        for(size_t i = 0; i < data_size;) {
+          if(i >= data_size) return nullptr;
           if(var_addrs.find(i) != var_addrs.end()) var_addrs.erase(i);
           data_addrs.insert(i);
           format::Object *object = reinterpret_cast<format::Object *>(data + i);
@@ -125,9 +129,38 @@ namespace letin
             default:
               return nullptr;
           }
+          if(i > data_size) return nullptr;
         }
         if(!var_addrs.empty()) return nullptr;
-        return new Program(header->flags, header->entry, funs, fun_count, vars, var_count, code, code_size, data, data_size, data_addrs);
+
+        format::Relocation *relocs = reinterpret_cast<format::Relocation *>(tmp_ptr + tmp_idx);
+        size_t reloc_count = header->reloc_count;
+        tmp_idx += align(sizeof(format::Relocation) * reloc_count, 8);
+        set<uint32_t> reloc_symbol_idxs;
+        if(tmp_idx > size) return nullptr;
+        for(size_t i = 0; i < reloc_count; i++) {
+          relocs[i].type = ntohl(relocs[i].type);
+          relocs[i].addr = ntohl(relocs[i].addr);
+          relocs[i].symbol = ntohl(relocs[i].symbol);
+          if(relocs[i].type != format::RELOC_TYPE_ELEM_FUN) reloc_symbol_idxs.insert(relocs[i].symbol);
+        }
+
+        uint8_t *symbols = tmp_ptr + tmp_idx;
+        size_t symbol_count = header->symbol_count;
+        vector<uint32_t> symbol_offsets;
+        size_t tmp_size = 0;
+        for(size_t i = 0, j = 0; j < symbol_count; j++) {
+          format::Symbol *symbol = reinterpret_cast<format::Symbol *>(symbols + i);
+          if(reloc_symbol_idxs.find(j) != reloc_symbol_idxs.end()) reloc_symbol_idxs.erase(j);
+          symbol_offsets.push_back(i);
+          symbol->index = ntohl(symbol->index);
+          symbol->length = ntohl(symbol->length);
+          i += align(sizeof(format::Symbol) - 1 + symbol->length, 8);
+          tmp_size = i;
+        }
+        if(tmp_idx > size) return nullptr;
+        if(!reloc_symbol_idxs.empty()) return nullptr;
+        return new Program(header->flags, header->entry, funs, fun_count, vars, var_count, code, code_size, data, data_size, data_addrs, relocs, reloc_count, symbols, symbol_count, symbol_offsets);
       }
     }
   }

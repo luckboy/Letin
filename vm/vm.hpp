@@ -13,6 +13,7 @@
 #include <functional>
 #include <set>
 #include <thread>
+#include <unordered_map>
 #include <letin/format.hpp>
 #include <letin/vm.hpp>
 
@@ -33,15 +34,27 @@ namespace letin
       std::uint8_t *_M_data;
       std::size_t _M_data_size;
       std::set<std::uint32_t> _M_data_addrs;
+      format::Relocation *_M_relocs;
+      std::size_t _M_reloc_count;
+      std::uint8_t *_M_symbols;
+      std::size_t _M_symbol_count;
+      std::vector<std::uint32_t> _M_symbol_offsets;
+      std::size_t _M_fun_offset;
+      std::size_t _M_var_offset;
     public:
       Program(std::uint32_t flags, std::size_t entry,
               format::Function *funs, std::size_t fun_count, format::Value *vars, std::size_t var_count,
               format::Instruction *code, std::size_t code_size, uint8_t *data, std::size_t data_size,
-              std::set<std::uint32_t> data_addrs) :
+              std::set<std::uint32_t> data_addrs,
+              format::Relocation *relocs, std::size_t reloc_count, std::uint8_t *symbols, std::size_t symbol_count,
+              std::vector<std::uint32_t> symbol_offsets) :
         _M_flags(flags), _M_entry(entry),
         _M_funs(funs), _M_fun_count(fun_count), _M_vars(vars), _M_var_count(var_count),
         _M_code(code), _M_code_size(code_size), _M_data(data), _M_data_size(data_size),
-        _M_data_addrs(data_addrs)
+        _M_data_addrs(data_addrs),
+        _M_relocs(relocs), _M_reloc_count(reloc_count), _M_symbols(symbols), _M_symbol_count(symbol_count),
+        _M_symbol_offsets(symbol_offsets),
+        _M_fun_offset(0), _M_var_offset(0)
       {}
 
       std::uint32_t flags() const { return _M_flags; }
@@ -69,6 +82,23 @@ namespace letin
       std::size_t data_size() const { return _M_data_size; }
 
       const std::set<std::uint32_t>  &data_addrs() const { return _M_data_addrs; }
+
+      const format::Relocation &reloc(std::size_t i) const { return _M_relocs[i]; }
+
+      format::Relocation &reloc(std::size_t i) { return _M_relocs[i]; }
+
+      std::size_t reloc_count() const { return _M_reloc_count; }
+
+      format::Symbol *symbols(std::size_t i)
+      { return reinterpret_cast<format::Symbol *>(_M_symbols[_M_symbol_offsets[i]]); }
+
+      std::size_t symbol_count() const { return _M_symbol_count; }
+
+      bool relocate(std::size_t fun_offset, std::size_t var_offset,
+                    const std::unordered_map<std::string, std::size_t> &fun_indexes,
+                    const std::unordered_map<std::string, std::size_t> &var_indexes);
+
+      bool relacate_index(std::size_t &index, std::size_t offset, const std::unordered_map<std::string, std::size_t> &indexes, const format::Relocation &reloc, std::uint8_t symbol_type);
     };
 
     struct Registers
