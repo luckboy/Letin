@@ -97,7 +97,7 @@ namespace letin
       bool relocate(std::size_t fun_offset, std::size_t var_offset,
                     const std::unordered_map<std::string, std::size_t> &fun_indexes,
                     const std::unordered_map<std::string, std::size_t> &var_indexes);
-
+    private:
       bool relacate_index(std::size_t &index, std::size_t offset, const std::unordered_map<std::string, std::size_t> &indexes, const format::Relocation &reloc, std::uint8_t symbol_type);
     };
 
