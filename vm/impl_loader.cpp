@@ -82,7 +82,6 @@ namespace letin
         tmp_idx += align(data_size, 8);
         if(tmp_idx > size) return nullptr;
         for(size_t i = 0; i < data_size;) {
-          if(i >= data_size) return nullptr;
           if(var_addrs.find(i) != var_addrs.end()) var_addrs.erase(i);
           data_addrs.insert(i);
           format::Object *object = reinterpret_cast<format::Object *>(data + i);
