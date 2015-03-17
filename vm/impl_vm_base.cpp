@@ -36,9 +36,7 @@ namespace letin
         bool is_relocable = true;
         for(size_t i = 0; i < pairs.size(); i++) {
           Program *prog = _M_loader->load(pairs[i].first, pairs[i].second);
-          fun_count += prog->fun_count();
-          var_count += prog->var_count();
-          if(prog != nullptr) {
+          if(prog == nullptr) {
             if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_FORMAT));
             is_success = false;
             continue;
@@ -52,6 +50,8 @@ namespace letin
             }
           }
           progs.push_back(unique_ptr<Program>(prog));
+          fun_count += prog->fun_count();
+          var_count += prog->var_count();
         }
         if(!is_success) {
           _M_env.reset();
@@ -78,7 +78,7 @@ namespace letin
                 case format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED:
                 {
                   string name(symbol->name, symbol->length);
-                  if(!_M_env.add_fun_index(name, var_offset + symbol->index)) {
+                  if(!_M_env.add_var_index(name, var_offset + symbol->index)) {
                     if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_VAR_SYM, name));
                     is_success = false;
                   }
@@ -144,6 +144,7 @@ namespace letin
         
         _M_env.set_fun_count(fun_count);
         _M_env.set_var_count(var_count);
+        _M_has_entry = false;
         for(size_t i = 0; i < progs.size(); i++) {
           Program *prog = progs[i].get();
           if(!load_prog(i, prog, errors, (is_auto_freeing ? pairs[i].first : nullptr))) is_success = false;
@@ -223,7 +224,10 @@ namespace letin
                   case VALUE_TYPE_REF:
                   {
                     auto iter = objects.find(data_object->tes[j].addr);
-                    if(iter == objects.end()) return false;
+                    if(iter == objects.end()) {
+                      if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_FORMAT));
+                      return false;
+                    }
                     object->raw().tes[j] = TupleElement(Reference(iter->second));
                     break;
                   }

@@ -91,31 +91,31 @@ namespace letin
           i += sizeof(format::Object) - 8;
           switch(object->type) {
             case OBJECT_TYPE_IARRAY8:
-              i += align(object->length, 8);
+              i += object->length;
               break;
             case OBJECT_TYPE_IARRAY16:
               for(size_t j = 0; j < object->length; j++) object->is16[j] = ntohs(object->is16[j]);
-              i += align(object->length * 2, 8);
+              i += object->length * 2;
               break;
             case OBJECT_TYPE_IARRAY32:
               for(size_t j = 0; j < object->length; j++) object->is32[j] = ntohl(object->is32[j]);
-              i += align(object->length * 4, 8);
+              i += object->length * 4;
               break;
             case OBJECT_TYPE_IARRAY64:
               for(size_t j = 0; j < object->length; j++) object->is64[j] = ntohll(object->is64[j]);
-              i += align(object->length * 8, 8);
+              i += object->length * 8;
               break;
             case OBJECT_TYPE_SFARRAY:
               for(size_t j = 0; j < object->length; j++) object->sfs[j].word = ntohl(object->sfs[j].word);
-              i += align(object->length * 4, 8);
+              i += object->length * 4;
               break;
             case OBJECT_TYPE_DFARRAY:
               for(size_t j = 0; j < object->length; j++) object->dfs[j].dword = ntohll(object->dfs[j].dword);
-              i += align(object->length * 8, 8);
+              i += object->length * 8;
               break;
             case OBJECT_TYPE_RARRAY:
               for(size_t j = 0; j < object->length; j++) object->rs[j] = ntohl(object->rs[j]);
-              i += align(object->length * 4, 8);
+              i += object->length * 4;
               break;
             case OBJECT_TYPE_TUPLE:
               for(size_t j = 0; j < object->length; j++) {
@@ -124,12 +124,13 @@ namespace letin
                     object->tuple_elem_types()[j] != VALUE_TYPE_FLOAT &&
                     object->tuple_elem_types()[j] != VALUE_TYPE_REF) return nullptr;
               }
-              i += align(object->length * 9, 8);
+              i += object->length * 9;
               break;
             default:
               return nullptr;
           }
           if(i > data_size) return nullptr;
+          i = align(i, 8);
         }
         if(!var_addrs.empty()) return nullptr;
 

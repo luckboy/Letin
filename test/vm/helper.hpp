@@ -138,7 +138,7 @@ namespace letin
         std::size_t code_size() const { return _M_instrs.size(); }
 
         void add_object(void *ptr, std::size_t size)
-        { _M_object_pairs.push_back(ObjectPair(ptr, size)); _M_data_size += size; }
+        { _M_object_pairs.push_back(ObjectPair(ptr, size)); _M_data_size = util::align(_M_data_size, 8) + size; }
 
         std::size_t data_size() const { return _M_data_size; }
 
