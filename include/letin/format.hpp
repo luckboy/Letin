@@ -14,7 +14,8 @@ namespace letin
 {
   namespace format
   {
-    const std::uint32_t HEADER_FLAG_LIBRARY = 1;
+    const std::uint32_t HEADER_FLAG_LIBRARY = 1 << 0;
+    const std::uint32_t HEADER_FLAG_RELOCATABLE = 1 << 1;
 
     const std::uint8_t HEADER_MAGIC0 = 0x33;
     const std::uint8_t HEADER_MAGIC1 = 'L';

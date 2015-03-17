@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -30,8 +30,10 @@ namespace letin
       public:
         ~ImplVirtualMachineBase();
 
-        bool load(void *ptr, std::size_t size, bool is_auto_freeing);
-
+        bool load(const std::vector<std::pair<void *, std::size_t>> &pairs, std::list<LoadingError> *errors, bool is_auto_freeing);
+      private:
+        bool load_prog(std::size_t i, Program *prog, std::list<LoadingError> *errors, void *data_to_free);
+      public:
         Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun);
       protected:
         virtual ReturnValue start_in_thread(std::size_t i, const std::vector<Value> &args, ThreadContext &context) = 0;

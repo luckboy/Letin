@@ -133,33 +133,44 @@ namespace letin
         }
         if(!var_addrs.empty()) return nullptr;
 
-        format::Relocation *relocs = reinterpret_cast<format::Relocation *>(tmp_ptr + tmp_idx);
-        size_t reloc_count = header->reloc_count;
-        tmp_idx += align(sizeof(format::Relocation) * reloc_count, 8);
-        set<uint32_t> reloc_symbol_idxs;
-        if(tmp_idx > size) return nullptr;
-        for(size_t i = 0; i < reloc_count; i++) {
-          relocs[i].type = ntohl(relocs[i].type);
-          relocs[i].addr = ntohl(relocs[i].addr);
-          relocs[i].symbol = ntohl(relocs[i].symbol);
-          if(relocs[i].type != format::RELOC_TYPE_ELEM_FUN) reloc_symbol_idxs.insert(relocs[i].symbol);
-        }
-
-        uint8_t *symbols = tmp_ptr + tmp_idx;
-        size_t symbol_count = header->symbol_count;
+        format::Relocation *relocs;
+        size_t reloc_count;
+        uint8_t *symbols;
+        size_t symbol_count;
         vector<uint32_t> symbol_offsets;
-        size_t tmp_size = 0;
-        for(size_t i = 0, j = 0; j < symbol_count; j++) {
-          format::Symbol *symbol = reinterpret_cast<format::Symbol *>(symbols + i);
-          if(reloc_symbol_idxs.find(j) != reloc_symbol_idxs.end()) reloc_symbol_idxs.erase(j);
-          symbol_offsets.push_back(i);
-          symbol->index = ntohl(symbol->index);
-          symbol->length = ntohl(symbol->length);
-          i += align(sizeof(format::Symbol) - 1 + symbol->length, 8);
-          tmp_size = i;
+        if((!header->flags & format::HEADER_FLAG_RELOCATABLE) != 0) {
+          relocs = reinterpret_cast<format::Relocation *>(tmp_ptr + tmp_idx);
+          reloc_count = header->reloc_count;
+          tmp_idx += align(sizeof(format::Relocation) * reloc_count, 8);
+          set<uint32_t> reloc_symbol_idxs;
+          if(tmp_idx > size) return nullptr;
+          for(size_t i = 0; i < reloc_count; i++) {
+            relocs[i].type = ntohl(relocs[i].type);
+            relocs[i].addr = ntohl(relocs[i].addr);
+            relocs[i].symbol = ntohl(relocs[i].symbol);
+            if(relocs[i].type != format::RELOC_TYPE_ELEM_FUN) reloc_symbol_idxs.insert(relocs[i].symbol);
+          }
+
+          symbols = tmp_ptr + tmp_idx;
+          symbol_count = header->symbol_count;
+          size_t tmp_size = 0;
+          for(size_t i = 0, j = 0; j < symbol_count; j++) {
+            format::Symbol *symbol = reinterpret_cast<format::Symbol *>(symbols + i);
+            if(reloc_symbol_idxs.find(j) != reloc_symbol_idxs.end()) reloc_symbol_idxs.erase(j);
+            symbol_offsets.push_back(i);
+            symbol->index = ntohl(symbol->index);
+            symbol->length = ntohl(symbol->length);
+            i += align(sizeof(format::Symbol) - 1 + symbol->length, 8);
+            tmp_size = i;
+          }
+          if(tmp_idx > size) return nullptr;
+          if(!reloc_symbol_idxs.empty()) return nullptr;
+        } else {
+          relocs = reinterpret_cast<format::Relocation *>(tmp_ptr + tmp_idx);
+          reloc_count = 0;
+          symbols = tmp_ptr + tmp_idx;
+          symbol_count = 0;
         }
-        if(tmp_idx > size) return nullptr;
-        if(!reloc_symbol_idxs.empty()) return nullptr;
         return new Program(header->flags, header->entry, funs, fun_count, vars, var_count, code, code_size, data, data_size, data_addrs, relocs, reloc_count, symbols, symbol_count, symbol_offsets);
       }
     }

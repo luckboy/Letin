@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -9,6 +9,7 @@
 #define _IMPL_ENV_HPP
 
 #include <cstddef>
+#include <list>
 #include <memory>
 #include <unordered_map>
 #include <letin/vm.hpp>
@@ -26,9 +27,11 @@ namespace letin
         std::size_t _M_fun_count;
         std::unique_ptr<Value []> _M_vars;
         std::size_t _M_var_count;
-        std::unique_ptr<char []> _M_data_to_free;
+        std::unordered_map<std::string, std::size_t> _M_fun_indexes;
+        std::unordered_map<std::string, std::size_t> _M_var_indexes;
+        std::list<std::unique_ptr<char []>> _M_data_list_to_free;
       public:
-        ImplEnvironment() : _M_funs(nullptr), _M_fun_count(0), _M_vars(nullptr), _M_var_count(0) {}
+        ImplEnvironment() { reset(); }
 
         ~ImplEnvironment();
 
@@ -48,6 +51,10 @@ namespace letin
 
         Value var(std::size_t i);
 
+        Function fun(const std::string &name);
+
+        Value var(const std::string &name);
+        
         const Function *funs() const;
 
         Function *funs();
@@ -64,8 +71,28 @@ namespace letin
 
         void set_var(std::size_t i, const Value &value);
 
-        void set_auto_freeing(void *ptr)
-        { _M_data_to_free = std::unique_ptr<char []>(reinterpret_cast<char *>(ptr)); }
+        void add_data_to_free(void *ptr)
+        { _M_data_list_to_free.push_back(std::unique_ptr<char []>(reinterpret_cast<char *>(ptr))); }
+
+        std::unordered_map<std::string, std::size_t> fun_indexes() { return _M_fun_indexes; }
+
+        std::unordered_map<std::string, std::size_t> var_indexes() { return _M_var_indexes; }
+
+        bool add_fun_index(const std::string &name, std::size_t i)
+        {
+          if(_M_fun_indexes.find(name) == _M_fun_indexes.end()) return false;
+          _M_fun_indexes.insert(make_pair(name, i));
+          return true;
+        }
+
+        bool add_var_index(const std::string &name, std::size_t i)
+        {
+          if(_M_var_indexes.find(name) == _M_var_indexes.end()) return false;
+          _M_var_indexes.insert(make_pair(name, i));
+          return true;
+        }
+
+        void reset();
       };
     }
   }

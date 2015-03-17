@@ -256,17 +256,58 @@ namespace letin
 
     VirtualMachine::~VirtualMachine() {}
 
-    bool VirtualMachine::load(const char *file_name)
+    bool VirtualMachine::load(void *ptr, size_t size, list<LoadingError> *errors, bool is_auto_freeing)
     {
-      struct stat stat_buf;
-      if(stat(file_name, &stat_buf) == -1) return false;
-      if(stat_buf.st_size > numeric_limits<size_t>::max()) return false;
-      size_t size = stat_buf.st_size;
-      char *ptr = new char[size];
-      ifstream ifs(file_name);
-      if(!ifs.good()) return false;
-      ifs.read(ptr, size);
-      return load(reinterpret_cast<void *>(ptr), size, true);
+      vector<pair<void *, size_t>> pairs;
+      pairs.push_back(make_pair(ptr, size));
+      return load(pairs, errors, is_auto_freeing);
+    }
+
+    bool VirtualMachine::load(const vector<string> &file_names, list<LoadingError> *errors)
+    {
+      bool is_success = true;
+      vector<pair<void *, size_t>> pairs;
+      for(size_t i = 0; i < file_names.size(); i++) {
+        const char *file_name = file_names[i].c_str();
+        struct stat stat_buf;
+        if(stat(file_name, &stat_buf) == -1) {
+          if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_IO));
+          is_success = false;
+          continue;
+        }
+        if(stat_buf.st_size > numeric_limits<size_t>::max()) {
+          if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_IO));
+          is_success = false;
+          continue;
+        }
+        size_t size = stat_buf.st_size;
+        char *ptr = new char[size];
+        ifstream ifs(file_name);
+        if(!ifs.good()) {
+          if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_IO));
+          is_success = false;
+          continue;
+        }
+        ifs.read(ptr, size);
+        if(!ifs.good()) {
+          if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_IO));
+          is_success = false;
+          continue;
+        }
+        pairs.push_back(make_pair(ptr, size));
+      }
+      if(!is_success) {
+        for(auto pair : pairs) delete [] reinterpret_cast<char *>(pair.first);
+        return false;
+      }
+      return load(pairs, errors, true);
+    }
+
+    bool VirtualMachine::load(const char *file_name, list<LoadingError> *errors)
+    {
+      vector<string> file_names;
+      file_names.push_back(string(file_name));
+      return load(file_names, errors);
     }
 
     //

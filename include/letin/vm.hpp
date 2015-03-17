@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <functional>
 #include <iostream>
+#include <list>
 #include <memory>
 #include <thread>
 #include <vector>
@@ -346,6 +347,32 @@ namespace letin
       virtual Function fun(std::size_t i) = 0;
 
       virtual Value var(std::size_t i) = 0;
+      
+      virtual Function fun(const std::string &name) = 0;
+      
+      virtual Value var(const std::string &name) = 0;
+    };
+
+    class LoadingError
+    {
+      std::size_t _M_pair_index;
+      int _M_error;
+      std::string _M_symbol_name;
+    public:
+      LoadingError(std::size_t pair_index, int error) :
+        _M_pair_index(pair_index), _M_error(error) {}
+
+      LoadingError(std::size_t pair_index, int error, const char *symbol_name) :
+        _M_pair_index(pair_index), _M_error(error), _M_symbol_name(symbol_name) {}
+
+      LoadingError(std::size_t pair_index, int error, const std::string &symbol_name) :
+        _M_pair_index(pair_index), _M_error(error), _M_symbol_name(symbol_name) {}
+
+      std::size_t pair_index() const { return _M_pair_index; }
+
+      int error() const { return _M_error; }
+
+      const std::string &symbol_name() const { return _M_symbol_name; }
     };
 
     class VirtualMachine
@@ -360,10 +387,14 @@ namespace letin
     public:
       virtual ~VirtualMachine();
 
-      virtual bool load(void *ptr, std::size_t size, bool is_auto_freeing = false) = 0;
+      virtual bool load(const std::vector<std::pair<void *, std::size_t>> &pairs, std::list<LoadingError> *errors = nullptr, bool is_auto_freeing = false) = 0;
 
-      bool load(const char *file_name);
+      bool load(void *ptr, std::size_t size, std::list<LoadingError> *errors = nullptr, bool is_auto_freeing = false);
 
+      bool load(const std::vector<std::string> &file_names, std::list<LoadingError> *errors = nullptr);
+
+      bool load(const char *file_name, std::list<LoadingError> *errors = nullptr);
+      
       virtual Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun) = 0;
 
       Thread start(const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun) { return start(entry(), args, fun); }

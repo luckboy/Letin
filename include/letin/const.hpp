@@ -59,6 +59,16 @@ namespace letin
   const int NATIVE_FUN_PUT_CHAR =       5;
   const int NATIVE_FUN_GET_LINE =       6;
   const int NATIVE_FUN_PUT_STRING =     7;
+  
+  const int LOADING_ERROR_IO =          0;
+  const int LOADING_ERROR_FORMAT =      1;
+  const int LOADING_ERROR_NO_FUN_SYM =  2;
+  const int LOADING_ERROR_FUN_SYM =     3;
+  const int LOADING_ERROR_NO_VAR_SYM =  4;
+  const int LOADING_ERROR_VAR_SYM =     5;
+  const int LOADING_ERROR_RELOC =       6;
+  const int LOADING_ERROR_ENTRY =       7;
+  const int LOADING_ERROR_NO_RELOC =    8;
 }
 
 #endif
