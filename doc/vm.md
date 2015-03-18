@@ -237,22 +237,27 @@ argument can have an accepted object type. There will be used the short names of
 which specify an accepted value type and an accepted object type for an operation argument.
 These short names are presented in the following table:
 
-| Name | Description                                                    |
-|:---- |:-------------------------------------------------------------- |
-| i    | Integer number.                                                |
-| f    | Floating-point number.                                         |
-| r    | Reference.                                                     |
-| ia8  | Reference to array of 8-bit integer numbers.                   |
-| ia16 | Reference to array of 16-bit integer numbers.                  |
-| ia32 | Reference to array of 32-bit integer numbers.                  |
-| ia64 | Reference to array of 64-bit integer numbers.                  |
-| sfa  | Reference to array of single-precision floating-point numbers. |
-| dfa  | Reference to array of double-precision floating-point numbers. |
-| ra   | Reference to array of reference.                               |
-| t    | Reference to tuple.                                            |
-
-These short names also can have the s prefix for the types of shared objects and the u prefix
-for the types of shared object.
+| Name  | Description                                                           |
+|:----- |:--------------------------------------------------------------------- |
+| i     | Integer number.                                                       |
+| f     | Floating-point number.                                                |
+| r     | Reference.                                                            |
+| ia8   | Reference to shared array of 8-bit integer numbers.                   |
+| ia16  | Reference to shared array of 16-bit integer numbers.                  |
+| ia32  | Reference to shared array of 32-bit integer numbers.                  |
+| ia64  | Reference to shared array of 64-bit integer numbers.                  |
+| sfa   | Reference to shared array of single-precision floating-point numbers. |
+| dfa   | Reference to shared array of double-precision floating-point numbers. |
+| ra    | Reference to shared array of reference.                               |
+| t     | Reference to shared tuple.                                            |
+| uia8  | Reference to unique array of 8-bit integer numbers.                   |
+| uia16 | Reference to unique array of 16-bit integer numbers.                  |
+| uia32 | Reference to unique array of 32-bit integer numbers.                  |
+| uia64 | Reference to unique array of 64-bit integer numbers.                  |
+| usfa  | Reference to unique array of single-precision floating-point numbers. |
+| udfa  | Reference to unique array of double-precision floating-point numbers. |
+| ura   | Reference to unique array of reference.                               |
+| ut    | Reference to unique tuple.                                            |
 
 Some operations also take arguments which are passed in a stack. Some operations have to take
 arguments which have specified object types, otherwise a program terminates with the error of
@@ -297,38 +302,38 @@ object type. The operations of the Letin virtual machine are presented in the fo
 | rload(&lt;arg&gt;)                     | 0x22 | r          | Loads reference.                                                                        |
 | req(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x23 | r, r       | Gives 1 if arg1 is equal to arg2, otherwise 0.                                          |
 | rne(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x24 | r, r       | Gives 1 if arg1 isn't equal to arg2, otherwise 0.                                       |
-| riarray8()                             | 0x25 |            | Creates array of 8-bit integer numbers from pushed arguments.                           |
-| riarray16()                            | 0x26 |            | Creates array of 16-bit integer numbers from pushed arguments.                          |
-| riarray32()                            | 0x27 |            | Creates array of 32-bit integer numbers from pushed arguments.                          |
-| riarray64()                            | 0x28 |            | Creates array of 64-bit integer numbers from pushed arguments.                          |
-| rsfarray()                             | 0x29 |            | Creates array of single-precision floating-point numbers from pushed arguments.         |
-| rdfarray()                             | 0x2a |            | Creates array of double-precision floating-point numbers from pushed arguments.         |
-| rrarray()                              | 0x2b |            | Creates array of references from pushed arguments.                                      |
-| rtuple()                               | 0x2c |            | Creates tuple  from pushed arguments.                                                   |
-| rianth8(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x2d | ia8, i     | Gives element of array of 8-bit integer numbers.                                        |
-| rianth16(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x2e | ia16, i    | Gives element of array of 16-bit integer numbers.                                       |
-| rianth32(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x2f | ia32, i    | Gives element of array of 32-bit integer numbers.                                       |
-| rianth64(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x30 | ia64, i    | Gives element of array of 64-bit integer numbers.                                       |
-| rsfanth(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x31 | sfa, i     | Gives element of array of single-precision floating-point numbers.                      |
-| rdfanth(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x32 | dfa, i     | Gives element of array of double-precision floating-point numbers.                      |
-| rranth(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x33 | ra, i      | Gives element of array of references.                                                   |
-| rtnth(&lt;arg1&gt;, &lt;arg2&gt;)      | 0x34 | t, i       | Gives element of tuple.                                                                 |
-| rialen8(&lt;arg&gt;)                   | 0x35 | ia8        | Gives length of array of 8-bit integer numbers.                                         |
-| rialen16(&lt;arg&gt;)                  | 0x36 | ia16       | Gives length of array of 16-bit integer numbers.                                        |
-| rialen32(&lt;arg&gt;)                  | 0x37 | ia32       | Gives length of array of 32-bit integer numbers.                                        |
-| rialen64(&lt;arg&gt;)                  | 0x38 | ia64       | Gives length of array of 64-bit integer numbers.                                        |
-| rsfalen(&lt;arg&gt;)                   | 0x39 | sfa        | Gives length of array of single-precision floating-point numbers.                       |
-| rdfalen(&lt;arg&gt;)                   | 0x3a | dfa        | Gives length of array of double-precision floating-point numbers.                       |
-| rralen(&lt;arg&gt;)                    | 0x3b | ra         | Gives length of array of references.                                                    |
-| rtlen(&lt;arg&gt;)                     | 0x3c | t          | Gives length of tuple.                                                                  |
-| riacat8(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x3d | ia8, ia8   | Concatenates two arrays of 8-bit integer numbers.                                       |
-| riacat16(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x3e | ia16, ia16 | Concatenates two arrays of 16-bit integer numbers.                                      |
-| riacat32(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x3f | ia32, ia32 | Concatenates two arrays of 32-bit integer numbers.                                      |
-| riacat64(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x40 | ia64, ia64 | Concatenates two arrays of 64-bit integer numbers.                                      |
-| rsfacat(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x41 | sfa, sfa   | Concatenates two arrays of single-precision floating-point numbers.                     |
-| rdfacat(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x42 | dfa, dfa   | Concatenates two arrays of double-precision floating-point numbers.                     |
-| rracat(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x43 | ra, ra     | Concatenates two arrays of references.                                                  |
-| rtcat(&lt;arg1&gt;, &lt;arg2&gt;)      | 0x44 | t, t       | Concatenates two tuples.                                                                |
+| riarray8()                             | 0x25 |            | Creates shared array of 8-bit integer numbers from pushed arguments.                    |
+| riarray16()                            | 0x26 |            | Creates shared array of 16-bit integer numbers from pushed arguments.                   |
+| riarray32()                            | 0x27 |            | Creates shared array of 32-bit integer numbers from pushed arguments.                   |
+| riarray64()                            | 0x28 |            | Creates shared array of 64-bit integer numbers from pushed arguments.                   |
+| rsfarray()                             | 0x29 |            | Creates shared array of single-precision floating-point numbers from pushed arguments.  |
+| rdfarray()                             | 0x2a |            | Creates shared array of double-precision floating-point numbers from pushed arguments.  |
+| rrarray()                              | 0x2b |            | Creates shared array of references from pushed arguments.                               |
+| rtuple()                               | 0x2c |            | Creates shared tuple from pushed arguments.                                             |
+| rianth8(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x2d | ia8, i     | Gives element of shared array of 8-bit integer numbers.                                 |
+| rianth16(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x2e | ia16, i    | Gives element of shared array of 16-bit integer numbers.                                |
+| rianth32(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x2f | ia32, i    | Gives element of shared array of 32-bit integer numbers.                                |
+| rianth64(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x30 | ia64, i    | Gives element of shared array of 64-bit integer numbers.                                |
+| rsfanth(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x31 | sfa, i     | Gives element of shared array of single-precision floating-point numbers.               |
+| rdfanth(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x32 | dfa, i     | Gives element of shared array of double-precision floating-point numbers.               |
+| rranth(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x33 | ra, i      | Gives element of shared array of references.                                            |
+| rtnth(&lt;arg1&gt;, &lt;arg2&gt;)      | 0x34 | t, i       | Gives element of shared tuple.                                                          |
+| rialen8(&lt;arg&gt;)                   | 0x35 | ia8        | Gives length of shared array of 8-bit integer numbers.                                  |
+| rialen16(&lt;arg&gt;)                  | 0x36 | ia16       | Gives length of shared array of 16-bit integer numbers.                                 |
+| rialen32(&lt;arg&gt;)                  | 0x37 | ia32       | Gives length of shared array of 32-bit integer numbers.                                 |
+| rialen64(&lt;arg&gt;)                  | 0x38 | ia64       | Gives length of shared array of 64-bit integer numbers.                                 |
+| rsfalen(&lt;arg&gt;)                   | 0x39 | sfa        | Gives length of shared array of single-precision floating-point numbers.                |
+| rdfalen(&lt;arg&gt;)                   | 0x3a | dfa        | Gives length of shared array of double-precision floating-point numbers.                |
+| rralen(&lt;arg&gt;)                    | 0x3b | ra         | Gives length of shared array of references.                                             |
+| rtlen(&lt;arg&gt;)                     | 0x3c | t          | Gives length of shared tuple.                                                           |
+| riacat8(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x3d | ia8, ia8   | Concatenates two shared arrays of 8-bit integer numbers.                                |
+| riacat16(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x3e | ia16, ia16 | Concatenates two shared arrays of 16-bit integer numbers.                               |
+| riacat32(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x3f | ia32, ia32 | Concatenates two shared arrays of 32-bit integer numbers.                               |
+| riacat64(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x40 | ia64, ia64 | Concatenates two shared arrays of 64-bit integer numbers.                               |
+| rsfacat(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x41 | sfa, sfa   | Concatenates two shared arrays of single-precision floating-point numbers.              |
+| rdfacat(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x42 | dfa, dfa   | Concatenates two shared arrays of double-precision floating-point numbers.              |
+| rracat(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x43 | ra, ra     | Concatenates two shared arrays of references.                                           |
+| rtcat(&lt;arg1&gt;, &lt;arg2&gt;)      | 0x44 | t, t       | Concatenates two shared tuples.                                                         |
 | rtype(&lt;arg&gt;)                     | 0x45 | r          | Gives type of object.                                                                   |
 | icall(&lt;arg&gt;)                     | 0x46 | i          | Invokes function of arg index and gives its result as integer number.                   |
 | fcall(&lt;arg&gt;)                     | 0x47 | i          | Invokes function of arg index and gives its result as floating-point number.            |
