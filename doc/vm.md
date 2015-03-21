@@ -263,126 +263,126 @@ Some operations also take arguments which are passed in a stack. Some operations
 arguments which have specified object types, otherwise a program terminates with the error of
 object type. The operations of the Letin virtual machine are presented in the following table:
 
-| Operation                              | Code | Arguments  | Description                                                                             |
-|:-------------------------------------- |:---- |:---------- |:--------------------------------------------------------------------------------------- |
-| iload(&lt;arg&gt;)                     | 0x00 | i          | Loads integer number.                                                                   |
-| iload2(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x01 | i, i       | Loads integer number from (arg1 << 32) &#124; arg2.                                     |
-| ineg(&lt;arg&gt;)                      | 0x02 | i          | Negates integer number.                                                                 |
-| iadd(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x03 | i, i       | Adds two integer numbers.                                                               |
-| isub(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x04 | i, i       | Subtracts two integer numbers.                                                          |
-| imul(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x05 | i, i       | Multiplies two integer numbers.                                                         |
-| idiv(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x06 | i, i       | Divides two integer number.                                                             |
-| imod(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x07 | i, i       | Calculates remainder of two integer numbers.                                            |
-| inot(&lt;arg&gt;)                      | 0x08 | i          | Calculates bitwise negation.                                                            |
-| iand(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x09 | i, i       | Calculates bitwise conjunction.                                                         |
-| ior(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x0a | i, i       | Calculates bitwise alternative.                                                         |
-| ixor(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x0b | i, i       | Calculates bitwise exclusive alternative.                                               |
-| ishl(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x0c | i, i       | Calculates left shift by second argument.                                               |
-| ishr(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x0d | i, i       | Calculates arithmetic right shift by second argument.                                   |
-| ishru(&lt;arg1;&gt;, &lt;arg2&gt;)     | 0x0e | i, i       | Calculates logical right shift by second argument.                                      |
-| ieq(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x0f | i, i       | Gives 1 if arg1 is equal to arg2, otherwise 0.                                          |
-| ine(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x10 | i, i       | Gives 1 if arg1 isn't equal to arg2, otherwise 0.                                       |
-| ilt(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x11 | i, i       | Gives 1 if arg1 is less than arg2, otherwise 0.                                         |
-| ige(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x12 | i, i       | Gives 1 if arg1 is greater than or equal to arg2, otherwise 0.                          |
-| igt(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x13 | i, i       | Gives 1 if arg1 is greater than arg2, otherwise 0.                                      |
-| ile(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x14 | i, i       | Gives 1 if arg1 is less than or equal to arg2, otherwise 0.                             |
-| fload(&lt;arg&gt;)                     | 0x15 | f          | Gives floating-point number.                                                            |
-| fload2(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x16 | i, i       | Gives floating-point number from (arg1 << 32) &#124; arg2.                              |
-| fneg(&lt;arg&gt;)                      | 0x17 | f          | Negates floating-point number.                                                          |
-| fadd(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x18 | f, f       | Adds two floating-point numbers.                                                        |
-| fsub(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x19 | f, f       | Subtracts two floating-point numbers.                                                   |
-| fmul(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x1a | f, f       | Multiplies two floating-point numbers.                                                  |
-| fdiv(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x1b | f, f       | Divides two floating-point numbers.                                                     |
-| feq(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x1c | f, f       | Gives 1 if arg1 is equal to arg2, otherwise 0.                                          |
-| fne(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x1d | f, f       | Gives 1 if arg1 isn't equal to arg2, otherwise 0.                                       |
-| flt(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x1e | f, f       | Gives 1 if arg1 is less than arg2, otherwise 0.                                         |
-| fge(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x1f | f, f       | Gives 1 if arg1 is greater than or equal to arg2, otherwise 0.                          |
-| fgt(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x20 | f, f       | Gives 1 if arg1 is greater than arg2, otherwise 0.                                      |
-| fle(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x21 | f, f       | Gives 1 if arg1 is less than or equal to arg2, otherwise 0.                             |
-| rload(&lt;arg&gt;)                     | 0x22 | r          | Loads reference.                                                                        |
-| req(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x23 | r, r       | Gives 1 if arg1 is equal to arg2, otherwise 0.                                          |
-| rne(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x24 | r, r       | Gives 1 if arg1 isn't equal to arg2, otherwise 0.                                       |
-| riarray8()                             | 0x25 |            | Creates shared array of 8-bit integer numbers from pushed arguments.                    |
-| riarray16()                            | 0x26 |            | Creates shared array of 16-bit integer numbers from pushed arguments.                   |
-| riarray32()                            | 0x27 |            | Creates shared array of 32-bit integer numbers from pushed arguments.                   |
-| riarray64()                            | 0x28 |            | Creates shared array of 64-bit integer numbers from pushed arguments.                   |
-| rsfarray()                             | 0x29 |            | Creates shared array of single-precision floating-point numbers from pushed arguments.  |
-| rdfarray()                             | 0x2a |            | Creates shared array of double-precision floating-point numbers from pushed arguments.  |
-| rrarray()                              | 0x2b |            | Creates shared array of references from pushed arguments.                               |
-| rtuple()                               | 0x2c |            | Creates shared tuple from pushed arguments.                                             |
-| rianth8(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x2d | ia8, i     | Gives element of shared array of 8-bit integer numbers.                                 |
-| rianth16(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x2e | ia16, i    | Gives element of shared array of 16-bit integer numbers.                                |
-| rianth32(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x2f | ia32, i    | Gives element of shared array of 32-bit integer numbers.                                |
-| rianth64(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x30 | ia64, i    | Gives element of shared array of 64-bit integer numbers.                                |
-| rsfanth(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x31 | sfa, i     | Gives element of shared array of single-precision floating-point numbers.               |
-| rdfanth(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x32 | dfa, i     | Gives element of shared array of double-precision floating-point numbers.               |
-| rranth(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x33 | ra, i      | Gives element of shared array of references.                                            |
-| rtnth(&lt;arg1&gt;, &lt;arg2&gt;)      | 0x34 | t, i       | Gives element of shared tuple.                                                          |
-| rialen8(&lt;arg&gt;)                   | 0x35 | ia8        | Gives length of shared array of 8-bit integer numbers.                                  |
-| rialen16(&lt;arg&gt;)                  | 0x36 | ia16       | Gives length of shared array of 16-bit integer numbers.                                 |
-| rialen32(&lt;arg&gt;)                  | 0x37 | ia32       | Gives length of shared array of 32-bit integer numbers.                                 |
-| rialen64(&lt;arg&gt;)                  | 0x38 | ia64       | Gives length of shared array of 64-bit integer numbers.                                 |
-| rsfalen(&lt;arg&gt;)                   | 0x39 | sfa        | Gives length of shared array of single-precision floating-point numbers.                |
-| rdfalen(&lt;arg&gt;)                   | 0x3a | dfa        | Gives length of shared array of double-precision floating-point numbers.                |
-| rralen(&lt;arg&gt;)                    | 0x3b | ra         | Gives length of shared array of references.                                             |
-| rtlen(&lt;arg&gt;)                     | 0x3c | t          | Gives length of shared tuple.                                                           |
-| riacat8(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x3d | ia8, ia8   | Concatenates two shared arrays of 8-bit integer numbers.                                |
-| riacat16(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x3e | ia16, ia16 | Concatenates two shared arrays of 16-bit integer numbers.                               |
-| riacat32(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x3f | ia32, ia32 | Concatenates two shared arrays of 32-bit integer numbers.                               |
-| riacat64(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x40 | ia64, ia64 | Concatenates two shared arrays of 64-bit integer numbers.                               |
-| rsfacat(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x41 | sfa, sfa   | Concatenates two shared arrays of single-precision floating-point numbers.              |
-| rdfacat(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x42 | dfa, dfa   | Concatenates two shared arrays of double-precision floating-point numbers.              |
-| rracat(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x43 | ra, ra     | Concatenates two shared arrays of references.                                           |
-| rtcat(&lt;arg1&gt;, &lt;arg2&gt;)      | 0x44 | t, t       | Concatenates two shared tuples.                                                         |
-| rtype(&lt;arg&gt;)                     | 0x45 | r          | Gives type of object.                                                                   |
-| icall(&lt;arg&gt;)                     | 0x46 | i          | Invokes function of arg index and gives its result as integer number.                   |
-| fcall(&lt;arg&gt;)                     | 0x47 | i          | Invokes function of arg index and gives its result as floating-point number.            |
-| rcall(&lt;arg&gt;)                     | 0x48 | i          | Invokes function of arg index and gives its result as reference.                        |
-| itof(&lt;arg&gt;)                      | 0x49 | i          | Converts integer number to floating-point number.                                       |
-| ftoi(&lt;arg&gt;)                      | 0x4a | f          | Converts floating-point number to integer number.                                       |
-| incall(&lt;arg&gt;)                    | 0x4b | i          | Invokes native function and gives its result as integer number.                         |
-| fncall(&lt;arg&gt;)                    | 0x4c | i          | Invokes native function and gives its result as floating-point number.                  |
-| rncall(&lt;arg&gt;)                    | 0x4d | i          | Invokes native function and gives its result as reference.                              |
-| ruiafill8(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x4e | i, i       | Creates unique array of 8-bit integer numbers that is filled by arg2.                   |
-| ruiafill16(&lt;arg1&gt;, &lt;arg2&gt;) | 0x4f | i, i       | Creates unique array of 16-bit integer numbers that is filled by arg2.                  |
-| ruiafill32(&lt;arg1&gt;, &lt;arg2&gt;) | 0x50 | i, i       | Creates unique array of 32-bit integer numbers that is filled by arg2.                  |
-| ruiafill64(&lt;arg1&gt;, &lt;arg2&gt;) | 0x51 | i, i       | Creates unique array of 64-bit integer numbers that is filled by arg2.                  |
-| rusfafill(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x52 | i, f       | Creates unique array of single-precision floating-point numbers that is filled by arg2. |
-| rudfafill(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x53 | i, f       | Creates unique array of double-precision floating-point numbers that is filled by arg2. |
-| rurafill(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x54 | i, r       | Creates unique array of references that is filled by arg2.                              |
-| rutfilli(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x55 | i, i       | Creates unique tuple that is filled by integer number.                                  |
-| rutfillf(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x56 | i, f       | Creates unique tuple that is filled by floating-point number.                           |
-| rutfillr(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x57 | i, r       | Creates unique tuple that is filled by reference.                                       |
-| ruianth8(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x58 | uia8, i    | Gives element of unique array of 8-bit integer numbers and array.                       |
-| ruianth16(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x59 | uia16, i   | Gives element of unique array of 16-bit integer numbers and array.                      |
-| ruianth32(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x5a | uia32, i   | Gives element of unique array of 32-bit integer numbers and array.                      |
-| ruianth64(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x5b | uia64, i   | Gives element of unique array of 64-bit integer numbers and array.                      |
-| rusfanth(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x5c | usfa, i    | Gives element of unique array of single-precision floating-point numbers and array.     |
-| rudfanth(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x5d | udfa, i    | Gives element of unique array of double-precision floating-point numbers and array.     |
-| ruranth(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x5e | ura, i     | Gives element of unique array of references and array.                                  |
-| rutnth(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x5f | ut, i      | Gives element of unique tuple and tuple.                                                |
-| ruiasnth8(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x60 | uia8, i    | Gives unique array of 8-bit integer numbers with updated element.                       |
-| ruiasnth16(&lt;arg1&gt;, &lt;arg2&gt;) | 0x61 | uia16, i   | Gives unique array of 16-bit integer numbers with updated element.                      |
-| ruiasnth32(&lt;arg1&gt;, &lt;arg2&gt;) | 0x62 | uia32, i   | Gives unique array of 32-bit integer numbers with updated element.                      |
-| ruiasnth64(&lt;arg1&gt;, &lt;arg2&gt;) | 0x63 | uia64, i   | Gives unique array of 64-bit integer numbers with updated element.                      |
-| rusfasnth(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x64 | usfa, i    | Gives unique array of single-precision floating-point numbers with updated element.     |
-| rudfasnth(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x65 | udfa, i    | Gives unique array of double-precision floating-point numbers with updated element.     |
-| rurasnth(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x66 | ura, i     | Gives unique array of references with updated element.                                  |
-| rutsnth(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x67 | ut, i      | Gives unique array of tuple with updated element.                                       |
-| ruialen8(&lt;arg&gt;)                  | 0x68 | uia8       | Gives length of unique array of 8-bit integer numbers and array.                        |
-| ruialen16(&lt;arg&gt;)                 | 0x69 | uia16      | Gives length of unique array of 16-bit integer numbers and array.                       |
-| ruialen32(&lt;arg&gt;)                 | 0x6a | uia32      | Gives length of unique array of 32-bit integer numbers and array.                       |
-| ruialen64(&lt;arg&gt;)                 | 0x6b | uia64      | Gives length of unique array of 64-bit integer numbers and array.                       |
-| rusfalen(&lt;arg&gt;)                  | 0x6c | usfa       | Gives length of unique array of single-precision floating-point numbers and array.      |
-| rudfalen(&lt;arg&gt;)                  | 0x6d | udfa       | Gives length of unique array of double-precision floating-point numbers and array.      |
-| ruralen(&lt;arg&gt;)                   | 0x6e | ura        | Gives length of unique array of references and array.                                   |
-| rutlen(&lt;arg&gt;)                    | 0x6f | ut         | Gives length of unique tuple and tuple.                                                 |
-| rutype(&lt;arg&gt;)                    | 0x70 | r          | Gives type of object and object.                                                        |
-| ruiatoia8(&lt;arg&gt;)                 | 0x71 | uia8       | Copies unique array of 8-bit integer numbers to shared array.                           |
-| ruiatoia16(&lt;arg&gt;)                | 0x72 | uia16      | Copies unique array of 16-bit integer numbers to shared array.                          |
-| ruiatoia32(&lt;arg&gt;)                | 0x73 | uia32      | Copies unique array of 32-bit integer numbers to shared array.                          |
-| ruiatoia64(&lt;arg&gt;)                | 0x74 | uia64      | Copies unique array of 64-bit integer numbers to shared array.                          |
-| rusfatosfa(&lt;arg&gt;)                | 0x75 | usfa       | Copies unique array of single-precision floating-point numbers to shared array.         |
-| rudfatodfa(&lt;arg&gt;)                | 0x76 | udfa       | Copies unique array of double-precision floating-point numbers to shared array.         |
-| ruratora(&lt;arg&gt;)                  | 0x77 | ura        | Copies unique array of references to shared array.                                      |
-| ruttot(&lt;arg&gt;)                    | 0x78 | ut         | Copies unique tuple to shared tuple.                                                    |
+| Operation                              | Code | Arguments  | Description                                                                               |
+|:-------------------------------------- |:---- |:---------- |:----------------------------------------------------------------------------------------- |
+| iload(&lt;arg&gt;)                     | 0x00 | i          | Loads integer number.                                                                     |
+| iload2(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x01 | i, i       | Loads integer number from (arg1 << 32) &#124; arg2.                                       |
+| ineg(&lt;arg&gt;)                      | 0x02 | i          | Negates integer number.                                                                   |
+| iadd(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x03 | i, i       | Adds two integer numbers.                                                                 |
+| isub(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x04 | i, i       | Subtracts two integer numbers.                                                            |
+| imul(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x05 | i, i       | Multiplies two integer numbers.                                                           |
+| idiv(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x06 | i, i       | Divides two integer number.                                                               |
+| imod(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x07 | i, i       | Calculates remainder of two integer numbers.                                              |
+| inot(&lt;arg&gt;)                      | 0x08 | i          | Calculates bitwise negation.                                                              |
+| iand(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x09 | i, i       | Calculates bitwise conjunction.                                                           |
+| ior(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x0a | i, i       | Calculates bitwise alternative.                                                           |
+| ixor(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x0b | i, i       | Calculates bitwise exclusive alternative.                                                 |
+| ishl(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x0c | i, i       | Calculates left shift by second argument.                                                 |
+| ishr(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x0d | i, i       | Calculates arithmetic right shift by second argument.                                     |
+| ishru(&lt;arg1;&gt;, &lt;arg2&gt;)     | 0x0e | i, i       | Calculates logical right shift by second argument.                                        |
+| ieq(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x0f | i, i       | Gives 1 if arg1 is equal to arg2, otherwise 0.                                            |
+| ine(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x10 | i, i       | Gives 1 if arg1 isn't equal to arg2, otherwise 0.                                         |
+| ilt(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x11 | i, i       | Gives 1 if arg1 is less than arg2, otherwise 0.                                           |
+| ige(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x12 | i, i       | Gives 1 if arg1 is greater than or equal to arg2, otherwise 0.                            |
+| igt(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x13 | i, i       | Gives 1 if arg1 is greater than arg2, otherwise 0.                                        |
+| ile(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x14 | i, i       | Gives 1 if arg1 is less than or equal to arg2, otherwise 0.                               |
+| fload(&lt;arg&gt;)                     | 0x15 | f          | Gives floating-point number.                                                              |
+| fload2(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x16 | i, i       | Gives floating-point number from (arg1 << 32) &#124; arg2.                                |
+| fneg(&lt;arg&gt;)                      | 0x17 | f          | Negates floating-point number.                                                            |
+| fadd(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x18 | f, f       | Adds two floating-point numbers.                                                          |
+| fsub(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x19 | f, f       | Subtracts two floating-point numbers.                                                     |
+| fmul(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x1a | f, f       | Multiplies two floating-point numbers.                                                    |
+| fdiv(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x1b | f, f       | Divides two floating-point numbers.                                                       |
+| feq(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x1c | f, f       | Gives 1 if arg1 is equal to arg2, otherwise 0.                                            |
+| fne(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x1d | f, f       | Gives 1 if arg1 isn't equal to arg2, otherwise 0.                                         |
+| flt(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x1e | f, f       | Gives 1 if arg1 is less than arg2, otherwise 0.                                           |
+| fge(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x1f | f, f       | Gives 1 if arg1 is greater than or equal to arg2, otherwise 0.                            |
+| fgt(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x20 | f, f       | Gives 1 if arg1 is greater than arg2, otherwise 0.                                        |
+| fle(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x21 | f, f       | Gives 1 if arg1 is less than or equal to arg2, otherwise 0.                               |
+| rload(&lt;arg&gt;)                     | 0x22 | r          | Loads reference.                                                                          |
+| req(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x23 | r, r       | Gives 1 if arg1 is equal to arg2, otherwise 0. Arg1 or arg2 has to be global variable.    |
+| rne(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x24 | r, r       | Gives 1 if arg1 isn't equal to arg2, otherwise 0. Arg1 or arg2 has to be global variable. |
+| riarray8()                             | 0x25 |            | Creates shared array of 8-bit integer numbers from pushed arguments.                      |
+| riarray16()                            | 0x26 |            | Creates shared array of 16-bit integer numbers from pushed arguments.                     |
+| riarray32()                            | 0x27 |            | Creates shared array of 32-bit integer numbers from pushed arguments.                     |
+| riarray64()                            | 0x28 |            | Creates shared array of 64-bit integer numbers from pushed arguments.                     |
+| rsfarray()                             | 0x29 |            | Creates shared array of single-precision floating-point numbers from pushed arguments.    |
+| rdfarray()                             | 0x2a |            | Creates shared array of double-precision floating-point numbers from pushed arguments.    |
+| rrarray()                              | 0x2b |            | Creates shared array of references from pushed arguments.                                 |
+| rtuple()                               | 0x2c |            | Creates shared tuple from pushed arguments.                                               |
+| rianth8(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x2d | ia8, i     | Gives element of shared array of 8-bit integer numbers.                                   |
+| rianth16(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x2e | ia16, i    | Gives element of shared array of 16-bit integer numbers.                                  |
+| rianth32(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x2f | ia32, i    | Gives element of shared array of 32-bit integer numbers.                                  |
+| rianth64(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x30 | ia64, i    | Gives element of shared array of 64-bit integer numbers.                                  |
+| rsfanth(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x31 | sfa, i     | Gives element of shared array of single-precision floating-point numbers.                 |
+| rdfanth(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x32 | dfa, i     | Gives element of shared array of double-precision floating-point numbers.                 |
+| rranth(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x33 | ra, i      | Gives element of shared array of references.                                              |
+| rtnth(&lt;arg1&gt;, &lt;arg2&gt;)      | 0x34 | t, i       | Gives element of shared tuple.                                                            |
+| rialen8(&lt;arg&gt;)                   | 0x35 | ia8        | Gives length of shared array of 8-bit integer numbers.                                    |
+| rialen16(&lt;arg&gt;)                  | 0x36 | ia16       | Gives length of shared array of 16-bit integer numbers.                                   |
+| rialen32(&lt;arg&gt;)                  | 0x37 | ia32       | Gives length of shared array of 32-bit integer numbers.                                   |
+| rialen64(&lt;arg&gt;)                  | 0x38 | ia64       | Gives length of shared array of 64-bit integer numbers.                                   |
+| rsfalen(&lt;arg&gt;)                   | 0x39 | sfa        | Gives length of shared array of single-precision floating-point numbers.                  |
+| rdfalen(&lt;arg&gt;)                   | 0x3a | dfa        | Gives length of shared array of double-precision floating-point numbers.                  |
+| rralen(&lt;arg&gt;)                    | 0x3b | ra         | Gives length of shared array of references.                                               |
+| rtlen(&lt;arg&gt;)                     | 0x3c | t          | Gives length of shared tuple.                                                             |
+| riacat8(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x3d | ia8, ia8   | Concatenates two shared arrays of 8-bit integer numbers.                                  |
+| riacat16(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x3e | ia16, ia16 | Concatenates two shared arrays of 16-bit integer numbers.                                 |
+| riacat32(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x3f | ia32, ia32 | Concatenates two shared arrays of 32-bit integer numbers.                                 |
+| riacat64(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x40 | ia64, ia64 | Concatenates two shared arrays of 64-bit integer numbers.                                 |
+| rsfacat(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x41 | sfa, sfa   | Concatenates two shared arrays of single-precision floating-point numbers.                |
+| rdfacat(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x42 | dfa, dfa   | Concatenates two shared arrays of double-precision floating-point numbers.                |
+| rracat(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x43 | ra, ra     | Concatenates two shared arrays of references.                                             |
+| rtcat(&lt;arg1&gt;, &lt;arg2&gt;)      | 0x44 | t, t       | Concatenates two shared tuples.                                                           |
+| rtype(&lt;arg&gt;)                     | 0x45 | r          | Gives type of object.                                                                     |
+| icall(&lt;arg&gt;)                     | 0x46 | i          | Invokes function of arg index and gives its result as integer number.                     |
+| fcall(&lt;arg&gt;)                     | 0x47 | i          | Invokes function of arg index and gives its result as floating-point number.              |
+| rcall(&lt;arg&gt;)                     | 0x48 | i          | Invokes function of arg index and gives its result as reference.                          |
+| itof(&lt;arg&gt;)                      | 0x49 | i          | Converts integer number to floating-point number.                                         |
+| ftoi(&lt;arg&gt;)                      | 0x4a | f          | Converts floating-point number to integer number.                                         |
+| incall(&lt;arg&gt;)                    | 0x4b | i          | Invokes native function and gives its result as integer number.                           |
+| fncall(&lt;arg&gt;)                    | 0x4c | i          | Invokes native function and gives its result as floating-point number.                    |
+| rncall(&lt;arg&gt;)                    | 0x4d | i          | Invokes native function and gives its result as reference.                                |
+| ruiafill8(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x4e | i, i       | Creates unique array of 8-bit integer numbers that is filled by arg2.                     |
+| ruiafill16(&lt;arg1&gt;, &lt;arg2&gt;) | 0x4f | i, i       | Creates unique array of 16-bit integer numbers that is filled by arg2.                    |
+| ruiafill32(&lt;arg1&gt;, &lt;arg2&gt;) | 0x50 | i, i       | Creates unique array of 32-bit integer numbers that is filled by arg2.                    |
+| ruiafill64(&lt;arg1&gt;, &lt;arg2&gt;) | 0x51 | i, i       | Creates unique array of 64-bit integer numbers that is filled by arg2.                    |
+| rusfafill(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x52 | i, f       | Creates unique array of single-precision floating-point numbers that is filled by arg2.   |
+| rudfafill(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x53 | i, f       | Creates unique array of double-precision floating-point numbers that is filled by arg2.   |
+| rurafill(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x54 | i, r       | Creates unique array of references that is filled by arg2.                                |
+| rutfilli(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x55 | i, i       | Creates unique tuple that is filled by integer number.                                    |
+| rutfillf(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x56 | i, f       | Creates unique tuple that is filled by floating-point number.                             |
+| rutfillr(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x57 | i, r       | Creates unique tuple that is filled by reference.                                         |
+| ruianth8(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x58 | uia8, i    | Gives element of unique array of 8-bit integer numbers and array.                         |
+| ruianth16(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x59 | uia16, i   | Gives element of unique array of 16-bit integer numbers and array.                        |
+| ruianth32(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x5a | uia32, i   | Gives element of unique array of 32-bit integer numbers and array.                        |
+| ruianth64(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x5b | uia64, i   | Gives element of unique array of 64-bit integer numbers and array.                        |
+| rusfanth(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x5c | usfa, i    | Gives element of unique array of single-precision floating-point numbers and array.       |
+| rudfanth(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x5d | udfa, i    | Gives element of unique array of double-precision floating-point numbers and array.       |
+| ruranth(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x5e | ura, i     | Gives element of unique array of references and array.                                    |
+| rutnth(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x5f | ut, i      | Gives element of unique tuple and tuple.                                                  |
+| ruiasnth8(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x60 | uia8, i    | Gives unique array of 8-bit integer numbers with updated element.                         |
+| ruiasnth16(&lt;arg1&gt;, &lt;arg2&gt;) | 0x61 | uia16, i   | Gives unique array of 16-bit integer numbers with updated element.                        |
+| ruiasnth32(&lt;arg1&gt;, &lt;arg2&gt;) | 0x62 | uia32, i   | Gives unique array of 32-bit integer numbers with updated element.                        |
+| ruiasnth64(&lt;arg1&gt;, &lt;arg2&gt;) | 0x63 | uia64, i   | Gives unique array of 64-bit integer numbers with updated element.                        |
+| rusfasnth(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x64 | usfa, i    | Gives unique array of single-precision floating-point numbers with updated element.       |
+| rudfasnth(&lt;arg1&gt;, &lt;arg2&gt;)  | 0x65 | udfa, i    | Gives unique array of double-precision floating-point numbers with updated element.       |
+| rurasnth(&lt;arg1&gt;, &lt;arg2&gt;)   | 0x66 | ura, i     | Gives unique array of references with updated element.                                    |
+| rutsnth(&lt;arg1&gt;, &lt;arg2&gt;)    | 0x67 | ut, i      | Gives unique array of tuple with updated element.                                         |
+| ruialen8(&lt;arg&gt;)                  | 0x68 | uia8       | Gives length of unique array of 8-bit integer numbers and array.                          |
+| ruialen16(&lt;arg&gt;)                 | 0x69 | uia16      | Gives length of unique array of 16-bit integer numbers and array.                         |
+| ruialen32(&lt;arg&gt;)                 | 0x6a | uia32      | Gives length of unique array of 32-bit integer numbers and array.                         |
+| ruialen64(&lt;arg&gt;)                 | 0x6b | uia64      | Gives length of unique array of 64-bit integer numbers and array.                         |
+| rusfalen(&lt;arg&gt;)                  | 0x6c | usfa       | Gives length of unique array of single-precision floating-point numbers and array.        |
+| rudfalen(&lt;arg&gt;)                  | 0x6d | udfa       | Gives length of unique array of double-precision floating-point numbers and array.        |
+| ruralen(&lt;arg&gt;)                   | 0x6e | ura        | Gives length of unique array of references and array.                                     |
+| rutlen(&lt;arg&gt;)                    | 0x6f | ut         | Gives length of unique tuple and tuple.                                                   |
+| rutype(&lt;arg&gt;)                    | 0x70 | r          | Gives type of object and object.                                                          |
+| ruiatoia8(&lt;arg&gt;)                 | 0x71 | uia8       | Copies unique array of 8-bit integer numbers to shared array.                             |
+| ruiatoia16(&lt;arg&gt;)                | 0x72 | uia16      | Copies unique array of 16-bit integer numbers to shared array.                            |
+| ruiatoia32(&lt;arg&gt;)                | 0x73 | uia32      | Copies unique array of 32-bit integer numbers to shared array.                            |
+| ruiatoia64(&lt;arg&gt;)                | 0x74 | uia64      | Copies unique array of 64-bit integer numbers to shared array.                            |
+| rusfatosfa(&lt;arg&gt;)                | 0x75 | usfa       | Copies unique array of single-precision floating-point numbers to shared array.           |
+| rudfatodfa(&lt;arg&gt;)                | 0x76 | udfa       | Copies unique array of double-precision floating-point numbers to shared array.           |
+| ruratora(&lt;arg&gt;)                  | 0x77 | ura        | Copies unique array of references to shared array.                                        |
+| ruttot(&lt;arg&gt;)                    | 0x78 | ut         | Copies unique tuple to shared tuple.                                                      |
