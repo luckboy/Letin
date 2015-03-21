@@ -639,6 +639,7 @@ namespace letin
           case OP_REQ:
           {
             Reference r1, r2;
+            if(opcode_to_arg_type1(instr.opcode) != ARG_TYPE_GVAR && opcode_to_arg_type2(instr.opcode) != ARG_TYPE_GVAR) return Value();
             if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
             return Value(r1 == r2 ? 1 : 0);
@@ -646,6 +647,7 @@ namespace letin
           case OP_RNE:
           {
             Reference r1, r2;
+            if(opcode_to_arg_type1(instr.opcode) != ARG_TYPE_GVAR && opcode_to_arg_type2(instr.opcode) != ARG_TYPE_GVAR) return Value();
             if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
             return Value(r1 != r2 ? 1 : 0);
