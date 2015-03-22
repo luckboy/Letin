@@ -110,6 +110,21 @@ namespace letin
       }
 
       //
+      // A SymbolHelper class.
+      //
+
+      void *SymbolHelper::ptr() const
+      {
+        uint8_t *tmp_ptr = new uint8_t[size()];
+        format::Symbol *symbol = reinterpret_cast<format::Symbol *>(tmp_ptr);
+        symbol->index = htonl(_M_index);
+        symbol->length = htons(_M_name.size());
+        symbol->type = _M_type;
+        copy(_M_name.begin(), _M_name.end(), symbol->name);
+        return tmp_ptr;
+      }
+
+      //
       // A ProgramHelper class.
       //
 
@@ -121,11 +136,13 @@ namespace letin
         copy(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, header->magic);
         tmp_ptr += align(sizeof(format::Header), 8);
         header->entry = htonl(_M_entry);
-        header->flags = 0;
+        header->flags = _M_flags;
         header->fun_count = htonl(_M_funs.size());
         header->var_count = htonl(_M_vars.size());
         header->code_size = htonl(_M_instrs.size());
         header->data_size = htonl(_M_data_size);
+        header->reloc_count = htonl(_M_relocs.size());
+        header->symbol_count = htonl(_M_symbol_pairs.size());
 
         format::Function *funs = reinterpret_cast<format::Function *>(tmp_ptr);
         tmp_ptr += align(sizeof(format::Function) * _M_funs.size(), 8);
@@ -134,12 +151,21 @@ namespace letin
         format::Value *vars = reinterpret_cast<format::Value *>(tmp_ptr);
         tmp_ptr += align(sizeof(format::Value) * _M_vars.size(), 8);
         copy(_M_vars.begin(), _M_vars.end(), vars);
-        
+
         format::Instruction *code = reinterpret_cast<format::Instruction *>(tmp_ptr);
         tmp_ptr += align(sizeof(format::Instruction) * _M_instrs.size(), 8);
         copy(_M_instrs.begin(), _M_instrs.end(), code);
-        
+
         for(auto &pair : _M_object_pairs) {
+          copy_n(pair.ptr.get(), pair.size, tmp_ptr);
+          tmp_ptr += align(pair.size, 8);
+        }
+
+        format::Relocation *relocs = reinterpret_cast<format::Relocation *>(tmp_ptr);
+        tmp_ptr += align(sizeof(format::Relocation) * _M_relocs.size(), 8);
+        copy(_M_relocs.begin(), _M_relocs.end(), relocs);
+
+        for(auto &pair : _M_symbol_pairs) {
           copy_n(pair.ptr.get(), pair.size, tmp_ptr);
           tmp_ptr += align(pair.size, 8);
         }
@@ -148,12 +174,20 @@ namespace letin
       
       size_t ProgramHelper::size() const
       {
-        return align(sizeof(format::Header), 8) +
-               align(_M_funs.size() * sizeof(format::Function), 8) +
-               align(_M_vars.size() * sizeof(format::Value), 8) +
-               align(_M_instrs.size() * sizeof(format::Instruction), 8) +
-               accumulate(_M_object_pairs.begin(), _M_object_pairs.end(), 0, 
-                          [](size_t x, const ObjectPair &p) { return x + align(p.size, 8); });
+        size_t prog_size = align(sizeof(format::Header), 8) +
+                           align(_M_funs.size() * sizeof(format::Function), 8) +
+                           align(_M_vars.size() * sizeof(format::Value), 8) +
+                           align(_M_instrs.size() * sizeof(format::Instruction), 8) +
+                           accumulate(_M_object_pairs.begin(), _M_object_pairs.end(), 0, [](size_t x, const Pair & p) {
+                             return x + align(p.size, 8);
+                           });
+        if((_M_flags & format::HEADER_FLAG_RELOCATABLE) != 0) {
+          prog_size += align(_M_relocs.size() * sizeof(format::Relocation), 8) +
+                       accumulate(_M_symbol_pairs.begin(), _M_symbol_pairs.end(), 0, [](size_t x, const Pair & p) {
+                         return x + align(p.size, 8);
+                       });
+        }
+        return prog_size;
       }
 
       //
@@ -214,6 +248,15 @@ namespace letin
         value.__pad = 0;
         value.addr = htonll(addr);
         return value;
+      }
+
+      format::Relocation make_reloc(uint32_t type, uint32_t addr, uint32_t symbol)
+      {
+        format::Relocation reloc;
+        reloc.type = htonl(type);
+        reloc.addr = htonl(addr);
+        reloc.symbol = htonl(symbol);
+        return reloc;
       }
     }
   }

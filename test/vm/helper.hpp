@@ -67,11 +67,40 @@
   tmp_prog_helper.add_var(make_ref_value(tmp_addr));                            \
 }
 
+#define RELOC(reloc)            tmp_prog_helper.add_reloc(reloc)
+#define RELOC_A1F(addr)         RELOC(make_reloc(addr, format::RELOC_TYPE_ARG1_FUN, addr, 0))
+#define RELOC_A2F(addr)         RELOC(make_reloc(addr, format::RELOC_TYPE_ARG2_FUN, addr, 0))
+#define RELOC_A1V(addr)         RELOC(make_reloc(addr, format::RELOC_TYPE_ARG1_VAR, addr, 0))
+#define RELOC_A2V(addr)         RELOC(make_reloc(addr, format::RELOC_TYPE_ARG2_VAR, addr, 0))
+#define RELOC_EF(addr)          RELOC(make_reloc(addr, format::RELOC_TYPE_ELEM_FUN, addr, 0))
+#define RELOC_SA1F(addr, symbol) RELOC(make_reloc(addr, format::RELOC_TYPE_ARG1_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA2F(addr, symbol) RELOC(make_reloc(addr, format::RELOC_TYPE_ARG2_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA1V(addr, symbol) RELOC(make_reloc(addr, format::RELOC_TYPE_ARG1_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA2V(addr, symbol) RELOC(make_reloc(addr, format::RELOC_TYPE_ARG2_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SEF(addr, symbol) RELOC(make_reloc(addr, format::RELOC_TYPE_ELEM_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+
+#define SYMBOL(type, name, index)                                               \
+{                                                                               \
+  SymbolHelper tmp_symbol_helper(type, name, index);                            \
+  tmp_prog_helper.add_symbol(tmp_symbol_helper.ptr(), tmp_symbol_helper.size());\
+}
+#define SYMBOL_UF(name)         SYMBOL(format::SYMBOL_TYPE_FUN, name, 0)
+#define SYMBOL_UV(name)         SYMBOL(format::SYMBOL_TYPE_VAR, name, 0)
+#define SYMBOL_DF(name, index)  SYMBOL(format::SYMBOL_TYPE_FUN | format::SYMBOL_TYPE_DEFINED, name, index)
+#define SYMBOL_DV(name, index)  SYMBOL(format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED, name, index)
+
 #define PROG(var, entry)                                                        \
 ProgramHelper var(entry);                                                       \
 {                                                                               \
   ProgramHelper &tmp_prog_helper = var
 #define END_PROG()                                                              \
+}
+
+#define LIB(var)                                                                \
+ProgramHelper var;                                                              \
+{                                                                               \
+  ProgramHelper &tmp_prog_helper = var
+#define END_LIB()                                                               \
 }
 
 namespace letin
@@ -108,27 +137,46 @@ namespace letin
 
         std::size_t size() const;
       };
+      
+      class SymbolHelper
+      {
+        std::uint8_t _M_type;
+        std::string _M_name;
+        std::uint32_t _M_index;
+      public:
+        SymbolHelper(std::uint8_t type, const std::string &name, std::uint8_t index) :
+          _M_type(type), _M_name(name), _M_index(index) {}
+
+        void *ptr() const;
+
+        std::size_t size() const { return 7 + _M_name.size(); }
+      };
 
       class ProgramHelper
       {
-        struct ObjectPair
+        struct Pair
         {
           std::unique_ptr<uint8_t []> ptr;
           std::uint32_t size;
 
-          ObjectPair(void *ptr, std::size_t size) :
+          Pair(void *ptr, std::size_t size) :
             ptr(reinterpret_cast<std::uint8_t *>(ptr)), size(size) {}
         };
 
+        std::uint32_t _M_flags;
+        std::uint32_t _M_entry;
         std::vector<format::Function> _M_funs;
         std::vector<format::Value> _M_vars;
         std::vector<format::Instruction> _M_instrs;
-        std::vector<ObjectPair> _M_object_pairs;
+        std::vector<Pair> _M_object_pairs;
         std::size_t _M_data_size;
-        std::uint32_t _M_entry;
+        std::vector<format::Relocation> _M_relocs;
+        std::vector<Pair> _M_symbol_pairs;
       public:
-        ProgramHelper(std::uint32_t entry) : _M_entry(entry), _M_data_size(0) {}
-        
+        ProgramHelper() : _M_flags(format::HEADER_FLAG_LIBRARY), _M_entry(0), _M_data_size(0) {}
+
+        ProgramHelper(std::uint32_t entry) : _M_flags(0), _M_entry(entry), _M_data_size(0) {}
+
         void add_fun(const format::Function &fun) { _M_funs.push_back(fun); }
 
         void add_var(const format::Value &value) { _M_vars.push_back(value); }
@@ -138,7 +186,13 @@ namespace letin
         std::size_t code_size() const { return _M_instrs.size(); }
 
         void add_object(void *ptr, std::size_t size)
-        { _M_object_pairs.push_back(ObjectPair(ptr, size)); _M_data_size = util::align(_M_data_size, 8) + size; }
+        { _M_object_pairs.push_back(Pair(ptr, size)); _M_data_size = util::align(_M_data_size, 8) + size; }
+
+        void add_reloc(const format::Relocation &reloc)
+        { _M_relocs.push_back(reloc); _M_flags |= format::HEADER_FLAG_RELOCATABLE; }
+
+        void add_symbol(void *ptr, std::size_t size)
+        { _M_symbol_pairs.push_back(Pair(ptr, size)); _M_flags |= format::HEADER_FLAG_RELOCATABLE; }
 
         std::size_t data_size() const { return _M_data_size; }
 
@@ -158,6 +212,8 @@ namespace letin
       format::Value make_float_value(double f);
 
       format::Value make_ref_value(std::uint32_t addr);
+      
+      format::Relocation make_reloc(std::uint32_t type, std::uint32_t addr, std::uint32_t symbol);
       
       struct ProgramDelete
       {
