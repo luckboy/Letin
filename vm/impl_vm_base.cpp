@@ -145,9 +145,13 @@ namespace letin
         _M_env.set_fun_count(fun_count);
         _M_env.set_var_count(var_count);
         _M_has_entry = false;
+        fun_offset = 0;
+        var_offset = 0;
         for(size_t i = 0; i < progs.size(); i++) {
           Program *prog = progs[i].get();
-          if(!load_prog(i, prog, errors, (is_auto_freeing ? pairs[i].first : nullptr))) is_success = false;
+          if(!load_prog(i, prog, fun_offset, var_offset, errors, (is_auto_freeing ? pairs[i].first : nullptr))) is_success = false;
+          fun_offset += prog->fun_count();
+          var_offset += prog->var_count();
         }
         if(!is_success) {
           _M_env.reset();
@@ -156,13 +160,13 @@ namespace letin
         return true;
       }
 
-      bool ImplVirtualMachineBase::load_prog(size_t i, Program *prog, list<LoadingError> *errors, void *data_to_free)
+      bool ImplVirtualMachineBase::load_prog(size_t i, Program *prog, std::size_t fun_offset, std::size_t var_offset, list<LoadingError> *errors, void *data_to_free)
       {
         if(data_to_free != nullptr) _M_env.add_data_to_free(data_to_free);
         lock_guard<GarbageCollector> guard(*_M_gc);
         for(size_t j = 0; j < prog->fun_count(); j++) {
           format::Function &fun = prog->fun(j);
-          _M_env.set_fun(j, Function(fun.arg_count, prog->code() + fun.addr, fun.instr_count));
+          _M_env.set_fun(fun_offset + j, Function(fun.arg_count, prog->code() + fun.addr, fun.instr_count));
         }
         unordered_map<uint32_t, Object *> objects;
         for(auto data_addr : prog->data_addrs()) {
@@ -247,10 +251,10 @@ namespace letin
           format::Value &var_value = prog->var(j);
           switch(var_value.type) {
             case VALUE_TYPE_INT:
-              _M_env.set_var(j, Value(var_value.i));
+              _M_env.set_var(var_offset + j, Value(var_value.i));
               break;
             case VALUE_TYPE_FLOAT:
-              _M_env.set_var(j, Value(format_double_to_double(var_value.f)));
+              _M_env.set_var(var_offset + j, Value(format_double_to_double(var_value.f)));
               break;
             case VALUE_TYPE_REF:
             {
@@ -259,7 +263,7 @@ namespace letin
                 if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_FORMAT));
                 return false;
               }
-              _M_env.set_var(j, Value(Reference(iter->second)));
+              _M_env.set_var(var_offset + j, Value(Reference(iter->second)));
               break;
             }
             default:

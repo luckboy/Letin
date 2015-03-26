@@ -80,14 +80,14 @@ namespace letin
 
         bool add_fun_index(const std::string &name, std::size_t i)
         {
-          if(_M_fun_indexes.find(name) == _M_fun_indexes.end()) return false;
+          if(_M_fun_indexes.find(name) != _M_fun_indexes.end()) return false;
           _M_fun_indexes.insert(make_pair(name, i));
           return true;
         }
 
         bool add_var_index(const std::string &name, std::size_t i)
         {
-          if(_M_var_indexes.find(name) == _M_var_indexes.end()) return false;
+          if(_M_var_indexes.find(name) != _M_var_indexes.end()) return false;
           _M_var_indexes.insert(make_pair(name, i));
           return true;
         }

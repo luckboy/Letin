@@ -68,16 +68,16 @@
 }
 
 #define RELOC(reloc)            tmp_prog_helper.add_reloc(reloc)
-#define RELOC_A1F(addr)         RELOC(make_reloc(addr, format::RELOC_TYPE_ARG1_FUN, addr, 0))
-#define RELOC_A2F(addr)         RELOC(make_reloc(addr, format::RELOC_TYPE_ARG2_FUN, addr, 0))
-#define RELOC_A1V(addr)         RELOC(make_reloc(addr, format::RELOC_TYPE_ARG1_VAR, addr, 0))
-#define RELOC_A2V(addr)         RELOC(make_reloc(addr, format::RELOC_TYPE_ARG2_VAR, addr, 0))
-#define RELOC_EF(addr)          RELOC(make_reloc(addr, format::RELOC_TYPE_ELEM_FUN, addr, 0))
-#define RELOC_SA1F(addr, symbol) RELOC(make_reloc(addr, format::RELOC_TYPE_ARG1_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SA2F(addr, symbol) RELOC(make_reloc(addr, format::RELOC_TYPE_ARG2_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SA1V(addr, symbol) RELOC(make_reloc(addr, format::RELOC_TYPE_ARG1_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SA2V(addr, symbol) RELOC(make_reloc(addr, format::RELOC_TYPE_ARG2_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SEF(addr, symbol) RELOC(make_reloc(addr, format::RELOC_TYPE_ELEM_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_A1F(addr)         RELOC(make_reloc(format::RELOC_TYPE_ARG1_FUN, addr, 0))
+#define RELOC_A2F(addr)         RELOC(make_reloc(format::RELOC_TYPE_ARG2_FUN, addr, 0))
+#define RELOC_A1V(addr)         RELOC(make_reloc(format::RELOC_TYPE_ARG1_VAR, addr, 0))
+#define RELOC_A2V(addr)         RELOC(make_reloc(format::RELOC_TYPE_ARG2_VAR, addr, 0))
+#define RELOC_EF(addr)          RELOC(make_reloc(format::RELOC_TYPE_ELEM_FUN, addr, 0))
+#define RELOC_SA1F(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG1_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA2F(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG2_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA1V(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG1_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA2V(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG2_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SEF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ELEM_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
 
 #define SYMBOL(type, name, index)                                               \
 {                                                                               \

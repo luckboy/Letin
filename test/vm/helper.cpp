@@ -136,7 +136,7 @@ namespace letin
         copy(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, header->magic);
         tmp_ptr += align(sizeof(format::Header), 8);
         header->entry = htonl(_M_entry);
-        header->flags = _M_flags;
+        header->flags = htonl(_M_flags);
         header->fun_count = htonl(_M_funs.size());
         header->var_count = htonl(_M_vars.size());
         header->code_size = htonl(_M_instrs.size());

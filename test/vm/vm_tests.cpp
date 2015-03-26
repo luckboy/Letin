@@ -862,6 +862,202 @@ namespace letin
         CPPUNIT_ASSERT(is_expected_error);
       }
 
+      void VirtualMachineTests::test_vm_loads_program_with_many_libraries()
+      {
+        LIB(prog_helper1);
+        FUN(1);
+        RET(ILOAD, IMM(1), NA());
+        END_FUN();
+        FUN(2);
+        RET(ILOAD, IMM(2), NA());
+        END_FUN();
+        VAR_I(1);
+        VAR_I(2);
+        SYMBOL_DF("f1", 0);
+        SYMBOL_DF("f2", 1);
+        SYMBOL_DV("v1", 0);
+        SYMBOL_DV("v2", 1);
+        END_LIB();
+
+        PROG(prog_helper2, 6);
+        FUN(3);
+        RET(IADD, IMM(1), IMM(2)); // 1
+        END_FUN();
+        FUN(4);
+        RET(IADD, IMM(0), GV(0)); // 2
+        END_FUN();
+        FUN(5);
+        RET(ISUB, GV(0), IMM(0)); // 3
+        END_FUN();
+        FUN(6);
+        RET(IMUL, GV(0), GV(0)); // 4
+        END_FUN();
+        FUN(7);
+        RET(IMUL, IMM(0), IMM(0)); // 5
+        END_FUN();
+        FUN(8);
+        RET(IADD, IMM(0), GV(0)); // 6
+        END_FUN();
+        FUN(9);
+        RET(ILOAD, IMM(1234), NA());
+        END_FUN();
+        VAR_R(0);
+        VAR_R(24);
+        VAR_R(56);
+        OBJECT(IARRAY32);
+        I(0); I(0); I(0);
+        END_OBJECT();
+        OBJECT(IARRAY64);
+        I(0); I(1); I(0);
+        END_OBJECT();
+        OBJECT(TUPLE);
+        I(0); I(0); I(2); I(0);
+        END_OBJECT();
+        RELOC_A1F(0);
+        RELOC_A2F(0);
+        RELOC_SA1F(1, 0);
+        RELOC_SA2V(1, 1);
+        RELOC_SA1V(2, 2);
+        RELOC_SA2F(2, 3);
+        RELOC_SA1V(3, 4);
+        RELOC_SA2V(3, 5);
+        RELOC_SA1F(4, 6);   
+        RELOC_SA2F(4, 7);
+        RELOC_SA1F(5, 8);
+        RELOC_SA2V(5, 9);
+        RELOC_EF(8);
+        RELOC_SEF(12, 0); 
+        RELOC_SEF(16, 3);
+        RELOC_SEF(32, 0);
+        RELOC_EF(40);
+        RELOC_SEF(48, 3);
+        RELOC_SEF(64, 0);  
+        RELOC_SEF(72, 3);
+        RELOC_EF(80);
+        RELOC_SEF(88, 6);
+        SYMBOL_UF("f1");
+        SYMBOL_UV("v1");
+        SYMBOL_UV("v2");
+        SYMBOL_UF("f2");
+        SYMBOL_UV("v3");
+        SYMBOL_UV("v4");
+        SYMBOL_UF("f3");
+        SYMBOL_UF("f4");
+        SYMBOL_UF("f5");
+        SYMBOL_UV("v5");
+        SYMBOL_DF("f6", 2);
+        SYMBOL_DV("v6", 1);
+        END_PROG();
+
+        LIB(prog_helper3);
+        FUN(10);
+        RET(ILOAD, IMM(0), NA());
+        END_FUN();
+        FUN(11);
+        RET(RLOAD, GV(0), NA());
+        END_FUN();
+        FUN(12);
+        RET(ILOAD, IMM(5), NA());
+        END_FUN();
+        VAR_I(3);
+        VAR_I(4);
+        VAR_I(5);
+        RELOC_SA1F(0, 6);
+        RELOC_SA1V(1, 7);
+        SYMBOL_DF("f3", 0);
+        SYMBOL_DF("f4", 1);
+        SYMBOL_DF("f5", 2);
+        SYMBOL_DV("v3", 0);
+        SYMBOL_DV("v4", 1);
+        SYMBOL_DV("v5", 2);
+        SYMBOL_UF("f6");
+        SYMBOL_UV("v6");
+        END_LIB();
+
+        unique_ptr<void, ProgramDelete> ptr1(prog_helper1.ptr());
+        unique_ptr<void, ProgramDelete> ptr2(prog_helper2.ptr());
+        unique_ptr<void, ProgramDelete> ptr3(prog_helper3.ptr());
+        vector<pair<void *, size_t>> pairs;
+        pairs.push_back(make_pair(prog_helper1.ptr(), prog_helper1.size()));
+        pairs.push_back(make_pair(prog_helper2.ptr(), prog_helper2.size()));
+        pairs.push_back(make_pair(prog_helper3.ptr(), prog_helper3.size()));
+        bool is_loaded = _M_vm->load(pairs);
+        CPPUNIT_ASSERT(is_loaded);
+        // prog_helper1
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), _M_vm->env().fun(0).arg_count());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), _M_vm->env().fun("f1").arg_count());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(2), _M_vm->env().fun(1).arg_count());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(2), _M_vm->env().fun("f2").arg_count());
+        CPPUNIT_ASSERT_EQUAL(Value(1), _M_vm->env().var(0));
+        CPPUNIT_ASSERT_EQUAL(Value(1), _M_vm->env().var("v1"));
+        CPPUNIT_ASSERT_EQUAL(Value(2), _M_vm->env().var(1));
+        CPPUNIT_ASSERT_EQUAL(Value(2), _M_vm->env().var("v2"));
+        // prog_helper2
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(3), _M_vm->env().fun(2).arg_count()); // 0
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_IMM, opcode::opcode_to_arg_type1(_M_vm->env().fun(2).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(3, _M_vm->env().fun(2).instr(0).arg1.i);
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_IMM, opcode::opcode_to_arg_type2(_M_vm->env().fun(2).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(4, _M_vm->env().fun(2).instr(0).arg2.i);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(4), _M_vm->env().fun(3).arg_count()); // 1
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_IMM, opcode::opcode_to_arg_type1(_M_vm->env().fun(3).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(0, _M_vm->env().fun(3).instr(0).arg1.i); // f1
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_GVAR, opcode::opcode_to_arg_type2(_M_vm->env().fun(3).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(0U, _M_vm->env().fun(3).instr(0).arg2.gvar); // v1
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(5), _M_vm->env().fun(4).arg_count()); // 2
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(5), _M_vm->env().fun("f6").arg_count()); // 2
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_GVAR, opcode::opcode_to_arg_type1(_M_vm->env().fun(4).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(1U, _M_vm->env().fun(4).instr(0).arg1.gvar); // v2
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_IMM, opcode::opcode_to_arg_type2(_M_vm->env().fun(4).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(1, _M_vm->env().fun(4).instr(0).arg2.i); // f2
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(6), _M_vm->env().fun(5).arg_count()); // 3
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_GVAR, opcode::opcode_to_arg_type1(_M_vm->env().fun(5).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(5U, _M_vm->env().fun(5).instr(0).arg1.gvar); // v3
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_GVAR, opcode::opcode_to_arg_type2(_M_vm->env().fun(5).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(6U, _M_vm->env().fun(5).instr(0).arg2.gvar); // v4
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(7), _M_vm->env().fun(6).arg_count()); // 4
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_IMM, opcode::opcode_to_arg_type1(_M_vm->env().fun(6).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(9, _M_vm->env().fun(6).instr(0).arg1.i); // f3
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_IMM, opcode::opcode_to_arg_type2(_M_vm->env().fun(6).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(10, _M_vm->env().fun(6).instr(0).arg2.i); // f4
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(8), _M_vm->env().fun(7).arg_count()); // 5
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_IMM, opcode::opcode_to_arg_type1(_M_vm->env().fun(7).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(11, _M_vm->env().fun(7).instr(0).arg1.i); // f5
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_GVAR, opcode::opcode_to_arg_type2(_M_vm->env().fun(7).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(7U, _M_vm->env().fun(7).instr(0).arg2.gvar); // v5
+        CPPUNIT_ASSERT_EQUAL(VALUE_TYPE_REF, _M_vm->env().var(2).type());
+        CPPUNIT_ASSERT_EQUAL(OBJECT_TYPE_IARRAY32, _M_vm->env().var(2).r()->type());
+        CPPUNIT_ASSERT_EQUAL(Value(2), _M_vm->env().var(2).r()->elem(0));
+        CPPUNIT_ASSERT_EQUAL(Value(0), _M_vm->env().var(2).r()->elem(1));
+        CPPUNIT_ASSERT_EQUAL(Value(1), _M_vm->env().var(2).r()->elem(2));
+        CPPUNIT_ASSERT_EQUAL(VALUE_TYPE_REF, _M_vm->env().var(3).type());
+        CPPUNIT_ASSERT_EQUAL(VALUE_TYPE_REF, _M_vm->env().var("v6").type());
+        CPPUNIT_ASSERT_EQUAL(OBJECT_TYPE_IARRAY64, _M_vm->env().var(3).r()->type());
+        CPPUNIT_ASSERT_EQUAL(OBJECT_TYPE_IARRAY64, _M_vm->env().var("v6").r()->type());
+        CPPUNIT_ASSERT_EQUAL(Value(0), _M_vm->env().var(3).r()->elem(0));
+        CPPUNIT_ASSERT_EQUAL(Value(3), _M_vm->env().var(3).r()->elem(1));
+        CPPUNIT_ASSERT_EQUAL(Value(1), _M_vm->env().var(3).r()->elem(2));
+        CPPUNIT_ASSERT_EQUAL(VALUE_TYPE_REF, _M_vm->env().var(4).type());
+        CPPUNIT_ASSERT_EQUAL(OBJECT_TYPE_TUPLE, _M_vm->env().var(4).r()->type());
+        CPPUNIT_ASSERT_EQUAL(Value(0), _M_vm->env().var(4).r()->elem(0));
+        CPPUNIT_ASSERT_EQUAL(Value(1), _M_vm->env().var(4).r()->elem(1));
+        CPPUNIT_ASSERT_EQUAL(Value(4), _M_vm->env().var(4).r()->elem(2));
+        CPPUNIT_ASSERT_EQUAL(Value(9), _M_vm->env().var(4).r()->elem(3));
+        // prog_helper3
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(10), _M_vm->env().fun(9).arg_count()); // 0
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_IMM, opcode::opcode_to_arg_type1(_M_vm->env().fun(9).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(4, _M_vm->env().fun(9).instr(0).arg1.i); // f6
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(11), _M_vm->env().fun(10).arg_count()); // 1
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_GVAR, opcode::opcode_to_arg_type1(_M_vm->env().fun(10).instr(0).opcode));
+        CPPUNIT_ASSERT_EQUAL(3U, _M_vm->env().fun(10).instr(0).arg1.gvar); // v6
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(12), _M_vm->env().fun(11).arg_count()); // 2
+        CPPUNIT_ASSERT_EQUAL(Value(3), _M_vm->env().var(5));
+        CPPUNIT_ASSERT_EQUAL(Value(3), _M_vm->env().var("v3"));
+        CPPUNIT_ASSERT_EQUAL(Value(4), _M_vm->env().var(6));
+        CPPUNIT_ASSERT_EQUAL(Value(4), _M_vm->env().var("v4"));
+        CPPUNIT_ASSERT_EQUAL(Value(5), _M_vm->env().var(7));
+        CPPUNIT_ASSERT_EQUAL(Value(5), _M_vm->env().var("v5"));
+      }
+
       DEF_IMPL_VM_TESTS(InterpreterVirtualMachine);
     }
   }

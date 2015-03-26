@@ -32,7 +32,7 @@ namespace letin
 
         bool load(const std::vector<std::pair<void *, std::size_t>> &pairs, std::list<LoadingError> *errors, bool is_auto_freeing);
       private:
-        bool load_prog(std::size_t i, Program *prog, std::list<LoadingError> *errors, void *data_to_free);
+        bool load_prog(std::size_t i, Program *prog, std::size_t fun_offset, std::size_t var_offset, std::list<LoadingError> *errors, void *data_to_free);
       public:
         Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun);
       protected:

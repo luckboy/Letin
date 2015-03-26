@@ -138,7 +138,7 @@ namespace letin
         uint8_t *symbols;
         size_t symbol_count;
         vector<uint32_t> symbol_offsets;
-        if((!header->flags & format::HEADER_FLAG_RELOCATABLE) != 0) {
+        if((header->flags & format::HEADER_FLAG_RELOCATABLE) != 0) {
           relocs = reinterpret_cast<format::Relocation *>(tmp_ptr + tmp_idx);
           reloc_count = header->reloc_count;
           tmp_idx += align(sizeof(format::Relocation) * reloc_count, 8);
@@ -159,7 +159,7 @@ namespace letin
             if(reloc_symbol_idxs.find(j) != reloc_symbol_idxs.end()) reloc_symbol_idxs.erase(j);
             symbol_offsets.push_back(i);
             symbol->index = ntohl(symbol->index);
-            symbol->length = ntohl(symbol->length);
+            symbol->length = ntohs(symbol->length);
             i += align(sizeof(format::Symbol) - 1 + symbol->length, 8);
             tmp_size = i;
           }

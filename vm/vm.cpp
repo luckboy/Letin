@@ -558,8 +558,9 @@ namespace letin
           }
           case format::RELOC_TYPE_ELEM_FUN:
           {
-            auto data_addr_iter = _M_data_addrs.lower_bound(addr);
-            if(data_addr_iter == _M_data_addrs.end()) return false;
+            auto data_addr_iter = _M_data_addrs.upper_bound(addr);
+            if(data_addr_iter == _M_data_addrs.begin()) return false;
+            data_addr_iter--;
             size_t data_object_addr = *data_addr_iter;
             format::Object *data_object = reinterpret_cast<format::Object *>(_M_data + data_object_addr);
             if(data_object_addr + 8 > addr) return false;

@@ -64,6 +64,7 @@ namespace letin
         CPPUNIT_TEST(test_vm_complains_on_many_references_to_unique_object);
         CPPUNIT_TEST(test_vm_complains_on_unique_object);
         CPPUNIT_TEST(test_vm_complains_on_incorrect_local_var_count);
+        CPPUNIT_TEST(test_vm_loads_program_with_many_libraries);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -101,6 +102,7 @@ namespace letin
         void test_vm_complains_on_many_references_to_unique_object();
         void test_vm_complains_on_unique_object();
         void test_vm_complains_on_incorrect_local_var_count();
+        void test_vm_loads_program_with_many_libraries();
       };
 
       DECL_IMPL_VM_TESTS(InterpreterVirtualMachine);

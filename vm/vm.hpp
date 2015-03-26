@@ -90,7 +90,7 @@ namespace letin
       std::size_t reloc_count() const { return _M_reloc_count; }
 
       format::Symbol *symbols(std::size_t i)
-      { return reinterpret_cast<format::Symbol *>(_M_symbols[_M_symbol_offsets[i]]); }
+      { return reinterpret_cast<format::Symbol *>(_M_symbols + _M_symbol_offsets[i]); }
 
       std::size_t symbol_count() const { return _M_symbol_count; }
 
