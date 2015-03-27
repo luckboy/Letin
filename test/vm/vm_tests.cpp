@@ -1060,6 +1060,158 @@ namespace letin
         CPPUNIT_ASSERT_EQUAL(Value(5), _M_vm->env().var("v5"));
       }
 
+      void VirtualMachineTests::test_vm_complains_on_undefined_symbols()
+      {
+        PROG(prog_helper1, 0);
+        FUN(1);
+        LET(IADD, IMM(0), GV(0));
+        LET(IADD, GV(0), IMM(0));
+        IN();
+        RET(IADD, IMM(0), GV(0));
+        END_FUN();
+        RELOC_SA1F(0, 0);
+        RELOC_SA1V(0, 3);
+        RELOC_SA1V(1, 4);
+        RELOC_SA1F(1, 1);
+        RELOC_SA1F(2, 2);
+        RELOC_SA1V(2, 5);
+        SYMBOL_UF("f");
+        SYMBOL_UF("g");
+        SYMBOL_UF("h");
+        SYMBOL_UV("v");
+        SYMBOL_UV("w");
+        SYMBOL_UV("x");
+        END_PROG();
+
+        LIB(prog_helper2);
+        FUN(0);
+        RET(ILOAD, IMM(0), NA());
+        END_FUN();
+        VAR_I(0);
+        SYMBOL_DF("g", 0);
+        SYMBOL_DV("w", 0);
+        END_LIB();
+
+        unique_ptr<void, ProgramDelete> ptr1(prog_helper1.ptr());
+        unique_ptr<void, ProgramDelete> ptr2(prog_helper2.ptr());
+        vector<pair<void *, size_t>> pairs;
+        pairs.push_back(make_pair(prog_helper1.ptr(), prog_helper1.size()));
+        pairs.push_back(make_pair(prog_helper2.ptr(), prog_helper2.size()));
+        list<LoadingError> errors;
+        bool is_loaded = _M_vm->load(pairs, &errors);
+        vector<LoadingError> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT(!is_loaded);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(4), errors.size());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), error_vector[0].pair_index());
+        CPPUNIT_ASSERT_EQUAL(LOADING_ERROR_NO_FUN_SYM, error_vector[0].error());
+        CPPUNIT_ASSERT("f" == error_vector[0].symbol_name());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), error_vector[1].pair_index());
+        CPPUNIT_ASSERT_EQUAL(LOADING_ERROR_NO_FUN_SYM, error_vector[1].error());
+        CPPUNIT_ASSERT("h" == error_vector[1].symbol_name());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), error_vector[2].pair_index());
+        CPPUNIT_ASSERT_EQUAL(LOADING_ERROR_NO_VAR_SYM, error_vector[2].error());
+        CPPUNIT_ASSERT("v" == error_vector[2].symbol_name());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), error_vector[3].pair_index());
+        CPPUNIT_ASSERT_EQUAL(LOADING_ERROR_NO_VAR_SYM, error_vector[3].error());
+        CPPUNIT_ASSERT("x" == error_vector[3].symbol_name());
+      }
+      
+      void VirtualMachineTests::test_vm_complains_on_already_defined_symbols()
+      {
+        LIB(prog_helper1);
+        FUN(0);
+        RET(ILOAD, IMM(0), NA());
+        END_FUN();
+        VAR_I(0);
+        SYMBOL_DF("f", 0);
+        SYMBOL_DV("v", 0);
+        END_LIB();
+
+        LIB(prog_helper2);
+        FUN(0);
+        RET(ILOAD, IMM(0), NA());
+        END_FUN();
+        VAR_I(0);
+        SYMBOL_DF("f", 0);
+        SYMBOL_DV("v", 0);
+        END_LIB();
+
+        unique_ptr<void, ProgramDelete> ptr1(prog_helper1.ptr());
+        unique_ptr<void, ProgramDelete> ptr2(prog_helper2.ptr());
+        vector<pair<void *, size_t>> pairs;
+        pairs.push_back(make_pair(prog_helper1.ptr(), prog_helper1.size()));
+        pairs.push_back(make_pair(prog_helper2.ptr(), prog_helper2.size()));
+        list<LoadingError> errors;
+        bool is_loaded = _M_vm->load(pairs, &errors);
+        vector<LoadingError> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT(!is_loaded);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(2), errors.size());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), error_vector[0].pair_index());
+        CPPUNIT_ASSERT(LOADING_ERROR_FUN_SYM == error_vector[0].error());
+        CPPUNIT_ASSERT("f" == error_vector[0].symbol_name());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), error_vector[1].pair_index());
+        CPPUNIT_ASSERT(LOADING_ERROR_VAR_SYM == error_vector[1].error());
+        CPPUNIT_ASSERT("v" == error_vector[1].symbol_name());
+      }
+
+      void VirtualMachineTests::test_vm_complains_on_relocation()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        LET(ILOAD, IMM(0), NA());
+        IN();
+        RET(IADD, IMM(1), IMM(0));
+        END_FUN();
+        VAR_I(1);
+        VAR_I(2);
+        RELOC_A1F(0);
+        RELOC_A2V(2);
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr1(prog_helper.ptr());
+        list<LoadingError> errors;
+        bool is_loaded = _M_vm->load(prog_helper.ptr(), prog_helper.size(), &errors);
+        vector<LoadingError> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT(!is_loaded);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), errors.size());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), error_vector[0].pair_index());
+        CPPUNIT_ASSERT_EQUAL(LOADING_ERROR_RELOC, error_vector[0].error());
+        CPPUNIT_ASSERT("" == error_vector[0].symbol_name());
+      }
+
+      void VirtualMachineTests::test_vm_complains_on_unrelocable_program()
+      {
+        LIB(prog_helper1);
+        FUN(0);
+        RET(ILOAD, IMM(0), NA());
+        END_FUN();
+        RELOC_A1F(0);
+        END_LIB();
+
+        PROG(prog_helper2, 0);
+        FUN(0);
+        RET(ILOAD, IMM(0), NA());
+        END_FUN();
+        END_PROG();
+
+        unique_ptr<void, ProgramDelete> ptr1(prog_helper1.ptr());
+        unique_ptr<void, ProgramDelete> ptr2(prog_helper2.ptr());
+        vector<pair<void *, size_t>> pairs;
+        pairs.push_back(make_pair(prog_helper1.ptr(), prog_helper1.size()));
+        pairs.push_back(make_pair(prog_helper2.ptr(), prog_helper2.size()));
+        list<LoadingError> errors;
+        bool is_loaded = _M_vm->load(pairs, &errors);
+        vector<LoadingError> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT(!is_loaded);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), errors.size());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), error_vector[0].pair_index());
+        CPPUNIT_ASSERT(LOADING_ERROR_NO_RELOC == error_vector[0].error());
+        CPPUNIT_ASSERT("" == error_vector[0].symbol_name());
+      }
+
       DEF_IMPL_VM_TESTS(InterpreterVirtualMachine);
     }
   }

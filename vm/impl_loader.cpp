@@ -148,7 +148,7 @@ namespace letin
             relocs[i].type = ntohl(relocs[i].type);
             relocs[i].addr = ntohl(relocs[i].addr);
             relocs[i].symbol = ntohl(relocs[i].symbol);
-            if(relocs[i].type != format::RELOC_TYPE_ELEM_FUN) reloc_symbol_idxs.insert(relocs[i].symbol);
+            if((relocs[i].type & format::RELOC_TYPE_SYMBOLIC) != 0) reloc_symbol_idxs.insert(relocs[i].symbol);
           }
 
           symbols = tmp_ptr + tmp_idx;

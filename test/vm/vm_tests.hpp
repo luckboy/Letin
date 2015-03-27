@@ -65,6 +65,10 @@ namespace letin
         CPPUNIT_TEST(test_vm_complains_on_unique_object);
         CPPUNIT_TEST(test_vm_complains_on_incorrect_local_var_count);
         CPPUNIT_TEST(test_vm_loads_program_with_many_libraries);
+        CPPUNIT_TEST(test_vm_complains_on_undefined_symbols);
+        CPPUNIT_TEST(test_vm_complains_on_already_defined_symbols);
+        CPPUNIT_TEST(test_vm_complains_on_relocation);
+        CPPUNIT_TEST(test_vm_complains_on_unrelocable_program);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -103,6 +107,10 @@ namespace letin
         void test_vm_complains_on_unique_object();
         void test_vm_complains_on_incorrect_local_var_count();
         void test_vm_loads_program_with_many_libraries();
+        void test_vm_complains_on_undefined_symbols();
+        void test_vm_complains_on_already_defined_symbols();
+        void test_vm_complains_on_relocation();
+        void test_vm_complains_on_unrelocable_program();
       };
 
       DECL_IMPL_VM_TESTS(InterpreterVirtualMachine);
