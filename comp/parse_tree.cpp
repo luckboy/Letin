@@ -53,7 +53,7 @@ namespace letin
           case TYPE_FLOAT:
             _M_f = value._M_f;
             break;
-          case TYPE_FUN_ADDR:
+          case TYPE_FUN_INDEX:
             new (&_M_fun) string(value._M_fun);
             break;
         }
@@ -88,7 +88,7 @@ namespace letin
           case TYPE_REF:
             _M_object = (value._M_object != nullptr ? new Object(*(value._M_object)) : nullptr);
             break;
-          case TYPE_FUN_ADDR:
+          case TYPE_FUN_INDEX:
             new (&_M_fun) string(value._M_fun);
             break;
         }
@@ -100,7 +100,7 @@ namespace letin
           case TYPE_REF:
             if(_M_object != nullptr) delete _M_object;
             break;
-          case TYPE_FUN_ADDR:
+          case TYPE_FUN_INDEX:
             _M_fun.~string();
             break;
           default:

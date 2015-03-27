@@ -57,7 +57,7 @@ namespace letin
         {
           TYPE_INT,
           TYPE_FLOAT,
-          TYPE_FUN_ADDR
+          TYPE_FUN_INDEX
         };
       private:
         Type _M_type;
@@ -76,7 +76,7 @@ namespace letin
 
         ArgumentValue(const NumberValue &value);
 
-        ArgumentValue(const std::string &fun) : _M_type(TYPE_FUN_ADDR), _M_fun(fun) {}
+        ArgumentValue(const std::string &fun) : _M_type(TYPE_FUN_INDEX), _M_fun(fun) {}
 
         ArgumentValue(const ArgumentValue &value) : _M_type(value._M_type) { copy_union(value); }
 
@@ -85,7 +85,7 @@ namespace letin
         void copy_union(const ArgumentValue &value);
 
         void destruct_union()
-        { if(_M_type == TYPE_FUN_ADDR) _M_fun.std::string::~string(); }
+        { if(_M_type == TYPE_FUN_INDEX) _M_fun.std::string::~string(); }
       public:
         ArgumentValue &operator=(const ArgumentValue &value)
         {
@@ -103,7 +103,7 @@ namespace letin
 
         double f() const { return _M_type == TYPE_FLOAT ? _M_f : 0.0; }
 
-        std::string fun() const { return _M_type == TYPE_FUN_ADDR ? _M_fun : std::string(); }
+        std::string fun() const { return _M_type == TYPE_FUN_INDEX ? _M_fun : std::string(); }
       };
 
       class Value
@@ -114,7 +114,7 @@ namespace letin
           TYPE_INT,
           TYPE_FLOAT,
           TYPE_REF,
-          TYPE_FUN_ADDR
+          TYPE_FUN_INDEX
         };
       private:
         Type _M_type;
@@ -139,7 +139,7 @@ namespace letin
         Value(const NumberValue &value, const Position &pos);
 
         Value(const std::string &fun, const Position &pos) :
-          _M_type(TYPE_FUN_ADDR), _M_fun(fun), _M_pos(pos) {}
+          _M_type(TYPE_FUN_INDEX), _M_fun(fun), _M_pos(pos) {}
 
         Value(Object *object, const Position &pos) :
           _M_type(TYPE_REF), _M_object(object), _M_pos(pos) {}
@@ -169,7 +169,7 @@ namespace letin
 
         double f() const { return _M_type == TYPE_FLOAT ? _M_f : 0.0; }
 
-        std::string fun() const { return _M_type == TYPE_FUN_ADDR ? _M_fun : std::string(); }
+        std::string fun() const { return _M_type == TYPE_FUN_INDEX ? _M_fun : std::string(); }
         
         const Object *object() const { return _M_object; }
         

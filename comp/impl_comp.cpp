@@ -223,11 +223,11 @@ namespace letin
           ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY16, header_size + object->elems().size() * 2)));
         } else if(object->type() == "iarray32") {
           if(!check_object_elems(object, Value::TYPE_INT, errors) &&
-              !check_object_elems(object, Value::TYPE_FUN_ADDR, errors)) return false;
+              !check_object_elems(object, Value::TYPE_FUN_INDEX, errors)) return false;
           ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY32, header_size + object->elems().size() * 4)));
         } else if(object->type() == "iarray64") {
           if(!check_object_elems(object, Value::TYPE_INT, errors) &&
-              !check_object_elems(object, Value::TYPE_FUN_ADDR, errors)) return false;
+              !check_object_elems(object, Value::TYPE_FUN_INDEX, errors)) return false;
           ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY64, header_size + object->elems().size() * 8)));
         } else if(object->type() == "sfarray") {
           if(!check_object_elems(object, Value::TYPE_FLOAT, errors)) return false;
@@ -276,25 +276,25 @@ namespace letin
         return size;
       }
 
-      static bool get_fun_addr(const UngeneratedProgram &ungen_prog, uint32_t &addr, const string &ident, const Position &pos, list<Error> &errors)
+      static bool get_fun_index(const UngeneratedProgram &ungen_prog, uint32_t &index, const string &ident, const Position &pos, list<Error> &errors)
       {
         auto iter = ungen_prog.fun_pairs.find(ident);
         if(iter == ungen_prog.fun_pairs.end()) {
           errors.push_back(Error(pos, "undefined function " + ident));
           return false;
         }
-        addr = iter->second.first;
+        index = iter->second.first;
         return true;
       }
 
-      static bool get_var_addr(const UngeneratedProgram &ungen_prog, uint32_t &addr, const string &ident, const Position &pos, list<Error> &errors)
+      static bool get_var_index(const UngeneratedProgram &ungen_prog, uint32_t &index, const string &ident, const Position &pos, list<Error> &errors)
       {
         auto iter = ungen_prog.var_pairs.find(ident);
         if(iter == ungen_prog.var_pairs.end()) {
           errors.push_back(Error(pos, "undefined variable " + ident));
           return false;
         }
-        addr = iter->second.first;
+        index = iter->second.first;
         return true;
       }
 
@@ -327,12 +327,12 @@ namespace letin
             format_value.addr = iter->second;
             return true;
           }
-          case Value::TYPE_FUN_ADDR:
+          case Value::TYPE_FUN_INDEX:
           {
             format_value.type = VALUE_TYPE_INT;
-            uint32_t addr;
-            if(!get_fun_addr(ungen_prog, addr, value.fun(), value.pos(), errors)) return false;
-            format_value.i = addr;
+            uint32_t idx;
+            if(!get_fun_index(ungen_prog, idx, value.fun(), value.pos(), errors)) return false;
+            format_value.i = idx;
             return true;
           }
         }
@@ -358,9 +358,9 @@ namespace letin
                     return false;
                   }
                   format_arg.i = arg.v().i();
-                } else if(arg.v().type() == ArgumentValue::TYPE_FUN_ADDR) {
+                } else if(arg.v().type() == ArgumentValue::TYPE_FUN_INDEX) {
                   uint32_t u;
-                  if(!get_fun_addr(ungen_prog, u, arg.v().fun(), arg.pos(), errors)) return false;
+                  if(!get_fun_index(ungen_prog, u, arg.v().fun(), arg.pos(), errors)) return false;
                   format_arg.i = static_cast<int32_t>(u);
                 } else {
                   errors.push_back(Error(arg.pos(), "incorrect argument"));
@@ -390,7 +390,7 @@ namespace letin
             format_arg_type = ARG_TYPE_ARG;
             return true;
           case Argument::TYPE_IDENT:
-            if(!get_var_addr(ungen_prog, format_arg.gvar, arg.ident(), arg.pos(), errors)) return false;
+            if(!get_var_index(ungen_prog, format_arg.gvar, arg.ident(), arg.pos(), errors)) return false;
             format_arg_type = ARG_TYPE_GVAR;
             return true;
         }
@@ -641,7 +641,7 @@ namespace letin
         copy(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, header->magic);
         if(is_entry) {
           header->flags = 0;
-          if(!get_fun_addr(ungen_prog, header->entry, entry_ident, entry_pos, errors)) return nullptr;
+          if(!get_fun_index(ungen_prog, header->entry, entry_ident, entry_pos, errors)) return nullptr;
           header->entry = htonl(header->entry);
         } else {
           header->flags = htonl(format::HEADER_FLAG_LIBRARY);
@@ -734,7 +734,7 @@ namespace letin
               break;
             case OBJECT_TYPE_IARRAY32:
               for(auto &elem : object->elems()) {
-                if(elem.type() != Value::TYPE_FUN_ADDR) {
+                if(elem.type() != Value::TYPE_FUN_INDEX) {
                   if(elem.i() < INT32_MIN) {
                     errors.push_back(Error(elem.pos(), "too small integer number"));
                     is_success = false;
