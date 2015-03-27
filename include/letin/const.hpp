@@ -69,6 +69,8 @@ namespace letin
   const int LOADING_ERROR_RELOC =       6;
   const int LOADING_ERROR_ENTRY =       7;
   const int LOADING_ERROR_NO_RELOC =    8;
+  const int LOADING_ERROR_FUN_INDEX =   9;
+  const int LOADING_ERROR_VAR_INDEX =   10;
 }
 
 #endif

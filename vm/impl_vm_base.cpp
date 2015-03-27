@@ -69,7 +69,10 @@ namespace letin
                 case format::SYMBOL_TYPE_FUN | format::SYMBOL_TYPE_DEFINED:
                 {
                   string name(symbol->name, symbol->length);
-                  if(!_M_env.add_fun_index(name, fun_offset + symbol->index)) {
+                  if(symbol->index >= prog->fun_count()) {
+                    if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_FUN_INDEX, name));
+                    is_success = false;
+                  } else if(!_M_env.add_fun_index(name, fun_offset + symbol->index)) {
                     if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_FUN_SYM, name));
                     is_success = false;
                   }
@@ -78,7 +81,10 @@ namespace letin
                 case format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED:
                 {
                   string name(symbol->name, symbol->length);
-                  if(!_M_env.add_var_index(name, var_offset + symbol->index)) {
+                  if(symbol->index >= prog->var_count()) {
+                    if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_VAR_INDEX, name));
+                    is_success = false;
+                  } else if(!_M_env.add_var_index(name, var_offset + symbol->index)) {
                     if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_VAR_SYM, name));
                     is_success = false;
                   }

@@ -881,22 +881,22 @@ namespace letin
 
         PROG(prog_helper2, 6);
         FUN(3);
-        RET(IADD, IMM(1), IMM(2)); // 1
+        RET(IADD, IMM(1), IMM(2));
         END_FUN();
         FUN(4);
-        RET(IADD, IMM(0), GV(0)); // 2
+        RET(IADD, IMM(0), GV(0));
         END_FUN();
         FUN(5);
-        RET(ISUB, GV(0), IMM(0)); // 3
+        RET(ISUB, GV(0), IMM(0));
         END_FUN();
         FUN(6);
-        RET(IMUL, GV(0), GV(0)); // 4
+        RET(IMUL, GV(0), GV(0));
         END_FUN();
         FUN(7);
-        RET(IMUL, IMM(0), IMM(0)); // 5
+        RET(IMUL, IMM(0), IMM(0));
         END_FUN();
         FUN(8);
-        RET(IADD, IMM(0), GV(0)); // 6
+        RET(IADD, IMM(0), GV(0));
         END_FUN();
         FUN(9);
         RET(ILOAD, IMM(1234), NA());
@@ -1042,6 +1042,8 @@ namespace letin
         CPPUNIT_ASSERT_EQUAL(Value(1), _M_vm->env().var(4).r()->elem(1));
         CPPUNIT_ASSERT_EQUAL(Value(4), _M_vm->env().var(4).r()->elem(2));
         CPPUNIT_ASSERT_EQUAL(Value(9), _M_vm->env().var(4).r()->elem(3));
+        CPPUNIT_ASSERT_EQUAL(true, _M_vm->has_entry());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(8), _M_vm->entry());
         // prog_helper3
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(10), _M_vm->env().fun(9).arg_count()); // 0
         CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_IMM, opcode::opcode_to_arg_type1(_M_vm->env().fun(9).instr(0).opcode));

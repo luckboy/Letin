@@ -567,11 +567,13 @@ namespace letin
             size_t index;
             switch(data_object->type) {
               case OBJECT_TYPE_IARRAY32:
+                if(data_object_addr + 8 + data_object->length * 4 <= addr) return false;
                 if(((addr - (data_object_addr + 8)) & 3) != 0) return false;
                 index = *reinterpret_cast<int32_t *>(_M_data + addr);
                 break;
               case OBJECT_TYPE_IARRAY64:
               case OBJECT_TYPE_TUPLE:
+                if(data_object_addr + 8 + data_object->length * 8 <= addr) return false;
                 if(((addr - (data_object_addr + 8)) & 7) != 0) return false;
                 if(data_object->type == OBJECT_TYPE_TUPLE) {
                   size_t j = (addr - (data_object_addr + 8)) >> 3;
@@ -598,6 +600,8 @@ namespace letin
           }
         }
       }
+      if((_M_flags & format::HEADER_FLAG_LIBRARY) == 0)
+        _M_entry = _M_entry - _M_fun_offset + fun_offset;
       _M_fun_offset = fun_offset;
       _M_var_offset = var_offset;
       return true;
