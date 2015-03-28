@@ -13,6 +13,7 @@
 #include <list>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include <letin/const.hpp>
@@ -187,12 +188,28 @@ namespace letin
         return tree;
       }
 
+      struct Symbol
+      {
+        uint32_t type;
+        string name;
+        uint32_t index;
+
+        Symbol(uint32_t type, const string &name, uint32_t index = 0) :
+          type(type), name(name), index(index) {}
+      };
+      
       struct UngeneratedProgram
       {
+        bool is_relocable;
         unordered_map<string, pair<uint32_t, Function>> fun_pairs;
         unordered_map<string, pair<uint32_t, Value>> var_pairs;
+        list<Instruction> instrs;
         list<pair<const Object *, pair<int, uint32_t>>> object_pairs;
         unordered_map<const Object *, uint32_t> object_addrs;
+        list<format::Relocation> relocs;
+        list<Symbol> symbols;
+        unordered_map<string, uint32_t> extern_fun_symbol_indexes;
+        unordered_map<string, uint32_t> extern_var_symbol_indexes;
       };
 
       struct UngeneratedFunction
@@ -203,8 +220,8 @@ namespace letin
 
       static bool check_object_elems(const Object *object, Value::Type type, list<Error> &errors)
       {
-        for(auto & elem : object->elems()) {
-          if(elem.type() != Value::TYPE_INT) {
+        for(auto &elem : object->elems()) {
+          if(elem.type() != type) {
             errors.push_back(Error(elem.pos(), "incorrect value"));
             return false;
           }
@@ -273,7 +290,132 @@ namespace letin
         for(auto pair : ungen_prog.object_pairs)
           data_size += align(pair.second.second, 8);
         size += data_size;
+        if(ungen_prog.is_relocable) {
+          size_t reloc_size = 0;
+          for(auto pair : ungen_prog.fun_pairs) {
+            const Function &fun = pair.second.second;
+            for(auto line : fun.lines()) {
+              if(line.instr() != nullptr) {
+                if(line.instr()->instr() == "let" || line.instr()->instr() == "arg" ||
+                    line.instr()->instr() == "ret" || line.instr()->instr() == "lettuple") {
+                  if(line.instr()->arg1() != nullptr &&
+                      (line.instr()->arg1()->type() == Argument::TYPE_IDENT ||
+                       (line.instr()->arg1()->type() == Argument::TYPE_IMM && line.instr()->arg1()->v().type() == ArgumentValue::TYPE_FUN_INDEX)))
+                    reloc_size += sizeof(format::Relocation);
+                  if(line.instr()->arg2() != nullptr &&
+                      (line.instr()->arg2()->type() == Argument::TYPE_IDENT ||
+                       (line.instr()->arg2()->type() == Argument::TYPE_IMM && line.instr()->arg2()->v().type() == ArgumentValue::TYPE_FUN_INDEX)))
+                    reloc_size += sizeof(format::Relocation);
+                } else if(line.instr()->instr() == "jc") {
+                  if(line.instr()->arg1() != nullptr &&
+                      (line.instr()->arg1()->type() == Argument::TYPE_IDENT ||
+                       (line.instr()->arg1()->type() == Argument::TYPE_IMM && line.instr()->arg1()->v().type() == ArgumentValue::TYPE_FUN_INDEX)))
+                    reloc_size += sizeof(format::Relocation);
+                }
+              }
+            }
+          }
+          for(auto pair : ungen_prog.object_pairs) {
+            for(auto elem : pair.first->elems()) {
+              if(elem.type() == Value::TYPE_FUN_INDEX) reloc_size += sizeof(format::Relocation);
+            }
+          }
+          size += align(reloc_size, 8);
+          unordered_set<string> fun_names;
+          unordered_set<string> var_names;
+          for(auto &symbol : ungen_prog.symbols) {
+            switch((symbol.type & ~format::SYMBOL_TYPE_DEFINED)) {
+              case format::SYMBOL_TYPE_FUN:
+                fun_names.insert(symbol.name);
+                break;
+              case format::SYMBOL_TYPE_VAR:
+                var_names.insert(symbol.name);
+                break;
+            }
+          }
+          for(auto pair : ungen_prog.fun_pairs) {
+            const Function &fun = pair.second.second;
+            for(auto line : fun.lines()) {
+              if(line.instr() != nullptr) {
+                if(line.instr()->instr() == "let" || line.instr()->instr() == "arg" ||
+                    line.instr()->instr() == "ret" || line.instr()->instr() == "lettuple") {
+                  if(line.instr()->arg1() != nullptr) {
+                    if(line.instr()->arg1()->type() == Argument::TYPE_IDENT)
+                      var_names.insert(line.instr()->arg1()->ident());
+                    if(line.instr()->arg1()->type() == Argument::TYPE_IMM && line.instr()->arg1()->v().type() == ArgumentValue::TYPE_FUN_INDEX)
+                      fun_names.insert(line.instr()->arg1()->v().fun());
+                  }
+                  if(line.instr()->arg2() != nullptr) {
+                    if(line.instr()->arg2()->type() == Argument::TYPE_IDENT)
+                      var_names.insert(line.instr()->arg2()->ident());
+                    if(line.instr()->arg1()->type() == Argument::TYPE_IMM && line.instr()->arg2()->v().type() == ArgumentValue::TYPE_FUN_INDEX)
+                      fun_names.insert(line.instr()->arg2()->v().fun());
+                  }
+                } else if(line.instr()->instr() == "jc") {
+                  if(line.instr()->arg1() != nullptr) {
+                    if(line.instr()->arg1()->type() == Argument::TYPE_IDENT)
+                      var_names.insert(line.instr()->arg1()->ident());
+                    if(line.instr()->arg1()->type() == Argument::TYPE_IMM && line.instr()->arg1()->v().type() == ArgumentValue::TYPE_FUN_INDEX)
+                      fun_names.insert(line.instr()->arg1()->v().fun());
+                  }
+                }
+              }
+            }
+          }
+          for(auto pair : ungen_prog.object_pairs) {
+            for(auto elem : pair.first->elems())
+              if(elem.type() == Value::TYPE_FUN_INDEX) fun_names.insert(elem.fun());
+          }
+          for(auto fun_name : fun_names)
+            size += align(7 + fun_name.length(), 8);
+          for(auto var_name : var_names)
+            size += align(7 + var_name.length(), 8);
+        }
         return size;
+      }
+
+      static void add_reloc(UngeneratedProgram &ungen_prog, uint32_t type, uint32_t addr)
+      {
+        format::Relocation reloc;
+        reloc.type = type;
+        reloc.addr = addr;
+        reloc.symbol = 0;
+        ungen_prog.relocs.push_back(reloc);
+      }
+      
+      static void add_symbolic_reloc(UngeneratedProgram &ungen_prog, uint32_t type, uint32_t addr, const string &symbol_name)
+      {
+        format::Relocation reloc;
+        reloc.type = type | format::RELOC_TYPE_SYMBOLIC;
+        reloc.addr = addr;
+        reloc.symbol = ungen_prog.symbols.size();
+        switch(type) {
+          case format::RELOC_TYPE_ARG1_FUN:
+          case format::RELOC_TYPE_ARG2_FUN:
+          case format::RELOC_TYPE_ELEM_FUN:
+          {
+            auto iter = ungen_prog.extern_fun_symbol_indexes.find(symbol_name);
+            if(iter != ungen_prog.extern_fun_symbol_indexes.end()) {
+              reloc.symbol = iter->second;
+            } else {
+              ungen_prog.extern_fun_symbol_indexes.insert(make_pair(symbol_name, reloc.symbol));
+              ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_FUN, symbol_name));
+            }
+            break;
+          }
+          case format::RELOC_TYPE_ARG1_VAR:
+          case format::RELOC_TYPE_ARG2_VAR:
+          {
+            auto iter = ungen_prog.extern_var_symbol_indexes.find(symbol_name);
+            if(iter != ungen_prog.extern_var_symbol_indexes.end()) {
+              reloc.symbol = iter->second;
+            } else {
+              ungen_prog.extern_var_symbol_indexes.insert(make_pair(symbol_name, reloc.symbol));
+              ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_VAR, symbol_name));
+            }
+            break;
+          }
+        }
       }
 
       static bool get_fun_index(const UngeneratedProgram &ungen_prog, uint32_t &index, const string &ident, const Position &pos, list<Error> &errors)
@@ -287,13 +429,38 @@ namespace letin
         return true;
       }
 
-      static bool get_var_index(const UngeneratedProgram &ungen_prog, uint32_t &index, const string &ident, const Position &pos, list<Error> &errors)
+      static bool get_fun_index_and_add_reloc(UngeneratedProgram &ungen_prog, uint32_t &index, const string &ident, uint32_t reloc_type, uint32_t addr, const Position &pos, list<Error> &errors)
+      {
+        auto iter = ungen_prog.fun_pairs.find(ident);
+        if(iter == ungen_prog.fun_pairs.end()) {
+          if(ungen_prog.is_relocable) {
+            add_symbolic_reloc(ungen_prog, reloc_type, addr, ident);
+            index = 0;
+            return true;
+          } else {
+            errors.push_back(Error(pos, "undefined function " + ident));
+            return false;
+          }
+        }
+        add_reloc(ungen_prog, reloc_type, addr);
+        index = iter->second.first;
+        return true;
+      }
+
+      static bool get_var_index_and_add_reloc(UngeneratedProgram &ungen_prog, uint32_t &index, const string &ident, uint32_t reloc_type, uint32_t addr, const Position &pos, list<Error> &errors)
       {
         auto iter = ungen_prog.var_pairs.find(ident);
         if(iter == ungen_prog.var_pairs.end()) {
-          errors.push_back(Error(pos, "undefined variable " + ident));
-          return false;
+          if(ungen_prog.is_relocable) {
+            add_symbolic_reloc(ungen_prog, reloc_type, addr, ident);
+            index = 0;
+            return true;
+          } else {
+            errors.push_back(Error(pos, "undefined variable " + ident));
+            return false;
+          }
         }
+        add_reloc(ungen_prog, reloc_type, addr);
         index = iter->second.first;
         return true;
       }
@@ -309,7 +476,7 @@ namespace letin
         return true;
       }
 
-      static bool value_to_format_value(const UngeneratedProgram &ungen_prog, const Value &value, format::Value &format_value, list<Error> &errors)
+      static bool value_to_format_value(UngeneratedProgram &ungen_prog, const Value &value, format::Value &format_value, list<Error> &errors, uint32_t *addr = nullptr)
       {
         switch(value.type()) {
           case Value::TYPE_INT:
@@ -330,20 +497,25 @@ namespace letin
           case Value::TYPE_FUN_INDEX:
           {
             format_value.type = VALUE_TYPE_INT;
-            uint32_t idx;
-            if(!get_fun_index(ungen_prog, idx, value.fun(), value.pos(), errors)) return false;
-            format_value.i = idx;
+            uint32_t u;
+            if(addr != nullptr)
+              if(!get_fun_index_and_add_reloc(ungen_prog, u, value.fun(), format::RELOC_TYPE_ELEM_FUN, *addr, value.pos(), errors)) return false;
+            else
+              if(!get_fun_index(ungen_prog, u, value.fun(), value.pos(), errors)) return false;
+            format_value.i = static_cast<int32_t>(u);
             return true;
           }
         }
       }
 
-      static bool arg_to_format_arg(const UngeneratedProgram &ungen_prog, const Argument &arg, format::Argument &format_arg, uint32_t &format_arg_type, int value_type, const Position &instr_pos, list<Error> &errors)
+      static bool arg_to_format_arg(UngeneratedProgram &ungen_prog, const Argument &arg, format::Argument &format_arg, uint32_t &format_arg_type, int value_type, uint32_t ip, bool is_first, const Position &instr_pos, list<Error> &errors)
       {
         if(value_type == VALUE_TYPE_ERROR) {
           errors.push_back(Error(instr_pos, "incorrect number of arguments"));
           return false;
         }
+        uint32_t fun_reloc_type = (is_first ? format::RELOC_TYPE_ARG1_FUN : format::RELOC_TYPE_ARG2_FUN);
+        uint32_t var_reloc_type = (is_first ? format::RELOC_TYPE_ARG1_VAR : format::RELOC_TYPE_ARG2_VAR);
         switch(arg.type()) {
           case Argument::TYPE_IMM:
             switch(value_type) {
@@ -360,7 +532,8 @@ namespace letin
                   format_arg.i = arg.v().i();
                 } else if(arg.v().type() == ArgumentValue::TYPE_FUN_INDEX) {
                   uint32_t u;
-                  if(!get_fun_index(ungen_prog, u, arg.v().fun(), arg.pos(), errors)) return false;
+                  if(!get_fun_index_and_add_reloc(ungen_prog, u, arg.v().fun(), fun_reloc_type, ip, arg.pos(), errors))
+                    return false;
                   format_arg.i = static_cast<int32_t>(u);
                 } else {
                   errors.push_back(Error(arg.pos(), "incorrect argument"));
@@ -390,13 +563,14 @@ namespace letin
             format_arg_type = ARG_TYPE_ARG;
             return true;
           case Argument::TYPE_IDENT:
-            if(!get_var_index(ungen_prog, format_arg.gvar, arg.ident(), arg.pos(), errors)) return false;
+            if(!get_var_index_and_add_reloc(ungen_prog, format_arg.gvar, arg.ident(), var_reloc_type, ip, arg.pos(), errors))
+              return false;
             format_arg_type = ARG_TYPE_GVAR;
             return true;
         }
       }
 
-      static bool generate_instr_with_op(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int opcode_instr, list<Error> &errors)
+      static bool generate_instr_with_op(UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int opcode_instr, list<Error> &errors)
       {
         if(instr.op() == nullptr) {
           errors.push_back(Error(instr.pos(), "no operation"));
@@ -434,7 +608,7 @@ namespace letin
               is_success = false;
             }
           } else {
-            if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type1, op_desc.arg_value_type1, instr.pos(), errors))
+            if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type1, op_desc.arg_value_type1, ip, true, instr.pos(), errors))
               is_success = false;
           }
         } else {
@@ -446,7 +620,7 @@ namespace letin
         }
         if(!is_ignored_arg2) {
           if(instr.arg2() != nullptr) {
-            if(!arg_to_format_arg(ungen_prog, *(instr.arg2()), ungen_fun.instrs[ip].arg2, arg_type2, op_desc.arg_value_type2, instr.pos(), errors))
+            if(!arg_to_format_arg(ungen_prog, *(instr.arg2()), ungen_fun.instrs[ip].arg2, arg_type2, op_desc.arg_value_type2, ip, false, instr.pos(), errors))
               is_success = false;
           } else {
             if(op_desc.arg_value_type2 != VALUE_TYPE_ERROR) {
@@ -501,7 +675,7 @@ namespace letin
         return true;
       }
 
-      static bool generate_jc(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, list<Error> &errors)
+      static bool generate_jc(UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, list<Error> &errors)
       {
         if(instr.op() != nullptr) {
           errors.push_back(Error(instr.pos(), "instruction can't have operation"));
@@ -510,7 +684,7 @@ namespace letin
         bool is_success = true;
         uint32_t arg_type;
         if(instr.arg1() != nullptr) {
-          if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type, VALUE_TYPE_INT, instr.pos(), errors))
+          if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type, VALUE_TYPE_INT, ip, true, instr.pos(), errors))
             is_success = false;
         } else {
           errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
@@ -561,7 +735,7 @@ namespace letin
         return true;
       }
 
-      static bool generate_instr(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, list<Error> &errors)
+      static bool generate_instr(UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, list<Error> &errors)
       {
         if(instr.instr() == "let") {
           return generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_LET, errors);
@@ -585,7 +759,7 @@ namespace letin
         }
       }
 
-      static Program *generate_prog(const ParseTree &tree, list<Error> &errors)
+      static Program *generate_prog(const ParseTree &tree, list<Error> &errors, bool is_relocable)
       {
         UngeneratedProgram ungen_prog;
         string entry_ident;
@@ -593,11 +767,15 @@ namespace letin
         Position entry_pos;
         size_t code_size, data_size;
         bool is_success = true;
+        ungen_prog.is_relocable = is_relocable;
         for(auto &def : tree.defs()) {
           FunctionDefinition *fun_def = dynamic_cast<FunctionDefinition *>(def.get());
           if(fun_def != nullptr) {
             if(ungen_prog.fun_pairs.find(fun_def->ident()) == ungen_prog.fun_pairs.end()) {
-              ungen_prog.fun_pairs.insert(make_pair(fun_def->ident(), make_pair(ungen_prog.fun_pairs.size(), fun_def->fun())));
+              uint32_t tmp_fun_count = ungen_prog.fun_pairs.size();
+              ungen_prog.fun_pairs.insert(make_pair(fun_def->ident(), make_pair(tmp_fun_count, fun_def->fun())));
+              if(ungen_prog.is_relocable)
+                ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_FUN | format::SYMBOL_TYPE_DEFINED, fun_def->ident(), tmp_fun_count));
             } else {
               errors.push_back(Error(fun_def->pos(), "already defined function " + fun_def->ident()));
               is_success = false;
@@ -606,7 +784,10 @@ namespace letin
           VariableDefinition *var_def = dynamic_cast<VariableDefinition *>(def.get());
           if(var_def != nullptr) {
             if(ungen_prog.var_pairs.find(var_def->ident()) == ungen_prog.var_pairs.end()) {
-              ungen_prog.var_pairs.insert(make_pair(var_def->ident(), make_pair(ungen_prog.var_pairs.size(), var_def->value())));
+              uint32_t tmp_var_count = ungen_prog.var_pairs.size();
+              ungen_prog.var_pairs.insert(make_pair(var_def->ident(), make_pair(tmp_var_count, var_def->value())));
+              if(ungen_prog.is_relocable)
+                ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED, fun_def->ident(), tmp_var_count));
             } else {
               errors.push_back(Error(var_def->pos(), "already defined variable " + var_def->ident()));
               is_success = false;
@@ -640,18 +821,20 @@ namespace letin
         tmp_ptr += align(sizeof(format::Header), 8);
         copy(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, header->magic);
         if(is_entry) {
-          header->flags = 0;
+          header->flags = (ungen_prog.is_relocable ? format::HEADER_FLAG_RELOCATABLE : 0);
           if(!get_fun_index(ungen_prog, header->entry, entry_ident, entry_pos, errors)) return nullptr;
           header->entry = htonl(header->entry);
         } else {
-          header->flags = htonl(format::HEADER_FLAG_LIBRARY);
+          header->flags = htonl(format::HEADER_FLAG_LIBRARY | (ungen_prog.is_relocable ? format::HEADER_FLAG_RELOCATABLE : 0));
           header->entry = 0;
         }
         header->fun_count = htonl(ungen_prog.fun_pairs.size());
         header->var_count = htonl(ungen_prog.var_pairs.size());
         header->code_size = htonl(code_size);
         header->data_size = htonl(data_size);
-        fill_n(header->reserved, 4, 0);
+        header->reloc_count = 0;
+        header->symbol_count = 0;
+        fill_n(header->reserved, sizeof(header->reserved), 0);
 
         format::Function *funs = reinterpret_cast<format::Function *>(tmp_ptr);
         tmp_ptr += align(ungen_prog.fun_pairs.size() * sizeof(format::Function), 8);
@@ -745,7 +928,8 @@ namespace letin
                   }
                 }
                 format::Value format_value;
-                if(value_to_format_value(ungen_prog, elem, format_value, errors))
+                uint32_t elem_addr = i + 8 + j * 4;
+                if(value_to_format_value(ungen_prog, elem, format_value, errors, &elem_addr))
                   format_object->is32[j] = htonl(format_value.i);
                 else
                   is_success = false;
@@ -755,7 +939,8 @@ namespace letin
             case OBJECT_TYPE_IARRAY64:
               for(auto &elem : object->elems()) {
                 format::Value format_value;
-                if(value_to_format_value(ungen_prog, elem, format_value, errors))
+                uint32_t elem_addr = i + 8 + j * 8;
+                if(value_to_format_value(ungen_prog, elem, format_value, errors, &elem_addr))
                   format_object->is64[j] = htonll(format_value.i);
                 else
                   is_success = false;
@@ -810,6 +995,32 @@ namespace letin
             is_success = false;
         }
 
+        if(ungen_prog.is_relocable) {
+          format::Relocation *relocs = reinterpret_cast<format::Relocation *>(tmp_ptr);
+          tmp_ptr += align(ungen_prog.relocs.size() * sizeof(format::Relocation), 8);
+          uint8_t *symbols = tmp_ptr;
+
+          i = 0;
+          for(auto &reloc : ungen_prog.relocs) {
+            format::Relocation *format_reloc = relocs + i;
+            format_reloc->type = htonl(reloc.type);
+            format_reloc->addr = htonl(reloc.addr);
+            format_reloc->symbol = htonl(reloc.symbol);
+            i++;
+          }
+
+          i = 0;
+          for(auto &symbol : ungen_prog.symbols) {
+            format::Symbol *format_symbol = reinterpret_cast<format::Symbol *>(symbols + i);
+            format_symbol->index = htonl(symbol.index);
+            format_symbol->length = htons(symbol.name.length());
+            format_symbol->type = symbol.type;
+            copy(symbol.name.begin(), symbol.name.end(), format_symbol->name);
+            i += align(7 + symbol.name.length(), 8);
+          }
+          tmp_ptr += i;
+        }
+
         if(!is_success) return nullptr;
 
         Program *prog = new ImplProgram(reinterpret_cast<void *>(ptr.get()), size);
@@ -836,11 +1047,11 @@ namespace letin
 
       ImplCompiler::~ImplCompiler() {}
 
-      Program *ImplCompiler::compile(const vector<Source> &sources, list<Error> &errors)
+      Program *ImplCompiler::compile(const vector<Source> &sources, list<Error> &errors, bool is_relocable)
       {
         unique_ptr<ParseTree> tree(parse(sources, _M_include_dirs, errors));
         Program *prog = nullptr;
-        if(tree.get() != nullptr) prog = generate_prog(*tree, errors);
+        if(tree.get() != nullptr) prog = generate_prog(*tree, errors, is_relocable);
         sort_errors(errors);
         return prog;
       }

@@ -24,7 +24,7 @@ namespace letin
 
         ~ImplCompiler();
 
-        Program *compile(const std::vector<Source> & sources, std::list<Error> &errors);
+        Program *compile(const std::vector<Source> & sources, std::list<Error> &errors, bool is_relocable);
 
         void add_include_dir(const std::string &dir_name);
       };

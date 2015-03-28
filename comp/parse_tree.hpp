@@ -429,16 +429,28 @@ namespace letin
         const std::list<FunctionLine> &lines() const { return *_M_lines; }
       };
 
+      enum Modifier
+      {
+        LOCAL,
+        GLOBAL
+      };
+
       class FunctionDefinition : public Definition
       {
+        Modifier _M_modifier;
         std::string _M_ident;
         Function _M_fun;
         Position _M_pos;
       public:
         FunctionDefinition(const std::string &ident, const Function &fun, const Position &pos) :
-          Definition(pos), _M_ident(ident), _M_fun(fun) {}
+          Definition(pos), _M_modifier(LOCAL), _M_ident(ident), _M_fun(fun) {}
+
+        FunctionDefinition(Modifier modifier, const std::string &ident, const Function &fun, const Position &pos) :
+          Definition(pos), _M_modifier(modifier), _M_ident(ident), _M_fun(fun) {}
 
         ~FunctionDefinition();
+
+        Modifier modifier() const { _M_modifier; }
 
         const std::string ident() const { return _M_ident; }
 
@@ -447,13 +459,19 @@ namespace letin
 
       class VariableDefinition : public Definition
       {
+        Modifier _M_modifier;
         std::string _M_ident;
         Value _M_value;
       public:
         VariableDefinition(const std::string &ident, const Value &value, const Position &pos) :
-          Definition(pos), _M_ident(ident), _M_value(value) {}
+          Definition(pos), _M_modifier(LOCAL), _M_ident(ident), _M_value(value) {}
+
+        VariableDefinition(Modifier modifier, const std::string &ident, const Value &value, const Position &pos) :
+          Definition(pos), _M_modifier(modifier), _M_ident(ident), _M_value(value) {}
 
         ~VariableDefinition();
+
+        Modifier modifier() const { _M_modifier; }
 
         const std::string &ident() const { return _M_ident; }
 

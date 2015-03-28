@@ -74,6 +74,8 @@
 
 ".include"                      { return token::INCLUDE; }
 
+".global"                       { return token::GLOBAL; }
+
 "a"[0-9]+                       {
   std::istringstream iss(yytext + 1);
   lval->u32 = 0;
