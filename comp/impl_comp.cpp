@@ -188,6 +188,16 @@ namespace letin
         return tree;
       }
 
+      struct Relocation
+      {
+        uint32_t type;
+        uint32_t addr;
+        uint32_t symbol;
+
+        Relocation(uint32_t type, uint32_t addr, uint32_t symbol = 0) :
+          type(type), addr(addr), symbol(symbol) {}
+      };
+      
       struct Symbol
       {
         uint32_t type;
@@ -206,7 +216,7 @@ namespace letin
         list<Instruction> instrs;
         list<pair<const Object *, pair<int, uint32_t>>> object_pairs;
         unordered_map<const Object *, uint32_t> object_addrs;
-        list<format::Relocation> relocs;
+        list<Relocation> relocs;
         list<Symbol> symbols;
         unordered_map<string, uint32_t> extern_fun_symbol_indexes;
         unordered_map<string, uint32_t> extern_var_symbol_indexes;
@@ -372,49 +382,41 @@ namespace letin
         }
         return size;
       }
-
-      static void add_reloc(UngeneratedProgram &ungen_prog, uint32_t type, uint32_t addr)
-      {
-        format::Relocation reloc;
-        reloc.type = type;
-        reloc.addr = addr;
-        reloc.symbol = 0;
-        ungen_prog.relocs.push_back(reloc);
-      }
       
-      static void add_symbolic_reloc(UngeneratedProgram &ungen_prog, uint32_t type, uint32_t addr, const string &symbol_name)
+      static void add_reloc(UngeneratedProgram &ungen_prog, uint32_t type, uint32_t addr, const string symbol_name = string())
       {
-        format::Relocation reloc;
-        reloc.type = type | format::RELOC_TYPE_SYMBOLIC;
-        reloc.addr = addr;
-        reloc.symbol = ungen_prog.symbols.size();
-        switch(type) {
-          case format::RELOC_TYPE_ARG1_FUN:
-          case format::RELOC_TYPE_ARG2_FUN:
-          case format::RELOC_TYPE_ELEM_FUN:
-          {
-            auto iter = ungen_prog.extern_fun_symbol_indexes.find(symbol_name);
-            if(iter != ungen_prog.extern_fun_symbol_indexes.end()) {
-              reloc.symbol = iter->second;
-            } else {
-              ungen_prog.extern_fun_symbol_indexes.insert(make_pair(symbol_name, reloc.symbol));
-              ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_FUN, symbol_name));
+        if((type & format::RELOC_TYPE_SYMBOLIC) != 0) {
+          uint32_t symbol = ungen_prog.symbols.size();
+          switch(type & ~format::RELOC_TYPE_SYMBOLIC) {
+            case format::RELOC_TYPE_ARG1_FUN:
+            case format::RELOC_TYPE_ARG2_FUN:
+            case format::RELOC_TYPE_ELEM_FUN:
+            {
+              auto iter = ungen_prog.extern_fun_symbol_indexes.find(symbol_name);
+              if(iter != ungen_prog.extern_fun_symbol_indexes.end()) {
+                symbol = iter->second;
+              } else {
+                ungen_prog.extern_fun_symbol_indexes.insert(make_pair(symbol_name, symbol));
+                ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_FUN, symbol_name));
+              }
+              break;
             }
-            break;
-          }
-          case format::RELOC_TYPE_ARG1_VAR:
-          case format::RELOC_TYPE_ARG2_VAR:
-          {
-            auto iter = ungen_prog.extern_var_symbol_indexes.find(symbol_name);
-            if(iter != ungen_prog.extern_var_symbol_indexes.end()) {
-              reloc.symbol = iter->second;
-            } else {
-              ungen_prog.extern_var_symbol_indexes.insert(make_pair(symbol_name, reloc.symbol));
-              ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_VAR, symbol_name));
+            case format::RELOC_TYPE_ARG1_VAR:
+            case format::RELOC_TYPE_ARG2_VAR:
+            {
+              auto iter = ungen_prog.extern_var_symbol_indexes.find(symbol_name);
+              if(iter != ungen_prog.extern_var_symbol_indexes.end()) {
+                symbol = iter->second;
+              } else {
+                ungen_prog.extern_var_symbol_indexes.insert(make_pair(symbol_name, symbol));
+                ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_VAR, symbol_name));
+              }
+              break;
             }
-            break;
           }
-        }
+          ungen_prog.relocs.push_back(Relocation(type, addr, symbol));
+        } else
+          ungen_prog.relocs.push_back(Relocation(type, addr));
       }
 
       static bool get_fun_index(const UngeneratedProgram &ungen_prog, uint32_t &index, const string &ident, const Position &pos, list<Error> &errors)
@@ -433,7 +435,7 @@ namespace letin
         auto iter = ungen_prog.fun_pairs.find(ident);
         if(iter == ungen_prog.fun_pairs.end()) {
           if(ungen_prog.is_relocable) {
-            add_symbolic_reloc(ungen_prog, reloc_type, addr, ident);
+            add_reloc(ungen_prog, reloc_type | format::RELOC_TYPE_SYMBOLIC, addr, ident);
             index = 0;
             return true;
           } else {
@@ -451,7 +453,7 @@ namespace letin
         auto iter = ungen_prog.var_pairs.find(ident);
         if(iter == ungen_prog.var_pairs.end()) {
           if(ungen_prog.is_relocable) {
-            add_symbolic_reloc(ungen_prog, reloc_type, addr, ident);
+            add_reloc(ungen_prog, reloc_type | format::RELOC_TYPE_SYMBOLIC, addr, ident);
             index = 0;
             return true;
           } else {
