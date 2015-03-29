@@ -274,6 +274,23 @@ namespace letin
         return true;
       }
 
+      static size_t reloc_size_from_arg(const Argument &arg)
+      {
+        if(arg.type() == Argument::TYPE_IDENT)
+          return sizeof(format::Relocation);
+        if(arg.type() == Argument::TYPE_IMM && arg.v().type() == ArgumentValue::TYPE_FUN_INDEX)
+          return sizeof(format::Relocation);
+        return 0;
+      }
+      
+      static void add_name_from_arg(unordered_set<string> &fun_names, unordered_set<string> &var_names, const Argument &arg)
+      {
+        if(arg.type() == Argument::TYPE_IDENT)
+          var_names.insert(arg.ident());
+        if(arg.type() == Argument::TYPE_IMM && arg.v().type() == ArgumentValue::TYPE_FUN_INDEX)
+          fun_names.insert(arg.v().fun());        
+      }
+      
       static size_t prog_size_and_other_sizes(const UngeneratedProgram &ungen_prog, size_t &code_size, size_t &data_size)
       {
         size_t size = align(sizeof(format::Header), 8);
@@ -298,19 +315,13 @@ namespace letin
               if(line.instr() != nullptr) {
                 if(line.instr()->instr() == "let" || line.instr()->instr() == "arg" ||
                     line.instr()->instr() == "ret" || line.instr()->instr() == "lettuple") {
-                  if(line.instr()->arg1() != nullptr &&
-                      (line.instr()->arg1()->type() == Argument::TYPE_IDENT ||
-                       (line.instr()->arg1()->type() == Argument::TYPE_IMM && line.instr()->arg1()->v().type() == ArgumentValue::TYPE_FUN_INDEX)))
-                    reloc_size += sizeof(format::Relocation);
-                  if(line.instr()->arg2() != nullptr &&
-                      (line.instr()->arg2()->type() == Argument::TYPE_IDENT ||
-                       (line.instr()->arg2()->type() == Argument::TYPE_IMM && line.instr()->arg2()->v().type() == ArgumentValue::TYPE_FUN_INDEX)))
-                    reloc_size += sizeof(format::Relocation);
+                  if(line.instr()->arg1() != nullptr)
+                    reloc_size += reloc_size_from_arg(*(line.instr()->arg1()));
+                  if(line.instr()->arg2() != nullptr)
+                    reloc_size += reloc_size_from_arg(*(line.instr()->arg2()));
                 } else if(line.instr()->instr() == "jc") {
-                  if(line.instr()->arg1() != nullptr &&
-                      (line.instr()->arg1()->type() == Argument::TYPE_IDENT ||
-                       (line.instr()->arg1()->type() == Argument::TYPE_IMM && line.instr()->arg1()->v().type() == ArgumentValue::TYPE_FUN_INDEX)))
-                    reloc_size += sizeof(format::Relocation);
+                  if(line.instr()->arg1() != nullptr)
+                    reloc_size += reloc_size_from_arg(*(line.instr()->arg1()));
                 }
               }
             }
@@ -339,25 +350,13 @@ namespace letin
               if(line.instr() != nullptr) {
                 if(line.instr()->instr() == "let" || line.instr()->instr() == "arg" ||
                     line.instr()->instr() == "ret" || line.instr()->instr() == "lettuple") {
-                  if(line.instr()->arg1() != nullptr) {
-                    if(line.instr()->arg1()->type() == Argument::TYPE_IDENT)
-                      var_names.insert(line.instr()->arg1()->ident());
-                    if(line.instr()->arg1()->type() == Argument::TYPE_IMM && line.instr()->arg1()->v().type() == ArgumentValue::TYPE_FUN_INDEX)
-                      fun_names.insert(line.instr()->arg1()->v().fun());
-                  }
-                  if(line.instr()->arg2() != nullptr) {
-                    if(line.instr()->arg2()->type() == Argument::TYPE_IDENT)
-                      var_names.insert(line.instr()->arg2()->ident());
-                    if(line.instr()->arg1()->type() == Argument::TYPE_IMM && line.instr()->arg2()->v().type() == ArgumentValue::TYPE_FUN_INDEX)
-                      fun_names.insert(line.instr()->arg2()->v().fun());
-                  }
+                  if(line.instr()->arg1() != nullptr)
+                    add_name_from_arg(fun_names, var_names, *(line.instr()->arg1()));
+                  if(line.instr()->arg2() != nullptr)
+                    add_name_from_arg(fun_names, var_names, *(line.instr()->arg2()));
                 } else if(line.instr()->instr() == "jc") {
-                  if(line.instr()->arg1() != nullptr) {
-                    if(line.instr()->arg1()->type() == Argument::TYPE_IDENT)
-                      var_names.insert(line.instr()->arg1()->ident());
-                    if(line.instr()->arg1()->type() == Argument::TYPE_IMM && line.instr()->arg1()->v().type() == ArgumentValue::TYPE_FUN_INDEX)
-                      fun_names.insert(line.instr()->arg1()->v().fun());
-                  }
+                  if(line.instr()->arg1() != nullptr)
+                    add_name_from_arg(fun_names, var_names, *(line.instr()->arg1()));
                 }
               }
             }
