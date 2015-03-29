@@ -49,9 +49,9 @@ namespace letin
         CPPUNIT_TEST(test_compiler_parses_program_with_comments);
         CPPUNIT_TEST(test_compiler_compiles_characters_and_strings);
         CPPUNIT_TEST(test_compiler_complains_on_syntax_error);
-        CPPUNIT_TEST(test_compiler_complains_on_undefined_functions);
+        CPPUNIT_TEST(test_compiler_complains_on_undefined_functions_for_unrelocatable);
         CPPUNIT_TEST(test_compiler_complains_on_already_functions);
-        CPPUNIT_TEST(test_compiler_complains_on_undefined_variables);
+        CPPUNIT_TEST(test_compiler_complains_on_undefined_variables_for_unrelocatable);
         CPPUNIT_TEST(test_compiler_complains_on_already_variables);
         CPPUNIT_TEST(test_compiler_compiles_load2_instructions);
         CPPUNIT_TEST(test_compiler_evaluates_defined_values);
@@ -62,7 +62,7 @@ namespace letin
         CPPUNIT_TEST(test_compiler_includes_file);
         CPPUNIT_TEST(test_compiler_includes_many_files);
         CPPUNIT_TEST(test_compiler_complains_on_non_existent_included_files);
-        CPPUNIT_TEST(test_compiler_complains_on_errors_in_included_files);
+        CPPUNIT_TEST(test_compiler_complains_on_errors_in_included_files_for_unrelocatable);
         CPPUNIT_TEST(test_compiler_compiles_lettuples);
         CPPUNIT_TEST(test_compiler_complains_on_no_number_of_local_variables);
         CPPUNIT_TEST(test_compiler_complains_on_number_of_local_variables);
@@ -87,9 +87,9 @@ namespace letin
         void test_compiler_parses_program_with_comments();
         void test_compiler_compiles_characters_and_strings();
         void test_compiler_complains_on_syntax_error();
-        void test_compiler_complains_on_undefined_functions();
+        void test_compiler_complains_on_undefined_functions_for_unrelocatable();
         void test_compiler_complains_on_already_functions();
-        void test_compiler_complains_on_undefined_variables();
+        void test_compiler_complains_on_undefined_variables_for_unrelocatable();
         void test_compiler_complains_on_already_variables();
         void test_compiler_complains_on_incorrect_number_of_arguments();
         void test_compiler_compiles_load2_instructions();
@@ -101,7 +101,7 @@ namespace letin
         void test_compiler_includes_file();
         void test_compiler_includes_many_files();
         void test_compiler_complains_on_non_existent_included_files();
-        void test_compiler_complains_on_errors_in_included_files();
+        void test_compiler_complains_on_errors_in_included_files_for_unrelocatable();
         void test_compiler_compiles_lettuples();
         void test_compiler_complains_on_no_number_of_local_variables();
         void test_compiler_complains_on_number_of_local_variables();

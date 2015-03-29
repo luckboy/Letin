@@ -293,12 +293,16 @@ namespace letin
         return 0;
       }
 
-      static void add_symbol_name_from_arg(unordered_set<string> &fun_names, unordered_set<string> &var_names, const Argument &arg)
+      static void add_symbol_name_from_arg(const UngeneratedProgram &ungen_prog, unordered_set<string> &fun_names, unordered_set<string> &var_names, const Argument &arg)
       {
-        if(arg.type() == Argument::TYPE_IDENT)
-          var_names.insert(arg.ident());
-        if(arg.type() == Argument::TYPE_IMM && arg.v().type() == ArgumentValue::TYPE_FUN_INDEX)
-          fun_names.insert(arg.v().fun());        
+        if(arg.type() == Argument::TYPE_IDENT) {
+          if(ungen_prog.var_pairs.find(arg.ident()) == ungen_prog.var_pairs.end())
+            var_names.insert(arg.ident());
+        }
+        if(arg.type() == Argument::TYPE_IMM && arg.v().type() == ArgumentValue::TYPE_FUN_INDEX) {
+          if(ungen_prog.fun_pairs.find(arg.v().fun()) == ungen_prog.fun_pairs.end())
+            fun_names.insert(arg.v().fun());
+        }
       }
 
       static size_t prog_size_and_other_sizes(const UngeneratedProgram &ungen_prog, size_t &code_size, size_t &data_size)
@@ -361,12 +365,12 @@ namespace letin
                 if(line.instr()->instr() == "let" || line.instr()->instr() == "arg" ||
                     line.instr()->instr() == "ret" || line.instr()->instr() == "lettuple") {
                   if(line.instr()->arg1() != nullptr)
-                    add_symbol_name_from_arg(fun_symbol_names, symbol_var_names, *(line.instr()->arg1()));
+                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, symbol_var_names, *(line.instr()->arg1()));
                   if(line.instr()->arg2() != nullptr)
-                    add_symbol_name_from_arg(fun_symbol_names, symbol_var_names, *(line.instr()->arg2()));
+                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, symbol_var_names, *(line.instr()->arg2()));
                 } else if(line.instr()->instr() == "jc") {
                   if(line.instr()->arg1() != nullptr)
-                    add_symbol_name_from_arg(fun_symbol_names, symbol_var_names, *(line.instr()->arg1()));
+                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, symbol_var_names, *(line.instr()->arg1()));
                 }
               }
             }
@@ -822,7 +826,7 @@ namespace letin
         tmp_ptr += align(sizeof(format::Header), 8);
         copy(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, header->magic);
         if(is_entry) {
-          header->flags = (ungen_prog.is_relocable ? format::HEADER_FLAG_RELOCATABLE : 0);
+          header->flags = htonl(ungen_prog.is_relocable ? format::HEADER_FLAG_RELOCATABLE : 0);
           if(!get_fun_index(ungen_prog, header->entry, entry_ident, entry_pos, errors)) return nullptr;
           header->entry = htonl(header->entry);
         } else {

@@ -60,7 +60,7 @@ f(a1) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 48), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(0U);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -97,7 +97,7 @@ f(a1) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 72), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(0U);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -135,7 +135,7 @@ f(a1) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 72), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(0U);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -179,7 +179,7 @@ label1: let iadd a0, 10\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 144), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -242,9 +242,9 @@ h(a2) = {\n\
         unique_ptr<Program> prog(_M_comp->compile(sources, errors));
         CPPUNIT_ASSERT(nullptr != prog.get());
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
-        ASSERT_PROG(static_cast<size_t>(48 + 40 + 232), (*(prog.get())));
+        ASSERT_PROG(static_cast<size_t>(48 + 40 + 232 + 40), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(3U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -306,9 +306,9 @@ g3 = 30\n\
         unique_ptr<Program> prog(_M_comp->compile(sources, errors));
         CPPUNIT_ASSERT(nullptr != prog.get());
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
-        ASSERT_PROG(static_cast<size_t>(48 + 24 + 48 + 48), (*(prog.get())));
+        ASSERT_PROG(static_cast<size_t>(48 + 24 + 48 + 48 + 40), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(2U);
         ASSERT_HEADER_VAR_COUNT(3U);
@@ -358,7 +358,7 @@ g4 = tuple[\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 0 + 64 + 0 + 256), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(0U);
         ASSERT_HEADER_VAR_COUNT(4U);
@@ -443,7 +443,7 @@ g2 = \"some text\n\43and something\"\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 32 + 16 + 32), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(2U);
@@ -499,7 +499,7 @@ g2 = \"some text\n\43and something\"\n\
         CPPUNIT_ASSERT(string("syntax error") == error_vector[0].msg());
       }
 
-      void CompilerTests::test_compiler_complains_on_undefined_functions()
+      void CompilerTests::test_compiler_complains_on_undefined_functions_for_unrelocatable()
       {
         istringstream iss("\n\
 f(a1) = {\n\
@@ -512,7 +512,7 @@ f(a1) = {\n\
         vector<Source> sources;
         sources.push_back(Source("test.letins", iss));
         list<Error> errors;
-        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors, false));
         CPPUNIT_ASSERT(nullptr == prog.get());
         vector<Error> error_vector;
         for(auto error : errors) error_vector.push_back(error);
@@ -564,7 +564,7 @@ h(a1) = {\n\
         CPPUNIT_ASSERT(string("already defined function h") == error_vector[1].msg());
       }
 
-      void CompilerTests::test_compiler_complains_on_undefined_variables()
+      void CompilerTests::test_compiler_complains_on_undefined_variables_for_unrelocatable()
       {
         istringstream iss("\n\
 f(a0) = {\n\
@@ -579,7 +579,7 @@ g5 = 1\n\
         vector<Source> sources;
         sources.push_back(Source("test.letins", iss));
         list<Error> errors;
-        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors, false));
         CPPUNIT_ASSERT(nullptr == prog.get());
         vector<Error> error_vector;
         for(auto error : errors) error_vector.push_back(error);
@@ -649,7 +649,7 @@ f(a0) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 40), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(0U);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -690,7 +690,7 @@ f(a0) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 72), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -731,7 +731,7 @@ g5 = 0 ? 1 : 0 ? 2 : 3\n\
         CPPUNIT_ASSERT(nullptr != prog.get());
         ASSERT_PROG(static_cast<size_t>(48 + 0 + 80 + 32), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(0U);
         ASSERT_HEADER_VAR_COUNT(5U);
@@ -820,7 +820,7 @@ f(a1) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 40), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(0U);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -892,9 +892,9 @@ h(a0) = {\n\
         unique_ptr<Program> prog(_M_comp->compile(sources, errors));
         CPPUNIT_ASSERT(nullptr != prog.get());
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
-        ASSERT_PROG(static_cast<size_t>(48 + 40 + 112), (*(prog.get())));
+        ASSERT_PROG(static_cast<size_t>(48 + 40 + 112 + 24), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(0U);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(2U);
         ASSERT_HEADER_FUN_COUNT(3U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -952,7 +952,7 @@ h(a0) = {\n\
         CPPUNIT_ASSERT(string("couldn't include file inc3.letins") == error_vector[0].msg());
       }
       
-      void CompilerTests::test_compiler_complains_on_errors_in_included_files()
+      void CompilerTests::test_compiler_complains_on_errors_in_included_files_for_unrelocatable()
       {
         {
           ofstream ofs(TEST_FILE("inc1.letins"));
@@ -987,7 +987,7 @@ h(a0) = {\n\
         vector<Source> sources;
         sources.push_back(Source("test.letins", iss));
         list<Error> errors;
-        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors, false));
         CPPUNIT_ASSERT(nullptr == prog.get());
         vector<Error> error_vector;
         for(auto error : errors) error_vector.push_back(error);
@@ -1036,7 +1036,7 @@ f(a5) = {\n\
         CPPUNIT_ASSERT(nullptr != prog.get());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 144), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
