@@ -130,6 +130,8 @@ ASSERT_INSTR(opcode::INSTR_LETTUPLE, opcode::OP_##op, arg1, arg2, local_var_coun
 #define ASSERT_HEADER_VAR_COUNT(i)      ASSERT_HEADER_FIELD(i, var_count)
 #define ASSERT_HEADER_CODE_SIZE(i)      ASSERT_HEADER_FIELD(i, code_size)
 #define ASSERT_HEADER_DATA_SIZE(i)      ASSERT_HEADER_FIELD(i, data_size)
+#define ASSERT_HEADER_RELOC_COUNT(i)    ASSERT_HEADER_FIELD(i, reloc_count)
+#define ASSERT_HEADER_SYMBOL_COUNT(i)   ASSERT_HEADER_FIELD(i, symbol_count)
 
 #define ASSERT_PROG(prog_size, prog)                                            \
 {                                                                               \
