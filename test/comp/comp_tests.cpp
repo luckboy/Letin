@@ -260,7 +260,7 @@ h(a2) = {\n\
         // g
         ASSERT_FUN(4U, 11U, 48U + 12U, 48U + 40U);
         ASSERT_ARG(IADD, A(0), A(1), 0);
-        ASSERT_ARG(IADD, A(1), A(2), 1);
+        ASSERT_ARG(ISUB, A(1), A(2), 1);
         ASSERT_ARG(INEG, A(2), NA(), 2);
         ASSERT_LET(ICALL, IMM(0), NA(), 3);
         ASSERT_ARG(ILOAD, A(2), NA(), 4);
@@ -290,7 +290,7 @@ f(a0) = {\n\
 \n\
 g(a1) = {\n\
         arg fload g2\n\
-        arg fload g3\n\
+        arg iload g3\n\
         ret rtuple()\n\
 }\n\
 \n\
@@ -1103,6 +1103,65 @@ f(a0) = {\n\
         CPPUNIT_ASSERT(3 == error_vector[0].pos().line());
         CPPUNIT_ASSERT(9 == error_vector[0].pos().column());
         CPPUNIT_ASSERT(string("number of local variables") == error_vector[0].msg());
+      }
+
+      void CompilerTests::test_compiler_compiles_unrelocatable_program()
+      {
+        istringstream iss("\n\
+.entry f\n\
+f(a1) = {\n\
+        let iload a\n\
+        let iload &g\n\
+        let iadd a0, a0\n\
+        in\n\
+        let iadd lv0, lv1\n\
+        in\n\
+        ret iadd lv3, lv2\n\
+}\n\
+\n\
+g(a0) = {\n\
+        ret rload b\n\
+}\n\
+\n\
+a = 1\n\
+\n\
+b = [&f, &g]\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors, false));
+        for(auto error : errors) cout << error << endl;
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+        ASSERT_PROG(static_cast<size_t>(48 + 24 + 32 + 96 + 24), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(0U);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(2U);
+        ASSERT_HEADER_VAR_COUNT(2U);
+        ASSERT_HEADER_CODE_SIZE(8U);
+        ASSERT_HEADER_DATA_SIZE(24U);
+        ASSERT_HEADER_RELOC_COUNT(0U);
+        ASSERT_HEADER_SYMBOL_COUNT(0U);
+        ASSERT_FUN(1U, 7U, 48U, 48U + 24U + 32U);
+        ASSERT_LET(ILOAD, GV(0), NA(), 0);
+        ASSERT_LET(ILOAD, IMM(1), NA(), 1);
+        ASSERT_LET(IADD, A(0), A(0), 2);
+        ASSERT_IN(3);
+        ASSERT_LET(IADD, LV(0), LV(1), 4);
+        ASSERT_IN(5);
+        ASSERT_RET(IADD, LV(3), LV(2), 6);
+        END_ASSERT_FUN();
+        ASSERT_FUN(0U, 1U, 48U + 12U, 48U + 24U + 32U);
+        ASSERT_RET(RLOAD, GV(1), NA(), 0);
+        END_ASSERT_FUN();
+        ASSERT_VAR_I(1, 48U + 24U);
+        ASSERT_VAR_O(IARRAY64, 2U, 48U + 24U + 16U, 48U + 24U + 32U + 96U);
+        ASSERT_I(0, 0);
+        ASSERT_I(1, 1);
+        END_ASSERT_VAR_O();
+        END_ASSERT_PROG();
       }
 
       DEF_IMPL_COMP_TESTS(ImplCompiler);

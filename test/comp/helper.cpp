@@ -26,6 +26,7 @@ namespace letin
       {
         uint32_t opcode = ntohl(format_instr.opcode);
         if(instr != opcode_to_instr(opcode)) return false;
+        if(op != opcode_to_op(opcode)) return false;
         if(arg1.type != opcode_to_arg_type1(opcode)) return false;
         if(arg2.type != opcode_to_arg_type2(opcode)) return false;
         if(arg1.format_arg.i != ntohl(format_instr.arg1.i)) return false;

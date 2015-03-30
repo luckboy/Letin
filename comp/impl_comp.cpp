@@ -73,7 +73,7 @@ namespace letin
         { "fload2",     { OP_FLOAD2,    VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
         { "fneg",       { OP_FNEG,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
         { "fadd",       { OP_FADD,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
-        { "fsub",       { OP_FDIV,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "fsub",       { OP_FSUB,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
         { "fmul",       { OP_FMUL,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
         { "fdiv",       { OP_FDIV,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
         { "feq",        { OP_FEQ,       VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
@@ -239,6 +239,17 @@ namespace letin
         return true;
       }
 
+      static bool check_object_elems(const Object *object, Value::Type type1, Value::Type type2, list<Error> &errors)
+      {
+        for(auto &elem : object->elems()) {
+          if(elem.type() != type1 && elem.type() != type2) {
+            errors.push_back(Error(elem.pos(), "incorrect value"));
+            return false;
+          }
+        }
+        return true;
+      }
+
       static bool add_object_pairs_from_object(UngeneratedProgram &ungen_prog, const Object *object, list<Error> &errors)
       {
         size_t header_size = sizeof(format::Object) - 8;
@@ -249,12 +260,10 @@ namespace letin
           if(!check_object_elems(object, Value::TYPE_INT, errors)) return false;
           ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY16, header_size + object->elems().size() * 2)));
         } else if(object->type() == "iarray32") {
-          if(!check_object_elems(object, Value::TYPE_INT, errors) &&
-              !check_object_elems(object, Value::TYPE_FUN_INDEX, errors)) return false;
+          if(!check_object_elems(object, Value::TYPE_INT, Value::TYPE_FUN_INDEX, errors)) return false;
           ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY32, header_size + object->elems().size() * 4)));
         } else if(object->type() == "iarray64") {
-          if(!check_object_elems(object, Value::TYPE_INT, errors) &&
-              !check_object_elems(object, Value::TYPE_FUN_INDEX, errors)) return false;
+          if(!check_object_elems(object, Value::TYPE_INT, Value::TYPE_FUN_INDEX, errors)) return false;
           ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY64, header_size + object->elems().size() * 8)));
         } else if(object->type() == "sfarray") {
           if(!check_object_elems(object, Value::TYPE_FLOAT, errors)) return false;
