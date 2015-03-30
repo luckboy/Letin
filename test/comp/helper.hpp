@@ -92,6 +92,36 @@ ASSERT_INSTR(opcode::INSTR_LETTUPLE, opcode::OP_##op, arg1, arg2, local_var_coun
 #define END_ASSERT_OBJECT()                                                     \
 }
 
+#define ASSERT_RELOC(type, addr, symbol, offset)                                \
+{                                                                               \
+  const format::Relocation *tmp_reloc =                                         \
+    reinterpret_cast<const format::Relocation *>(tmp_ptr + offset);             \
+  CPPUNIT_ASSERT(is_reloc(type, addr, symbol, *tmp_reloc);                      \
+}
+
+#define ASSERT_RELOC_A1F(addr, offset)  ASSERT_RELOC(format::RELOC_TYPE_ARG1_FUN, addr, 0, offset)
+#define ASSERT_RELOC_A2F(addr, offset)  ASSERT_RELOC(format::RELOC_TYPE_ARG2_FUN, addr, 0, offset)
+#define ASSERT_RELOC_A1V(addr, offset)  ASSERT_RELOC(format::RELOC_TYPE_ARG1_VAR, addr, 0, offset)
+#define ASSERT_RELOC_A2V(addr, offset)  ASSERT_RELOC(format::RELOC_TYPE_ARG2_VAR, addr, 0, offset)
+#define ASSERT_RELOC_EF(addr, offset)   ASSERT_RELOC(format::RELOC_TYPE_ELEM_FUN, addr, 0, offset)
+#define ASSERT_RELOC_SA1F(addr, symbol, offset) ASSERT_RELOC(format::RELOC_TYPE_ARG1_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol, offset)
+#define ASSERT_RELOC_SA2F(addr, symbol, offset) ASSERT_RELOC(format::RELOC_TYPE_ARG2_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol, offset)
+#define ASSERT_RELOC_SA1V(addr, symbol, offset) ASSERT_RELOC(format::RELOC_TYPE_ARG1_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol, offset)
+#define ASSERT_RELOC_SA2V(addr, symbol, offset) ASSERT_RELOC(format::RELOC_TYPE_ARG2_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol, offset)
+#define ASSERT_RELOC_SEF(addr, symbol, offset) ASSERT_RELOC(format::RELOC_TYPE_ELEM_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol, offset)
+
+#define ASSERT_SYMBOL(type, name, index, offset)                                \
+{                                                                               \
+  const format::Symbol *tmp_symbol =                                            \
+    reinterpret_cast<const format::Symbol *>(tmp_ptr + offset);                 \
+  CPPUNIT_ASSERT(is_symbol(index, type, name, *tmp_symbol);                     \
+}
+
+#define ASSERT_SYMBOL_UF(name, offset)  ASSERT_SYMBOL(format::SYMBOL_TYPE_FUN, name, 0, offset)
+#define ASSERT_SYMBOL_UV(name, offset)  ASSERT_SYMBOL(format::SYMBOL_TYPE_VAR, name, 0, offset)
+#define ASSERT_SYMBOL_DF(name, index, offset) ASSERT_SYMBOL(format::SYMBOL_TYPE_FUN | format::SYMBOL_TYPE_DEFINED, name, index, offset)
+#define ASSERT_SYMBOL_DV(name, index, offset) ASSERT_SYMBOL(format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED, name, index, offset)
+
 #define ASSERT_HEADER_MAGIC()           CPPUNIT_ASSERT(equal(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, tmp_header->magic))
 #define ASSERT_HEADER_FIELD(i, field)   CPPUNIT_ASSERT_EQUAL(i, ntohl(tmp_header->field))
 #define ASSERT_HEADER_FLAGS(i)          ASSERT_HEADER_FIELD(i, flags)
@@ -151,6 +181,10 @@ namespace letin
       bool is_ref_value_in_object(const format::Object &object, std::size_t j);
 
       std::size_t object_addr_in_object(const format::Object &object, std::size_t j);
+
+      bool is_reloc(std::uint32_t type, std::uint32_t addr, std::uint32_t symbol, const format::Relocation &reloc);
+
+      bool is_symbol(std::uint32_t index, std::uint8_t type, const std::string &name, const format::Symbol &symbol);
     }
   }
 }

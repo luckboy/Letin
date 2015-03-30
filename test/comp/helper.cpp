@@ -122,6 +122,17 @@ namespace letin
             return 0;
         }
       }
+
+      bool is_reloc(uint32_t type, uint32_t addr, uint32_t symbol, const format::Relocation &reloc)
+      { return type == ntohl(reloc.type) && addr == ntohl(reloc.addr) && symbol == ntohl(reloc.symbol); }
+
+      bool is_symbol(uint32_t index, uint8_t type, const string &name, const format::Symbol &symbol)
+      {
+        if(index != ntohl(symbol.index)) return false;
+        if(type != symbol.type) return false;
+        if(name.length() != ntohs(symbol.length)) return false;
+        return equal(name.begin(), name.end(), symbol.name);
+      }
     }
   }
 }
