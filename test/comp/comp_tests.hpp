@@ -67,6 +67,7 @@ namespace letin
         CPPUNIT_TEST(test_compiler_complains_on_no_number_of_local_variables);
         CPPUNIT_TEST(test_compiler_complains_on_number_of_local_variables);
         CPPUNIT_TEST(test_compiler_compiles_unrelocatable_program);
+        CPPUNIT_TEST(test_compiler_compiles_relocatable_program);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Compiler *_M_comp;

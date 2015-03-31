@@ -224,6 +224,7 @@ namespace letin
 
       struct UngeneratedFunction
       {
+        uint32_t addr;
         format::Instruction *instrs;
         unordered_map<string, uint32_t> instr_addrs;
       };
@@ -512,10 +513,11 @@ namespace letin
           {
             format_value.type = VALUE_TYPE_INT;
             uint32_t u;
-            if(addr != nullptr)
+            if(addr != nullptr) {
               if(!get_fun_index_and_add_reloc(ungen_prog, u, value.fun(), format::RELOC_TYPE_ELEM_FUN, *addr, value.pos(), errors)) return false;
-            else
+            } else {
               if(!get_fun_index(ungen_prog, u, value.fun(), value.pos(), errors)) return false;
+            }
             format_value.i = static_cast<int32_t>(u);
             return true;
           }
@@ -622,7 +624,7 @@ namespace letin
               is_success = false;
             }
           } else {
-            if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type1, op_desc.arg_value_type1, ip, true, instr.pos(), errors))
+            if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type1, op_desc.arg_value_type1, ip + ungen_fun.addr, true, instr.pos(), errors))
               is_success = false;
           }
         } else {
@@ -634,7 +636,7 @@ namespace letin
         }
         if(!is_ignored_arg2) {
           if(instr.arg2() != nullptr) {
-            if(!arg_to_format_arg(ungen_prog, *(instr.arg2()), ungen_fun.instrs[ip].arg2, arg_type2, op_desc.arg_value_type2, ip, false, instr.pos(), errors))
+            if(!arg_to_format_arg(ungen_prog, *(instr.arg2()), ungen_fun.instrs[ip].arg2, arg_type2, op_desc.arg_value_type2, ip + ungen_fun.addr, false, instr.pos(), errors))
               is_success = false;
           } else {
             if(op_desc.arg_value_type2 != VALUE_TYPE_ERROR) {
@@ -698,7 +700,7 @@ namespace letin
         bool is_success = true;
         uint32_t arg_type;
         if(instr.arg1() != nullptr) {
-          if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type, VALUE_TYPE_INT, ip, true, instr.pos(), errors))
+          if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type, VALUE_TYPE_INT, ip + ungen_fun.addr, true, instr.pos(), errors))
             is_success = false;
         } else {
           errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
@@ -801,7 +803,7 @@ namespace letin
               uint32_t tmp_var_count = ungen_prog.var_pairs.size();
               ungen_prog.var_pairs.insert(make_pair(var_def->ident(), make_pair(tmp_var_count, var_def->value())));
               if(ungen_prog.is_relocable && var_def->modifier() == GLOBAL)
-                ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED, fun_def->ident(), tmp_var_count));
+                ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED, var_def->ident(), tmp_var_count));
             } else {
               errors.push_back(Error(var_def->pos(), "already defined variable " + var_def->ident()));
               is_success = false;
@@ -862,6 +864,7 @@ namespace letin
         size_t instr_addr = 0;
         for(auto &pair : ungen_prog.fun_pairs) {
           UngeneratedFunction ungen_fun;
+          ungen_fun.addr = instr_addr;
           ungen_fun.instr_addrs = unordered_map<string, uint32_t>();
           const Function &fun = pair.second.second;
           ungen_fun.instrs = code + instr_addr;
@@ -986,7 +989,8 @@ namespace letin
             case OBJECT_TYPE_TUPLE:
               for(auto &elem : object->elems()) {
                 format::Value format_value;
-                if(value_to_format_value(ungen_prog, elem, format_value, errors)) {
+                uint32_t elem_addr = i + 8 + j * 8;
+                if(value_to_format_value(ungen_prog, elem, format_value, errors, &elem_addr)) {
                   format_object->tes[j].i = htonll(format_value.i);
                   format_object->tuple_elem_types()[j] = format_value.type;
                 } else
@@ -1010,6 +1014,9 @@ namespace letin
         }
 
         if(ungen_prog.is_relocable) {
+          header->reloc_count = htonl(ungen_prog.relocs.size());
+          header->symbol_count = htonl(ungen_prog.symbols.size());
+
           format::Relocation *relocs = reinterpret_cast<format::Relocation *>(tmp_ptr);
           tmp_ptr += align(ungen_prog.relocs.size() * sizeof(format::Relocation), 8);
           uint8_t *symbols = tmp_ptr;

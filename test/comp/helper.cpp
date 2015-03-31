@@ -124,8 +124,39 @@ namespace letin
         }
       }
 
-      bool is_reloc(uint32_t type, uint32_t addr, uint32_t symbol, const format::Relocation &reloc)
-      { return type == ntohl(reloc.type) && addr == ntohl(reloc.addr) && symbol == ntohl(reloc.symbol); }
+      bool is_reloc(uint32_t type, uint32_t addr, const std::string &symbol_name, const format::Header &header, const format::Relocation *relocs, const uint8_t *symbols)
+      { 
+        uint32_t reloc_count = ntohl(header.reloc_count);
+        uint32_t symbol_count = ntohl(header.symbol_count);
+        for(uint32_t i = 0; i < reloc_count; i++) {
+          if(type == ntohl(relocs[i].type) && addr == ntohl(relocs[i].addr)) {
+            if((type & format::RELOC_TYPE_SYMBOLIC) != 0) {
+              for(uint32_t j = 0, k = 0; k < symbol_count; k++) {
+                const format::Symbol *symbol = reinterpret_cast<const format::Symbol *>(symbols + j);
+                uint16_t length = ntohs(symbol->length);
+                if(htonl(relocs[i].symbol) == k) {
+                  bool has_correct_type = false;
+                  switch(type & ~format::RELOC_TYPE_SYMBOLIC) {
+                    case format::RELOC_TYPE_ARG1_FUN:
+                    case format::RELOC_TYPE_ARG2_FUN:
+                    case format::RELOC_TYPE_ELEM_FUN:
+                      has_correct_type = (symbol->type == format::SYMBOL_TYPE_FUN);
+                      break;
+                    case format::RELOC_TYPE_ARG1_VAR:
+                    case format::RELOC_TYPE_ARG2_VAR:
+                      has_correct_type = (symbol->type == format::SYMBOL_TYPE_VAR);
+                      break;
+                  }
+                  return (has_correct_type && symbol_name.length() == length && equal(symbol_name.begin(), symbol_name.end(), symbol->name));
+                }
+                j += align(7 + length, 8);
+              }
+            } else
+              return true;
+          }
+        }
+        return false;
+      }
 
       bool is_symbol(uint32_t index, uint8_t type, const string &name, const format::Symbol &symbol)
       {

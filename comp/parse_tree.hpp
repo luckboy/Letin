@@ -450,7 +450,7 @@ namespace letin
 
         ~FunctionDefinition();
 
-        Modifier modifier() const { _M_modifier; }
+        Modifier modifier() const { return _M_modifier; }
 
         const std::string ident() const { return _M_ident; }
 
@@ -471,7 +471,7 @@ namespace letin
 
         ~VariableDefinition();
 
-        Modifier modifier() const { _M_modifier; }
+        Modifier modifier() const { return _M_modifier; }
 
         const std::string &ident() const { return _M_ident; }
 
