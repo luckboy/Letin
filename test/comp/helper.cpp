@@ -25,13 +25,9 @@ namespace letin
       bool is_instr(uint32_t instr, uint32_t op, const Argument &arg1, const Argument &arg2, uint32_t local_var_count, const format::Instruction &format_instr)
       {
         uint32_t opcode = ntohl(format_instr.opcode);
-        if(instr != opcode_to_instr(opcode)) return false;
-        if(op != opcode_to_op(opcode)) return false;
-        if(arg1.type != opcode_to_arg_type1(opcode)) return false;
-        if(arg2.type != opcode_to_arg_type2(opcode)) return false;
+        if(opcode::opcode(instr, op, arg1.type, arg2.type, local_var_count) != opcode) return false;
         if(arg1.format_arg.i != static_cast<int32_t>(ntohl(format_instr.arg1.i))) return false;
         if(arg2.format_arg.i != static_cast<int32_t>(ntohl(format_instr.arg2.i))) return false;
-        if(local_var_count != opcode_to_local_var_count(opcode)) return false;
         return true;
       }
 
