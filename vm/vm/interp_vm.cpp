@@ -363,7 +363,7 @@ namespace letin
             context.pop_args();
             if(!value.is_error()) {
               Reference r;
-              if(get_ref(context, r, value))
+              if(get_ref(context, r, value)) {
                 if((r->type() & ~OBJECT_TYPE_UNIQUE) == OBJECT_TYPE_TUPLE) {
                   uint32_t local_var_count = opcode_to_local_var_count(instr.opcode);
                   if(r->length() == local_var_count) {
@@ -375,6 +375,7 @@ namespace letin
                     context.set_error(ERROR_INCORRECT_OBJECT);
                 } else
                   context.set_error(ERROR_INCORRECT_OBJECT);
+              }
             }
             context.regs().tmp_ptr = nullptr;
             break;

@@ -522,6 +522,7 @@ namespace letin
             return true;
           }
         }
+        return false;
       }
 
       static bool arg_to_format_arg(UngeneratedProgram &ungen_prog, const Argument &arg, format::Argument &format_arg, uint32_t &format_arg_type, int value_type, uint32_t ip, bool is_first, const Position &instr_pos, list<Error> &errors)
@@ -584,6 +585,7 @@ namespace letin
             format_arg_type = ARG_TYPE_GVAR;
             return true;
         }
+        return false;
       }
 
       static bool generate_instr_with_op(UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int opcode_instr, list<Error> &errors)
@@ -1052,13 +1054,17 @@ namespace letin
       static void sort_errors(list<Error> &errors)
       {
         errors.sort([](const Error &error1, const Error &error2) {
-          if(error1.pos().source().file_name() < error2.pos().source().file_name())
+          if(error1.pos().source().file_name() < error2.pos().source().file_name()) {
             return true;
-          else if(error1.pos().source().file_name() == error2.pos().source().file_name())
+          } else if(error1.pos().source().file_name() == error2.pos().source().file_name()) {
             if(error1.pos().line() < error2.pos().line())
               return true;
             else if(error1.pos().line() == error2.pos().line())
               return error1.pos().column() < error2.pos().column();
+            else
+              return false;
+          } else
+            return false;
         });
       }
       

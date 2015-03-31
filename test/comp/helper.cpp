@@ -29,17 +29,17 @@ namespace letin
         if(op != opcode_to_op(opcode)) return false;
         if(arg1.type != opcode_to_arg_type1(opcode)) return false;
         if(arg2.type != opcode_to_arg_type2(opcode)) return false;
-        if(arg1.format_arg.i != ntohl(format_instr.arg1.i)) return false;
-        if(arg2.format_arg.i != ntohl(format_instr.arg2.i)) return false;
+        if(arg1.format_arg.i != static_cast<int32_t>(ntohl(format_instr.arg1.i))) return false;
+        if(arg2.format_arg.i != static_cast<int32_t>(ntohl(format_instr.arg2.i))) return false;
         if(local_var_count != opcode_to_local_var_count(opcode)) return false;
         return true;
       }
 
       bool is_object(int32_t type, uint32_t length, const format::Object &object)
-      { return type == ntohl(object.type) && length == ntohl(object.length); }
+      { return type == static_cast<int32_t>(ntohl(object.type)) && length == ntohl(object.length); }
       
       bool is_int_value(int64_t i, const format::Value &value)
-      { return VALUE_TYPE_INT == ntohl(value.type) && i == ntohll(value.i); }
+      { return VALUE_TYPE_INT == ntohl(value.type) && i == static_cast<int64_t>(ntohll(value.i)); }
 
       bool is_float_value(double f, const format::Value &value)
       { 
@@ -62,9 +62,9 @@ namespace letin
           case OBJECT_TYPE_IARRAY32:
             return i == ntohl(object.is32[j]);
           case OBJECT_TYPE_IARRAY64:
-            return i == ntohll(object.is64[j]);
+            return i == static_cast<int64_t>(ntohll(object.is64[j]));
           case OBJECT_TYPE_TUPLE:
-            return VALUE_TYPE_INT == object.tets[ntohl(object.length) * 8 + j] && i == ntohll(object.tes[j].i);
+            return VALUE_TYPE_INT == object.tets[ntohl(object.length) * 8 + j] && i == static_cast<int64_t>(ntohll(object.tes[j].i));
           default:
             return false;
         }

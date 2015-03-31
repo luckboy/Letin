@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     return 1;
   }
   Reference ref(vm->gc()->new_immortal_object(OBJECT_TYPE_RARRAY, argc - 2));
-  for(size_t i = 2; i < argc; i++) {
+  for(int i = 2; i < argc; i++) {
     size_t arg_length = strlen(argv[i]);
     Reference arg_ref(vm->gc()->new_immortal_object(OBJECT_TYPE_IARRAY8, arg_length));
     for(size_t j = 0; j < arg_length; j++) arg_ref->set_elem(j, Value(argv[i][j]));

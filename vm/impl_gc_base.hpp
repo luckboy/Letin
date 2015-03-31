@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -56,8 +56,8 @@ namespace letin
         std::condition_variable _M_interval_cv;
       public:
         ImplGarbageCollectorBase(Allocator *alloc, unsigned int interval_usecs) :
-          GarbageCollector(alloc), _M_is_started(false), _M_interval_usecs(interval_usecs),
-          _M_threads(_M_thread_contexts) {}
+          GarbageCollector(alloc), _M_threads(_M_thread_contexts), _M_is_started(false),
+          _M_interval_usecs(interval_usecs) {}
 
         ~ImplGarbageCollectorBase();
 

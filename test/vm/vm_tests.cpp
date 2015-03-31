@@ -360,6 +360,7 @@ namespace letin
         END_PROG();
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
         bool is_success = false;
         bool is_expected = false;
         Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {

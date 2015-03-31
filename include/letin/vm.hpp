@@ -235,7 +235,7 @@ namespace letin
 
       bool set_elem(std::size_t i, const Value &value);
 
-      Value operator[](std::size_t i) const { elem(i); }
+      Value operator[](std::size_t i) const { return elem(i); }
 
       std::size_t length() const { return _M_raw.length; }
     };

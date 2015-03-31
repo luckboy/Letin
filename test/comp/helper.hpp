@@ -18,6 +18,12 @@
 #include <letin/opcode.hpp>
 #include "util.hpp"
 
+#ifdef __GNUC__
+#define __UNUSED__                    __attribute__((unused))
+#else
+#define __UNUSED__
+#endif
+
 #define IMM(x)                          Argument(x)
 #define LV(i)                           Argument(opcode::ARG_TYPE_LVAR, i)
 #define A(i)                            Argument(opcode::ARG_TYPE_ARG, i)
@@ -44,7 +50,7 @@ ASSERT_INSTR(opcode::INSTR_LETTUPLE, opcode::OP_##op, arg1, arg2, local_var_coun
   const format::Instruction *tmp_instrs =                                       \
     reinterpret_cast<const format::Instruction *>(tmp_ptr + code_offset) +      \
     tmp_instr_addr;                                                             \
-  size_t tmp_reloc_addr_offset = tmp_instr_addr;                                \
+  size_t tmp_reloc_addr_offset __UNUSED__ = tmp_instr_addr;                     \
   CPPUNIT_ASSERT(is_fun(arg_count, instr_count, *tmp_fun))
 #define END_ASSERT_FUN()                                                        \
 }
@@ -67,7 +73,8 @@ ASSERT_INSTR(opcode::INSTR_LETTUPLE, opcode::OP_##op, arg1, arg2, local_var_coun
     reinterpret_cast<const format::Value *>(tmp_ptr + var_offset);              \
   CPPUNIT_ASSERT(is_ref_value(*tmp_value));                                     \
   size_t tmp_object_offset = data_offset + ntohll(tmp_value->addr);             \
-  size_t tmp_reloc_addr_offset = ntohll(tmp_value->addr);                       \
+  size_t tmp_reloc_addr_offset __UNUSED__ =                                     \
+    static_cast<size_t>(ntohll(tmp_value->addr));                               \
   ASSERT_OBJECT(type, length, tmp_object_offset)
 #define END_ASSERT_VAR_O()                                                      \
   END_ASSERT_OBJECT();                                                          \
@@ -80,7 +87,8 @@ ASSERT_INSTR(opcode::INSTR_LETTUPLE, opcode::OP_##op, arg1, arg2, local_var_coun
   CPPUNIT_ASSERT(is_ref_value_in_object(*tmp_object, j));                       \
   size_t tmp_object_offset = data_offset +                                      \
     object_addr_in_object(*tmp_object, j);                                      \
-  size_t tmp_reloc_addr_offset = object_addr_in_object(*tmp_object, j);         \
+  size_t tmp_reloc_addr_offset __UNUSED__ =                                     \
+    object_addr_in_object(*tmp_object, j);                                      \
   ASSERT_OBJECT(type, length, tmp_object_offset)
 #define END_ASSERT_O()                                                          \
   END_ASSERT_OBJECT();                                                          \

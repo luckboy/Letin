@@ -5,6 +5,7 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <algorithm>
 #include <atomic>
@@ -275,7 +276,7 @@ namespace letin
           is_success = false;
           continue;
         }
-        if(stat_buf.st_size > numeric_limits<size_t>::max()) {
+        if(stat_buf.st_size > numeric_limits<ssize_t>::max()) {
           if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_IO));
           is_success = false;
           continue;

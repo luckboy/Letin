@@ -44,7 +44,7 @@ namespace letin
           _M_file_name = _M_source.file_name();
           SourceStream ss(_M_source.open());
           if(!ss.istream().good()) {
-            if(i + 1 >= _M_include_dirs.size()) {
+            if(static_cast<size_t>(i + 1) >= _M_include_dirs.size()) {
               result = false;
               break;
             }
