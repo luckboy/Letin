@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -102,15 +102,15 @@ namespace letin
 #else
       std::uint64_t sign_bit = std::signbit(x) ? 1 : 0;
       if(std::isinf(x)) {
-        y.word = (sign_bit << 63) | 0xfff0000000000000LL;
+        y.dword = (sign_bit << 63) | 0xfff0000000000000LL;
       } else if(std::isnan(x)) {
-        y.word = (sign_bit << 63) | 0x7fffffffffffffffLL;
+        y.dword = (sign_bit << 63) | 0x7fffffffffffffffLL;
       } else {
         int exp;
         double fract = std::frexp(x, &exp);
         std::uint64_t biased_exp = exp + 1023;
         std::uint64_t matissa = static_cast<std::uint64_t>(std::ldexp(fract - 1.0, 52));
-        y.word = (sign_bit << 31) | (biased_exp << 23) | matissa;
+        y.dword = (sign_bit << 31) | (biased_exp << 23) | matissa;
       }
 #endif
       return y;
