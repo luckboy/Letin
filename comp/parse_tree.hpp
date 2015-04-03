@@ -431,8 +431,8 @@ namespace letin
 
       enum Modifier
       {
-        LOCAL,
-        GLOBAL
+        PRIVATE,
+        PUBLIC
       };
 
       class FunctionDefinition : public Definition
@@ -443,7 +443,7 @@ namespace letin
         Position _M_pos;
       public:
         FunctionDefinition(const std::string &ident, const Function &fun, const Position &pos) :
-          Definition(pos), _M_modifier(LOCAL), _M_ident(ident), _M_fun(fun) {}
+          Definition(pos), _M_modifier(PRIVATE), _M_ident(ident), _M_fun(fun) {}
 
         FunctionDefinition(Modifier modifier, const std::string &ident, const Function &fun, const Position &pos) :
           Definition(pos), _M_modifier(modifier), _M_ident(ident), _M_fun(fun) {}
@@ -464,7 +464,7 @@ namespace letin
         Value _M_value;
       public:
         VariableDefinition(const std::string &ident, const Value &value, const Position &pos) :
-          Definition(pos), _M_modifier(LOCAL), _M_ident(ident), _M_value(value) {}
+          Definition(pos), _M_modifier(PRIVATE), _M_ident(ident), _M_value(value) {}
 
         VariableDefinition(Modifier modifier, const std::string &ident, const Value &value, const Position &pos) :
           Definition(pos), _M_modifier(modifier), _M_ident(ident), _M_value(value) {}

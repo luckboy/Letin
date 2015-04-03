@@ -792,7 +792,7 @@ namespace letin
             if(ungen_prog.fun_pairs.find(fun_def->ident()) == ungen_prog.fun_pairs.end()) {
               uint32_t tmp_fun_count = ungen_prog.fun_pairs.size();
               ungen_prog.fun_pairs.insert(make_pair(fun_def->ident(), make_pair(tmp_fun_count, fun_def->fun())));
-              if(ungen_prog.is_relocable && fun_def->modifier() == GLOBAL)
+              if(ungen_prog.is_relocable && fun_def->modifier() == PUBLIC)
                 ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_FUN | format::SYMBOL_TYPE_DEFINED, fun_def->ident(), tmp_fun_count));
             } else {
               errors.push_back(Error(fun_def->pos(), "already defined function " + fun_def->ident()));
@@ -804,7 +804,7 @@ namespace letin
             if(ungen_prog.var_pairs.find(var_def->ident()) == ungen_prog.var_pairs.end()) {
               uint32_t tmp_var_count = ungen_prog.var_pairs.size();
               ungen_prog.var_pairs.insert(make_pair(var_def->ident(), make_pair(tmp_var_count, var_def->value())));
-              if(ungen_prog.is_relocable && var_def->modifier() == GLOBAL)
+              if(ungen_prog.is_relocable && var_def->modifier() == PUBLIC)
                 ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED, var_def->ident(), tmp_var_count));
             } else {
               errors.push_back(Error(var_def->pos(), "already defined variable " + var_def->ident()));

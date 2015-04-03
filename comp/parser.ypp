@@ -85,7 +85,7 @@
 %token                  ENTRY
 %token                  DEFINE
 %token                  INCLUDE
-%token                  GLOBAL
+%token                  PUBLIC
 %type <string>          ident
 %type <num_value>       num_value
 %type <arg_value>       arg_value
@@ -153,8 +153,8 @@ def:            fun_def                         { driver.parse_tree().add_def(*$
 fun_def:        ident '(' A ')' '=' onl '{' '\n' fun_lines '\n' '}' {
   $$ = new std::shared_ptr<Definition>(new FunctionDefinition(*$1, Function($3, *$9, P(@1)), P(@1)));
 }
-|               GLOBAL onl ident '(' A ')' '=' onl '{' '\n' fun_lines '\n' '}' {
-  $$ = new std::shared_ptr<Definition>(new FunctionDefinition(GLOBAL, *$3, Function($5, *$11, P(@1)), P(@1)));
+|               PUBLIC onl ident '(' A ')' '=' onl '{' '\n' fun_lines '\n' '}' {
+  $$ = new std::shared_ptr<Definition>(new FunctionDefinition(PUBLIC, *$3, Function($5, *$11, P(@1)), P(@1)));
 }
 ;
 
@@ -202,8 +202,8 @@ arg_value:      expr                            { $$ = new ArgumentValue(*$1); }
 var_def:        ident '=' onl value             {
   $$ = new std::shared_ptr<Definition>(new VariableDefinition(*$1, *$4, P(@1)));
 }
-|               GLOBAL onl ident '=' onl value   {
-  $$ = new std::shared_ptr<Definition>(new VariableDefinition(GLOBAL, *$3, *$6, P(@1)));
+|               PUBLIC onl ident '=' onl value   {
+  $$ = new std::shared_ptr<Definition>(new VariableDefinition(PUBLIC, *$3, *$6, P(@1)));
 }
 ;
 

@@ -1168,7 +1168,7 @@ b = [&f, &g]\n\
       {
         istringstream iss("\n\
 .entry f\n\
-.global\n\
+.public\n\
 f(a0) = {\n\
         let iadd &f, b\n\
         let iadd a, &g\n\
@@ -1176,7 +1176,7 @@ f(a0) = {\n\
         ret iadd lv0, lv1\n\
 }\n\
 \n\
-.global\n\
+.public\n\
 g(a0) = {\n\
         let iadd &i, f\n\
         let iadd g, &h\n\
@@ -1184,11 +1184,9 @@ g(a0) = {\n\
         ret iadd lv0, lv1\n\
 }\n\
 \n\
-.global\n\
-a = 1\n\
+.public a = 1\n\
 \n\
-.global\n\
-b = 2\n\
+.public b = 2\n\
 \n\
 c = iarray32[&f, &g, &h, &i]\n\
 \n\

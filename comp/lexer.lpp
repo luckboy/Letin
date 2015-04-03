@@ -74,7 +74,7 @@
 
 ".include"                      { return token::INCLUDE; }
 
-".global"                       { return token::GLOBAL; }
+".public"                       { return token::PUBLIC; }
 
 "a"[0-9]+                       {
   std::istringstream iss(yytext + 1);
