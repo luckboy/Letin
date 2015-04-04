@@ -7,8 +7,8 @@
  ****************************************************************************/
 %skeleton "glr.cc"
 %defines
-%define api.namespace { letin::comp::impl }
-%define parser_class_name { Parser }
+%define namespace "letin::comp::impl"
+%define parser_class_name "Parser"
 
 %code requires {
 #include <cstddef>
@@ -34,8 +34,11 @@
   }
 }
 
-%param { letin::comp::impl::Driver &driver }
-%param { letin::comp::impl::Lexer &lexer }
+%lex-param { letin::comp::impl::Driver &driver }
+%lex-param { letin::comp::impl::Lexer &lexer }
+
+%parse-param { letin::comp::impl::Driver &driver }
+%parse-param { letin::comp::impl::Lexer &lexer }
 
 %code {
 #define yyparse         LetinCompImplparse

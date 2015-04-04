@@ -20,6 +20,7 @@
 %option c++
 %option yyclass="letin::comp::impl::Lexer"
 %option prefix="LetinCompImpl"
+%option noyywrap
 
 %x IN_COMMENT
 %x IN_CHAR
@@ -162,8 +163,6 @@
 "\n"+                           { loc->lines(std::strlen(yytext)); return '\n'; }
 
 %%
-
-int LetinCompImplFlexLexer::yywrap() { return 1; }
 
 namespace letin
 {

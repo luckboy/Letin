@@ -7,10 +7,10 @@
  ****************************************************************************/
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <climits>
 #include <cstring>
 #include <string>
 #include <dirent.h>
-#include <limits>
 #include <memory>
 #include <unistd.h>
 #include "fs_util.hpp"

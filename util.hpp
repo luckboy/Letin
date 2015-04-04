@@ -11,8 +11,24 @@
 #include <netinet/in.h>
 #include <cstdint>
 #include <cmath>
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+#include <sys/endian.h>
+#else
 #include <endian.h>
+#endif
+#include <limits>
 #include <letin/format.hpp>
+
+#if !defined(__BYTE_ORDER) && !defined(_BYTE_ORDER)
+#error "Undefined byte order."
+#endif
+
+#ifndef __BYTE_ORDER
+#define __LITTLE_ENDIAN         _LITTLE_ENDIAN
+#define __BIG_ENDIAN            _BIG_ENDIAN
+#define __PDP_ENDIAN            _PDP_ENDIAN
+#define __BYTE_ORDER            _BYTE_ORDER
+#endif
 
 namespace letin
 {
@@ -36,83 +52,83 @@ namespace letin
 
     static inline float format_float_to_float(const format::Float &x)
     {
-#if defined(__STDC_IEC_559__) && (__SIZEOF_FLOAT__ == 4)
-      return *(reinterpret_cast<const float *>(&(x.word)));
-#else
-      float sign = (x.word & 0x80000000) != 0 ? -1.0f : 1.0f;
-      if(((x.word >> 23) & 0xff) != 255) {
-        int exp = static_cast<unsigned int>((x.word >> 23) & 0xff) - 127;
-        float fract = std::ldexp(static_cast<float>(x.word & 0x007fffff), -23) + 1.0f;
-        return std::ldexp(sign * fract, exp);
+      if(std::numeric_limits<float>::is_iec559 && sizeof(float) == 4) {
+        return *(reinterpret_cast<const float *>(&(x.word)));
       } else {
-        if((x.word & 0x007fffff) == 0)
-          return sign * INFINITY;
-        else
-          return NAN;
+        float sign = (x.word & 0x80000000) != 0 ? -1.0f : 1.0f;
+        if(((x.word >> 23) & 0xff) != 255) {
+          int exp = static_cast<unsigned int>((x.word >> 23) & 0xff) - 127;
+          float fract = std::ldexp(static_cast<float>(x.word & 0x007fffff), -23) + 1.0f;
+          return std::ldexp(sign * fract, exp);
+        } else {
+          if((x.word & 0x007fffff) == 0)
+            return sign * std::numeric_limits<float>::infinity();
+          else
+            return std::numeric_limits<float>::quiet_NaN();
+        }
       }
-#endif
     }
 
     static inline double format_double_to_double(const format::Double &x)
     {
-#if defined(__STDC_IEC_559__) && (__SIZEOF_DOUBLE__ == 8)
-      return *(reinterpret_cast<const double *>(&(x.dword)));
-#else
-      double sign = (x.dword & 0x8000000000000000LL) != 0 ? -1.0 : 1.0;
-      if(((x.dword >> 52) & 0x7ff) != 2047) {
-        int exp = static_cast<unsigned int>((x.dword >> 52) & 0x7ff) - 1023;
-        double fract = std::ldexp(static_cast<double>(x.dword & 0x000fffffffffffffLL), -52) + 1.0;
-        return std::ldexp(sign * fract, exp);
+      if(std::numeric_limits<double>::is_iec559 && sizeof(double) == 8) {
+        return *(reinterpret_cast<const double *>(&(x.dword)));
       } else {
-        if((x.dword & 0x000fffffffffffffLL) == 0)
-          return sign * INFINITY;
-        else
-          return NAN;
+        double sign = (x.dword & 0x8000000000000000LL) != 0 ? -1.0 : 1.0;
+        if(((x.dword >> 52) & 0x7ff) != 2047) {
+          int exp = static_cast<unsigned int>((x.dword >> 52) & 0x7ff) - 1023;
+          double fract = std::ldexp(static_cast<double>(x.dword & 0x000fffffffffffffLL), -52) + 1.0;
+          return std::ldexp(sign * fract, exp);
+        } else {
+          if((x.dword & 0x000fffffffffffffLL) == 0)
+            return sign * std::numeric_limits<double>::infinity();
+          else
+            return std::numeric_limits<double>::quiet_NaN();
+        }
       }
-#endif
     }
     
     static inline format::Float float_to_format_float(float x)
     {
       format::Float y;
-#if defined(__STDC_IEC_559__) && (__SIZEOF_FLOAT__ == 4)
-      *reinterpret_cast<float *>(&(y.word)) = x;
-#else
-      std::uint32_t sign_bit = std::signbit(x) ? 1 : 0;
-      if(std::isinf(x)) {
-        y.word = (sign_bit << 31) | 0x7f800000;
-      } else if(std::isnan(x)) {
-        y.word = (sign_bit << 31) | 0x7fffffff;
+      if(std::numeric_limits<float>::is_iec559 && sizeof(double) == 8) {
+        *reinterpret_cast<float *>(&(y.word)) = x;
       } else {
-        int exp;
-        float fract = std::frexp(x, &exp);
-        std::uint32_t biased_exp = exp + 127;
-        std::uint32_t matissa = static_cast<std::uint32_t>(std::ldexp(fract - 1.0f, 23));
-        y.word = (sign_bit << 31) | (biased_exp << 23) | matissa;
+        std::uint32_t sign_bit = std::signbit(x) ? 1 : 0;
+        if(std::isinf(x)) {
+          y.word = (sign_bit << 31) | 0x7f800000;
+        } else if(std::isnan(x)) {
+          y.word = (sign_bit << 31) | 0x7fffffff;
+        } else {
+          int exp;
+          float fract = std::frexp(x, &exp);
+          std::uint32_t biased_exp = exp + 127;
+          std::uint32_t matissa = static_cast<std::uint32_t>(std::ldexp(fract - 1.0f, 23));
+          y.word = (sign_bit << 31) | (biased_exp << 23) | matissa;
+        }
       }
-#endif
       return y;
     }
 
     static inline format::Double double_to_format_double(double x)
     {
       format::Double y;
-#if defined(__STDC_IEC_559__) && (__SIZEOF_DOUBLE__ == 8)
-      *reinterpret_cast<double *>(&(y.dword)) = x;
-#else
-      std::uint64_t sign_bit = std::signbit(x) ? 1 : 0;
-      if(std::isinf(x)) {
-        y.dword = (sign_bit << 63) | 0xfff0000000000000LL;
-      } else if(std::isnan(x)) {
-        y.dword = (sign_bit << 63) | 0x7fffffffffffffffLL;
+      if(std::numeric_limits<double>::is_iec559 && sizeof(double) == 8) {
+        *reinterpret_cast<double *>(&(y.dword)) = x;
       } else {
-        int exp;
-        double fract = std::frexp(x, &exp);
-        std::uint64_t biased_exp = exp + 1023;
-        std::uint64_t matissa = static_cast<std::uint64_t>(std::ldexp(fract - 1.0, 52));
-        y.dword = (sign_bit << 31) | (biased_exp << 23) | matissa;
+        std::uint64_t sign_bit = std::signbit(x) ? 1 : 0;
+        if(std::isinf(x)) {
+          y.dword = (sign_bit << 63) | 0xfff0000000000000LL;
+        } else if(std::isnan(x)) {
+          y.dword = (sign_bit << 63) | 0x7fffffffffffffffLL;
+        } else {
+          int exp;
+          double fract = std::frexp(x, &exp);
+          std::uint64_t biased_exp = exp + 1023;
+          std::uint64_t matissa = static_cast<std::uint64_t>(std::ldexp(fract - 1.0, 52));
+          y.dword = (sign_bit << 31) | (biased_exp << 23) | matissa;
+        }
       }
-#endif
       return y;
     }
 
