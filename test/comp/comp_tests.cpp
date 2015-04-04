@@ -1032,7 +1032,6 @@ f(a5) = {\n\
         sources.push_back(Source("test.letins", iss));
         list<Error> errors;
         unique_ptr<Program> prog(_M_comp->compile(sources, errors));
-        for(auto error : errors) cout << error << endl;
         CPPUNIT_ASSERT(nullptr != prog.get());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 144), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
@@ -1131,7 +1130,6 @@ b = [&f, &g]\n\
         sources.push_back(Source("test.letins", iss));
         list<Error> errors;
         unique_ptr<Program> prog(_M_comp->compile(sources, errors, false));
-        for(auto error : errors) cout << error << endl;
         CPPUNIT_ASSERT(nullptr != prog.get());
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 24 + 32 + 96 + 24), (*(prog.get())));
@@ -1198,7 +1196,6 @@ e = (&f, &g, &h, &i)\n\
         sources.push_back(Source("test.letins", iss));
         list<Error> errors;
         unique_ptr<Program> prog(_M_comp->compile(sources, errors));
-        for(auto error : errors) cout << error << endl;
         CPPUNIT_ASSERT(nullptr != prog.get());
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 24 + 80 + 96 + 112 + 240 + 64), (*(prog.get())));
