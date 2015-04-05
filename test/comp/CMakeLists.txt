@@ -1,3 +1,4 @@
+include_directories("${CPPUNIT_INCLUDE_DIR}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(../../comp)
 include_directories(../..)
