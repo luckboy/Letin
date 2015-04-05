@@ -85,7 +85,10 @@ namespace letin
         void copy_union(const ArgumentValue &value);
 
         void destruct_union()
-        { if(_M_type == TYPE_FUN_INDEX) _M_fun.std::string::~string(); }
+        { 
+          using namespace std;
+          if(_M_type == TYPE_FUN_INDEX) _M_fun.~string();
+        }
       public:
         ArgumentValue &operator=(const ArgumentValue &value)
         {
