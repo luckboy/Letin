@@ -8,6 +8,22 @@
 #ifndef _LETIN_CONST_HPP
 #define _LETIN_CONST_HPP
 
+#ifdef ERROR_SUCCESS
+#define __ERROR_SUCCESS                 ERROR_SUCCESS
+#undef ERROR_SUCCESS
+const int ERROR_SUCCESS =               __ERROR_SUCCESS;
+#undef ERROR_SUCCESS
+#undef __ERROR_SUCCESS
+#endif
+
+#ifdef ERROR_STACK_OVERFLOW
+#define __ERROR_STACK_OVERFLOW          ERROR_STACK_OVERFLOW
+#undef ERROR_STACK_OVERFLOW
+const int ERROR_STACK_OVERFLOW =        __ERROR_STACK_OVERFLOW;
+#undef ERROR_STACK_OVERFLOW
+#undef __ERROR_STACK_OVERFLOW
+#endif
+
 namespace letin
 {
   const int VALUE_TYPE_INT =            0;

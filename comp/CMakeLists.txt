@@ -17,7 +17,10 @@ aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}" comp_sources)
 
 add_library(letincomp SHARED ${comp_sources})
 add_dependencies(letincomp lexer parser)
-
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+	target_link_libraries(letincomp ws2_32)
+endif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+	
 add_library(letincomp_static STATIC ${comp_sources})
 add_dependencies(letincomp_static lexer parser)
 set_target_properties(letincomp_static PROPERTIES OUTPUT_NAME letincomp)

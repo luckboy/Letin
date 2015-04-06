@@ -8,19 +8,32 @@
 #ifndef _UTIL_HPP
 #define _UTIL_HPP
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <winsock2.h>
+#else
 #include <netinet/in.h>
+#endif
 #include <cstdint>
 #include <cmath>
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 #include <sys/endian.h>
 #else
+#if !defined(_WIN32) && !defined(_WIN64)
 #include <endian.h>
+#endif
 #endif
 #include <limits>
 #include <letin/format.hpp>
 
 #if !defined(__BYTE_ORDER) && !defined(_BYTE_ORDER)
+#if defined(_WIN32) || defined(_WIN64)
+#define __LITTLE_ENDIAN         1234
+#define __BIG_ENDIAN            4321
+#define __PDP_ENDIAN            3412
+#define __BYTE_ORDER            __LITTLE_ENDIAN
+#else
 #error "Undefined byte order."
+#endif
 #endif
 
 #ifndef __BYTE_ORDER
@@ -38,7 +51,7 @@ namespace letin
     {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
       return (static_cast<std::uint64_t>(htonl(x & 0xffffffffL)) << 32) | htonl(x >> 32);
-#elif  __BYTE_ORDER == __BIG_ENDIAN
+#elif __BYTE_ORDER == __BIG_ENDIAN
       return x;
 #else
 #error "Unsupported byte order."

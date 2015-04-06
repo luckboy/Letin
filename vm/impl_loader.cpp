@@ -5,7 +5,11 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
+#if defined(_WIN32) || defined(_WIN64)
+#include <winsock2.h>
+#else
 #include <netinet/in.h>
+#endif
 #include <algorithm>
 #include <set>
 #include <letin/const.hpp>

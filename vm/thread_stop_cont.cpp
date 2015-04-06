@@ -1,14 +1,21 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
+#if defined(__unix__)
 #include <csignal>
 #include <mutex>
 #include <pthread.h>
 #include <semaphore.h>
+#elif defined(_WIN32) || defined(_WIN64)
+#if defined(__MINGW32__) || defined(__MINGW64__)
+#include <pthread.h>
+#endif
+#include <windows.h>
+#endif
 #include <thread>
 #include "thread_stop_cont.hpp"
 
@@ -20,6 +27,12 @@ namespace letin
   {
     namespace priv
     {
+#if defined(__unix__)
+
+      //
+      // An implementation for Unix-like systems.
+      //
+
       class ThreadStopCont
       {
       public:
@@ -91,6 +104,48 @@ namespace letin
         fun([stop_cont](thread &thr) { ::sem_wait(&(stop_cont->continuing_sem)); });
         is_stopping = false;
       }
+
+#elif defined(_WIN32) || defined(_WIN64)
+
+      //
+      // An implementation for Windows.
+      //
+      
+      class ThreadStopCont {};
+
+      void initialize_thread_stop_cont() {}
+
+      void finalize_thread_stop_cont() {}
+
+      ThreadStopCont *new_thread_stop_cont() { return nullptr; }
+
+      void delete_thread_stop_cont(ThreadStopCont *stop_cont) {}
+
+      void stop_threads(ThreadStopCont *stop_cont, function<void (function<void (thread &)>)> fun)
+      {
+        fun([](thread &thr) {
+#if defined(__MINGW32__) || defined(__MINGW64__)
+          ::HANDLE handle = reinterpret_cast<::HANDLE>(::pthread_gethandle(thr.native_handle()));
+#else
+          ::HANDLE handle = thr.native_handle();
+#endif
+          ::SuspendThread(handle);
+        });
+      }
+
+      void continue_threads(ThreadStopCont *stop_cont, function<void (function<void (thread &)>)> fun)
+      {
+        fun([](thread &thr) {
+#if defined(__MINGW32__) || defined(__MINGW64__)
+          ::HANDLE handle = reinterpret_cast<::HANDLE>(::pthread_gethandle(thr.native_handle()));
+#else
+          ::HANDLE handle = thr.native_handle();
+#endif
+          ::ResumeThread(handle);
+        });
+      }
+
+#endif
     }
   }
 }
