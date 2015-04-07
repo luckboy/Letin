@@ -43,6 +43,18 @@
 #define __BYTE_ORDER            _BYTE_ORDER
 #endif
 
+#ifndef __FLOAT_WORD_ORDER
+#ifndef __FLOAT_WORD_ORDER__
+#define __FLOAT_WORD_ORDER      __FLOAT_WORD_ORDER__
+#else
+#define __FLOAT_WORD_ORDER      __BYTE_ORDER
+#endif
+#endif
+
+#if __FLOAT_WORD_ORDER != __LITTLE_ENDIAN && __FLOAT_WORD_ORDER != __BIG_ENDIAN
+#error "Unsupported float word order."
+#endif
+
 namespace letin
 {
   namespace util
@@ -66,7 +78,13 @@ namespace letin
     static inline float format_float_to_float(const format::Float &x)
     {
       if(std::numeric_limits<float>::is_iec559 && sizeof(float) == 4) {
+#if __FLOAT_WORD_ORDER == __BYTE_ORDER
         return *(reinterpret_cast<const float *>(&(x.word)));
+#else
+        format::Float tmp;
+        tmp.word = htonl(x.word);
+        return *(reinterpret_cast<const float *>(&(tmp.word)));
+#endif
       } else {
         float sign = (x.word & 0x80000000) != 0 ? -1.0f : 1.0f;
         if(((x.word >> 23) & 0xff) != 255) {
@@ -85,7 +103,13 @@ namespace letin
     static inline double format_double_to_double(const format::Double &x)
     {
       if(std::numeric_limits<double>::is_iec559 && sizeof(double) == 8) {
+#if __FLOAT_WORD_ORDER == __BYTE_ORDER
         return *(reinterpret_cast<const double *>(&(x.dword)));
+#else
+        format::Double tmp;
+        tmp.dword = htonll(x.dword);
+        return *(reinterpret_cast<const float *>(&(tmp.dword)));
+#endif
       } else {
         double sign = (x.dword & 0x8000000000000000LL) != 0 ? -1.0 : 1.0;
         if(((x.dword >> 52) & 0x7ff) != 2047) {
@@ -104,8 +128,11 @@ namespace letin
     static inline format::Float float_to_format_float(float x)
     {
       format::Float y;
-      if(std::numeric_limits<float>::is_iec559 && sizeof(double) == 8) {
+      if(std::numeric_limits<float>::is_iec559 && sizeof(float) == 4) {
         *reinterpret_cast<float *>(&(y.word)) = x;
+#if __FLOAT_WORD_ORDER != __BYTE_ORDER
+        y.word = ntohl(y.word);
+#endif
       } else {
         std::uint32_t sign_bit = std::signbit(x) ? 1 : 0;
         if(std::isinf(x)) {
@@ -128,6 +155,9 @@ namespace letin
       format::Double y;
       if(std::numeric_limits<double>::is_iec559 && sizeof(double) == 8) {
         *reinterpret_cast<double *>(&(y.dword)) = x;
+#if __FLOAT_WORD_ORDER != __BYTE_ORDER
+        y.dword = ntohll(y.dword);
+#endif
       } else {
         std::uint64_t sign_bit = std::signbit(x) ? 1 : 0;
         if(std::isinf(x)) {
