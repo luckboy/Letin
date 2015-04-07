@@ -78,13 +78,16 @@ namespace letin
     static inline float format_float_to_float(const format::Float &x)
     {
       if(std::numeric_limits<float>::is_iec559 && sizeof(float) == 4) {
+        if(!((x.word & 0x7fc00000) == 0x7f800000 && (x.word & 0x007fffff) != 0)) {
 #if __FLOAT_WORD_ORDER == __BYTE_ORDER
-        return *(reinterpret_cast<const float *>(&(x.word)));
+          return *(reinterpret_cast<const float *>(&(x.word)));
 #else
-        format::Float tmp;
-        tmp.word = htonl(x.word);
-        return *(reinterpret_cast<const float *>(&(tmp.word)));
+          format::Float tmp;
+          tmp.word = htonl(x.word);
+          return *(reinterpret_cast<const float *>(&(tmp.word)));
 #endif
+        } else
+          return std::numeric_limits<float>::quiet_NaN();
       } else {
         float sign = (x.word & 0x80000000) != 0 ? -1.0f : 1.0f;
         if(((x.word >> 23) & 0xff) != 255) {
@@ -106,13 +109,16 @@ namespace letin
     static inline double format_double_to_double(const format::Double &x)
     {
       if(std::numeric_limits<double>::is_iec559 && sizeof(double) == 8) {
+        if(!((x.dword & 0x7ff8000000000000LL) == 0x7ff0000000000000LL && (x.dword & 0x000fffffffffffffLL) != 0)) {
 #if __FLOAT_WORD_ORDER == __BYTE_ORDER
-        return *(reinterpret_cast<const double *>(&(x.dword)));
+          return *(reinterpret_cast<const double *>(&(x.dword)));
 #else
-        format::Double tmp;
-        tmp.dword = htonll(x.dword);
-        return *(reinterpret_cast<const float *>(&(tmp.dword)));
+          format::Double tmp;
+          tmp.dword = htonll(x.dword);
+          return *(reinterpret_cast<const float *>(&(tmp.dword)));
 #endif
+        } else
+          return std::numeric_limits<float>::quiet_NaN();
       } else {
         double sign = (x.dword & 0x8000000000000000LL) != 0 ? -1.0 : 1.0;
         if(((x.dword >> 52) & 0x7ff) != 2047) {
