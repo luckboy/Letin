@@ -17,6 +17,10 @@
 #include <letin/opcode.hpp>
 #include "util.hpp"
 
+#ifdef IN
+#undef IN
+#endif
+
 #define IMM(x)                  Argument(x)
 #define LV(i)                   Argument(opcode::ARG_TYPE_LVAR, i)
 #define A(i)                    Argument(opcode::ARG_TYPE_ARG, i)

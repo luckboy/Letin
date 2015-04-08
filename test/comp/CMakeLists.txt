@@ -3,7 +3,16 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(../../comp)
 include_directories(../..)
 
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+if("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
+string(REPLACE "\\" "\\\\\\\\" test_dir "${CMAKE_CURRENT_SOURCE_DIR}\\test")
+else("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
+string(REPLACE "/" "\\\\\\\\" test_dir "${CMAKE_CURRENT_SOURCE_DIR}/test")
+endif("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
+add_definitions(-DTEST_DIR="\\"${test_dir}\\"")
+else("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 add_definitions(-DTEST_DIR="\\"${CMAKE_CURRENT_SOURCE_DIR}/test\\"")
+endif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}" comp_test_sources)
 
@@ -11,6 +20,9 @@ set(letincomp_static_name "${CMAKE_STATIC_LIBRARY_PREFIX}letincomp${CMAKE_STATIC
 set(comp_static_library "${PROJECT_BINARY_DIR}/comp/${letincomp_static_name}")
 list(APPEND comp_test_libraries "${comp_static_library}")
 list(APPEND comp_test_libraries ${CPPUNIT_LIBRARIES})
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+	list(APPEND comp_test_libraries "${ws2_library}")
+endif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 
 add_executable(testcomp "" ${comp_test_sources})
 target_link_libraries(testcomp ${comp_test_libraries})

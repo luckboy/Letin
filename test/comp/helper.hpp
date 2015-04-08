@@ -8,7 +8,11 @@
 #ifndef _HELPER_HPP
 #define _HELPER_HPP
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <winsock2.h>
+#else
 #include <netinet/in.h>
+#endif
 #include <algorithm>
 #include <cstddef>
 #include <memory>
@@ -143,7 +147,7 @@ ASSERT_RELOC(format::RELOC_TYPE_ELEM_FUN | format::RELOC_TYPE_SYMBOLIC, addr, sy
 #define ASSERT_SYMBOL_DV(name, index, offset) ASSERT_SYMBOL(format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED, name, index, offset)
 
 #define ASSERT_HEADER_MAGIC()           CPPUNIT_ASSERT(equal(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, tmp_header->magic))
-#define ASSERT_HEADER_FIELD(i, field)   CPPUNIT_ASSERT_EQUAL(i, ntohl(tmp_header->field))
+#define ASSERT_HEADER_FIELD(i, field)   CPPUNIT_ASSERT_EQUAL(static_cast<uint32_t>(i), static_cast<uint32_t>(ntohl(tmp_header->field)))
 #define ASSERT_HEADER_FLAGS(i)          ASSERT_HEADER_FIELD(i, flags)
 #define ASSERT_HEADER_ENTRY(i)          ASSERT_HEADER_FIELD(i, entry)
 #define ASSERT_HEADER_FUN_COUNT(i)      ASSERT_HEADER_FIELD(i, fun_count)

@@ -16,7 +16,11 @@ using namespace std;
 using namespace letin::comp;
 using namespace letin::util;
 
+#if defined(_WIN32) || defined(_WIN64)
+#define TEST_FILE(dir_name)     TEST_DIR "\\" dir_name
+#else
 #define TEST_FILE(dir_name)     TEST_DIR "/" dir_name
+#endif
 
 namespace letin
 {

@@ -12,6 +12,9 @@ set(letinvm_static_name "${CMAKE_STATIC_LIBRARY_PREFIX}letinvm${CMAKE_STATIC_LIB
 set(vm_static_library "${PROJECT_BINARY_DIR}/vm/${letinvm_static_name}")
 list(APPEND vm_test_libraries "${vm_static_library}")
 list(APPEND vm_test_libraries ${CPPUNIT_LIBRARIES})
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+	list(APPEND vm_test_libraries "${ws2_library}")
+endif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 
 add_executable(testvm "" ${vm_test_sources})
 target_link_libraries(testvm ${vm_test_libraries})
