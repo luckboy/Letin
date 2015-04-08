@@ -15,6 +15,8 @@
 #include <pthread.h>
 #endif
 #include <windows.h>
+#else
+#error "Unsupported operating system."
 #endif
 #include <thread>
 #include "thread_stop_cont.hpp"
@@ -145,6 +147,8 @@ namespace letin
         });
       }
 
+#else
+#error "Unsupported operating system."
 #endif
     }
   }

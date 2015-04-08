@@ -8,7 +8,7 @@ aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}" vm_sources)
 
 add_library(letinvm SHARED ${vm_sources})
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
-	target_link_libraries(letinvm ws2_32)
+	target_link_libraries(letinvm "${ws2_library}")
 endif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 
 add_library(letinvm_static STATIC ${vm_sources})

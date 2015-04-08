@@ -9,8 +9,10 @@
 #include "driver.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "path_util.hpp"
 
 using namespace std;
+using namespace letin::util;
 
 namespace letin
 {
@@ -40,7 +42,7 @@ namespace letin
         string saved_file_name = _M_file_name;
         bool result = true;
         for(int i = -1; i < static_cast<int>(_M_include_dirs.size()); i++) {
-          _M_source = Source((i >= 0 ? _M_include_dirs[i] + "/" : string()) + file_name);
+          _M_source = Source((i >= 0 ? _M_include_dirs[i] + PATH_SEP : string()) + unix_path_to_path(file_name));
           _M_file_name = _M_source.file_name();
           SourceStream ss(_M_source.open());
           if(!ss.istream().good()) {

@@ -22,6 +22,13 @@ if(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	endif(MINGW)
 endif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+	set(ws2_library ws2_32)
+	if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "8")
+		set(ws2_library ws2_64)
+	endif("${CMAKE_SIZEOF_VOID_P}" STREQUAL "8")
+endif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+
 include_directories(include)
 
 add_subdirectory(comp)
