@@ -6,6 +6,7 @@
  *   the full licensing terms.                                              *
  ****************************************************************************/
 #if defined(__unix__)
+#include <atomic>
 #include <csignal>
 #include <mutex>
 #include <pthread.h>
@@ -93,6 +94,7 @@ namespace letin
         lock_guard<mutex> guard(thread_stop_cont_mutex);
         is_stopping = true;
         thread_stop_cont = stop_cont;
+        atomic_thread_fence(memory_order_release);
         fun([](thread &thr) { ::pthread_kill(thr.native_handle(), SIGUSR1); });
         fun([stop_cont](thread &thr) { ::sem_wait(&(stop_cont->stopping_sem)); });
         is_stopping = false;
@@ -102,6 +104,7 @@ namespace letin
       {
         lock_guard<mutex> guard(thread_stop_cont_mutex);
         is_continuing = true;
+        atomic_thread_fence(memory_order_release);
         fun([](thread &thr) { ::pthread_kill(thr.native_handle(), SIGUSR2); });
         fun([stop_cont](thread &thr) { ::sem_wait(&(stop_cont->continuing_sem)); });
         is_stopping = false;
