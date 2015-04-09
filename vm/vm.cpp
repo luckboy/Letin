@@ -779,6 +779,36 @@ namespace letin
       return os << (object.type() != OBJECT_TYPE_TUPLE ? "]" : ")");
     }
 
+    ostream &operator<<(ostream &os, const LoadingError &error)
+    {
+      switch(error.error()) {
+        case LOADING_ERROR_IO:
+          return os << "IO error";
+        case LOADING_ERROR_FORMAT:
+          return os << "incorrect format";
+        case LOADING_ERROR_NO_FUN_SYM:
+          return os << "undefined function symbol " << error.symbol_name();
+        case LOADING_ERROR_FUN_SYM:
+          return os << "already function symbol" << error.symbol_name();
+        case LOADING_ERROR_NO_VAR_SYM:
+          return os << "undefined variable symbol" << error.symbol_name();
+        case LOADING_ERROR_VAR_SYM:
+          return os << "already variable symbol" << error.symbol_name();
+        case LOADING_ERROR_RELOC:
+          return os << "can't relocate program or library";
+        case LOADING_ERROR_ENTRY:
+          return os << "already defined entry";
+        case LOADING_ERROR_NO_RELOC:
+          return os << "unrelocatable program or library";
+        case LOADING_ERROR_FUN_INDEX:
+          return os << "incorrect function index" << error.symbol_name();
+        case LOADING_ERROR_VAR_INDEX:
+          return os << "incorrect function index" << error.symbol_name();
+        default:
+          return os << "unknown error";
+      }
+    }
+
     const char *error_to_string(int error)
     {
       switch(error) {

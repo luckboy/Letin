@@ -5,29 +5,80 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <cctype>
 #include <cstddef>
 #include <cstring>
 #include <iostream>
+#include <list>
 #include <memory>
+#include <unistd.h>
 #include <vector>
 #include <letin/vm.hpp>
+#include "path_util.hpp"
 
 using namespace std;
 using namespace letin;
 using namespace letin::vm;
+using namespace letin::util;
 
 struct GarbageCollectionFinalization
 {
   ~GarbageCollectionFinalization() { finalize_gc(); }
 };
 
+static bool find_lib(const string lib_name, vector<string> lib_dirs, string &file_name)
+{
+  for(size_t i = 0; i < lib_dirs.size() + 1; i++) {
+    struct stat stat_buf;
+    file_name = (i >= lib_dirs.size() ? lib_dirs[i] + PATH_SEP : string()) + unix_path_to_path(string(lib_name) + ".letin");
+    if(stat(file_name.c_str(), &stat_buf) != -1) return true;
+  }
+  return false;
+}
+
 int main(int argc, char **argv)
 {
-  if(argc < 2) {
-    cerr << "Usage: " << argv[0] << " <file> [<argument> ...]" << endl;
+  vector<string> lib_dirs;
+  list<string> lib_names;
+  int c;
+  opterr = 0;
+  while((c = getopt(argc, argv, "hl:L:")) != -1) {
+    switch(c) {
+      case 'h':
+        cout << "Usage: " << argv[0] << " [<option> ...] <program file> [<argument> ...]" << endl;
+        cout << endl;
+        cout << "Options:" << endl;
+        cout << "  -h                    display this text" << endl;
+        cout << "  -l <library>          add the library" << endl;
+        cout << "  -L <directory>        add the directory to library directories" << endl;
+        break;
+      case 'l':
+        lib_names.push_back(string(optarg));
+        break;
+      case 'L':
+        lib_dirs.push_back(string(optarg));
+        break;
+      default:
+        cerr << "error: incorrect option -" << c << endl;
+        return 1;
+    }
+  }
+  if(argc < optind + 1) {
+    cerr << "error: no program file" << endl;
     return 1;
   }
+  vector<string> file_names;
+  for(auto lib_name : lib_names) {
+    string file_name;
+    if(!find_lib(lib_name, lib_dirs, file_name)) {
+      cerr << "error: not found library " + lib_name << endl;
+      return 1;
+    }
+    file_names.push_back(file_name);
+  }
+  file_names.push_back(argv[optind]);
   initialize_gc();
   GarbageCollectionFinalization final_gc;
   unique_ptr<Loader> loader(new_loader());
@@ -35,16 +86,18 @@ int main(int argc, char **argv)
   unique_ptr<GarbageCollector> gc(new_garbage_collector(alloc.get()));
   unique_ptr<NativeFunctionHandler> native_fun_handler(new DefaultNativeFunctionHandler());
   unique_ptr<VirtualMachine> vm(new_virtual_machine(loader.get(), gc.get(), native_fun_handler.get()));
-  if(!vm->load(argv[1])) {
-    cerr << "error: can't open file or file format is incorrect" << endl;
+  list<LoadingError> errors;
+  if(!vm->load(file_names, &errors)) {
+    for(auto error : errors)
+      cerr << "error: " << file_names[error.pair_index()] << ": " << error << endl;
     return 1;
   }
   if(!vm->has_entry()) {
     cerr << "error: no entry" << endl;
     return 1;
   }
-  Reference ref(vm->gc()->new_immortal_object(OBJECT_TYPE_RARRAY, argc - 2));
-  for(int i = 2; i < argc; i++) {
+  Reference ref(vm->gc()->new_immortal_object(OBJECT_TYPE_RARRAY, argc - (optind + 1)));
+  for(int i = optind + 1; i < argc; i++) {
     size_t arg_length = strlen(argv[i]);
     Reference arg_ref(vm->gc()->new_immortal_object(OBJECT_TYPE_IARRAY8, arg_length));
     for(size_t j = 0; j < arg_length; j++) arg_ref->set_elem(j, Value(argv[i][j]));
@@ -53,48 +106,65 @@ int main(int argc, char **argv)
   vector<Value> args;
   args.push_back(Value(ref));
   gc->start();
-  Thread thread = vm->start(args, [](const ReturnValue &value) {
-    cout << "i=" << value.i() << endl;
-    cout << "f=" << value.f() << endl;
-    if(value.r()->type() == OBJECT_TYPE_IARRAY8) {
-      cout << "r=\"";
-      for(size_t i = 0; i < value.r()->length(); i++) {
-        char c = value.r()->elem(i).i();
-        switch(c) {
-          case '\a':
-            cout << "\\a";
-            break;
-          case '\b':
-            cout << "\\b";
-            break;
-          case '\t':
-            cout << "\\t";
-            break;
-          case '\n':
-            cout << "\\n";
-            break;
-          case '\v':
-            cout << "\\v";
-            break;
-          case '\f':
-            cout << "\\f";
-            break;
-          case '\r':
-            cout << "\\r";
-            break;
-          default:
-            if(isprint(c))
-              cout << c;
-            else
-              cout << "\\" << oct << c;
-            break;
+  bool is_unique_result = false;
+  if(vm->env().fun(vm->entry()).arg_count() == 2) {
+    Reference unique_io_ref(vm->gc()->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+    args.push_back(unique_io_ref);
+  }
+  int status = 0;
+  Thread thread = vm->start(args, [is_unique_result, &status](const ReturnValue &value) {
+    if(!is_unique_result) {
+      cout << "i=" << value.i() << endl;
+      cout << "f=" << value.f() << endl;
+      if(value.r()->type() == OBJECT_TYPE_IARRAY8) {
+        cout << "r=\"";
+        for(size_t i = 0; i < value.r()->length(); i++) {
+          char c = value.r()->elem(i).i();
+          switch(c) {
+            case '\a':
+              cout << "\\a";
+              break;
+            case '\b':
+              cout << "\\b";
+              break;
+            case '\t':
+              cout << "\\t";
+              break;
+            case '\n':
+              cout << "\\n";
+              break;
+            case '\v':
+              cout << "\\v";
+              break;
+            case '\f':
+              cout << "\\f";
+              break;
+            case '\r':
+              cout << "\\r";
+              break;
+            default:
+              if(isprint(c))
+                cout << c;
+              else
+                cout << "\\" << oct << c;
+              break;
+          }
         }
+        cout << "\"" << endl;
+      } else
+        cout << "r=" << value.r() << endl;
+      cout << "error=" << value.error() << " (" << error_to_string(value.error()) << ")" << endl;
+    } else {
+      if(value.r()->type() == OBJECT_TYPE_TUPLE && value.r()->length() == 2 &&
+        value.r()->elem(0).type() == VALUE_TYPE_INT &&
+        value.r()->elem(1).type() == VALUE_TYPE_REF && value.r()->elem(1).r()->type() == (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) {
+        status = value.r()->elem(0).i();
+      } else {
+        cerr << "error: result of entry function is incorrect" << endl;
+        status = 255;
       }
-      cout << "\"" << endl;
-    } else
-      cout << "r=" << value.r() << endl;
-    cout << "error=" << value.error() << " (" << error_to_string(value.error()) << ")" << endl;
+    }
   });
   thread.system_thread().join();
-  return 0;
+  return status;
 }

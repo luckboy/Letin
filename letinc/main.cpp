@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -19,14 +19,32 @@ using namespace letin::comp;
 int main(int argc, char **argv)
 {
   const char *output_file_name = nullptr;
+  list<string> include_dirs;
   int c;
-  while((c = getopt(argc, argv, "o:")) != -1) {
+  bool is_relocable = true;
+  opterr = 0;
+  while((c = getopt(argc, argv, "hI:o:s")) != -1) {
     switch(c) {
+      case 'h':
+        cout << "Usage: " << argv[0] << " [<option> ...] [<source file> ...]" << endl;
+        cout << endl;
+        cout << "Options:" << endl;
+        cout << "  -h                    display this text" << endl;
+        cout << "  -I <directory>        add the directory to include directories" << endl;
+        cout << "  -o <file>             specify an output file" << endl;
+        cout << "  -s                    generate an unrelocable output file" << endl;
+        return 0;
+      case 'I':
+        include_dirs.push_back(string(optarg));
+        break;
       case 'o':
         output_file_name = optarg;
         break;
+      case 's':
+        is_relocable = false;
+        break;
       default:
-        cerr << "Usage: " << argv[0] << " -o <output file> [<source file> ...]" << endl;
+        cerr << "incorrect option -" << optopt << endl;
         return 1;
     }
   }
@@ -41,7 +59,8 @@ int main(int argc, char **argv)
     sources.push_back(Source());
   list<Error> errors;
   unique_ptr<Compiler> comp(new_compiler());
-  unique_ptr<Program> prog(comp->compile(sources, errors));
+  for(auto include_dir : include_dirs) comp->add_include_dir(include_dir);
+  unique_ptr<Program> prog(comp->compile(sources, errors, is_relocable));
   if(prog.get() == nullptr) {
     for(auto error : errors) cerr << error << endl;
     return 1;

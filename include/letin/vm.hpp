@@ -506,6 +506,8 @@ namespace letin
 
     std::ostream &operator<<(std::ostream &os, const Object &object);
 
+    std::ostream &operator<<(std::ostream &os, const LoadingError &error);
+
     const char *error_to_string(int error);
   }
 }
