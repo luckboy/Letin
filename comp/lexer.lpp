@@ -160,7 +160,7 @@
 
 [ \t\r]                         { loc->step(); }
 
-"\n"+                           { loc->lines(std::strlen(yytext)); return '\n'; }
+"\n"([ \t\r]*"\n")*             { loc->lines(std::strlen(yytext)); return '\n'; }
 
 %%
 
