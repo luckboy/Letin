@@ -527,6 +527,7 @@ namespace letin
         switch(_M_relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) {
           case format::RELOC_TYPE_ARG1_FUN:
           {
+            if(addr >= _M_code_size) return false;
             if(opcode_to_arg_type1(_M_code[addr].opcode) != ARG_TYPE_IMM) return false;
             size_t index = _M_code[addr].arg1.i;
             if(!relacate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
@@ -535,6 +536,7 @@ namespace letin
           }
           case format::RELOC_TYPE_ARG2_FUN:
           {
+            if(addr >= _M_code_size) return false;
             if(opcode_to_arg_type2(_M_code[addr].opcode) != ARG_TYPE_IMM) return false;
             size_t index = _M_code[addr].arg2.i;
             if(!relacate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
@@ -543,6 +545,7 @@ namespace letin
           }
           case format::RELOC_TYPE_ARG1_VAR:
           {
+            if(addr >= _M_code_size) return false;
             if(opcode_to_arg_type1(_M_code[addr].opcode) != ARG_TYPE_GVAR) return false;
             size_t index = _M_code[addr].arg1.gvar;
             if(!relacate_index(index, var_offset, var_indexes, _M_relocs[i], format::SYMBOL_TYPE_VAR)) return false;
@@ -551,6 +554,7 @@ namespace letin
           }
           case format::RELOC_TYPE_ARG2_VAR:
           {
+            if(addr >= _M_code_size) return false;
             if(opcode_to_arg_type2(_M_code[addr].opcode) != ARG_TYPE_GVAR) return false;
             size_t index = _M_code[addr].arg2.gvar;
             if(!relacate_index(index, var_offset, var_indexes, _M_relocs[i], format::SYMBOL_TYPE_VAR)) return false;
@@ -597,6 +601,15 @@ namespace letin
               default:
                 return false;
             }
+            break;
+          }
+          case format::RELOC_TYPE_VAR_FUN:
+          {
+            if(addr >= _M_var_count) return false;
+            if(_M_vars[addr].type != VALUE_TYPE_INT) return false;
+            size_t index = _M_vars[addr].i;
+            if(!relacate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
+            _M_vars[addr].i = index;
             break;
           }
         }

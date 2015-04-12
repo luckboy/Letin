@@ -138,6 +138,7 @@ namespace letin
     const std::uint32_t RELOC_TYPE_ARG1_VAR = 2;
     const std::uint32_t RELOC_TYPE_ARG2_VAR = 3;
     const std::uint32_t RELOC_TYPE_ELEM_FUN = 4;
+    const std::uint32_t RELOC_TYPE_VAR_FUN = 5;
     const std::uint32_t RELOC_TYPE_SYMBOLIC = 256;
     
     struct Relocation

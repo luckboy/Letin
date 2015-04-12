@@ -495,7 +495,7 @@ namespace letin
         return true;
       }
 
-      static bool value_to_format_value(UngeneratedProgram &ungen_prog, const Value &value, format::Value &format_value, list<Error> &errors, uint32_t *addr = nullptr)
+      static bool value_to_format_value(UngeneratedProgram &ungen_prog, const Value &value, format::Value &format_value, list<Error> &errors, uint32_t *addr = nullptr, bool is_var = false)
       {
         switch(value.type()) {
           case Value::TYPE_INT:
@@ -518,7 +518,8 @@ namespace letin
             format_value.type = VALUE_TYPE_INT;
             uint32_t u;
             if(addr != nullptr) {
-              if(!get_fun_index_and_add_reloc(ungen_prog, u, value.fun(), format::RELOC_TYPE_ELEM_FUN, *addr, value.pos(), errors)) return false;
+              uint32_t reloc_type = (is_var ? format::RELOC_TYPE_VAR_FUN : format::RELOC_TYPE_ELEM_FUN);
+              if(!get_fun_index_and_add_reloc(ungen_prog, u, value.fun(), reloc_type, *addr, value.pos(), errors)) return false;
             } else {
               if(!get_fun_index(ungen_prog, u, value.fun(), value.pos(), errors)) return false;
             }
@@ -1012,7 +1013,8 @@ namespace letin
 
         for(auto &pair : ungen_prog.var_pairs) {
           const Value &value = pair.second.second;
-          if(value_to_format_value(ungen_prog, value, vars[pair.second.first], errors)) {
+          uint32_t var_addr = pair.second.first;
+          if(value_to_format_value(ungen_prog, value, vars[pair.second.first], errors, &var_addr, true)) {
             vars[pair.second.first].type = htonl(vars[pair.second.first].type);
             vars[pair.second.first].i = htonll(vars[pair.second.first].i);
           } else
