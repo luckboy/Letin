@@ -140,6 +140,7 @@ namespace letin
                     case format::RELOC_TYPE_ARG1_FUN:
                     case format::RELOC_TYPE_ARG2_FUN:
                     case format::RELOC_TYPE_ELEM_FUN:
+                    case format::RELOC_TYPE_VAR_FUN:
                       has_correct_type = (symbol->type == format::SYMBOL_TYPE_FUN);
                       break;
                     case format::RELOC_TYPE_ARG1_VAR:

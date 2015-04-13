@@ -354,6 +354,10 @@ namespace letin
               }
             }
           }
+          for(auto pair : ungen_prog.var_pairs) {
+            if(pair.second.second.type() == Value::TYPE_FUN_INDEX)
+              reloc_size += sizeof(format::Relocation);
+          }
           for(auto pair : ungen_prog.object_pairs) {
             for(auto elem : pair.first->elems()) {
               if(elem.type() == Value::TYPE_FUN_INDEX) reloc_size += sizeof(format::Relocation);
@@ -389,9 +393,16 @@ namespace letin
               }
             }
           }
+          for(auto pair : ungen_prog.var_pairs) {
+            if(pair.second.second.type() == Value::TYPE_FUN_INDEX)
+              if(ungen_prog.fun_pairs.find(pair.second.second.fun()) == ungen_prog.fun_pairs.end())
+                fun_symbol_names.insert(pair.second.second.fun());
+          }
           for(auto pair : ungen_prog.object_pairs) {
             for(auto elem : pair.first->elems())
-              if(elem.type() == Value::TYPE_FUN_INDEX) fun_symbol_names.insert(elem.fun());
+              if(elem.type() == Value::TYPE_FUN_INDEX)
+                if(ungen_prog.fun_pairs.find(elem.fun()) == ungen_prog.fun_pairs.end())
+                  fun_symbol_names.insert(elem.fun());
           }
           for(auto fun_symbol_name : fun_symbol_names)
             size += align(7 + fun_symbol_name.length(), 8);
@@ -409,6 +420,7 @@ namespace letin
             case format::RELOC_TYPE_ARG1_FUN:
             case format::RELOC_TYPE_ARG2_FUN:
             case format::RELOC_TYPE_ELEM_FUN:
+            case format::RELOC_TYPE_VAR_FUN:
             {
               auto iter = ungen_prog.extern_fun_symbol_indexes.find(symbol_name);
               if(iter != ungen_prog.extern_fun_symbol_indexes.end()) {

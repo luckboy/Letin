@@ -963,8 +963,12 @@ namespace letin
         VAR_I(3);
         VAR_I(4);
         VAR_I(5);
+        VAR_I(1);
+        VAR_I(0);
         RELOC_SA1F(0, 6);
         RELOC_SA1V(1, 7);
+        RELOC_VF(3);
+        RELOC_SVF(4, 6);
         SYMBOL_DF("f3", 0);
         SYMBOL_DF("f4", 1);
         SYMBOL_DF("f5", 2);
@@ -1059,6 +1063,8 @@ namespace letin
         CPPUNIT_ASSERT_EQUAL(Value(4), _M_vm->env().var("v4"));
         CPPUNIT_ASSERT_EQUAL(Value(5), _M_vm->env().var(7));
         CPPUNIT_ASSERT_EQUAL(Value(5), _M_vm->env().var("v5"));
+        CPPUNIT_ASSERT_EQUAL(Value(10), _M_vm->env().var(8));
+        CPPUNIT_ASSERT_EQUAL(Value(4), _M_vm->env().var(9));
       }
 
       void VirtualMachineTests::test_vm_complains_on_undefined_symbols()

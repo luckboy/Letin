@@ -125,6 +125,8 @@ ASSERT_RELOC(format::RELOC_TYPE_ARG1_VAR, addr, string(), reloc_offset, symbol_o
 ASSERT_RELOC(format::RELOC_TYPE_ARG2_VAR, addr, string(), reloc_offset, symbol_offset)
 #define ASSERT_RELOC_EF(addr, reloc_offset, symbol_offset)                      \
 ASSERT_RELOC(format::RELOC_TYPE_ELEM_FUN, addr, string(), reloc_offset, symbol_offset)
+#define ASSERT_RELOC_VF(addr, reloc_offset, symbol_offset)                      \
+ASSERT_RELOC(format::RELOC_TYPE_VAR_FUN, addr, string(), reloc_offset, symbol_offset)
 #define ASSERT_RELOC_SA1F(addr, symbol_name, reloc_offset, symbol_offset)       \
 ASSERT_RELOC(format::RELOC_TYPE_ARG1_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol_name, reloc_offset, symbol_offset)
 #define ASSERT_RELOC_SA2F(addr, symbol_name, reloc_offset, symbol_offset)       \
@@ -135,6 +137,8 @@ ASSERT_RELOC(format::RELOC_TYPE_ARG1_VAR | format::RELOC_TYPE_SYMBOLIC, addr, sy
 ASSERT_RELOC(format::RELOC_TYPE_ARG2_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol_name, reloc_offset, symbol_offset)
 #define ASSERT_RELOC_SEF(addr, symbol_name, reloc_offset, symbol_offset)        \
 ASSERT_RELOC(format::RELOC_TYPE_ELEM_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol_name, reloc_offset, symbol_offset)
+#define ASSERT_RELOC_SVF(addr, symbol_name, reloc_offset, symbol_offset)        \
+ASSERT_RELOC(format::RELOC_TYPE_VAR_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol_name, reloc_offset, symbol_offset)
 
 #define ASSERT_SYMBOL(type, name, index, offset)                                \
 {                                                                               \
@@ -160,9 +164,10 @@ ASSERT_RELOC(format::RELOC_TYPE_ELEM_FUN | format::RELOC_TYPE_SYMBOLIC, addr, sy
 #define ASSERT_PROG(prog_size, prog)                                            \
 {                                                                               \
   const uint8_t *tmp_ptr = reinterpret_cast<const uint8_t *>(prog.ptr());       \
-  const size_t tmp_size = prog.size();                                          \
+  size_t tmp_size = prog.size();                                                \
   const format::Header *tmp_header =                                            \
     reinterpret_cast<const format::Header *>(tmp_ptr);                          \
+  size_t tmp_reloc_addr_offset __UNUSED__ = 0;                                  \
   CPPUNIT_ASSERT_EQUAL(prog_size, tmp_size)
 #define END_ASSERT_PROG()                                                       \
 }
