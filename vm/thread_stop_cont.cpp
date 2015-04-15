@@ -63,15 +63,17 @@ namespace letin
       static void usr1_handler(int signum)
       {
         if(is_stopping) {
-          ThreadStopCont *tmp_thread_stop_cont = thread_stop_cont;
-          ::sem_post(&(tmp_thread_stop_cont->stopping_sem));
+          ThreadStopCont *tmp_thread_stop_cont1 = thread_stop_cont;
+          ::sem_post(&(tmp_thread_stop_cont1->stopping_sem));
           sigset_t sigmask;
           while(!is_continuing) {
             sigfillset(&sigmask);
             sigdelset(&sigmask, SIGUSR2);
             sigsuspend(&sigmask);
+            atomic_thread_fence(memory_order_acquire);
           }
-          ::sem_post(&(tmp_thread_stop_cont->continuing_sem));
+          ThreadStopCont *tmp_thread_stop_cont2 = thread_stop_cont;
+          ::sem_post(&(tmp_thread_stop_cont2->continuing_sem));
         }
       }
 
@@ -79,8 +81,25 @@ namespace letin
 
       void initialize_thread_stop_cont()
       {
-        signal(SIGUSR1, usr1_handler);
-        signal(SIGUSR2, usr2_handler);
+        sigset_t sigmask;
+        sigemptyset(&sigmask);
+        sigaddset(&sigmask, SIGUSR1);
+        sigprocmask(SIG_UNBLOCK, &sigmask, nullptr);
+        sigemptyset(&sigmask);
+        sigaddset(&sigmask, SIGUSR2);
+        sigprocmask(SIG_BLOCK, &sigmask, nullptr);
+
+        struct sigaction usr1_sigaction;
+        usr1_sigaction.sa_handler = usr1_handler;
+        sigemptyset(&(usr1_sigaction.sa_mask));
+        usr1_sigaction.sa_flags = SA_RESTART;
+        sigaction(SIGUSR1, &usr1_sigaction, nullptr);
+
+        struct sigaction usr2_sigaction;
+        usr2_sigaction.sa_handler = usr2_handler;
+        sigemptyset(&(usr2_sigaction.sa_mask));
+        usr2_sigaction.sa_flags = SA_RESTART;
+        sigaction(SIGUSR2, &usr2_sigaction, nullptr);
       }
 
       void finalize_thread_stop_cont() {}
@@ -104,6 +123,7 @@ namespace letin
       {
         lock_guard<mutex> guard(thread_stop_cont_mutex);
         is_continuing = true;
+        thread_stop_cont = stop_cont;
         atomic_thread_fence(memory_order_release);
         fun([](thread &thr) { ::pthread_kill(thr.native_handle(), SIGUSR2); });
         fun([stop_cont](thread &thr) { ::sem_wait(&(stop_cont->continuing_sem)); });
