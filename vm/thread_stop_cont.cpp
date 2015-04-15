@@ -41,11 +41,13 @@ namespace letin
       public:
         ::sem_t stopping_sem;
         ::sem_t continuing_sem;
+        volatile bool has_stopping;
 
         ThreadStopCont()
         {
           ::sem_init(&stopping_sem, 0, 0);
           ::sem_init(&continuing_sem, 0, 0);
+          has_stopping = false;
         }
 
         ~ThreadStopCont()
@@ -56,24 +58,21 @@ namespace letin
       };
 
       static mutex thread_stop_cont_mutex;
-      static volatile bool is_stopping = false;
-      static volatile bool is_continuing = false;
       static ThreadStopCont *volatile thread_stop_cont;
 
       static void usr1_handler(int signum)
       {
-        if(is_stopping) {
-          ThreadStopCont *tmp_thread_stop_cont1 = thread_stop_cont;
-          ::sem_post(&(tmp_thread_stop_cont1->stopping_sem));
+        ThreadStopCont *tmp_thread_stop_cont = thread_stop_cont;
+        if(tmp_thread_stop_cont->has_stopping) {
+          ::sem_post(&(tmp_thread_stop_cont->stopping_sem));
           sigset_t sigmask;
-          while(!is_continuing) {
+          while(tmp_thread_stop_cont->has_stopping) {
             sigfillset(&sigmask);
             sigdelset(&sigmask, SIGUSR2);
             sigsuspend(&sigmask);
             atomic_thread_fence(memory_order_acquire);
           }
-          ThreadStopCont *tmp_thread_stop_cont2 = thread_stop_cont;
-          ::sem_post(&(tmp_thread_stop_cont2->continuing_sem));
+          ::sem_post(&(tmp_thread_stop_cont->continuing_sem));
         }
       }
 
@@ -111,23 +110,19 @@ namespace letin
       void stop_threads(ThreadStopCont *stop_cont, function<void (function<void (thread &)>)> fun)
       {
         lock_guard<mutex> guard(thread_stop_cont_mutex);
-        is_stopping = true;
         thread_stop_cont = stop_cont;
+        stop_cont->has_stopping = true;
         atomic_thread_fence(memory_order_release);
         fun([](thread &thr) { ::pthread_kill(thr.native_handle(), SIGUSR1); });
         fun([stop_cont](thread &thr) { ::sem_wait(&(stop_cont->stopping_sem)); });
-        is_stopping = false;
       }
 
       void continue_threads(ThreadStopCont *stop_cont, function<void (function<void (thread &)>)> fun)
       {
-        lock_guard<mutex> guard(thread_stop_cont_mutex);
-        is_continuing = true;
-        thread_stop_cont = stop_cont;
+        stop_cont->has_stopping = false;
         atomic_thread_fence(memory_order_release);
         fun([](thread &thr) { ::pthread_kill(thr.native_handle(), SIGUSR2); });
         fun([stop_cont](thread &thr) { ::sem_wait(&(stop_cont->continuing_sem)); });
-        is_stopping = false;
       }
 
 #elif defined(_WIN32) || defined(_WIN64)
