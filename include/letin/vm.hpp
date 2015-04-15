@@ -227,7 +227,7 @@ namespace letin
 
       bool is_error() const { return _M_raw.type == OBJECT_TYPE_ERROR; }
 
-      bool is_unique() const { return (_M_raw.type & OBJECT_TYPE_UNIQUE) != 0; }
+      bool is_unique() const { return (_M_raw.type & OBJECT_TYPE_UNIQUE) != 0 && !is_error(); }
 
       int type() const { return _M_raw.type; }
 
@@ -241,7 +241,7 @@ namespace letin
     };
 
     inline bool Value::is_unique() const
-    { return _M_raw.type == VALUE_TYPE_REF && (_M_raw.r->type() & OBJECT_TYPE_UNIQUE) != 0; }
+    { return _M_raw.type == VALUE_TYPE_REF && _M_raw.r->is_unique(); }
 
     struct ReturnValueRaw
     {

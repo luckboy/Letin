@@ -754,7 +754,7 @@ namespace letin
 
     ostream &operator<<(ostream &os, const Object &object)
     {
-      if((object.type() & ~OBJECT_TYPE_UNIQUE) != 0) os << "unique ";
+      if(object.is_unique()) os << "unique ";
       switch(object.type() & ~OBJECT_TYPE_UNIQUE) {
         case OBJECT_TYPE_IARRAY8:
           os << "iarray8";
