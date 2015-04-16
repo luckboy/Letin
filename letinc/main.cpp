@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     for(auto error : errors) cerr << error << endl;
     return 1;
   }
-  ofstream ofs(output_file_name);
+  ofstream ofs(output_file_name, ofstream::out | ofstream::binary);
   if(!ofs.good()) {
     cerr << "can't create output file" << endl;
     return 1;

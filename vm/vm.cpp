@@ -283,14 +283,14 @@ namespace letin
         }
         size_t size = stat_buf.st_size;
         char *ptr = new char[size];
-        ifstream ifs(file_name);
+        ifstream ifs(file_name, ifstream::in | ifstream::binary);
         if(!ifs.good()) {
           if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_IO));
           is_success = false;
           continue;
         }
         ifs.read(ptr, size);
-        if(!ifs.good()) {
+        if(ifs.gcount() != stat_buf.st_size) {
           if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_IO));
           is_success = false;
           continue;
