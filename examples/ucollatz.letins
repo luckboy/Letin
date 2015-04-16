@@ -1,0 +1,81 @@
+.define ATOI		0
+.define ITOA		1
+.define PUT_CHAR	5
+.define PUT_STRING	7
+
+.entry main
+
+collatz(a2) = {
+	arg iload a0
+	let riarray64()
+	in
+	let riacat64 a1, lv0
+	let ieq a0, 1
+	in
+	jc lv2, label1
+	let imod a0, 2
+	in
+	jc lv3, label2
+	arg idiv a0, 2
+	jump label3
+label2:	let imul a0, 3
+	in
+	arg iadd lv4, 1
+label3:	arg rload lv1
+	retry
+label1:	ret rload lv1
+}
+
+printArray(a3) = {
+	let rialen64 a0
+	in
+	let ige a1, lv0
+	in
+	jc lv1, label1
+	let ieq a1, 0
+	in
+	jc lv2, label2
+	arg iload ' '
+	arg rload a2
+	lettuple(lv2) rncall((PUT_CHAR))
+	jump label3
+label2:	let iload 0
+	let rload a2
+label3:	in
+	arg rianth64 a0, a1
+	let rncall((ITOA))
+	in
+	arg rload lv5
+	arg rload lv4
+	lettuple(lv2) rncall((PUT_STRING))
+	in
+	arg rload a0
+	arg iadd a1, 1
+	arg rload lv7
+	retry
+label1:	arg iload '\n'
+	arg rload a2
+	ret rncall((PUT_CHAR))
+}
+
+main(a2) = {
+	let rranth a0, 0
+	in
+	arg rload lv0
+	let incall 0
+	in
+	let riarray64()
+	in
+	arg iload lv1
+	arg rload lv2
+	let rcall &collatz
+	in
+	arg rload lv3
+	arg iload 0
+	arg rload a1
+	lettuple(lv2) rcall &printArray
+	let rutfilli 2, 0
+	in
+	arg rload lv5
+	ret rutsnth lv6, 1
+}

@@ -1,0 +1,43 @@
+.define ATOI		0
+.define PUT_CHAR	5
+.define PUT_STRING	7
+
+.entry main
+
+fib(a1) = {
+	let ile a0, 1
+	in
+	jc lv0, label
+	arg isub a0, 1
+	let icall &fib
+	arg isub a0, 2
+	let icall &fib
+	in
+	ret iadd lv1, lv2
+label:	ret iload a0
+}
+
+main(a2) = {
+	let rranth a0, 0
+	in
+	arg rload lv0
+	let incall((ATOI))
+	in
+	arg iload lv1
+	let icall &fib
+	in
+	arg iload lv2
+	let rncall 1
+	in
+	arg rload lv3
+	arg rload a1
+	lettuple(lv2) rncall((PUT_STRING))
+	in
+	arg iload '\n'
+	arg rload lv5
+	lettuple(lv2) rncall((PUT_CHAR))
+	let rutfilli 2, 0
+	in
+	arg rload lv7
+	ret rutsnth lv8, 1
+}

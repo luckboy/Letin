@@ -1,0 +1,41 @@
+.define EPS	1e-10
+
+.public abs(a1) = {
+	let flt a0, 0.0
+	in
+	jc lv0, label
+	ret fload a0
+label:	ret fneg a0
+}
+
+newton2(a2) = {
+	let fmul a0, a0		// xk ^ 2 
+	in 
+	let fsub lv0, a1	// xk ^ 2 - a
+	let fmul a0, 2.0	// 2 * xk
+	in
+	let fdiv lv1, lv2	// (xk ^ 2 - a) / (2 * xk)
+	in
+	let fsub a0, lv3	// x(k + 1) = xk - (xk ^ 2 - a) / (2 * xk)
+	in
+	let fmul lv4, lv4	// x(k + 1) * x(k + 1)
+	in
+	let fsub lv5, a1	// x(k + 1) * x(k + 1) - a
+	in
+	arg fload lv6
+	let fcall &abs		// e = abs(x(k + 1) * x(k + 1) - a)
+	in
+	let flt lv7, (EPS)	// e < EPS
+	in
+	jc lv8, label
+	arg fload lv4
+	arg fload a1
+	retry
+label:	ret fload lv4
+}
+
+.public sqrt(a1) = {
+	arg fload a0
+	arg fload a0
+	ret fcall &newton2
+}
