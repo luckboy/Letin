@@ -775,7 +775,7 @@ namespace letin
             if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY64)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
-            return Value(r->raw().is8[i]);
+            return Value(r->raw().is64[i]);
           }
           case OP_RSFANTH:
           {
@@ -1064,7 +1064,10 @@ namespace letin
             if(is_arg_instr) if(!push_tmp_ac2(context)) return Value();
             ArgumentList args = context.pushed_args();
             ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, args);
-            if(rv.raw().error != ERROR_SUCCESS) context.set_error(rv.raw().error);
+            if(rv.raw().error != ERROR_SUCCESS) {
+              context.set_error(rv.raw().error);
+              return Value();
+            }
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
             if(is_arg_instr) if(!pop_tmp_ac2(context)) return Value();
@@ -1077,7 +1080,10 @@ namespace letin
             if(is_arg_instr) if(!push_tmp_ac2(context)) return Value();
             ArgumentList args = context.pushed_args();
             ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, args);
-            if(rv.raw().error != ERROR_SUCCESS) context.set_error(rv.raw().error);
+            if(rv.raw().error != ERROR_SUCCESS) {
+              context.set_error(rv.raw().error);
+              return Value();
+            }
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
             if(is_arg_instr) if(!pop_tmp_ac2(context)) return Value();
@@ -1090,7 +1096,10 @@ namespace letin
             if(is_arg_instr) if(!push_tmp_ac2(context)) return Value();
             ArgumentList args = context.pushed_args();
             ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, args);
-            if(rv.raw().error != ERROR_SUCCESS) context.set_error(rv.raw().error);
+            if(rv.raw().error != ERROR_SUCCESS) {
+              context.set_error(rv.raw().error);
+              return Value();
+            }
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
             if(is_arg_instr) if(!pop_tmp_ac2(context)) return Value();

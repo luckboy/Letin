@@ -44,7 +44,7 @@ int main(int argc, char **argv)
         is_relocable = false;
         break;
       default:
-        cerr << "incorrect option -" << optopt << endl;
+        cerr << "incorrect option -" << static_cast<char>(optopt) << endl;
         return 1;
     }
   }

@@ -28,11 +28,11 @@ struct GarbageCollectionFinalization
   ~GarbageCollectionFinalization() { finalize_gc(); }
 };
 
-static bool find_lib(const string lib_name, vector<string> lib_dirs, string &file_name)
+static bool find_lib(const string &lib_name, vector<string> lib_dirs, string &file_name)
 {
   for(size_t i = 0; i < lib_dirs.size() + 1; i++) {
     struct stat stat_buf;
-    file_name = (i >= lib_dirs.size() ? lib_dirs[i] + PATH_SEP : string()) + unix_path_to_path(string(lib_name) + ".letin");
+    file_name = (i < lib_dirs.size() ? lib_dirs[i] + PATH_SEP : string()) + unix_path_to_path(string(lib_name) + ".letin");
     if(stat(file_name.c_str(), &stat_buf) != -1) return true;
   }
   return false;
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
         lib_dirs.push_back(string(optarg));
         break;
       default:
-        cerr << "error: incorrect option -" << c << endl;
+        cerr << "error: incorrect option -" << static_cast<char>(optopt) << endl;
         return 1;
     }
   }
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
     size_t arg_length = strlen(argv[i]);
     Reference arg_ref(vm->gc()->new_immortal_object(OBJECT_TYPE_IARRAY8, arg_length));
     for(size_t j = 0; j < arg_length; j++) arg_ref->set_elem(j, Value(argv[i][j]));
-    ref->set_elem(i - 2, Value(arg_ref));
+    ref->set_elem(i - (optind + 1), Value(arg_ref));
   }
   vector<Value> args;
   args.push_back(Value(ref));
@@ -110,6 +110,7 @@ int main(int argc, char **argv)
   if(vm->env().fun(vm->entry()).arg_count() == 2) {
     Reference unique_io_ref(vm->gc()->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
     args.push_back(unique_io_ref);
+    is_unique_result = true;
   }
   int status = 0;
   Thread thread = vm->start(args, [is_unique_result, &status](const ReturnValue &value) {
@@ -155,12 +156,15 @@ int main(int argc, char **argv)
         cout << "r=" << value.r() << endl;
       cout << "error=" << value.error() << " (" << error_to_string(value.error()) << ")" << endl;
     } else {
-      if(value.r()->type() == OBJECT_TYPE_TUPLE && value.r()->length() == 2 &&
+      if(value.r()->type() == (OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) && value.r()->length() == 2 &&
         value.r()->elem(0).type() == VALUE_TYPE_INT &&
         value.r()->elem(1).type() == VALUE_TYPE_REF && value.r()->elem(1).r()->type() == (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) {
         status = value.r()->elem(0).i();
       } else {
-        cerr << "error: result of entry function is incorrect" << endl;
+        if(value.error() == ERROR_SUCCESS)
+          cerr << "error: result of entry function is incorrect" << endl;
+        else
+          cerr << "error: " << error_to_string(value.error()) << endl;
         status = 255;
       }
     }

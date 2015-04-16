@@ -784,12 +784,12 @@ namespace letin
         default:
           return os << "error";
       }
-      os << (object.type() != OBJECT_TYPE_TUPLE ? "[" : "(");
+      os << ((object.type() & ~ OBJECT_TYPE_UNIQUE) != OBJECT_TYPE_TUPLE ? "[" : "(");
       for(size_t i = 0; i < object.length(); i++) {
         os << object.elem(i);
         if(i + 1 < object.length()) os << ", ";
       }
-      return os << (object.type() != OBJECT_TYPE_TUPLE ? "]" : ")");
+      return os << ((object.type() & ~ OBJECT_TYPE_UNIQUE) != OBJECT_TYPE_TUPLE ? "]" : ")");
     }
 
     ostream &operator<<(ostream &os, const LoadingError &error)
@@ -802,11 +802,11 @@ namespace letin
         case LOADING_ERROR_NO_FUN_SYM:
           return os << "undefined function symbol " << error.symbol_name();
         case LOADING_ERROR_FUN_SYM:
-          return os << "already function symbol" << error.symbol_name();
+          return os << "already function symbol " << error.symbol_name();
         case LOADING_ERROR_NO_VAR_SYM:
-          return os << "undefined variable symbol" << error.symbol_name();
+          return os << "undefined variable symbol " << error.symbol_name();
         case LOADING_ERROR_VAR_SYM:
-          return os << "already variable symbol" << error.symbol_name();
+          return os << "already variable symbol " << error.symbol_name();
         case LOADING_ERROR_RELOC:
           return os << "can't relocate program or library";
         case LOADING_ERROR_ENTRY:
@@ -814,9 +814,9 @@ namespace letin
         case LOADING_ERROR_NO_RELOC:
           return os << "unrelocatable program or library";
         case LOADING_ERROR_FUN_INDEX:
-          return os << "incorrect function index" << error.symbol_name();
+          return os << "incorrect function index " << error.symbol_name();
         case LOADING_ERROR_VAR_INDEX:
-          return os << "incorrect function index" << error.symbol_name();
+          return os << "incorrect function index " << error.symbol_name();
         default:
           return os << "unknown error";
       }
