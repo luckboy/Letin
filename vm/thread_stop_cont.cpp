@@ -113,7 +113,10 @@ namespace letin
         thread_stop_cont = stop_cont;
         stop_cont->has_stopping = true;
         atomic_thread_fence(memory_order_release);
-        fun([](thread &thr) { ::pthread_kill(thr.native_handle(), SIGUSR1); });
+        fun([stop_cont](thread &thr) {
+          if(::pthread_kill(thr.native_handle(), SIGUSR1) != 0)
+            ::sem_post(&(stop_cont->stopping_sem));
+        });
         fun([stop_cont](thread &thr) { ::sem_wait(&(stop_cont->stopping_sem)); });
       }
 
@@ -121,7 +124,10 @@ namespace letin
       {
         stop_cont->has_stopping = false;
         atomic_thread_fence(memory_order_release);
-        fun([](thread &thr) { ::pthread_kill(thr.native_handle(), SIGUSR2); });
+        fun([stop_cont](thread &thr) { 
+          if(::pthread_kill(thr.native_handle(), SIGUSR2) != 0)
+            ::sem_post(&(stop_cont->continuing_sem));
+        });
         fun([stop_cont](thread &thr) { ::sem_wait(&(stop_cont->continuing_sem)); });
       }
 
