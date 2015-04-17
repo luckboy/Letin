@@ -170,5 +170,6 @@ int main(int argc, char **argv)
     }
   });
   thread.system_thread().join();
+  gc->stop();
   return status;
 }

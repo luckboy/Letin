@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -41,7 +41,7 @@ namespace letin
         });
       }
 
-      ImplGarbageCollectorBase::~ImplGarbageCollectorBase() { stop(); }
+      ImplGarbageCollectorBase::~ImplGarbageCollectorBase() {}
 
       void ImplGarbageCollectorBase::add_thread_context(ThreadContext *context)
       {
