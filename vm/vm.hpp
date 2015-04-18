@@ -141,7 +141,7 @@ namespace letin
       {
         if(_M_gc != nullptr) _M_gc->delete_thread_context(this);
         _M_gc = gc;
-        _M_gc->add_thread_context(this);
+        if(_M_gc != nullptr) _M_gc->add_thread_context(this);
       }
 
       NativeFunctionHandler *native_fun_handler() { return _M_native_fun_handler; }

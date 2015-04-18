@@ -301,6 +301,7 @@ namespace letin
           } catch(...) {
             fun(ReturnValue(0, 0.0, Reference(), ERROR_EXCEPTION));
           }
+          thread2.context()->set_gc(nullptr);
         });
         return thread;
       }
