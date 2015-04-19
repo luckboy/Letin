@@ -35,8 +35,10 @@ add_subdirectory(comp)
 add_subdirectory(vm)
 add_subdirectory(letinc)
 add_subdirectory(letin)
+add_subdirectory(doc)
 
 install(DIRECTORY include/letin DESTINATION include)
+install(FILES README.md LICENSE GPL DOCLICENSE DESTINATION share/doc)
 
 if(BUILD_TESTING)
 	enable_testing()
