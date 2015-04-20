@@ -74,7 +74,7 @@ namespace letin
         { "igt",        { OP_IGT,       VALUE_TYPE_INT,         VALUE_TYPE_INT } },
         { "ile",        { OP_ILE,       VALUE_TYPE_INT,         VALUE_TYPE_INT } },
         { "fload",      { OP_FLOAD,     VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
-        { "fload2",     { OP_FLOAD2,    VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "fload2",     { OP_FLOAD2,    VALUE_TYPE_INT,         VALUE_TYPE_INT } },
         { "fneg",       { OP_FNEG,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
         { "fadd",       { OP_FADD,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
         { "fsub",       { OP_FSUB,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
