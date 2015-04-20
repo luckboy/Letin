@@ -15,13 +15,13 @@ programming languages.
 
 ## Values and objects
 
-The Letin virtual machine is 64-bit machine virtual and operates on values and objects. Values
-and objects have own types.
+The Letin virtual machine is a 64-bit machine virtual and operates on values and objects.
+Values and objects have own types.
 
 ### Values
 
 The Letin virtual machine can operate two kinds of values. A value of the first of these is a
-value that can be use in for example variables. This value has one of the types which are
+value that can be used in for example variables. This value has one of the types which are
 presented in the following table:
 
 | Name  | Number | Description                                     |
@@ -89,7 +89,7 @@ types which are presented in the following table:
 An object of tuple is an array of values of any type. The IO object represents the world and
 is used by impure native functions.
 
-The Letin virtual machine also supports unique objects. There mustn't be more references to a
+The Letin virtual machine also supports unique objects. There mustn't be more references to an
 unique object than one reference. Non-unique objects will be called shared objects. A type of
 unique object can be any type with the UNIQUE type flag except the type of error object. The IO
 object must be an unique object. A type number of unique object is a bitwise alternative of the
@@ -105,12 +105,19 @@ execute its.
 ### Functions
 
 Each function has a specified number of arguments and instructions. Functions return a return
-value.
+value. 
 
 ### Global variables
 
 Each global variable is immutable. In other words, each global variable indeed is constant. A
 global variable mustn't have a value that is a reference to an unique object.
+
+### Start function
+
+A start function can have one argument or two arguments. If this function has two arguments,
+the second argument is the IO object and this function has to return a tuple. This tuple
+contains an integer number and the IO object. The first argument of a start function is an
+array of command-line arguments. An integer number of returned tuple is a status code.
 
 ## Execution
 
@@ -125,7 +132,7 @@ function just can have access to the local variables which are allocated by this
 
 Each local variable is allocated by the let instruction. An allocated variable isn't available
 for the function but this variable will be available after the execution of the in instruction.
-In other words, the in instruction allows for separation between definitions of variables and
+In other words, the in instruction allows for a separation between definitions of variables and
 use of they. After the execution of the in instruction, the virtual machine also can allocate
 local variables. After the allocation of local variable, the passed argument is popped from the
 stack.
@@ -145,20 +152,20 @@ any. A function doesn't have to be invoked if its result isn't necessary or its 
 for the arguments of its invocation. Also, a time of function invocation is unspecified.
 
 An invocation instruction allocates or returns a value that is called an invocation value. An
-invocation value mustn't be a function result but this value can be a value that behaves
-how this function result. For example, this value is the reference to the object that has the
-information of the function invocation that can be used so that this function is invoked when
-that is necessary. Each instruction interprets this value as the function result.
+invocation value doesn't have to be a function result but this value can be a value that
+behaves how this function result. For example, this value is the reference to the object that
+has the information of the function invocation that can be used so that this function is
+invoked when that is necessary. Each instruction interprets this value as the function result.
 
 ### Reference cancellation
 
 Unique objects can be used only once in a code. The Letin virtual machine has the mechanism of
 reference cancellation that prevents reuse of references to the unique objects. A reference to
-a unique object is canceled if this reference was used. References is canceled by change of
+an unique object is canceled if this reference was used. References is canceled by change of
 value type. Therefore, the Letin virtual machine can cancel the references which are in
-arguments or local variables or tuples. Reference arrays have references to unique objects. If
-a program uses canceled reference, this program terminates with the error of canceled
-reference.
+arguments or local variables or tuples. Reference arrays just can have references to shared
+objects. If a program uses canceled reference, this program terminates with the error of
+canceled reference.
 
 ## Instructions
 
@@ -208,8 +215,8 @@ invokes a current function with an allocated arguments.
 
 The lettuple instruction allocates local variables from a tuple that is a result of an
 operation. The number of local variables is specified by the local_var_count bits in the opcode
-field. If the tuple length is equal to the number of local variables, a program terminates with
-the error of incorrect object.
+field. If the tuple length isn't equal to the number of local variables, a program terminates
+with the error of incorrect object.
 
 ### Arguments
 

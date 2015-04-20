@@ -17,7 +17,7 @@ This format also is portable.
 The Letin file format uses integer numbers and floating-point numbers. Integer numbers and
 floating-point numbers are stored in the big-endian system. This file format uses the IEEE 754
 standard to store floating-point numbers. This file format uses the number types which are
-represents in the following table:
+represented in the following table:
 
 | Name   | Bytes | Description                                     |
 |:------ |:----- |:----------------------------------------------- |
@@ -32,36 +32,40 @@ represents in the following table:
 | float  | 4     | Type of single-precision floating-point number. |
 | double | 8     | Type of double-precision floating-point number. |
 
-These type names will be used to the structure descriptions. A type of array of this type is
-wrote as this type name with a number of elements in brackets. For example, the array of the
-8-bit unsigned integer numbers is wrote as: uint8\[8\].
+These type names will be used to the structure descriptions. A type of array of this type
+elements is written as this type name with a number of elements in brackets. For example, the
+array of the 8-bit unsigned integer numbers are written as: uint8\[8\].
 
 ## Format structure
 
 The structure of the Letin file format consists of the blocks. These blocks are aligned to 8
-bytes. These blocks in the order are presented the following list:
+bytes. These blocks in the order are presented in the following list:
 
 * header
 * function table
 * variable table
 * code
 * data
+* relocation table
+* symbol table
 
 ### Header
 
 The first block is the header that contains the signature of the Letin file format and other
-information about a programs. The header structure is presented in the following table:
+information about a program. The header structure is presented in the following table:
 
-| Name      | Type        | Description                |
-|:--------- |:----------- |:-------------------------- |
-| magic     | uint8\[8\]  | File signature.            |
-| flags     | uint32      | Flags of program file.     |
-| entry     | uint32      | Index of start function.   |
-| fun_count | uint32      | Number of functions.       |
-| var_count | uint32      | Number of variables.       |
-| code_size | uitn32      | Code size in instructions. | 
-| data_size | uint32      | Data size in bytes.        |
-| reserved  | uint32\[4\] | Reserved.                  |
+| Name         | Type        | Description                |
+|:------------ |:----------- |:-------------------------- |
+| magic        | uint8\[8\]  | File signature.            |
+| flags        | uint32      | Flags of program file.     |
+| entry        | uint32      | Index of start function.   |
+| fun_count    | uint32      | Number of functions.       |
+| var_count    | uint32      | Number of variables.       |
+| code_size    | uitn32      | Code size in instructions. | 
+| data_size    | uint32      | Data size in bytes.        |
+| reloc_count  | uint32      | Number of relocations.     |
+| symbol_count | uint32      | Number of symbols.         |
+| reserved     | uint32\[2\] | Reserved.                  |
 
 The Letin virtual always checks the file signature before a loading of program. The elements of
 this signature are presented in the following table:
@@ -77,8 +81,12 @@ this signature are presented in the following table:
 | MAGIC6 | 6     | 'N'   |
 | MAGIC7 | 7     | 0xff  |
 
-The flags of program file can have the LIBRARY flag value that specifies whether the program is
-a library. The LIBRARY flag value have value 1.
+The flags of program file can have the flags which are presented in the following table:
+
+| Name        | Bit   | Description                  |
+|:----------- |:----- |:---------------------------- |
+| LIBRARY     | 0     | File program is library.     |
+| RELOCATABLE | 1     | File program is relocatable. |
 
 ### Function table
 
@@ -160,5 +168,66 @@ presents how this element and type of this element create this value:
 | type                | object.tets\[object.length * 8 + i\]  |
 | i / f / addr        | object.tes\[i\]                       |
 
-The object in expression of the above table is a variable of the object structure. The i
-variable in expression of the above table is an index of the object element.
+The object in the expressions of the above table is a variable of the object structure. The i
+variable in the expressions of the above table is an index of the object element.
+
+## Relocation table
+
+The relocation table contains relocation descriptions which are used to a program relocation.
+This table occurs if program flags have the RELOCATABLE flag. A relocation of program is a
+process that changes a function indexes and/or a variable indexes. A relocation description
+specifies how an instruction argument or an object element or a variable value will be modified
+during a relocation. The structure of relocation description is presented in the following
+table:
+
+| Name   | Type   | Description                                               |
+|:------ |:------ |:--------------------------------------------------------- |
+| type   | uint32 | Number of relocation type.                                |
+| addr   | uint32 | Instruction address or element address or variable index. |
+| symbol | uint32 | Symbol index.                                             |
+
+The field of relocation type specifies whether an instruction argument or an object element
+will be modified during a relocation. The relocation types are presented in the following
+table:
+
+| Name     | Number | Description                                                   |
+|:-------- |:------ |:------------------------------------------------------------- |  
+| ARG1_FUN | 0      | Relocation of first instruction argument for function index.  |
+| ARG2_FUN | 1      | Relocation of second instruction argument for function index. |
+| ARG1_VAR | 2      | Relocation of first instruction argument for variable index.  |
+| ARG2_VAR | 3      | Relocation of second instruction argument for variable index. |
+| ELEM_FUN | 4      | Relocation of object element for function index.              |
+| VAR_FUN  | 5      | Relocation of variable value for function index.              |
+
+A relocation for a function index modifies a value that has the function index. A relocation
+for a variable index modifies a value that has the variable index. 
+
+A symbolic relocation has a symbol index that refers to the symbol. This symbol has the
+function index or the variable index that replaces the instruction argument or the element
+object or the variable value. A type number of a symbolic relocation is a bitwise alternative
+of the type number and the SYMBOLIC type flag number. The SYMBOLIC type flag has value 256.
+
+## Symbol table
+
+The symbol table contains symbol descriptions. These symbol descriptions also are aligned 8
+bytes. The structure of symbol description is presented in the following table:
+
+| Name   | Type           | Description                       |
+|:------ |:-------------- |:--------------------------------- |
+| index  | uint32         | Function index or variable index. |
+| length | uint16         | Length of symbol name.            |
+| type   | uint8          | Number of symbol type.            |
+| name   | int8\[length\] | Characters of symbol name.        |
+
+The field of symbol type specifies whether a symbol is a function symbol or a variable symbol.
+The symbol types are presented in the following table:
+
+| Name | Number | Description      |
+|:---- |:------ |:---------------- |
+| FUN  | 0      | Function symbol. |
+| VAR  | 1      | Variable symbol. |
+
+Symbols can be undefined or defined. Defined symbols have defined function indexes or defined
+variable indexes. If a symbol is defined, the type number of the symbol is a bitwise 
+alternative of the type number and the DEFINED type flag number. The DEFINED type flag has
+value 16.
