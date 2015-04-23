@@ -75,17 +75,32 @@ namespace letin
       return htonll(x);
     }
 
+    namespace priv
+    {
+      union FloatUnion
+      {
+        std::uint32_t word;
+        float f;
+      };
+
+      union DoubleUnion
+      {
+        std::uint64_t dword;
+        double f;
+      };
+    }
+
     static inline float format_float_to_float(const format::Float &x)
     {
       if(std::numeric_limits<float>::is_iec559 && sizeof(float) == 4) {
         if(!((x.word & 0x7fc00000) == 0x7f800000 && (x.word & 0x007fffff) != 0)) {
+          priv::FloatUnion fu;
 #if __FLOAT_WORD_ORDER == __BYTE_ORDER
-          return *(reinterpret_cast<const float *>(&(x.word)));
+          fu.word = x.word;
 #else
-          format::Float tmp;
-          tmp.word = htonl(x.word);
-          return *(reinterpret_cast<const float *>(&(tmp.word)));
+          fu.word = htonl(x.word);
 #endif
+          return fu.f;
         } else
           return std::numeric_limits<float>::quiet_NaN();
       } else {
@@ -110,13 +125,13 @@ namespace letin
     {
       if(std::numeric_limits<double>::is_iec559 && sizeof(double) == 8) {
         if(!((x.dword & 0x7ff8000000000000LL) == 0x7ff0000000000000LL && (x.dword & 0x000fffffffffffffLL) != 0)) {
+          priv::DoubleUnion du;
 #if __FLOAT_WORD_ORDER == __BYTE_ORDER
-          return *(reinterpret_cast<const double *>(&(x.dword)));
+          du.dword = x.dword;
 #else
-          format::Double tmp;
-          tmp.dword = htonll(x.dword);
-          return *(reinterpret_cast<const float *>(&(tmp.dword)));
+          du.dword = htonll(x.dword);
 #endif
+          return du.f;
         } else
           return std::numeric_limits<float>::quiet_NaN();
       } else {
@@ -141,7 +156,9 @@ namespace letin
     {
       format::Float y;
       if(std::numeric_limits<float>::is_iec559 && sizeof(float) == 4) {
-        *reinterpret_cast<float *>(&(y.word)) = x;
+        priv::FloatUnion fu;
+        fu.f = x;
+        y.word = fu.word;
 #if __FLOAT_WORD_ORDER != __BYTE_ORDER
         y.word = ntohl(y.word);
 #endif
@@ -173,7 +190,9 @@ namespace letin
     {
       format::Double y;
       if(std::numeric_limits<double>::is_iec559 && sizeof(double) == 8) {
-        *reinterpret_cast<double *>(&(y.dword)) = x;
+        priv::DoubleUnion du;
+        du.f = x;
+        y.dword = du.dword;
 #if __FLOAT_WORD_ORDER != __BYTE_ORDER
         y.dword = ntohll(y.dword);
 #endif
