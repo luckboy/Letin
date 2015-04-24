@@ -56,7 +56,7 @@ Names are used to identify instructions and object types. The names syntax is:
 
 Identifiers are used to identify functions, global variables, macros. The identifier syntax is:
 
-    <ident> ::= ("_" | "A" | ... | "Z" | "a" | ... | "z") 
+    <ident> ::= ("_" | "A" | ... | "Z" | "a" | ... | "z" | "$") 
                 ("_" | "A" | ... | "Z" | "a" | ... | "z" | "0" | ... | "9" | "$" | ".")*
 
 ### Arguments and local variables
