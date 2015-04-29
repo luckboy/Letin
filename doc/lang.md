@@ -58,6 +58,7 @@ Identifiers are used to identify functions, global variables, macros. The identi
 
     <ident> ::= ("_" | "A" | ... | "Z" | "a" | ... | "z" | "$") 
                 ("_" | "A" | ... | "Z" | "a" | ... | "z" | "0" | ... | "9" | "$" | ".")*
+              | "`" (<any_char_except_grave_and_newline>)+ "`"
 
 ### Arguments and local variables
 
