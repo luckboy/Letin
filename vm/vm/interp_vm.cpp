@@ -1210,6 +1210,7 @@ namespace letin
             if(!get_ref(context, r, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
             Reference r2(new_object(context, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, i));
             if(r2.is_null()) return Value();
+            if(static_cast<size_t>(i) > 1U && !check_shared_for_object(context, *r)) return Value();
             fill_n(r2->raw().tes, i, TupleElement(r));
             fill_n(r2->raw().tuple_elem_types(), i, VALUE_TYPE_REF);
             return Value(r2);
