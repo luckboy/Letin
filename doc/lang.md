@@ -38,8 +38,9 @@ literal is:
                 | "0" ("0" | ... | "7")*
                 | "0" ("X" | "x") ("0" | ... | "9" | "A" | ... | "F" | "a" | ... | "f")+ 
                 | "'" (<any_char_except_backslash_and_apostrophe> | <escape_seq>) "'"
-    <float> ::= ("0" | ... | "9")+ "." ("0" | ... | "9")* [("E" | "e") ("0" | ... | "9")+]
-              | ("0" | ... | "9")+ [("E" | "e") ("0" | ... | "9")+]
+    <float> ::= ("0" | ... | "9")+ "." ("0" | ... | "9")*
+                [("E" | "e") ["+" | "-"] ("0" | ... | "9")+]
+              | ("0" | ... | "9")+ ("E" | "e") ["+" | "-"] ("0" | ... | "9")+
     <escape_seq> ::= "\\" ("a" | "b" | "t" | "n" | "v" | "f" | "r")
                    | "\\" [["0" | ... | "3"] ("0" | ... | "7")] ("0" | ... | "7")
 
@@ -58,7 +59,7 @@ Identifiers are used to identify functions, global variables, macros. The identi
 
     <ident> ::= ("_" | "A" | ... | "Z" | "a" | ... | "z" | "$") 
                 ("_" | "A" | ... | "Z" | "a" | ... | "z" | "0" | ... | "9" | "$" | ".")*
-              | "`" (<any_char_except_grave_and_newline>)+ "`"
+              | "`" <any_char_except_grave_and_newline>+ "`"
 
 ### Arguments and local variables
 
