@@ -818,6 +818,8 @@ namespace letin
           return os << "incorrect function index " << error.symbol_name();
         case LOADING_ERROR_VAR_INDEX:
           return os << "incorrect function index " << error.symbol_name();
+        case LOADING_ERROR_ALLOC:
+          return os << "out of memory";
         default:
           return os << "unknown error";
       }

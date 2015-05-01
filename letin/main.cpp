@@ -40,136 +40,141 @@ static bool find_lib(const string &lib_name, vector<string> lib_dirs, string &fi
 
 int main(int argc, char **argv)
 {
-  vector<string> lib_dirs;
-  list<string> lib_names;
-  int c;
-  opterr = 0;
-  while((c = getopt(argc, argv, "hl:L:")) != -1) {
-    switch(c) {
-      case 'h':
-        cout << "Usage: " << argv[0] << " [<option> ...] <program file> [<argument> ...]" << endl;
-        cout << endl;
-        cout << "Options:" << endl;
-        cout << "  -h                    display this text" << endl;
-        cout << "  -l <library>          add the library" << endl;
-        cout << "  -L <directory>        add the directory to library directories" << endl;
-        break;
-      case 'l':
-        lib_names.push_back(string(optarg));
-        break;
-      case 'L':
-        lib_dirs.push_back(string(optarg));
-        break;
-      default:
-        cerr << "error: incorrect option -" << static_cast<char>(optopt) << endl;
-        return 1;
-    }
-  }
-  if(argc < optind + 1) {
-    cerr << "error: no program file" << endl;
-    return 1;
-  }
-  vector<string> file_names;
-  for(auto lib_name : lib_names) {
-    string file_name;
-    if(!find_lib(lib_name, lib_dirs, file_name)) {
-      cerr << "error: not found library " + lib_name << endl;
-      return 1;
-    }
-    file_names.push_back(file_name);
-  }
-  file_names.push_back(argv[optind]);
-  initialize_gc();
-  GarbageCollectionFinalization final_gc;
-  unique_ptr<Loader> loader(new_loader());
-  unique_ptr<Allocator> alloc(new_allocator());
-  unique_ptr<GarbageCollector> gc(new_garbage_collector(alloc.get()));
-  unique_ptr<NativeFunctionHandler> native_fun_handler(new DefaultNativeFunctionHandler());
-  unique_ptr<VirtualMachine> vm(new_virtual_machine(loader.get(), gc.get(), native_fun_handler.get()));
-  list<LoadingError> errors;
-  if(!vm->load(file_names, &errors)) {
-    for(auto error : errors)
-      cerr << "error: " << file_names[error.pair_index()] << ": " << error << endl;
-    return 1;
-  }
-  if(!vm->has_entry()) {
-    cerr << "error: no entry" << endl;
-    return 1;
-  }
-  Reference ref(vm->gc()->new_immortal_object(OBJECT_TYPE_RARRAY, argc - (optind + 1)));
-  for(int i = optind + 1; i < argc; i++) {
-    size_t arg_length = strlen(argv[i]);
-    Reference arg_ref(vm->gc()->new_immortal_object(OBJECT_TYPE_IARRAY8, arg_length));
-    for(size_t j = 0; j < arg_length; j++) arg_ref->set_elem(j, Value(argv[i][j]));
-    ref->set_elem(i - (optind + 1), Value(arg_ref));
-  }
-  vector<Value> args;
-  args.push_back(Value(ref));
-  gc->start();
-  bool is_unique_result = false;
-  if(vm->env().fun(vm->entry()).arg_count() == 2) {
-    Reference unique_io_ref(vm->gc()->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
-    args.push_back(unique_io_ref);
-    is_unique_result = true;
-  }
-  int status = 0;
-  Thread thread = vm->start(args, [is_unique_result, &status](const ReturnValue &value) {
-    if(!is_unique_result) {
-      cout << "i=" << value.i() << endl;
-      cout << "f=" << value.f() << endl;
-      if(value.r()->type() == OBJECT_TYPE_IARRAY8) {
-        cout << "r=\"";
-        for(size_t i = 0; i < value.r()->length(); i++) {
-          char c = value.r()->elem(i).i();
-          switch(c) {
-            case '\a':
-              cout << "\\a";
-              break;
-            case '\b':
-              cout << "\\b";
-              break;
-            case '\t':
-              cout << "\\t";
-              break;
-            case '\n':
-              cout << "\\n";
-              break;
-            case '\v':
-              cout << "\\v";
-              break;
-            case '\f':
-              cout << "\\f";
-              break;
-            case '\r':
-              cout << "\\r";
-              break;
-            default:
-              if(isprint(c))
-                cout << c;
-              else
-                cout << "\\" << oct << c;
-              break;
-          }
-        }
-        cout << "\"" << endl;
-      } else
-        cout << "r=" << value.r() << endl;
-      cout << "error=" << value.error() << " (" << error_to_string(value.error()) << ")" << endl;
-    } else {
-      if(value.r()->type() == (OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) && value.r()->length() == 2 &&
-        value.r()->elem(0).type() == VALUE_TYPE_INT &&
-        value.r()->elem(1).type() == VALUE_TYPE_REF && value.r()->elem(1).r()->type() == (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) {
-        status = value.r()->elem(0).i();
-      } else {
-        if(value.error() == ERROR_SUCCESS)
-          cerr << "error: result of entry function is incorrect" << endl;
-        else
-          cerr << "error: " << error_to_string(value.error()) << endl;
-        status = 255;
+  try {
+    vector<string> lib_dirs;
+    list<string> lib_names;
+    int c;
+    opterr = 0;
+    while((c = getopt(argc, argv, "hl:L:")) != -1) {
+      switch(c) {
+        case 'h':
+          cout << "Usage: " << argv[0] << " [<option> ...] <program file> [<argument> ...]" << endl;
+          cout << endl;
+          cout << "Options:" << endl;
+          cout << "  -h                    display this text" << endl;
+          cout << "  -l <library>          add the library" << endl;
+          cout << "  -L <directory>        add the directory to library directories" << endl;
+          break;
+        case 'l':
+          lib_names.push_back(string(optarg));
+          break;
+        case 'L':
+          lib_dirs.push_back(string(optarg));
+          break;
+        default:
+          cerr << "error: incorrect option -" << static_cast<char>(optopt) << endl;
+          return 1;
       }
     }
-  });
-  thread.system_thread().join();
-  gc->stop();
-  return status;
+    if(argc < optind + 1) {
+      cerr << "error: no program file" << endl;
+      return 1;
+    }
+    vector<string> file_names;
+    for(auto lib_name : lib_names) {
+      string file_name;
+      if(!find_lib(lib_name, lib_dirs, file_name)) {
+        cerr << "error: not found library " + lib_name << endl;
+        return 1;
+      }
+      file_names.push_back(file_name);
+    }
+    file_names.push_back(argv[optind]);
+    initialize_gc();
+    GarbageCollectionFinalization final_gc;
+    unique_ptr<Loader> loader(new_loader());
+    unique_ptr<Allocator> alloc(new_allocator());
+    unique_ptr<GarbageCollector> gc(new_garbage_collector(alloc.get()));
+    unique_ptr<NativeFunctionHandler> native_fun_handler(new DefaultNativeFunctionHandler());
+    unique_ptr<VirtualMachine> vm(new_virtual_machine(loader.get(), gc.get(), native_fun_handler.get()));
+    list<LoadingError> errors;
+    if(!vm->load(file_names, &errors)) {
+      for(auto error : errors)
+        cerr << "error: " << file_names[error.pair_index()] << ": " << error << endl;
+      return 1;
+    }
+    if(!vm->has_entry()) {
+      cerr << "error: no entry" << endl;
+      return 1;
+    }
+    Reference ref(vm->gc()->new_immortal_object(OBJECT_TYPE_RARRAY, argc - (optind + 1)));
+    for(int i = optind + 1; i < argc; i++) {
+      size_t arg_length = strlen(argv[i]);
+      Reference arg_ref(vm->gc()->new_immortal_object(OBJECT_TYPE_IARRAY8, arg_length));
+      for(size_t j = 0; j < arg_length; j++) arg_ref->set_elem(j, Value(argv[i][j]));
+      ref->set_elem(i - (optind + 1), Value(arg_ref));
+    }
+    vector<Value> args;
+    args.push_back(Value(ref));
+    gc->start();
+    bool is_unique_result = false;
+    if(vm->env().fun(vm->entry()).arg_count() == 2) {
+      Reference unique_io_ref(vm->gc()->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+      args.push_back(unique_io_ref);
+      is_unique_result = true;
+    }
+    int status = 0;
+    Thread thread = vm->start(args, [is_unique_result, &status](const ReturnValue & value) {
+      if(!is_unique_result) {
+        cout << "i=" << value.i() << endl;
+        cout << "f=" << value.f() << endl;
+        if(value.r()->type() == OBJECT_TYPE_IARRAY8) {
+          cout << "r=\"";
+          for(size_t i = 0; i < value.r()->length(); i++) {
+            char c = value.r()->elem(i).i();
+            switch(c) {
+              case '\a':
+                cout << "\\a";
+                break;
+              case '\b':
+                cout << "\\b";
+                break;
+              case '\t':
+                cout << "\\t";
+                break;
+              case '\n':
+                cout << "\\n";
+                break;
+              case '\v':
+                cout << "\\v";
+                break;
+              case '\f':
+                cout << "\\f";
+                break;
+              case '\r':
+                cout << "\\r";
+                break;
+              default:
+                if(isprint(c))
+                  cout << c;
+                else
+                  cout << "\\" << oct << c;
+                break;
+            }
+          }
+          cout << "\"" << endl;
+        } else
+          cout << "r=" << value.r() << endl;
+        cout << "error=" << value.error() << " (" << error_to_string(value.error()) << ")" << endl;
+      } else {
+        if(value.r()->type() == (OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) && value.r()->length() == 2 &&
+            value.r()->elem(0).type() == VALUE_TYPE_INT &&
+        value.r()->elem(1).type() == VALUE_TYPE_REF && value.r()->elem(1).r()->type() == (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) {
+          status = value.r()->elem(0).i();
+        } else {
+          if(value.error() == ERROR_SUCCESS)
+            cerr << "error: result of entry function is incorrect" << endl;
+          else
+            cerr << "error: " << error_to_string(value.error()) << endl;
+          status = 255;
+        }
+      }
+    });
+    thread.system_thread().join();
+    gc->stop();
+    return status;
+  } catch(bad_alloc &) {
+    cerr << "error: out of memory" << endl;
+    return 1;
+  }
 }

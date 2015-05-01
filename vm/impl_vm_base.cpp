@@ -179,7 +179,7 @@ namespace letin
           format::Object *data_object = prog->data(data_addr);
           Object *object = _M_gc->new_object(data_object->type, data_object->length);
           if(object == nullptr) {
-            if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_FORMAT));
+            if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_ALLOC));
             return false;
           }
           objects.insert(make_pair(data_addr, object));

@@ -87,6 +87,7 @@ namespace letin
   const int LOADING_ERROR_NO_RELOC =    8;
   const int LOADING_ERROR_FUN_INDEX =   9;
   const int LOADING_ERROR_VAR_INDEX =   10;
+  const int LOADING_ERROR_ALLOC =       11;
 }
 
 #endif
