@@ -166,9 +166,9 @@ namespace letin
         }
       }
 
-      static inline Object *new_object(ThreadContext &context, int type, size_t length)
+      static inline Object *new_object(ThreadContext &context, int type, int64_t length)
       {
-        Object *object = context.gc()->new_object(type, length, &context);
+        Object *object = context.gc()->new_object_for_length64(type, length, &context);
         if(object == nullptr) {
           context.set_error(ERROR_OUT_OF_MEMORY);
           return nullptr;
@@ -223,9 +223,9 @@ namespace letin
         return true;
       }
 
-      static inline bool check_object_elem_index(ThreadContext &context, const Object &object, size_t i)
+      static inline bool check_object_elem_index(ThreadContext &context, const Object &object, int64_t i)
       {
-        if(i >= object.length()) {
+        if(static_cast<uint64_t>(i) >= static_cast<uint64_t>(object.length())) {
           context.set_error(ERROR_INDEX_OF_OUT_BOUNDS);
           return false;
         }

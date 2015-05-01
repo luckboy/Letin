@@ -38,6 +38,7 @@ namespace letin
     static inline size_t object_size(int type, size_t length)
     {
       size_t elem_size;
+      if(static_cast<uint64_t>(length) > static_cast<uint64_t>(numeric_limits<int64_t>::max())) return 0;
       switch(type & ~OBJECT_TYPE_UNIQUE) {
         case OBJECT_TYPE_IARRAY8:
           elem_size = 1;

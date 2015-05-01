@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <list>
 #include <memory>
 #include <thread>
@@ -235,6 +236,18 @@ namespace letin
 
       bool set_elem(std::size_t i, const Value &value);
 
+      Value elem_for_i64(std::int64_t i) const
+      {
+        if(static_cast<std::uint64_t>(i) > static_cast<std::uint64_t>(std::numeric_limits<std::size_t>::max())) return Value();
+        return elem(i);
+      }
+
+      bool set_elem_for_i64(std::int64_t i, const Value &value)
+      {
+        if(static_cast<std::uint64_t>(i) > static_cast<std::uint64_t>(std::numeric_limits<std::size_t>::max())) return false;
+        return set_elem(i, value);
+      }
+
       Value operator[](std::size_t i) const { return elem(i); }
 
       std::size_t length() const { return _M_raw.length; }
@@ -456,6 +469,18 @@ namespace letin
       Object *new_object(int type, std::size_t length, ThreadContext *context = nullptr);
 
       Object *new_immortal_object(int type, std::size_t length);
+
+      Object *new_object_for_length64(int type, std::int64_t length, ThreadContext *context = nullptr)
+      {
+        if(static_cast<std::uint64_t>(length) > static_cast<std::uint64_t>(std::numeric_limits<std::size_t>::max())) return nullptr;
+        return new_object(type, length, context);
+      }
+
+      Object *new_immortal_object_for_length64(int type, std::int64_t length)
+      {
+        if(static_cast<std::uint64_t>(length) > static_cast<std::uint64_t>(std::numeric_limits<std::size_t>::max())) return nullptr;
+        return new_immortal_object(type, length);
+      }
 
       virtual void start() = 0;
 
