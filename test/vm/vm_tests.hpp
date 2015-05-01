@@ -69,6 +69,9 @@ namespace letin
         CPPUNIT_TEST(test_vm_complains_on_already_defined_symbols);
         CPPUNIT_TEST(test_vm_complains_on_relocation);
         CPPUNIT_TEST(test_vm_complains_on_unrelocable_program);
+        CPPUNIT_TEST(test_vm_complains_on_arguments_of_req_instruction);
+        CPPUNIT_TEST(test_vm_complains_on_arguments_of_rne_instruction);
+        CPPUNIT_TEST(test_vm_complains_on_rutfillr_instruction_with_unique_object);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -111,6 +114,9 @@ namespace letin
         void test_vm_complains_on_already_defined_symbols();
         void test_vm_complains_on_relocation();
         void test_vm_complains_on_unrelocable_program();
+        void test_vm_complains_on_arguments_of_req_instruction();
+        void test_vm_complains_on_arguments_of_rne_instruction();
+        void test_vm_complains_on_rutfillr_instruction_with_unique_object();
       };
 
       DECL_IMPL_VM_TESTS(InterpreterVirtualMachine);

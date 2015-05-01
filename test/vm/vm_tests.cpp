@@ -1219,6 +1219,76 @@ namespace letin
         CPPUNIT_ASSERT("" == error_vector[0].symbol_name());
       }
 
+      void VirtualMachineTests::test_vm_complains_on_arguments_of_req_instruction()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        LET(RIARRAY32, NA(), NA());
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        LET(RIARRAY32, NA(), NA());
+        IN();
+        RET(REQ, LV(0), LV(1));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_INCORRECT_INSTR == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+
+      void VirtualMachineTests::test_vm_complains_on_arguments_of_rne_instruction()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        LET(RIARRAY32, NA(), NA());
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        LET(RIARRAY32, NA(), NA());
+        IN();
+        RET(RNE, LV(0), LV(1));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_INCORRECT_INSTR == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+
+      void VirtualMachineTests::test_vm_complains_on_rutfillr_instruction_with_unique_object()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        LET(RUIAFILL32, IMM(10), IMM(5));
+        IN();
+        RET(RUTFILLR, IMM(2), LV(0));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_AGAIN_USED_UNIQUE == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+
       DEF_IMPL_VM_TESTS(InterpreterVirtualMachine);
     }
   }
