@@ -1289,7 +1289,7 @@ namespace letin
         CPPUNIT_ASSERT(is_expected_error);
       }
 
-      void VirtualMachineTests::test_vm_executes_arg_instructions_with_invokations()
+      void VirtualMachineTests::test_vm_executes_arg_instructions_with_invocations()
       {
         PROG(prog_helper, 0);
         FUN(0);
