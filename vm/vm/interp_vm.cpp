@@ -1015,7 +1015,7 @@ namespace letin
               int64_t i;
               if(is_arg_instr) if(!push_tmp_ac2(context)) return Value();
               if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-              call_fun(context, i);
+              call_fun(context, static_cast<uint32_t>(i));
               return Value();
             } else {
               context.regs().after_leaving_flag = false;
@@ -1029,7 +1029,7 @@ namespace letin
               int64_t i;
               if(is_arg_instr) if(!push_tmp_ac2(context)) return Value();
               if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-              call_fun(context, i);
+              call_fun(context, static_cast<uint32_t>(i));
               return Value();
             } else {
               context.regs().after_leaving_flag = false;
@@ -1043,7 +1043,7 @@ namespace letin
               int64_t i;
               if(is_arg_instr) if(!push_tmp_ac2(context)) return Value();
               if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-              call_fun(context, i);
+              call_fun(context, static_cast<uint32_t>(i));
               return Value();
             } else {
               context.regs().after_leaving_flag = false;
