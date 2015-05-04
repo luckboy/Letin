@@ -116,6 +116,11 @@ namespace letin
       Reference tmp_r;
       bool after_leaving_flag;
       std::uint32_t tmp_ac2;
+      bool try_flag;
+      std::size_t try_abp;
+      std::uint32_t try_ac;
+      Value try_arg2;
+      Reference try_io_r;
     };
 
     class ThreadContext
@@ -220,9 +225,11 @@ namespace letin
       bool leave_from_fun();
 
       void in() { _M_regs.lvc = _M_regs.abp2 - lvbp(); }
+    private:
+      void set_error_without_try(int error, const Reference &r);
+    public:
+      void set_error(int error, const Reference &r = Reference());
 
-      void set_error(int error);
-      
       ArgumentList pushed_args() const { return ArgumentList(_M_stack + _M_regs.abp2, _M_regs.ac2); }
 
       void hide_args()
@@ -248,6 +255,41 @@ namespace letin
           _M_regs.abp2--;
           std::atomic_thread_fence(std::memory_order_release);
           _M_regs.tmp_ac2 = _M_stack[_M_regs.abp2].raw().i;
+          return true;
+        } else
+          return false;
+      }
+
+      void set_try_regs(const Value &arg2, const Reference &io_r)
+      {
+        _M_regs.try_flag = true;
+        _M_regs.try_abp = _M_regs.abp; _M_regs.try_ac = _M_regs.ac;
+        _M_regs.try_arg2.safely_assign_for_gc(arg2);
+        _M_regs.try_io_r = io_r;
+        std::atomic_thread_fence(std::memory_order_release);
+      }
+      
+      bool push_try_regs()
+      {
+        if(!push_local_var(Value(_M_regs.try_flag ? 1 : 0))) return false;
+        if(!push_local_var(Value(static_cast<std::int64_t>((static_cast<std::uint64_t>(_M_regs.try_abp) << 32) | _M_regs.try_ac)))) return false;
+        if(!push_local_var(_M_regs.try_arg2)) return false;
+        if(!push_local_var(Value(_M_regs.try_io_r))) return false;
+        return true;
+      }
+
+      bool pop_try_regs()
+      {
+        if(_M_regs.abp2 >= 4) {
+          _M_regs.sec-= 4;
+          _M_regs.abp2-= 4;
+          std::atomic_thread_fence(std::memory_order_release);
+          _M_regs.try_io_r = _M_stack[_M_regs.abp2 + 3].raw().r;
+          std::atomic_thread_fence(std::memory_order_release);
+          _M_regs.try_arg2.safely_assign_for_gc(_M_stack[_M_regs.abp2 + 2].raw().r);
+          _M_regs.try_abp = _M_stack[_M_regs.abp2 + 1].raw().i >> 32;
+          _M_regs.try_ac = _M_stack[_M_regs.abp2 + 1].raw().i & 0xffffffff;
+          _M_regs.try_flag = (_M_stack[_M_regs.abp2].raw().i != 0);
           return true;
         } else
           return false;

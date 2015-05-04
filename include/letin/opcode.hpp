@@ -22,6 +22,7 @@ namespace letin
     const std::uint32_t INSTR_ARG =     0x05;
     const std::uint32_t INSTR_RETRY =   0x06;
     const std::uint32_t INSTR_LETTUPLE = 0x07;
+    const std::uint32_t INSTR_THROW =   0x08;
 
     const std::uint32_t OP_ILOAD =      0x00;
     const std::uint32_t OP_ILOAD2 =     0x01;
@@ -158,6 +159,7 @@ namespace letin
     const std::uint32_t OP_FFLOOR =     0x84;
     const std::uint32_t OP_FROUND =     0x85;
     const std::uint32_t OP_FTRUNC =     0x86;
+    const std::uint32_t OP_TRY =        0x87;
 
     const std::uint32_t ARG_TYPE_LVAR = 0x0;
     const std::uint32_t ARG_TYPE_ARG =  0x1;

@@ -675,6 +675,10 @@ namespace letin
         _M_regs.fp = i;
         _M_regs.ip = 0;
         _M_regs.after_leaving_flag = false;
+        _M_regs.try_flag = false;
+        _M_regs.try_arg2 = Value();
+        _M_regs.try_io_r = Reference();
+        _M_regs.try_abp = _M_regs.try_ac = 0;
         atomic_thread_fence(memory_order_release);
         return true;
       } else
@@ -703,14 +707,26 @@ namespace letin
         return false;
     }
 
-    void ThreadContext::set_error(int error)
+    void ThreadContext::set_error_without_try(int error, const Reference &r)
     {
       _M_regs.abp = _M_regs.ac = _M_regs.lvc = _M_regs.abp2 = _M_regs.ac2 = _M_regs.sec = 0;
       _M_regs.fp = static_cast<size_t>(-1);
       _M_regs.ip = 0;
-      _M_regs.rv = ReturnValue(0, 0.0, Reference(), error);
+      _M_regs.rv = ReturnValue(0, 0.0, r, error);
       _M_regs.after_leaving_flag = false;
       atomic_thread_fence(memory_order_release);
+    }
+
+    void ThreadContext::set_error(int error, const Reference &r)
+    {
+      if(!_M_regs.try_flag) {
+        set_error_without_try(error, r);
+      } else {
+        _M_regs.abp = _M_regs.try_abp;
+        _M_regs.ac = _M_regs.try_ac;
+        _M_regs.rv = ReturnValue(0, 0.0, r, error);        
+        if(!leave_from_fun()) set_error_without_try(error, r);
+      }
     }
 
     //

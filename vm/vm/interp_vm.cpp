@@ -279,6 +279,24 @@ namespace letin
         return true;
       }
 
+      static inline bool push_try_regs(ThreadContext &context)
+      {
+        if(!context.push_try_regs()) {
+          context.set_error(ERROR_STACK_OVERFLOW);
+          return false;
+        }
+        return true;
+      }
+
+      static inline bool pop_try_regs(ThreadContext &context)
+      {
+        if(!context.pop_try_regs()) {
+          context.set_error(ERROR_EMPTY_STACK);
+          return false;
+        }
+        return true;
+      }
+
       //
       // An InterpreterVirtualMachine class.
       //
@@ -380,6 +398,12 @@ namespace letin
             }
             context.regs().tmp_ptr = nullptr;
             break;
+          }
+          case INSTR_THROW:
+          {
+            Reference r;
+            if(get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1))
+              context.set_error(ERROR_USER_EXCEPTION, r);
           }
         }
         atomic_thread_fence(memory_order_release);
@@ -1737,6 +1761,64 @@ namespace letin
             double f;
             if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             return Value(trunc(f));
+          }
+          case OP_TRY:
+          {
+            if(!context.regs().after_leaving_flag) {
+              int64_t i1, i2;
+              if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+              if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+              if(!check_pushed_arg_count(context, 3)) return Value();
+              Value arg1 = context.pushed_arg(0);
+              Value arg2 = context.pushed_arg(1);
+              Value io = context.pushed_arg(2);
+              if(context.pushed_arg(0).is_unique()) context.pushed_arg(0).cancel_ref();
+              if(context.pushed_arg(1).is_unique()) context.pushed_arg(1).cancel_ref();
+              if(context.pushed_arg(2).is_unique()) context.pushed_arg(2).cancel_ref();
+              if(!check_value_type(context, io, VALUE_TYPE_REF)) return Value();
+              if(!check_object_type(context, *(io.raw().r), OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) return Value(); 
+              if(!is_arg_instr) context.hide_args();
+              if(!push_tmp_ac2(context)) return Value();
+              if(!push_try_regs(context)) return Value();
+              if(!push_arg(context, arg1)) return Value();
+              if(!push_arg(context, io)) return Value();
+              call_fun(context, static_cast<uint32_t>(i1));
+              context.set_try_regs(arg2, io.raw().r);
+              return Value();
+            } else {
+              int error = context.regs().rv.error();
+              Value arg2 = context.regs().try_arg2;
+              Reference io_r = context.regs().try_io_r;
+              context.regs().after_leaving_flag = false;
+              if(!pop_try_regs(context)) return Value();
+              if(!pop_tmp_ac2(context)) return Value();
+              if(!is_arg_instr) context.restore_abp2_and_ac2();
+              Reference r = context.regs().rv.raw().r;
+              if(error == ERROR_SUCCESS) {
+                // Checks and returns the reference for the arg1 function or the arg2 function. 
+                if(r->type() != (OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) ||
+                    r->length() != 2 ||
+                    r->elem(1).type() != VALUE_TYPE_REF ||
+                    r->elem(1).raw().r->type() != (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) {
+                  context.set_error(ERROR_INCORRECT_OBJECT);
+                  return Value();
+                }
+                return Value(r);
+              } else {
+                context.regs().rv.raw().error = ERROR_SUCCESS;
+                int64_t i;
+                if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+                if(!is_arg_instr) context.hide_args();
+                if(!push_tmp_ac2(context)) return Value();
+                if(!push_try_regs(context)) return Value();
+                if(!push_arg(context, Value(error))) return Value();
+                if(!push_arg(context, Value(r))) return Value();
+                if(!push_arg(context, arg2)) return Value();
+                if(!push_arg(context, io_r)) return Value();
+                call_fun(context, static_cast<uint32_t>(i));
+                return Value();
+              }
+            }
           }
           default:
           {
