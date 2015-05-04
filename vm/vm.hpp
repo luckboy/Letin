@@ -243,7 +243,7 @@ namespace letin
 
       bool pop_tmp_ac2()
       {
-        if(_M_regs.abp2 > 0) {
+        if(_M_regs.abp2 > 0 && _M_stack[_M_regs.abp2 - 1].type() == VALUE_TYPE_INT) {
           _M_regs.sec--;
           _M_regs.abp2--;
           std::atomic_thread_fence(std::memory_order_release);
