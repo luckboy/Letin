@@ -280,16 +280,20 @@ namespace letin
 
       bool pop_try_regs()
       {
-        if(_M_regs.abp2 >= 4) {
+        uint32_t abp2 = _M_regs.abp2 - 4;
+        if(_M_regs.abp2 >= 4 &&
+            _M_stack[abp2 + 0].type() == VALUE_TYPE_INT &&
+            _M_stack[abp2 + 1].type() == VALUE_TYPE_INT &&
+            _M_stack[abp2 + 3].type() == VALUE_TYPE_REF) {
           _M_regs.sec-= 4;
           _M_regs.abp2-= 4;
           std::atomic_thread_fence(std::memory_order_release);
           _M_regs.try_io_r = _M_stack[_M_regs.abp2 + 3].raw().r;
           std::atomic_thread_fence(std::memory_order_release);
-          _M_regs.try_arg2.safely_assign_for_gc(_M_stack[_M_regs.abp2 + 2].raw().r);
+          _M_regs.try_arg2.safely_assign_for_gc(_M_stack[_M_regs.abp2 + 2]);
           _M_regs.try_abp = _M_stack[_M_regs.abp2 + 1].raw().i >> 32;
           _M_regs.try_ac = _M_stack[_M_regs.abp2 + 1].raw().i & 0xffffffff;
-          _M_regs.try_flag = (_M_stack[_M_regs.abp2].raw().i != 0);
+          _M_regs.try_flag = (_M_stack[_M_regs.abp2 + 0].raw().i != 0);
           return true;
         } else
           return false;
