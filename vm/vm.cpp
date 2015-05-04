@@ -688,9 +688,9 @@ namespace letin
     bool ThreadContext::leave_from_fun()
     {
       auto fbp = _M_regs.abp + _M_regs.ac;
-      if(fbp + 3 < _M_stack_size ||
-          _M_stack[fbp + 0].type() == VALUE_TYPE_PAIR ||
-          _M_stack[fbp + 1].type() == VALUE_TYPE_PAIR ||
+      if(fbp + 3 < _M_stack_size &&
+          _M_stack[fbp + 0].type() == VALUE_TYPE_PAIR &&
+          _M_stack[fbp + 1].type() == VALUE_TYPE_PAIR &&
           _M_stack[fbp + 2].type() == VALUE_TYPE_INT) {
         _M_regs.abp2 = _M_regs.abp;
         _M_regs.ac2 = 0;
