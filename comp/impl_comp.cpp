@@ -172,7 +172,21 @@ namespace letin
         { "rusfatosfa", { OP_RUSFATOSFA, VALUE_TYPE_REF,        VALUE_TYPE_ERROR } },
         { "rudfatodfa", { OP_RUDFATODFA, VALUE_TYPE_REF,        VALUE_TYPE_ERROR } },
         { "ruratora",   { OP_RURATORA,  VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
-        { "ruttot",     { OP_RUTTOT,    VALUE_TYPE_REF,         VALUE_TYPE_ERROR } }
+        { "ruttot",     { OP_RUTTOT,    VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "fpow",       { OP_FPOW,      VALUE_TYPE_FLOAT,       VALUE_TYPE_FLOAT } },
+        { "fsqrt",      { OP_FSQRT,     VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "fexp",       { OP_FEXP,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "flog",       { OP_FLOG,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "fcos",       { OP_FCOS,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "fsin",       { OP_FSIN,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "ftan",       { OP_FTAN,      VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "facos",      { OP_FACOS,     VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "fasin",      { OP_FASIN,     VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "fatan",      { OP_FATAN,     VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "fceil",      { OP_FCEIL,     VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "ffloor",     { OP_FFLOOR,    VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "fround",     { OP_FROUND,    VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "ftrunc",     { OP_FTRUNC,    VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } }
       };
 
       //

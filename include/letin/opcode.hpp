@@ -144,6 +144,20 @@ namespace letin
     const std::uint32_t OP_RUDFATODFA = 0x76;
     const std::uint32_t OP_RURATORA =   0x77;
     const std::uint32_t OP_RUTTOT =     0x78;
+    const std::uint32_t OP_FPOW =       0x79;
+    const std::uint32_t OP_FSQRT =      0x7a;
+    const std::uint32_t OP_FEXP =       0x7b;
+    const std::uint32_t OP_FLOG =       0x7c;
+    const std::uint32_t OP_FCOS =       0x7d;
+    const std::uint32_t OP_FSIN =       0x7e;
+    const std::uint32_t OP_FTAN =       0x7f;
+    const std::uint32_t OP_FACOS =      0x80;
+    const std::uint32_t OP_FASIN =      0x81;
+    const std::uint32_t OP_FATAN =      0x82;
+    const std::uint32_t OP_FCEIL =      0x83;
+    const std::uint32_t OP_FFLOOR =     0x84;
+    const std::uint32_t OP_FROUND =     0x85;
+    const std::uint32_t OP_FTRUNC =     0x86;
 
     const std::uint32_t ARG_TYPE_LVAR = 0x0;
     const std::uint32_t ARG_TYPE_ARG =  0x1;

@@ -7,6 +7,7 @@
  ****************************************************************************/
 #include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <letin/const.hpp>
@@ -1651,6 +1652,91 @@ namespace letin
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
             return Value(r3);
+          }
+          case OP_FPOW:
+          {
+            double f1, f2;
+            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            return Value(pow(f1, f2));
+          }
+          case OP_FSQRT:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(sqrt(f));
+          }
+          case OP_FEXP:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(exp(f));
+          }
+          case OP_FLOG:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(log(f));
+          }
+          case OP_FCOS:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(cos(f));
+          }
+          case OP_FSIN:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(sin(f));
+          }
+          case OP_FTAN:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(tan(f));
+          }
+          case OP_FACOS:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(acos(f));
+          }
+          case OP_FASIN:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(asin(f));
+          }
+          case OP_FATAN:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(atan(f));
+          }
+          case OP_FCEIL:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(ceil(f));
+          }
+          case OP_FFLOOR:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(floor(f));
+          }
+          case OP_FROUND:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(round(f));
+          }
+          case OP_FTRUNC:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(trunc(f));
           }
           default:
           {
