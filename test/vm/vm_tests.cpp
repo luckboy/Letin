@@ -1289,6 +1289,38 @@ namespace letin
         CPPUNIT_ASSERT(is_expected_error);
       }
 
+      void VirtualMachineTests::test_vm_executes_arg_instructions_with_invocations()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(ICALL, IMM(1), NA());
+        ARG(ICALL, IMM(2), NA());
+        RET(RIARRAY8, NA(), NA());
+        END_FUN();
+        FUN(0);
+        RET(ILOAD, IMM(10), NA());
+        END_FUN();
+        FUN(0);
+        RET(ILOAD, IMM(20), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (OBJECT_TYPE_IARRAY8 == value.r()->type());
+          is_expected &= (2 == value.r()->length());
+          is_expected &= (Value(10) == value.r()->elem(0));
+          is_expected &= (Value(20) == value.r()->elem(1));
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
       DEF_IMPL_VM_TESTS(InterpreterVirtualMachine);
     }
   }

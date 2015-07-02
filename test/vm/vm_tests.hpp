@@ -72,6 +72,7 @@ namespace letin
         CPPUNIT_TEST(test_vm_complains_on_arguments_of_req_instruction);
         CPPUNIT_TEST(test_vm_complains_on_arguments_of_rne_instruction);
         CPPUNIT_TEST(test_vm_complains_on_rutfillr_instruction_with_unique_object);
+        CPPUNIT_TEST(test_vm_executes_arg_instructions_with_invocations);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -117,6 +118,7 @@ namespace letin
         void test_vm_complains_on_arguments_of_req_instruction();
         void test_vm_complains_on_arguments_of_rne_instruction();
         void test_vm_complains_on_rutfillr_instruction_with_unique_object();
+        void test_vm_executes_arg_instructions_with_invocations();
       };
 
       DECL_IMPL_VM_TESTS(InterpreterVirtualMachine);
