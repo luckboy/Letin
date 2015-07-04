@@ -656,6 +656,10 @@ namespace letin
       _M_regs.tmp_ptr = nullptr;
       _M_regs.tmp_r = Reference();
       _M_regs.after_leaving_flag = false;
+      _M_regs.try_flag = false;
+      _M_regs.try_arg2 = Value();
+      _M_regs.try_io_r = Reference();
+      _M_regs.try_abp = _M_regs.try_ac = 0;
       _M_stack = new Value[stack_size];
       _M_stack_size = stack_size;
     }
@@ -675,10 +679,6 @@ namespace letin
         _M_regs.fp = i;
         _M_regs.ip = 0;
         _M_regs.after_leaving_flag = false;
-        _M_regs.try_flag = false;
-        _M_regs.try_arg2 = Value();
-        _M_regs.try_io_r = Reference();
-        _M_regs.try_abp = _M_regs.try_ac = 0;
         atomic_thread_fence(memory_order_release);
         return true;
       } else
