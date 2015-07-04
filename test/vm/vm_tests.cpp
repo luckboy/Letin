@@ -1320,6 +1320,310 @@ namespace letin
         CPPUNIT_ASSERT(is_success);
         CPPUNIT_ASSERT(is_expected);
       }
+      
+      void VirtualMachineTests::test_vm_executes_try()
+      {
+        PROG(prog_helper, 0);
+        FUN(1);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        ARG(RLOAD, A(0), NA());
+        LET(TRY, IMM(1), IMM(2));
+        IN();
+        RET(RLOAD, LV(0), NA());
+        END_FUN();
+        FUN(2);
+        LET(RUTFILLI, IMM(2), A(0));
+        IN();
+        ARG(RLOAD, A(1), NA());
+        RET(RUTSNTH, LV(0), IMM(1));
+        END_FUN();
+        FUN(4);
+        LET(IADD, A(0), IMM(1000));
+        IN();
+        LET(RUTFILLI, IMM(2), LV(0));
+        IN();
+        ARG(RLOAD, A(3), NA());
+        RET(RUTSNTH, LV(1), IMM(1));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        Reference unique_io_ref(_M_gc->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+        args.push_back(unique_io_ref);
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = ((OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) == value.r()->type());
+          is_expected &= (2 == value.r()->length());
+          is_expected &= (Value(1) == value.r()->elem(0));
+          Reference ref2(value.r()->elem(1).r());
+          is_expected &= ((OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE) == ref2->type());          
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_executes_try_and_throw()
+      {
+        PROG(prog_helper, 0);
+        FUN(1);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        ARG(RLOAD, A(0), NA());
+        LET(TRY, IMM(1), IMM(2));
+        IN();
+        RET(RLOAD, LV(0), NA());
+        END_FUN();
+        FUN(2);
+        THROW(GV(0));
+        END_FUN();
+        FUN(4);
+        ARG(ILOAD, A(0), NA());
+        ARG(RLOAD, A(1), NA());
+        ARG(ILOAD, A(2), NA());
+        LET(RTUPLE, NA(), NA());
+        IN();
+        LET(RUTFILLR, IMM(2), LV(0));
+        IN();
+        ARG(RLOAD, A(3), NA());
+        RET(RUTSNTH, LV(1), IMM(1));
+        END_FUN();
+        VAR_R(0);
+        OBJECT(IARRAY8);
+        I('a'); I('1'); I('b'); I('2'); I('c'); I('3');
+        END_OBJECT();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        Reference unique_io_ref(_M_gc->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+        args.push_back(unique_io_ref);
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = ((OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) == value.r()->type());
+          is_expected &= (2 == value.r()->length());
+          is_expected &= (VALUE_TYPE_REF == value.r()->elem(0).type());
+          Reference ref1(value.r()->elem(0).r());
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->type());
+          is_expected &= (Value(ERROR_USER_EXCEPTION) == ref1->elem(0));
+          Reference ref2(ref1->elem(1).r());
+          is_expected &= (OBJECT_TYPE_IARRAY8 == ref2->type());
+          is_expected &= (6 == ref2->length());
+          is_expected &= (strncmp("a1b2c3", reinterpret_cast<const char *>(ref2->raw().is8), 6) == 0);
+          is_expected &= (Value(2) == ref1->elem(2));
+          Reference ref3(value.r()->elem(1).r());
+          is_expected &= ((OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE) == ref3->type());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+      
+      void VirtualMachineTests::test_vm_executes_two_tries_and_throw()
+      {
+        PROG(prog_helper, 0);
+        FUN(1);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        ARG(RLOAD, A(0), NA());
+        LET(TRY, IMM(1), IMM(2));
+        IN();
+        RET(RLOAD, LV(0), NA());
+        END_FUN();
+        FUN(2);
+        ARG(ILOAD, IMM(3), NA());
+        ARG(ILOAD, IMM(4), NA());
+        ARG(RLOAD, A(1), NA());
+        RET(TRY, IMM(3), IMM(5));
+        END_FUN();
+        FUN(4);
+        ARG(ILOAD, A(0), NA());
+        ARG(RLOAD, A(1), NA());
+        ARG(ILOAD, A(2), NA());
+        LET(RTUPLE, NA(), NA());
+        IN();
+        LET(RUTFILLR, IMM(2), LV(0));
+        IN();
+        ARG(RLOAD, A(3), NA());
+        RET(RUTSNTH, LV(1), IMM(1));
+        END_FUN();
+        FUN(2);
+        RET(RCALL, IMM(4), NA());
+        END_FUN();
+        FUN(0);
+        THROW(GV(0));
+        END_FUN();
+        FUN(4);
+        THROW(GV(1));
+        END_FUN();        
+        VAR_R(0);
+        VAR_R(16);
+        OBJECT(IARRAY8);
+        I('a'); I('b'); I('c');
+        END_OBJECT();
+        OBJECT(IARRAY8);
+        I('d'); I('e'); I('f');
+        END_OBJECT();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        Reference unique_io_ref(_M_gc->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+        args.push_back(unique_io_ref);
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = ((OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) == value.r()->type());
+          is_expected &= (2 == value.r()->length());
+          is_expected &= (VALUE_TYPE_REF == value.r()->elem(0).type());
+          Reference ref1(value.r()->elem(0).r());
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->type());
+          is_expected &= (Value(ERROR_USER_EXCEPTION) == ref1->elem(0));
+          Reference ref2(ref1->elem(1).r());
+          is_expected &= (OBJECT_TYPE_IARRAY8 == ref2->type());
+          is_expected &= (3 == ref2->length());
+          is_expected &= (strncmp("def", reinterpret_cast<const char *>(ref2->raw().is8), 3) == 0);
+          is_expected &= (Value(2) == ref1->elem(2));
+          Reference ref3(value.r()->elem(1).r());
+          is_expected &= ((OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE) == ref3->type());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+      
+      void VirtualMachineTests::test_vm_throws_and_catches_system_exception()
+      {
+        PROG(prog_helper, 0);
+        FUN(1);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        ARG(RLOAD, A(0), NA());
+        LET(TRY, IMM(1), IMM(2));
+        IN();
+        RET(RLOAD, LV(0), NA());
+        END_FUN();
+        FUN(2);
+        RET(IDIV, IMM(0), IMM(0));
+        END_FUN();
+        FUN(4);
+        ARG(ILOAD, A(0), NA());
+        ARG(ILOAD, A(2), NA());
+        LET(RTUPLE, NA(), NA());
+        IN();
+        LET(RUTFILLR, IMM(2), LV(0));
+        IN();
+        ARG(RLOAD, A(3), NA());
+        RET(RUTSNTH, LV(1), IMM(1));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        Reference unique_io_ref(_M_gc->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+        args.push_back(unique_io_ref);
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = ((OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) == value.r()->type());
+          is_expected &= (2 == value.r()->length());
+          is_expected &= (VALUE_TYPE_REF == value.r()->elem(0).type());
+          Reference ref1(value.r()->elem(0).r());
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->type());
+          is_expected &= (Value(ERROR_DIV_BY_ZERO) == ref1->elem(0));
+          is_expected &= (Value(2) == ref1->elem(1));
+          Reference ref2(value.r()->elem(1).r());
+          is_expected &= ((OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE) == ref2->type());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_throws_user_exception()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        RET(ICALL, IMM(1), NA());
+        END_FUN();
+        FUN(0);
+        THROW(GV(0));
+        END_FUN();
+        VAR_R(0);
+        OBJECT(IARRAY8);
+        I('a'); I('b'); I('c');
+        END_OBJECT();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error, &is_expected](const ReturnValue &value) {
+          is_expected_error = (ERROR_USER_EXCEPTION == value.error());
+          is_expected = (OBJECT_TYPE_IARRAY8 == value.r()->type());
+          is_expected &= (3 == value.r()->length());
+          is_expected &= (strncmp("abc", reinterpret_cast<const char *>(value.r()->raw().is8), 3) == 0);
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_throws_user_exception_from_catching_function()
+      {
+        PROG(prog_helper, 0);
+        FUN(1);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        ARG(RLOAD, A(0), NA());
+        RET(TRY, IMM(1), IMM(2));
+        END_FUN();
+        FUN(2);
+        THROW(GV(0));
+        END_FUN();
+        FUN(4);
+        THROW(GV(1));
+        END_FUN();
+        VAR_R(0);
+        VAR_R(16);
+        OBJECT(IARRAY8);
+        I('a'); I('b'); I('c');
+        END_OBJECT();
+        OBJECT(IARRAY8);
+        I('d'); I('e'); I('f');
+        END_OBJECT();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        bool is_expected = false;
+        vector<Value> args;
+        Reference unique_io_ref(_M_gc->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+        args.push_back(unique_io_ref);
+        Thread thread = _M_vm->start(args, [&is_expected_error, &is_expected](const ReturnValue &value) {
+          is_expected_error = (ERROR_USER_EXCEPTION == value.error());
+          is_expected = (OBJECT_TYPE_IARRAY8 == value.r()->type());
+          is_expected &= (3 == value.r()->length());
+          is_expected &= (strncmp("def", reinterpret_cast<const char *>(value.r()->raw().is8), 3) == 0);
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+        CPPUNIT_ASSERT(is_expected);
+      }
 
       DEF_IMPL_VM_TESTS(InterpreterVirtualMachine);
     }
