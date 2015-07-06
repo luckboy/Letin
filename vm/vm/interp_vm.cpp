@@ -134,7 +134,10 @@ namespace letin
             context.set_error(ERROR_INCORRECT_VALUE);
           return false;
         }
-        if(value.raw().r->is_unique()) context.set_error(ERROR_UNIQUE_OBJECT);
+        if(value.raw().r->is_unique()) {
+          context.set_error(ERROR_UNIQUE_OBJECT);
+          return false;
+        }
         r = value.raw().r;
         return true;
       }
@@ -633,9 +636,9 @@ namespace letin
           }
           case OP_RLOAD:
           {
-            Reference r1;
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            return Value(r1);
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(r);
           }
           case OP_REQ:
           {
