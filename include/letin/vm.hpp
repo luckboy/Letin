@@ -111,7 +111,6 @@ namespace letin
         std::int64_t i;
         double f;
         Reference r;
-        std::size_t fun;
         struct
         {
           uint32_t first;
