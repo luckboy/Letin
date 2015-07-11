@@ -43,7 +43,7 @@ namespace letin
             return false;
           }
         }
-        out_value = Value(value.raw().f);
+        out_value = Value(value.raw().i);
         return true;
       }
 
@@ -372,7 +372,8 @@ namespace letin
       ReturnValue InterpreterVirtualMachine::start_in_thread(size_t i, const vector<Value> &args, ThreadContext &context)
       {
         for(auto arg : args) if(!push_arg(context, arg)) return context.regs().rv;
-        if(call_fun_for_force(context, i)) interpret(context);
+        if(!call_fun_for_force(context, i))
+          if(context.regs().rv.error() == ERROR_SUCCESS) interpret(context);
         return context.regs().rv;
       }
 
@@ -915,6 +916,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY8, context.regs().ac2));
             if(r.is_null()) return Value();
+            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
               force(context, context.pushed_arg(i));
@@ -926,6 +928,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY16, context.regs().ac2));
             if(r.is_null()) return Value();
+            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
               force(context, context.pushed_arg(i));
@@ -937,6 +940,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY32, context.regs().ac2));
             if(r.is_null()) return Value();
+            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
               force(context, context.pushed_arg(i));
@@ -948,6 +952,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY64, context.regs().ac2));
             if(r.is_null()) return Value();
+            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
               force(context, context.pushed_arg(i));
@@ -959,6 +964,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_SFARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
+            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_FLOAT)) return Value();
               force(context, context.pushed_arg(i));
@@ -970,6 +976,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_DFARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
+            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_FLOAT)) return Value();
               force(context, context.pushed_arg(i));
@@ -981,6 +988,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_RARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
+            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_REF)) return Value();
               if(!check_shared_for_object(context, *(context.pushed_arg(i).raw().r))) return Value();
