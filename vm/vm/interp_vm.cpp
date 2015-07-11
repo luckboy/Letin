@@ -32,17 +32,22 @@ namespace letin
       // Static inline functions.
       //
 
-      static inline bool get_int(ThreadContext &context, int64_t &i, const Value &value)
+      static inline bool get_int_value(ThreadContext &context, Value &out_value, const Value &value)
       {
         if(value.type() != VALUE_TYPE_INT) {
-          context.set_error(ERROR_INCORRECT_VALUE);
-          return false;
+          if(value.is_lazy() && value.raw().r->raw().lzv.value_type == VALUE_TYPE_INT) {
+            out_value = value;
+            return true;
+          } else {
+            context.set_error(ERROR_INCORRECT_VALUE);
+            return false;
+          }
         }
-        i = value.raw().i;
+        out_value = Value(value.raw().f);
         return true;
       }
 
-      static inline bool get_int(ThreadContext &context, int64_t &i, uint32_t arg_type, Argument arg)
+      static inline bool get_int_value(ThreadContext &context, Value &value, uint32_t arg_type, Argument arg)
       {
         switch(arg_type) {
           case ARG_TYPE_LVAR:
@@ -50,39 +55,44 @@ namespace letin
               context.set_error(ERROR_NO_LOCAL_VAR);
               return false;
             }
-            return get_int(context, i, context.local_var(arg.lvar));
+            return get_int_value(context, value, context.local_var(arg.lvar));
           case ARG_TYPE_ARG:
             if(arg.arg >= context.regs().ac) {
               context.set_error(ERROR_NO_ARG);
               return false;
             }
-            return get_int(context, i, context.arg(arg.arg));
+            return get_int_value(context, value, context.arg(arg.arg));
           case ARG_TYPE_IMM:
-            i = arg.i;
+            value = Value(arg.i);
             return true;
           case ARG_TYPE_GVAR:
             if(arg.gvar >= context.global_var_count()) {
               context.set_error(ERROR_NO_GLOBAL_VAR);
               return false;
             }
-            return get_int(context, i, context.global_var(arg.gvar));
+            return get_int_value(context, value, context.global_var(arg.gvar));
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
         }
       }
 
-      static inline bool get_float(ThreadContext &context, double &f, const Value &value)
+      static inline bool get_float_value(ThreadContext &context, Value &out_value, const Value &value)
       {
         if(value.type() != VALUE_TYPE_FLOAT) {
-          context.set_error(ERROR_INCORRECT_VALUE);
-          return false;
+          if(value.is_lazy() && value.raw().r->raw().lzv.value_type == VALUE_TYPE_FLOAT) {
+            out_value = value;
+            return true;
+          } else {
+            context.set_error(ERROR_INCORRECT_VALUE);
+            return false;
+          }
         }
-        f = value.raw().f;
+        out_value = Value(value.raw().f);
         return true;
       }
 
-      static inline bool get_float(ThreadContext &context, double &f, uint32_t arg_type, Argument arg)
+      static inline bool get_float_value(ThreadContext &context, Value &value, uint32_t arg_type, Argument arg)
       {
         switch(arg_type) {
           case opcode::ARG_TYPE_LVAR:
@@ -90,43 +100,49 @@ namespace letin
               context.set_error(ERROR_NO_LOCAL_VAR);
               return false;
             }
-            return get_float(context, f, context.local_var(arg.lvar));
+            return get_float_value(context, value, context.local_var(arg.lvar));
           case opcode::ARG_TYPE_ARG:
             if(arg.arg >= context.regs().ac) {
               context.set_error(ERROR_NO_ARG);
               return false;
             }
-            return get_float(context, f, context.arg(arg.arg));
+            return get_float_value(context, value, context.arg(arg.arg));
           case opcode::ARG_TYPE_IMM:
-            f = format_float_to_float(arg.f);
+            value = Value(format_float_to_float(arg.f));
             return true;
           case opcode::ARG_TYPE_GVAR:
             if(arg.gvar >= context.global_var_count()) {
               context.set_error(ERROR_NO_GLOBAL_VAR);
               return false;
             }
-            return get_float(context, f, context.global_var(arg.gvar));
+            return get_float_value(context, value, context.global_var(arg.gvar));
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
         }
       }
 
-      static inline bool get_ref(ThreadContext &context, Reference &r, Value &value)
+      static inline bool get_ref_value(ThreadContext &context, Value &out_value, Value &value)
       {
         if(value.type() != VALUE_TYPE_REF) {
-          if(value.type() == VALUE_TYPE_CANCELED_REF)
-            context.set_error(ERROR_AGAIN_USED_UNIQUE);
-          else
-            context.set_error(ERROR_INCORRECT_VALUE);
-          return false;
+          if(value.is_lazy() && value.raw().r->raw().lzv.value_type == VALUE_TYPE_FLOAT) {
+            out_value = value;
+            value.lazily_cancel_ref();
+            return true;
+          } else {
+            if(value.type() == VALUE_TYPE_CANCELED_REF)
+              context.set_error(ERROR_AGAIN_USED_UNIQUE);
+            else
+              context.set_error(ERROR_INCORRECT_VALUE);
+            return false;
+          }
         }
         if(value.raw().r->is_unique()) value.cancel_ref();
-        r = value.raw().r;
+        out_value = Value(value.raw().r);
         return true;
       }
 
-      static inline bool get_ref_for_const_value(ThreadContext &context, Reference &r, const Value &value)
+      static inline bool get_ref_value_for_const_value(ThreadContext &context, Value &out_value, const Value &value)
       {
         if(value.type() != VALUE_TYPE_REF) {
           if(value.type() == VALUE_TYPE_CANCELED_REF)
@@ -135,12 +151,15 @@ namespace letin
             context.set_error(ERROR_INCORRECT_VALUE);
           return false;
         }
-        if(value.raw().r->is_unique()) context.set_error(ERROR_UNIQUE_OBJECT);
-        r = value.raw().r;
+        if(value.raw().r->is_unique()) {
+          context.set_error(ERROR_UNIQUE_OBJECT);
+          return false;
+        }
+        out_value = Value(value.raw().r);
         return true;
       }
 
-      static inline bool get_ref(ThreadContext &context, Reference &r, uint32_t arg_type, Argument arg)
+      static inline bool get_ref_value(ThreadContext &context, Value &value, uint32_t arg_type, Argument arg)
       {
         switch(arg_type) {
           case opcode::ARG_TYPE_LVAR:
@@ -148,19 +167,19 @@ namespace letin
               context.set_error(ERROR_NO_LOCAL_VAR);
               return false;
             }
-            return get_ref(context, r, context.local_var(arg.lvar));
+            return get_ref_value(context, value, context.local_var(arg.lvar));
           case opcode::ARG_TYPE_ARG:
             if(arg.arg >= context.regs().ac) {
               context.set_error(ERROR_NO_ARG);
               return false;
             }
-            return get_ref(context, r, context.arg(arg.arg));
+            return get_ref_value(context, value, context.arg(arg.arg));
           case opcode::ARG_TYPE_GVAR:
             if(arg.gvar >= context.global_var_count()) {
               context.set_error(ERROR_NO_GLOBAL_VAR);
               return false;
             }
-            return get_ref_for_const_value(context, r, context.global_var(arg.gvar));
+            return get_ref_value_for_const_value(context, value, context.global_var(arg.gvar));
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -297,21 +316,227 @@ namespace letin
         return true;
       }
 
+      static inline bool push_ai(ThreadContext &context)
+      {
+        if(!context.push_ai()) {
+          context.set_error(ERROR_STACK_OVERFLOW);
+          return false;
+        }
+        return true;
+      }
+
+      static inline bool pop_ai(ThreadContext &context)
+      {
+        if(!context.pop_ai()) {
+          context.set_error(ERROR_EMPTY_STACK);
+          return false;
+        }
+        return true;
+      }
+
+      static inline bool check_fun(ThreadContext &context, size_t i)
+      {
+        if(i >= context.fun_count()) {
+          context.set_error(ERROR_NO_FUN);
+          return false;
+        }
+        const Function &fun = context.fun(i);
+        if(fun.is_error()) {
+          context.set_error(ERROR_INCORRECT_FUN);
+          return false;
+        }
+        if(fun.arg_count() != context.regs().ac2) {
+          context.set_error(ERROR_INCORRECT_ARG_COUNT);
+          return false;
+        }
+        return true;
+      }
+      
+      static bool cancel_ref_for_unique(Value &value)
+      {
+        if(value.is_unique()) {
+          return value.cancel_ref();
+        } else if(value.is_lazy()) {
+          value.lazily_cancel_ref();
+          return true;
+        }
+        return false;
+      }
+
       //
       // An InterpreterVirtualMachine class.
       //
 
       InterpreterVirtualMachine::~InterpreterVirtualMachine() {}
-
+      
       ReturnValue InterpreterVirtualMachine::start_in_thread(size_t i, const vector<Value> &args, ThreadContext &context)
       {
         for(auto arg : args) if(!push_arg(context, arg)) return context.regs().rv;
-        if(call_fun(context, i)) interpret(context);
+        if(call_fun_for_force(context, i)) interpret(context);
         return context.regs().rv;
       }
 
       void InterpreterVirtualMachine::interpret(ThreadContext &context)
       { while(interpret_instr(context)); }
+
+      inline bool InterpreterVirtualMachine::get_int(ThreadContext &context, int64_t &i, const Value &value)
+      {
+        if(value.type() != VALUE_TYPE_INT) {
+          if(value.is_lazy()) {
+            return force_int(context, i, value);
+          } else {
+            context.set_error(ERROR_INCORRECT_VALUE);
+            return false;
+          }
+        }
+        i = value.raw().i;
+        return true;
+      }
+
+      inline bool InterpreterVirtualMachine::get_int(ThreadContext &context, int64_t &i, uint32_t arg_type, Argument arg)
+      {
+        switch(arg_type) {
+          case ARG_TYPE_LVAR:
+            if(arg.lvar >= context.regs().lvc) {
+              context.set_error(ERROR_NO_LOCAL_VAR);
+              return false;
+            }
+            return get_int(context, i, context.local_var(arg.lvar));
+          case ARG_TYPE_ARG:
+            if(arg.arg >= context.regs().ac) {
+              context.set_error(ERROR_NO_ARG);
+              return false;
+            }
+            return get_int(context, i, context.arg(arg.arg));
+          case ARG_TYPE_IMM:
+            i = arg.i;
+            return true;
+          case ARG_TYPE_GVAR:
+            if(arg.gvar >= context.global_var_count()) {
+              context.set_error(ERROR_NO_GLOBAL_VAR);
+              return false;
+            }
+            return get_int(context, i, context.global_var(arg.gvar));
+          default:
+            context.set_error(ERROR_INCORRECT_INSTR);
+            return false;
+        }
+      }
+
+      inline bool InterpreterVirtualMachine::get_float(ThreadContext &context, double &f, const Value &value)
+      {
+        if(value.type() != VALUE_TYPE_FLOAT) {
+          if(value.is_lazy()) {
+            return force_float(context, f, value);
+          } else {
+            context.set_error(ERROR_INCORRECT_VALUE);
+            return false;
+          }
+        }
+        f = value.raw().f;
+        return true;
+      }
+
+      inline bool InterpreterVirtualMachine::get_float(ThreadContext &context, double &f, uint32_t arg_type, Argument arg)
+      {
+        switch(arg_type) {
+          case opcode::ARG_TYPE_LVAR:
+            if(arg.lvar >= context.regs().lvc) {
+              context.set_error(ERROR_NO_LOCAL_VAR);
+              return false;
+            }
+            return get_float(context, f, context.local_var(arg.lvar));
+          case opcode::ARG_TYPE_ARG:
+            if(arg.arg >= context.regs().ac) {
+              context.set_error(ERROR_NO_ARG);
+              return false;
+            }
+            return get_float(context, f, context.arg(arg.arg));
+          case opcode::ARG_TYPE_IMM:
+            f = format_float_to_float(arg.f);
+            return true;
+          case opcode::ARG_TYPE_GVAR:
+            if(arg.gvar >= context.global_var_count()) {
+              context.set_error(ERROR_NO_GLOBAL_VAR);
+              return false;
+            }
+            return get_float(context, f, context.global_var(arg.gvar));
+          default:
+            context.set_error(ERROR_INCORRECT_INSTR);
+            return false;
+        }
+      }
+
+      inline bool InterpreterVirtualMachine::get_ref(ThreadContext &context, Reference &r, Value &value)
+      {
+        if(value.type() != VALUE_TYPE_REF) {
+          if(value.is_lazy()) {
+            value.lazily_cancel_ref();
+            return force_ref(context, r, value);
+          } else {
+            if(value.type() == VALUE_TYPE_CANCELED_REF)
+              context.set_error(ERROR_AGAIN_USED_UNIQUE);
+            else
+              context.set_error(ERROR_INCORRECT_VALUE);
+            return false;
+          }
+        }
+        if(value.raw().r->is_unique()) value.cancel_ref();
+        r = value.raw().r;
+        return true;
+      }
+
+      inline bool InterpreterVirtualMachine::get_ref_for_const_value(ThreadContext &context, Reference &r, const Value &value)
+      {
+        if(value.type() != VALUE_TYPE_REF) {
+          if(value.is_lazy()) {
+            if(value.is_lazily_canceled()) {
+              context.set_error(ERROR_UNIQUE_OBJECT);
+              return false;
+            }
+            return force_ref(context, r, value);
+          } else {
+            if(value.type() == VALUE_TYPE_CANCELED_REF)
+              context.set_error(ERROR_AGAIN_USED_UNIQUE);
+            else
+              context.set_error(ERROR_INCORRECT_VALUE);
+          }
+          return false;
+        }
+        if(value.raw().r->is_unique()) {
+          context.set_error(ERROR_UNIQUE_OBJECT);
+          return false;
+        }
+        r = value.raw().r;
+        return true;
+      }
+
+      inline bool InterpreterVirtualMachine::get_ref(ThreadContext &context, Reference &r, uint32_t arg_type, Argument arg)
+      {
+        switch(arg_type) {
+          case opcode::ARG_TYPE_LVAR:
+            if(arg.lvar >= context.regs().lvc) {
+              context.set_error(ERROR_NO_LOCAL_VAR);
+              return false;
+            }
+            return get_ref(context, r, context.local_var(arg.lvar));
+          case opcode::ARG_TYPE_ARG:
+            if(arg.arg >= context.regs().ac) {
+              context.set_error(ERROR_NO_ARG);
+              return false;
+            }
+            return get_ref(context, r, context.arg(arg.arg));
+          case opcode::ARG_TYPE_GVAR:
+            if(arg.gvar >= context.global_var_count()) {
+              context.set_error(ERROR_NO_GLOBAL_VAR);
+              return false;
+            }
+            return get_ref_for_const_value(context, r, context.global_var(arg.gvar));
+          default:
+            context.set_error(ERROR_INCORRECT_INSTR);
+            return false;
+        }
+      }
 
       bool InterpreterVirtualMachine::interpret_instr(ThreadContext &context)
       {
@@ -359,7 +584,9 @@ namespace letin
           case INSTR_ARG:
           {
             context.hide_args();
-            Value value = interpret_op(context, instr, true);
+            context.regs().arg_instr_flag = true;
+            Value value = interpret_op(context, instr);
+            context.regs().arg_instr_flag = false;
             if(!value.is_error()) {
               context.restore_abp2_and_ac2();
               if(!context.push_arg(value)) context.set_error(ERROR_STACK_OVERFLOW);
@@ -410,14 +637,14 @@ namespace letin
         return true;
       }
 
-      Value InterpreterVirtualMachine::interpret_op(ThreadContext &context, const Instruction &instr, bool is_arg_instr)
+      Value InterpreterVirtualMachine::interpret_op(ThreadContext &context, const Instruction &instr)
       {
         switch(opcode_to_op(instr.opcode)) {
           case OP_ILOAD:
           {
-            int64_t i;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            return Value(i);
+            Value value;
+            if(!get_int_value(context, value, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return value;
           }
           case OP_ILOAD2:
           {
@@ -567,9 +794,9 @@ namespace letin
           }
           case OP_FLOAD:
           {
-            double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            return Value(f);
+            Value value;
+            if(!get_float_value(context, value, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return value;
           }
           case OP_FLOAD2:
           {
@@ -658,9 +885,9 @@ namespace letin
           }
           case OP_RLOAD:
           {
-            Reference r1;
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            return Value(r1);
+            Value value;
+            if(!get_ref_value(context, value, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return value;
           }
           case OP_REQ:
           {
@@ -688,8 +915,9 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY8, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; i < context.regs().ac2; i++) {
+            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
+              force(context, context.pushed_arg(i));
               r->raw().is8[i] = context.pushed_arg(i).raw().i;
             }
             return Value(r);
@@ -698,8 +926,9 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY16, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; i < context.regs().ac2; i++) {
+            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
+              force(context, context.pushed_arg(i));
               r->raw().is16[i] = context.pushed_arg(i).raw().i;
             }
             return Value(r);
@@ -708,8 +937,9 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY32, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; i < context.regs().ac2; i++) {
+            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
+              force(context, context.pushed_arg(i));
               r->raw().is32[i] = context.pushed_arg(i).raw().i;
             }
             return Value(r);
@@ -718,8 +948,9 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY64, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; i < context.regs().ac2; i++) {
+            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
+              force(context, context.pushed_arg(i));
               r->raw().is64[i] = context.pushed_arg(i).raw().i;
             }
             return Value(r);
@@ -728,8 +959,9 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_SFARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; i < context.regs().ac2; i++) {
+            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_FLOAT)) return Value();
+              force(context, context.pushed_arg(i));
               r->raw().sfs[i] = context.pushed_arg(i).raw().f;
             }
             return Value(r);
@@ -738,8 +970,9 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_DFARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; i < context.regs().ac2; i++) {
+            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_FLOAT)) return Value();
+              force(context, context.pushed_arg(i));
               r->raw().dfs[i] = context.pushed_arg(i).raw().f;
             }
             return Value(r);
@@ -748,9 +981,10 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_RARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
-            for(size_t i = 0; i < context.regs().ac2; i++) {
+            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_REF)) return Value();
               if(!check_shared_for_object(context, *(context.pushed_arg(i).raw().r))) return Value();
+              force(context, context.pushed_arg(i));
               r->raw().rs[i] = context.pushed_arg(i).raw().r;
             }
             atomic_thread_fence(memory_order_release);
@@ -1036,45 +1270,42 @@ namespace letin
           }
           case OP_ICALL:
           {
+            int64_t i;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             if(!context.regs().after_leaving_flag) {
-              int64_t i;
-              if(is_arg_instr) if(!push_tmp_ac2(context)) return Value();
-              if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-              call_fun(context, static_cast<uint32_t>(i));
-              return Value();
-            } else {
-              context.regs().after_leaving_flag = false;
-              if(is_arg_instr) if(!pop_tmp_ac2(context)) return Value();
-              return Value(context.regs().rv.raw().i);
+              if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
+              if(!call_fun(context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
             }
+            context.regs().after_leaving_flag = false;
+            if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
+            if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
+            return Value(context.regs().rv.raw().i);
           }
           case OP_FCALL:
           {
+            int64_t i;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             if(!context.regs().after_leaving_flag) {
-              int64_t i;
-              if(is_arg_instr) if(!push_tmp_ac2(context)) return Value();
-              if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-              call_fun(context, static_cast<uint32_t>(i));
-              return Value();
-            } else {
-              context.regs().after_leaving_flag = false;
-              if(is_arg_instr) if(!pop_tmp_ac2(context)) return Value();
-              return Value(context.regs().rv.raw().f);
+              if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
+              if(!call_fun(context, static_cast<uint32_t>(i), VALUE_TYPE_FLOAT)) return Value();
             }
+            context.regs().after_leaving_flag = false;
+            if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
+            if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
+            return Value(context.regs().rv.raw().f);
           }
           case OP_RCALL:
           {
+            int64_t i;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             if(!context.regs().after_leaving_flag) {
-              int64_t i;
-              if(is_arg_instr) if(!push_tmp_ac2(context)) return Value();
-              if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-              call_fun(context, static_cast<uint32_t>(i));
-              return Value();
-            } else {
-              context.regs().after_leaving_flag = false;
-              if(is_arg_instr) if(!pop_tmp_ac2(context)) return Value();
-              return Value(context.regs().rv.raw().r);
+              if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
+              if(!call_fun(context, static_cast<uint32_t>(i), VALUE_TYPE_REF)) return Value();
             }
+            context.regs().after_leaving_flag = false;
+            if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
+            if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
+            return Value(context.regs().rv.raw().r);
           }
           case OP_ITOF:
           {
@@ -1092,7 +1323,7 @@ namespace letin
           {
             int64_t i;
             if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(is_arg_instr) if(!push_tmp_ac2(context)) return Value();
+            if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
             ArgumentList args = context.pushed_args();
             ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, args);
             if(rv.raw().error != ERROR_SUCCESS) {
@@ -1101,14 +1332,14 @@ namespace letin
             }
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
-            if(is_arg_instr) if(!pop_tmp_ac2(context)) return Value();
+            if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             return Value(rv.raw().i);
           }
           case OP_FNCALL:
           {
             int64_t i;
             if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(is_arg_instr) if(!push_tmp_ac2(context)) return Value();
+            if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
             ArgumentList args = context.pushed_args();
             ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, args);
             if(rv.raw().error != ERROR_SUCCESS) {
@@ -1117,14 +1348,14 @@ namespace letin
             }
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
-            if(is_arg_instr) if(!pop_tmp_ac2(context)) return Value();
+            if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             return Value(rv.raw().f);
           }
           case OP_RNCALL:
           {
             int64_t i;
             if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(is_arg_instr) if(!push_tmp_ac2(context)) return Value();
+            if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
             ArgumentList args = context.pushed_args();
             ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, args);
             if(rv.raw().error != ERROR_SUCCESS) {
@@ -1133,7 +1364,7 @@ namespace letin
             }
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
-            if(is_arg_instr) if(!pop_tmp_ac2(context)) return Value();
+            if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             return Value(rv.raw().r);
           }
           case OP_RUIAFILL8:
@@ -1345,7 +1576,10 @@ namespace letin
             Value value(r->raw().tuple_elem_types()[i], r->raw().tes[i]);
             Reference r2(new_unique_pair(context, value, Value(r)));
             if(r2.is_null()) return Value();
-            if(value.is_unique()) r->raw().tuple_elem_types()[i] = VALUE_TYPE_CANCELED_REF;
+            if(value.is_unique())
+              r->raw().tuple_elem_types()[i].raw() = VALUE_TYPE_CANCELED_REF;
+            else if(value.is_lazy())
+              r->raw().tuple_elem_types()[i].raw() |= VALUE_TYPE_LAZILY_CANCELED;
             return Value(r2);
           }
           case OP_RUIASNTH8:
@@ -1452,7 +1686,7 @@ namespace letin
             if(!check_object_type(context, *r, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             Value value = context.pushed_arg(0);
-            if(context.pushed_arg(0).is_unique()) context.pushed_arg(0).cancel_ref();
+            cancel_ref_for_unique(context.pushed_arg(0));
             r->raw().tuple_elem_types()[i] = VALUE_TYPE_ERROR;
             atomic_thread_fence(memory_order_release);
             r->raw().tes[i] = value.tuple_elem();
@@ -1772,27 +2006,28 @@ namespace letin
               Value arg1 = context.pushed_arg(0);
               Value arg2 = context.pushed_arg(1);
               Value io = context.pushed_arg(2);
-              if(context.pushed_arg(0).is_unique()) context.pushed_arg(0).cancel_ref();
-              if(context.pushed_arg(1).is_unique()) context.pushed_arg(1).cancel_ref();
-              if(context.pushed_arg(2).is_unique()) context.pushed_arg(2).cancel_ref();
+              cancel_ref_for_unique(context.pushed_arg(0));
+              cancel_ref_for_unique(context.pushed_arg(1));
+              cancel_ref_for_unique(context.pushed_arg(2));
               if(!check_value_type(context, io, VALUE_TYPE_REF)) return Value();
               if(!check_object_type(context, *(io.raw().r), OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) return Value(); 
-              if(!is_arg_instr) context.hide_args();
+              if(!context.regs().arg_instr_flag) context.hide_args();
               if(!push_tmp_ac2(context)) return Value();
               if(!push_try_regs(context)) return Value();
               if(!push_arg(context, arg1)) return Value();
               if(!push_arg(context, io)) return Value();
-              call_fun(context, static_cast<uint32_t>(i1));
               context.set_try_regs(arg2, io.raw().r);
-              return Value();
-            } else {
+              if(!call_fun_for_force(context, static_cast<uint32_t>(i1))) return Value();
+            }
+            bool must_repeat = false;
+            do {
               int error = context.regs().rv.error();
               Value arg2 = context.regs().try_arg2;
               Reference io_r = context.regs().try_io_r;
               context.regs().after_leaving_flag = false;
               if(!pop_try_regs(context)) return Value();
               if(!pop_tmp_ac2(context)) return Value();
-              if(!is_arg_instr) context.restore_abp2_and_ac2();
+              if(!context.regs().arg_instr_flag) context.restore_abp2_and_ac2();
               Reference r = context.regs().rv.raw().r;
               if(error == ERROR_SUCCESS) {
                 // Checks and returns the reference for the arg1 function or the arg2 function. 
@@ -1808,17 +2043,17 @@ namespace letin
                 context.regs().rv.raw().error = ERROR_SUCCESS;
                 int64_t i;
                 if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
-                if(!is_arg_instr) context.hide_args();
+                if(!context.regs().arg_instr_flag) context.hide_args();
                 if(!push_tmp_ac2(context)) return Value();
                 if(!push_try_regs(context)) return Value();
                 if(!push_arg(context, Value(error))) return Value();
                 if(!push_arg(context, Value(r))) return Value();
                 if(!push_arg(context, arg2)) return Value();
                 if(!push_arg(context, io_r)) return Value();
-                call_fun(context, static_cast<uint32_t>(i));
-                return Value();
+                if(!call_fun_for_force(context, static_cast<uint32_t>(i))) return Value();
+                must_repeat = true;
               }
-            }
+            } while(must_repeat);
           }
           default:
           {
@@ -1828,31 +2063,108 @@ namespace letin
         }
       }
 
-      bool InterpreterVirtualMachine::enter_to_fun(ThreadContext &context, size_t i)
-      { return context.enter_to_fun(i); }
+      bool InterpreterVirtualMachine::enter_to_fun(ThreadContext &context, size_t i, bool &is_fun_result)
+      {
+        is_fun_result = false;
+        return context.enter_to_fun(i);
+      }
 
       bool InterpreterVirtualMachine::leave_from_fun(ThreadContext &context)
       { return context.leave_from_fun(); }
 
-      bool InterpreterVirtualMachine::call_fun(ThreadContext &context, size_t i)
+      bool InterpreterVirtualMachine::call_fun(ThreadContext &context, size_t i, int value_type)
       {
-        if(i >= context.fun_count()) { 
-          context.set_error(ERROR_NO_FUN);
-          return false;
-        }
-        const Function &fun = context.fun(i);
-        if(fun.is_error()) {
-          context.set_error(ERROR_INCORRECT_FUN);
-          return false;
-        }
-        if(fun.arg_count() != context.regs().ac2) {
-          context.set_error(ERROR_INCORRECT_ARG_COUNT);
-          return false;
-        }
-        if(!enter_to_fun(context, i)) {
+        if(!check_fun(context, i)) return false;
+        bool is_fun_result;
+        if(!_M_eval_strategy->pre_enter_to_fun(&context, i, value_type, is_fun_result))
+          return is_fun_result;
+        if(!enter_to_fun(context, i, is_fun_result)) {
           context.set_error(ERROR_STACK_OVERFLOW);
+          is_fun_result = false;
           return false;
         }
+        return is_fun_result;
+      }
+
+      bool InterpreterVirtualMachine::call_fun_for_force(ThreadContext &context, size_t i)
+      {
+        if(!check_fun(context, i)) return false;
+        bool is_fun_result;
+        if(!enter_to_fun(context, i, is_fun_result)) {
+          context.set_error(ERROR_STACK_OVERFLOW);
+          is_fun_result = false;
+          return false;
+        }
+        return is_fun_result;        
+      }
+
+      bool InterpreterVirtualMachine::force(ThreadContext &context, Value &value)
+      {
+        if(value.is_lazy()) {
+          Object &object = *(value.raw().r);
+          if(object.raw().lzv.value.is_error()) {
+            if(!context.regs().after_leaving_flag) {
+             if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return false;
+             if(!push_ai(context)) return false;
+              Value *avs = object.raw().lzv.avs;
+              for(size_t i = 0; i < object.length(); i++)
+                if(!push_arg(context, avs[i])) return false;
+              if(!call_fun_for_force(context, object.raw().lzv.fun)) return false;
+            }
+            context.pop_args();
+            if(!pop_ai(context)) return false;
+            if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return false;
+            switch(object.raw().lzv.value_type) {
+              case VALUE_TYPE_INT:
+                object.raw().lzv.value = Value(context.regs().rv.raw().i);
+                break;
+              case VALUE_TYPE_FLOAT:
+                object.raw().lzv.value = Value(context.regs().rv.raw().f);
+                break;
+              case VALUE_TYPE_REF:
+                object.raw().lzv.value = Value(context.regs().rv.raw().r);
+                break;
+              case VALUE_TYPE_CANCELED_REF:
+                context.set_error(ERROR_AGAIN_USED_UNIQUE);
+                return false;
+              default:
+                context.set_error(ERROR_INCORRECT_VALUE);
+                return false;
+            }
+          }
+          if(context.regs().rv.raw().r->is_unique() && value.is_lazily_canceled()) {
+            context.set_error(ERROR_AGAIN_USED_UNIQUE);
+            return false;
+          }
+          context.regs().tmp_r = value.r();
+          atomic_thread_fence(memory_order_release);
+          value.safely_assign_for_gc(object.raw().lzv.value);
+          context.regs().tmp_r = Reference();
+        }
+        return true;
+      }
+
+      bool InterpreterVirtualMachine::force_int(ThreadContext &context, int64_t &i, const Value &value)
+      {
+        Value tmp_value = value;
+        if(!force(context, tmp_value)) return false;
+        i = tmp_value.raw().i;
+        return true;
+      }
+
+      bool InterpreterVirtualMachine::force_float(ThreadContext &context, double &f, const Value &value)
+      {
+        Value tmp_value = value;
+        if(!force(context, tmp_value)) return false;
+        f = tmp_value.raw().f;
+        return true;
+      }
+
+      bool InterpreterVirtualMachine::force_ref(ThreadContext &context, Reference &r, const Value &value)
+      {
+        Value tmp_value = value;
+        if(!force(context, tmp_value)) return false;
+        r = tmp_value.raw().r;
         return true;
       }
     }

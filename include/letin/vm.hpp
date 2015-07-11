@@ -33,6 +33,7 @@ namespace letin
     class VirtualMachineContext;
     class GarbageCollector;
     class NativeFunctionHandler;
+    class EvaluationStrategy;
 
     typedef format::Argument Argument;
     typedef format::Instruction Instruction;
@@ -111,7 +112,6 @@ namespace letin
         std::int64_t i;
         double f;
         Reference r;
-        std::size_t fun;
         struct
         {
           uint32_t first;
@@ -153,7 +153,11 @@ namespace letin
       bool is_error() const { return _M_raw.type == VALUE_TYPE_ERROR; }
 
       bool is_unique() const;
+      
+      bool is_lazy() const { return (_M_raw.type & ~VALUE_TYPE_LAZILY_CANCELED) == VALUE_TYPE_LAZY_VALUE_REF; }
 
+      bool is_lazily_canceled() const { return (_M_raw.type & VALUE_TYPE_LAZILY_CANCELED) != 0; }
+      
       int type() const { return _M_raw.type; }
 
       std::int64_t i() const { return _M_raw.type == VALUE_TYPE_INT ? _M_raw.i : 0; }
@@ -182,6 +186,8 @@ namespace letin
         _M_raw.type = VALUE_TYPE_CANCELED_REF;
         return true;
       }
+
+      void lazily_cancel_ref() { _M_raw.type |= VALUE_TYPE_LAZILY_CANCELED; }
     };
 
     struct ObjectRaw
@@ -199,6 +205,12 @@ namespace letin
         Reference rs[1];
         TupleElement tes[1];
         TupleElementType tets[1];
+        struct {
+          int value_type;
+          Value value;
+          std::size_t fun;
+          Value avs[1];
+        } lzv;
       };
 
       ObjectRaw() {}
@@ -253,9 +265,6 @@ namespace letin
       std::size_t length() const { return _M_raw.length; }
     };
 
-    inline bool Value::is_unique() const
-    { return _M_raw.type == VALUE_TYPE_REF && _M_raw.r->is_unique(); }
-
     struct ReturnValueRaw
     {
       int64_t i;
@@ -295,6 +304,9 @@ namespace letin
       
       int error() const { return _M_raw.error; }
     };
+
+    inline bool Value::is_unique() const
+    { return _M_raw.type == VALUE_TYPE_REF && _M_raw.r->is_unique(); }
 
     struct FunctionRaw
     {
@@ -394,9 +406,10 @@ namespace letin
       Loader *_M_loader;
       GarbageCollector *_M_gc;
       NativeFunctionHandler *_M_native_fun_handler;
+      EvaluationStrategy *_M_eval_strategy;
 
-      VirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler) :
-        _M_loader(loader), _M_gc(gc), _M_native_fun_handler(native_fun_handler) {}
+      VirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy) :
+        _M_loader(loader), _M_gc(gc), _M_native_fun_handler(native_fun_handler), _M_eval_strategy(eval_strategy) {}
     public:
       virtual ~VirtualMachine();
 
@@ -515,14 +528,32 @@ namespace letin
       ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args);
     };
 
+    class EvaluationStrategy
+    {
+    protected:
+      EvaluationStrategy() {}
+    public:
+      virtual ~EvaluationStrategy();
+
+      virtual bool pre_enter_to_fun(ThreadContext *context, std::size_t i, int value_type, bool &is_fun_result) = 0;
+
+      virtual bool post_leave_from_fun(ThreadContext *context, std::size_t i, int value_type) = 0;
+
+      virtual bool must_pre_enter_to_fun(ThreadContext *context, std::size_t i, int value_type) = 0;
+
+      virtual bool must_post_leave_from_fun(ThreadContext *context, std::size_t i, int value_type) = 0;
+    };
+    
     Loader *new_loader();
 
     Allocator *new_allocator();
 
     GarbageCollector *new_garbage_collector(Allocator *alloc);
-    
-    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler);
-    
+
+    EvaluationStrategy *new_evaluation_strategy();
+
+    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy);
+
     void initialize_gc();
 
     void finalize_gc();

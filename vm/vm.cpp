@@ -19,6 +19,7 @@
 #include <letin/vm.hpp>
 #include "alloc/new_alloc.hpp"
 #include "gc/mark_sweep_gc.hpp"
+#include "strategy/eager_eval_strategy.hpp"
 #include "vm/interp_vm.hpp"
 #include "impl_loader.hpp"
 #include "thread_stop_cont.hpp"
@@ -518,6 +519,12 @@ namespace letin
     }
 
     //
+    // An EvaluationStrategy class.
+    //
+
+    EvaluationStrategy::~EvaluationStrategy() {}
+
+    //
     // A Program class.
     //
 
@@ -656,6 +663,7 @@ namespace letin
       _M_regs.tmp_ptr = nullptr;
       _M_regs.tmp_r = Reference();
       _M_regs.after_leaving_flag = false;
+      _M_regs.arg_instr_flag = false;
       _M_regs.try_flag = false;
       _M_regs.try_arg2 = Value();
       _M_regs.try_io_r = Reference();
@@ -746,8 +754,11 @@ namespace letin
     GarbageCollector *new_garbage_collector(Allocator *alloc)
     { return new impl::MarkSweepGarbageCollector(alloc); }
 
-    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler)
-    { return new impl::InterpreterVirtualMachine(loader, gc, native_fun_handler); }
+    EvaluationStrategy *new_evaluation_strategy()
+    { return new impl::EagerEvaluationStrategy(); }
+
+    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy)
+    { return new impl::InterpreterVirtualMachine(loader, gc, native_fun_handler, eval_strategy); }
 
     void initialize_gc() { priv::initialize_thread_stop_cont(); }
 

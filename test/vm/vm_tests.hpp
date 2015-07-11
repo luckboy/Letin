@@ -15,22 +15,28 @@
 #include "impl_env.hpp"
 #include "vm.hpp"
 
-#define DECL_IMPL_VM_TESTS(clazz)                                               \
-class clazz##Tests : public VirtualMachineTests                                 \
+#define DECL_IMPL_VM_TESTS(prefix, clazz)                                       \
+class prefix##clazz##Tests : public VirtualMachineTests                         \
 {                                                                               \
-  CPPUNIT_TEST_SUB_SUITE(clazz##Tests, VirtualMachineTests);                    \
+  CPPUNIT_TEST_SUB_SUITE(prefix##clazz##Tests, VirtualMachineTests);            \
   CPPUNIT_TEST_SUITE_END();                                                     \
 public:                                                                         \
+  EvaluationStrategy *new_eval_strategy();                                      \
   VirtualMachine *new_vm(Loader *loader, GarbageCollector *gc,                  \
-                         NativeFunctionHandler *native_fun_handler);            \
+                         NativeFunctionHandler *native_fun_handler,             \
+                         EvaluationStrategy *eval_strategy);                    \
 }
 
-#define DEF_IMPL_VM_TESTS(clazz)                                                \
-CPPUNIT_TEST_SUITE_REGISTRATION(clazz##Tests);                                  \
-VirtualMachine *clazz##Tests::new_vm(Loader *loader, GarbageCollector *gc,      \
-                                     NativeFunctionHandler *native_fun_handler) \
-{ return new impl::clazz(loader, gc, native_fun_handler); }                     \
-class clazz##Tests
+#define DEF_IMPL_VM_TESTS(prefix, clazz)                                        \
+CPPUNIT_TEST_SUITE_REGISTRATION(prefix##clazz##Tests);                          \
+EvaluationStrategy *prefix##clazz##Tests::new_eval_strategy()                   \
+{ return new impl::prefix##EvaluationStrategy(); }                              \
+VirtualMachine *prefix##clazz##Tests::new_vm(Loader *loader,                    \
+                                             GarbageCollector *gc,              \
+                                             NativeFunctionHandler *native_fun_handler, \
+                                             EvaluationStrategy *eval_strategy) \
+{ return new impl::clazz(loader, gc, native_fun_handler, eval_strategy); }      \
+class prefix##clazz##Tests
 
 namespace letin
 {
@@ -85,9 +91,12 @@ namespace letin
         Allocator *_M_alloc;
         GarbageCollector *_M_gc;
         NativeFunctionHandler *_M_native_fun_handler;
+        EvaluationStrategy *_M_eval_strategy;
         VirtualMachine *_M_vm;
       public:
-        virtual VirtualMachine *new_vm(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler) = 0;
+        virtual EvaluationStrategy *new_eval_strategy() = 0;
+
+        virtual VirtualMachine *new_vm(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy) = 0;
         
         void setUp();
 
@@ -133,7 +142,7 @@ namespace letin
         void test_vm_throws_user_exception_from_catching_function();
       };
 
-      DECL_IMPL_VM_TESTS(InterpreterVirtualMachine);
+      DECL_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
     }
   }
 }

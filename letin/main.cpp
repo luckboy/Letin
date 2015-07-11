@@ -86,7 +86,8 @@ int main(int argc, char **argv)
     unique_ptr<Allocator> alloc(new_allocator());
     unique_ptr<GarbageCollector> gc(new_garbage_collector(alloc.get()));
     unique_ptr<NativeFunctionHandler> native_fun_handler(new DefaultNativeFunctionHandler());
-    unique_ptr<VirtualMachine> vm(new_virtual_machine(loader.get(), gc.get(), native_fun_handler.get()));
+    unique_ptr<EvaluationStrategy> eval_strategy(new_evaluation_strategy());
+    unique_ptr<VirtualMachine> vm(new_virtual_machine(loader.get(), gc.get(), native_fun_handler.get(), eval_strategy.get()));
     list<LoadingError> errors;
     if(!vm->load(file_names, &errors)) {
       for(auto error : errors)

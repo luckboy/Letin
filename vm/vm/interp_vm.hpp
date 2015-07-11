@@ -23,24 +23,48 @@ namespace letin
       class InterpreterVirtualMachine : public ImplVirtualMachineBase
       {
       public:
-        InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler) :
-          ImplVirtualMachineBase(loader, gc, native_fun_handler) {}
+        InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy) :
+          ImplVirtualMachineBase(loader, gc, native_fun_handler, eval_strategy) {}
 
         ~InterpreterVirtualMachine();
       protected:
         ReturnValue start_in_thread(std::size_t i, const std::vector<Value> &args, ThreadContext &context);
 
         virtual void interpret(ThreadContext &context);
+      private:
+        bool get_int(ThreadContext &context, std::int64_t &i, const Value &value);
 
+        bool get_int(ThreadContext &context, std::int64_t &i, std::uint32_t arg_type, Argument arg);
+
+        bool get_float(ThreadContext &context, double &f, const Value &value);
+
+        bool get_float(ThreadContext &context, double &f, std::uint32_t arg_type, Argument arg);
+
+        bool get_ref(ThreadContext &context, Reference &r, Value &value);
+
+        bool get_ref_for_const_value(ThreadContext &context, Reference &r, const Value &value);
+        
+        bool get_ref(ThreadContext &context, Reference &r, std::uint32_t arg_type, Argument arg);
+      protected:
         bool interpret_instr(ThreadContext &context);
       private:
-        Value interpret_op(ThreadContext &context, const Instruction &instr, bool is_arg_instr = false);
+        Value interpret_op(ThreadContext &context, const Instruction &instr);
       protected:
-        virtual bool enter_to_fun(ThreadContext &context, std::size_t i);
+        bool enter_to_fun(ThreadContext &context, std::size_t i, bool &is_fun_result);
 
-        virtual bool leave_from_fun(ThreadContext &context);
+        bool leave_from_fun(ThreadContext &context);
       private:
-        bool call_fun(ThreadContext &context, std::size_t i);
+        bool call_fun(ThreadContext &context, std::size_t i, int value_type);
+
+        bool call_fun_for_force(ThreadContext &context, std::size_t i);
+
+        bool force(ThreadContext &context, Value &value);
+
+        bool force_int(ThreadContext &context, std::int64_t &i, const Value &value);
+
+        bool force_float(ThreadContext &context, double &f, const Value &value);
+
+        bool force_ref(ThreadContext &context, Reference &r, const Value &value);
       };
     }
   }

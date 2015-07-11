@@ -112,10 +112,12 @@ namespace letin
       std::size_t fp;
       std::uint32_t ip;
       ReturnValue rv;
+      std::size_t ai;
       void *tmp_ptr;
       Reference tmp_r;
       bool after_leaving_flag;
       std::uint32_t tmp_ac2;
+      bool arg_instr_flag;
       bool try_flag;
       std::size_t try_abp;
       std::uint32_t try_ac;
@@ -263,7 +265,7 @@ namespace letin
       void set_try_regs(const Value &arg2, const Reference &io_r)
       {
         _M_regs.try_flag = true;
-        _M_regs.try_abp = _M_regs.abp; _M_regs.try_ac = _M_regs.ac;
+        _M_regs.try_abp = _M_regs.abp2; _M_regs.try_ac = _M_regs.ac2;
         _M_regs.try_arg2.safely_assign_for_gc(arg2);
         _M_regs.try_io_r = io_r;
         std::atomic_thread_fence(std::memory_order_release);
@@ -285,8 +287,8 @@ namespace letin
             _M_stack[abp2 + 0].type() == VALUE_TYPE_INT &&
             _M_stack[abp2 + 1].type() == VALUE_TYPE_INT &&
             _M_stack[abp2 + 3].type() == VALUE_TYPE_REF) {
-          _M_regs.sec-= 4;
-          _M_regs.abp2-= 4;
+          _M_regs.sec -= 4;
+          _M_regs.abp2 -= 4;
           std::atomic_thread_fence(std::memory_order_release);
           _M_regs.try_io_r = _M_stack[_M_regs.abp2 + 3].raw().r;
           std::atomic_thread_fence(std::memory_order_release);
@@ -294,6 +296,23 @@ namespace letin
           _M_regs.try_abp = _M_stack[_M_regs.abp2 + 1].raw().i >> 32;
           _M_regs.try_ac = _M_stack[_M_regs.abp2 + 1].raw().i & 0xffffffff;
           _M_regs.try_flag = (_M_stack[_M_regs.abp2 + 0].raw().i != 0);
+          return true;
+        } else
+          return false;
+      }
+
+      bool push_ai()
+      { 
+        if(!push_local_var(Value(static_cast<int64_t>(_M_regs.ai)))) return false;
+        return true;
+      }
+
+      bool pop_ai()
+      {
+        if(_M_regs.abp2 > 0 && _M_stack[_M_regs.abp2 - 1].type() == VALUE_TYPE_INT) {
+          _M_regs.sec--;
+          _M_regs.abp2--;
+          _M_regs.ai = _M_stack[_M_regs.abp2].raw().i;
           return true;
         } else
           return false;

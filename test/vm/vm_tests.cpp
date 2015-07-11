@@ -7,6 +7,7 @@
  ****************************************************************************/
 #include <cstring>
 #include "impl_loader.hpp"
+#include "eager_eval_strategy.hpp"
 #include "interp_vm.hpp"
 #include "mark_sweep_gc.hpp"
 #include "new_alloc.hpp"
@@ -30,12 +31,14 @@ namespace letin
         _M_alloc = new impl::NewAllocator();
         _M_gc = new impl::MarkSweepGarbageCollector(_M_alloc);
         _M_native_fun_handler = new DefaultNativeFunctionHandler();
-        _M_vm = new_vm(_M_loader, _M_gc, _M_native_fun_handler);
+        _M_eval_strategy = new_eval_strategy();
+        _M_vm = new_vm(_M_loader, _M_gc, _M_native_fun_handler, _M_eval_strategy);
       }
       
       void VirtualMachineTests::tearDown()
       {
         delete _M_vm;
+        delete _M_eval_strategy;
         delete _M_native_fun_handler;
         delete _M_gc;
         delete _M_alloc;
@@ -1625,7 +1628,7 @@ namespace letin
         CPPUNIT_ASSERT(is_expected);
       }
 
-      DEF_IMPL_VM_TESTS(InterpreterVirtualMachine);
+      DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
     }
   }
 }

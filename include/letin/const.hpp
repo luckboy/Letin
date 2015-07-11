@@ -31,6 +31,8 @@ namespace letin
   const int VALUE_TYPE_REF =            2;
   const int VALUE_TYPE_PAIR =           3;
   const int VALUE_TYPE_CANCELED_REF =   4;
+  const int VALUE_TYPE_LAZY_VALUE_REF = 5;
+  const int VALUE_TYPE_LAZILY_CANCELED = 64;
   const int VALUE_TYPE_ERROR =          -1;
 
   const int OBJECT_TYPE_IARRAY8 =       0;
@@ -42,6 +44,7 @@ namespace letin
   const int OBJECT_TYPE_RARRAY =        6;
   const int OBJECT_TYPE_TUPLE =         7;
   const int OBJECT_TYPE_IO =            8;
+  const int OBJECT_TYPE_LAZY_VALUE =    9;
   const int OBJECT_TYPE_UNIQUE =        256;
   const int OBJECT_TYPE_ERROR =         -1;
   
