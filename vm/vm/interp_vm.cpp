@@ -2114,7 +2114,7 @@ namespace letin
             if(!context.regs().after_leaving_flag) {
              if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return false;
              if(!push_ai(context)) return false;
-              Value *avs = object.raw().lzv.avs;
+              Value *avs = object.raw().lzv.args;
               for(size_t i = 0; i < object.length(); i++)
                 if(!push_arg(context, avs[i])) return false;
               if(!call_fun_for_force(context, object.raw().lzv.fun)) return false;

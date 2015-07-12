@@ -209,7 +209,7 @@ namespace letin
           int value_type;
           Value value;
           std::size_t fun;
-          Value avs[1];
+          Value args[1];
         } lzv;
       };
 
