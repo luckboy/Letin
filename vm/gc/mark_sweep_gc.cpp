@@ -77,8 +77,7 @@ namespace letin
         for(auto context : _M_thread_contexts) {
           for(size_t i = 0; i < context->regs().sec; i++) {
             Value elem = context->stack_elem(i);
-            if((elem.type() == VALUE_TYPE_REF || elem.type() == VALUE_TYPE_CANCELED_REF) &&
-                !elem.raw().r.has_nil())
+            if(is_ref_value_type_for_gc(elem.type()) && !elem.raw().r.has_nil())
               mark_from_object(elem.raw().r.ptr());
           }
           if(!context->regs().rv.raw().r.has_nil())
@@ -89,7 +88,7 @@ namespace letin
         }
         for(auto context : _M_vm_contexts) {
           for(size_t i = 0; i < context->var_count(); i++) {
-            if(context->vars()[i].type() == VALUE_TYPE_REF && !context->vars()[i].raw().r.has_nil())
+            if(is_ref_value_type_for_gc(context->vars()[i].type()) && !context->vars()[i].raw().r.has_nil())
               mark_from_object(context->vars()[i].raw().r.ptr());
           }
         }
@@ -128,8 +127,7 @@ namespace letin
               break;
             case OBJECT_TYPE_TUPLE:
               for(size_t i = 0; i < top_object->length(); i++) {
-                if(top_object->raw().tuple_elem_types()[i].raw() == VALUE_TYPE_REF ||
-                    top_object->raw().tuple_elem_types()[i].raw() == VALUE_TYPE_CANCELED_REF) {
+                if(is_ref_value_type_for_gc(top_object->raw().tuple_elem_types()[i].raw())) {
                   Reference elem_ref = top_object->raw().tes[i].raw().r;
                   if(!elem_ref.has_nil()) {
                     Header *elem_header = object_to_header(elem_ref.ptr());

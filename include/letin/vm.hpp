@@ -157,7 +157,7 @@ namespace letin
       bool is_lazy() const { return (_M_raw.type & ~VALUE_TYPE_LAZILY_CANCELED) == VALUE_TYPE_LAZY_VALUE_REF; }
 
       bool is_lazily_canceled() const { return (_M_raw.type & VALUE_TYPE_LAZILY_CANCELED) != 0; }
-      
+
       int type() const { return _M_raw.type; }
 
       std::int64_t i() const { return _M_raw.type == VALUE_TYPE_INT ? _M_raw.i : 0; }
