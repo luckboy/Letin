@@ -77,7 +77,8 @@ namespace letin
         for(auto context : _M_thread_contexts) {
           for(size_t i = 0; i < context->regs().sec; i++) {
             Value elem = context->stack_elem(i);
-            if(elem.type() == VALUE_TYPE_REF && !elem.raw().r.has_nil())
+            if((elem.type() == VALUE_TYPE_REF || elem.type() == VALUE_TYPE_CANCELED_REF) &&
+                !elem.raw().r.has_nil())
               mark_from_object(elem.raw().r.ptr());
           }
           if(!context->regs().rv.raw().r.has_nil())
