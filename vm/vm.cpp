@@ -95,6 +95,8 @@ namespace letin
           return _M_raw.r == value._M_raw.r;
         case VALUE_TYPE_PAIR:
           return _M_raw.p.first == value._M_raw.p.first && _M_raw.p.first == value._M_raw.p.first;
+        case VALUE_TYPE_CANCELED_REF:
+          return _M_raw.r == value._M_raw.r;
         case VALUE_TYPE_ERROR:
           return true;
         default:
@@ -234,7 +236,6 @@ namespace letin
           return *this;
       }
     }
-
 
     //
     // A Thread class.
@@ -531,7 +532,7 @@ namespace letin
             if(addr >= _M_code_size) return false;
             if(opcode_to_arg_type1(_M_code[addr].opcode) != ARG_TYPE_IMM) return false;
             size_t index = _M_code[addr].arg1.i;
-            if(!relacate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
+            if(!relocate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
             _M_code[addr].arg1.i = index;
             break;
           }
@@ -540,7 +541,7 @@ namespace letin
             if(addr >= _M_code_size) return false;
             if(opcode_to_arg_type2(_M_code[addr].opcode) != ARG_TYPE_IMM) return false;
             size_t index = _M_code[addr].arg2.i;
-            if(!relacate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
+            if(!relocate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
             _M_code[addr].arg2.i = index;
             break;
           }
@@ -549,7 +550,7 @@ namespace letin
             if(addr >= _M_code_size) return false;
             if(opcode_to_arg_type1(_M_code[addr].opcode) != ARG_TYPE_GVAR) return false;
             size_t index = _M_code[addr].arg1.gvar;
-            if(!relacate_index(index, var_offset, var_indexes, _M_relocs[i], format::SYMBOL_TYPE_VAR)) return false;
+            if(!relocate_index(index, var_offset, var_indexes, _M_relocs[i], format::SYMBOL_TYPE_VAR)) return false;
             _M_code[addr].arg1.gvar = index;
             break;
           }
@@ -558,7 +559,7 @@ namespace letin
             if(addr >= _M_code_size) return false;
             if(opcode_to_arg_type2(_M_code[addr].opcode) != ARG_TYPE_GVAR) return false;
             size_t index = _M_code[addr].arg2.gvar;
-            if(!relacate_index(index, var_offset, var_indexes, _M_relocs[i], format::SYMBOL_TYPE_VAR)) return false;
+            if(!relocate_index(index, var_offset, var_indexes, _M_relocs[i], format::SYMBOL_TYPE_VAR)) return false;
             _M_code[addr].arg2.gvar = index;
             break;
           }
@@ -590,7 +591,7 @@ namespace letin
               default:
                 return false;
             }
-            if(!relacate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
+            if(!relocate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
             switch(data_object->type) {
               case OBJECT_TYPE_IARRAY32:
                 *reinterpret_cast<int32_t *>(_M_data + addr) = index;
@@ -609,7 +610,7 @@ namespace letin
             if(addr >= _M_var_count) return false;
             if(_M_vars[addr].type != VALUE_TYPE_INT) return false;
             size_t index = _M_vars[addr].i;
-            if(!relacate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
+            if(!relocate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
             _M_vars[addr].i = index;
             break;
           }
@@ -622,7 +623,7 @@ namespace letin
       return true;
     }
 
-    bool Program::relacate_index(size_t &index, size_t offset, const unordered_map<string, size_t> &indexes, const format::Relocation &reloc, uint8_t symbol_type)
+    bool Program::relocate_index(size_t &index, size_t offset, const unordered_map<string, size_t> &indexes, const format::Relocation &reloc, uint8_t symbol_type)
     {
       if((reloc.type & format::RELOC_TYPE_SYMBOLIC) != 0) {
         format::Symbol *symbol = symbols(reloc.symbol);
