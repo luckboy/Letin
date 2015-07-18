@@ -22,9 +22,11 @@ namespace letin
     {
       class InterpreterVirtualMachine : public ImplVirtualMachineBase
       {
+        Value (*_M_ret_value_to_int_value)(const ReturnValue &);
+        Value (*_M_ret_value_to_float_value)(const ReturnValue &);
+        Value (*_M_ret_value_to_ref_value)(const ReturnValue &);
       public:
-        InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy) :
-          ImplVirtualMachineBase(loader, gc, native_fun_handler, eval_strategy) {}
+        InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy);
 
         ~InterpreterVirtualMachine();
       protected:
@@ -32,23 +34,33 @@ namespace letin
 
         virtual void interpret(ThreadContext &context);
       private:
-        bool get_int(ThreadContext &context, std::int64_t &i, const Value &value);
+        bool get_int(ThreadContext &context, std::int64_t &i, Value &value);
 
         bool get_int(ThreadContext &context, std::int64_t &i, std::uint32_t arg_type, Argument arg);
 
-        bool get_float(ThreadContext &context, double &f, const Value &value);
+        bool get_float(ThreadContext &context, double &f, Value &value);
 
         bool get_float(ThreadContext &context, double &f, std::uint32_t arg_type, Argument arg);
 
         bool get_ref(ThreadContext &context, Reference &r, Value &value);
 
-        bool get_ref_for_const_value(ThreadContext &context, Reference &r, const Value &value);
-        
         bool get_ref(ThreadContext &context, Reference &r, std::uint32_t arg_type, Argument arg);
       protected:
         bool interpret_instr(ThreadContext &context);
       private:
         Value interpret_op(ThreadContext &context, const Instruction &instr);
+
+        Value interpret_icall_for_eager_eval(ThreadContext &context, const Instruction &instr);
+
+        Value interpret_fcall_for_eager_eval(ThreadContext &context, const Instruction &instr);
+
+        Value interpret_rcall_for_eager_eval(ThreadContext &context, const Instruction &instr);
+
+        Value interpret_icall_for_lazy_eval(ThreadContext &context, const Instruction &instr);
+
+        Value interpret_fcall_for_lazy_eval(ThreadContext &context, const Instruction &instr);
+
+        Value interpret_rcall_for_lazy_eval(ThreadContext &context, const Instruction &instr);
       protected:
         bool enter_to_fun(ThreadContext &context, std::size_t i, bool &is_fun_result);
 
@@ -59,12 +71,14 @@ namespace letin
         bool call_fun_for_force(ThreadContext &context, std::size_t i);
 
         bool force(ThreadContext &context, Value &value);
+        
+        bool force(ThreadContext &context, ReturnValue &value);
 
-        bool force_int(ThreadContext &context, std::int64_t &i, const Value &value);
+        bool force_int(ThreadContext &context, std::int64_t &i, Value &value);
 
-        bool force_float(ThreadContext &context, double &f, const Value &value);
+        bool force_float(ThreadContext &context, double &f, Value &value);
 
-        bool force_ref(ThreadContext &context, Reference &r, const Value &value);
+        bool force_ref(ThreadContext &context, Reference &r, Value &value);
       };
     }
   }

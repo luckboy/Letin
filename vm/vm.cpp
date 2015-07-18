@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <algorithm>
 #include <atomic>
+#include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -38,6 +39,7 @@ namespace letin
 
     static inline size_t object_size(int type, size_t length)
     {
+      size_t header_size = offsetof(ObjectRaw, is8);
       size_t elem_size;
       if(static_cast<uint64_t>(length) > static_cast<uint64_t>(numeric_limits<int64_t>::max())) return 0;
       switch(type & ~OBJECT_TYPE_UNIQUE) {
@@ -68,10 +70,14 @@ namespace letin
         case OBJECT_TYPE_IO:
           elem_size = 0;
           break;
+        case OBJECT_TYPE_LAZY_VALUE:
+          header_size = offsetof(ObjectRaw, lzv.args);
+          elem_size = sizeof(Value);
+          break;
         default:
           return 0;
       }
-      return (sizeof(Object) - max(sizeof(int64_t), sizeof(double))) + length * elem_size;
+      return header_size + length * elem_size;
     }
 
     //
@@ -96,6 +102,12 @@ namespace letin
           return _M_raw.r == value._M_raw.r;
         case VALUE_TYPE_PAIR:
           return _M_raw.p.first == value._M_raw.p.first && _M_raw.p.first == value._M_raw.p.first;
+        case VALUE_TYPE_CANCELED_REF:
+          return _M_raw.r == value._M_raw.r;
+        case VALUE_TYPE_LAZY_VALUE_REF:
+          return _M_raw.r == value._M_raw.r;
+        case VALUE_TYPE_LAZY_VALUE_REF | VALUE_TYPE_LAZILY_CANCELED:
+          return _M_raw.r == value._M_raw.r;
         case VALUE_TYPE_ERROR:
           return true;
         default:
@@ -133,6 +145,14 @@ namespace letin
             if(value1 != value2) return false;
           }
           return true;
+        case OBJECT_TYPE_LAZY_VALUE:
+          if(_M_raw.lzv.value_type != object._M_raw.lzv.value_type) return false;
+          if(_M_raw.lzv.value != object._M_raw.lzv.value) return false;
+          if(_M_raw.lzv.fun != object._M_raw.lzv.fun) return false;
+          for(size_t i = 0; i < _M_raw.length; i++) {
+            if(_M_raw.lzv.args[i] != object._M_raw.lzv.args[i]) return false;
+          }
+          return true;
         default:
           return false;
       }
@@ -157,6 +177,8 @@ namespace letin
           return Value(_M_raw.rs[i]);
         case OBJECT_TYPE_TUPLE:
           return Value(_M_raw.tuple_elem_types()[i], _M_raw.tes[i]);
+        case OBJECT_TYPE_LAZY_VALUE:
+          return _M_raw.lzv.args[i];
         default:
           return Value();
       }
@@ -197,6 +219,9 @@ namespace letin
           _M_raw.tes[i] = TupleElement(value.raw().i);
           _M_raw.tuple_elem_types()[i] = TupleElementType(value.type());
           return true;
+        case OBJECT_TYPE_LAZY_VALUE:
+          _M_raw.lzv.args[i] = value;
+          return true;
         default:
           return false;
       }
@@ -227,6 +252,12 @@ namespace letin
           _M_raw.r = value.raw().r;
           _M_raw.error = ERROR_SUCCESS;
           return *this;
+        case VALUE_TYPE_LAZY_VALUE_REF:
+          _M_raw.i = ((value.type() & VALUE_TYPE_CANCELED_REF) != 0 ? 1 : 0);
+          _M_raw.f = 0.0;
+          _M_raw.r = value.raw().r;
+          _M_raw.error = ERROR_SUCCESS;
+          return *this;          
         default:
           _M_raw.i = 0;
           _M_raw.f = 0.0;
@@ -235,7 +266,6 @@ namespace letin
           return *this;
       }
     }
-
 
     //
     // A Thread class.
@@ -538,7 +568,7 @@ namespace letin
             if(addr >= _M_code_size) return false;
             if(opcode_to_arg_type1(_M_code[addr].opcode) != ARG_TYPE_IMM) return false;
             size_t index = _M_code[addr].arg1.i;
-            if(!relacate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
+            if(!relocate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
             _M_code[addr].arg1.i = index;
             break;
           }
@@ -547,7 +577,7 @@ namespace letin
             if(addr >= _M_code_size) return false;
             if(opcode_to_arg_type2(_M_code[addr].opcode) != ARG_TYPE_IMM) return false;
             size_t index = _M_code[addr].arg2.i;
-            if(!relacate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
+            if(!relocate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
             _M_code[addr].arg2.i = index;
             break;
           }
@@ -556,7 +586,7 @@ namespace letin
             if(addr >= _M_code_size) return false;
             if(opcode_to_arg_type1(_M_code[addr].opcode) != ARG_TYPE_GVAR) return false;
             size_t index = _M_code[addr].arg1.gvar;
-            if(!relacate_index(index, var_offset, var_indexes, _M_relocs[i], format::SYMBOL_TYPE_VAR)) return false;
+            if(!relocate_index(index, var_offset, var_indexes, _M_relocs[i], format::SYMBOL_TYPE_VAR)) return false;
             _M_code[addr].arg1.gvar = index;
             break;
           }
@@ -565,7 +595,7 @@ namespace letin
             if(addr >= _M_code_size) return false;
             if(opcode_to_arg_type2(_M_code[addr].opcode) != ARG_TYPE_GVAR) return false;
             size_t index = _M_code[addr].arg2.gvar;
-            if(!relacate_index(index, var_offset, var_indexes, _M_relocs[i], format::SYMBOL_TYPE_VAR)) return false;
+            if(!relocate_index(index, var_offset, var_indexes, _M_relocs[i], format::SYMBOL_TYPE_VAR)) return false;
             _M_code[addr].arg2.gvar = index;
             break;
           }
@@ -597,7 +627,7 @@ namespace letin
               default:
                 return false;
             }
-            if(!relacate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
+            if(!relocate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
             switch(data_object->type) {
               case OBJECT_TYPE_IARRAY32:
                 *reinterpret_cast<int32_t *>(_M_data + addr) = index;
@@ -616,7 +646,7 @@ namespace letin
             if(addr >= _M_var_count) return false;
             if(_M_vars[addr].type != VALUE_TYPE_INT) return false;
             size_t index = _M_vars[addr].i;
-            if(!relacate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
+            if(!relocate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
             _M_vars[addr].i = index;
             break;
           }
@@ -629,7 +659,7 @@ namespace letin
       return true;
     }
 
-    bool Program::relacate_index(size_t &index, size_t offset, const unordered_map<string, size_t> &indexes, const format::Relocation &reloc, uint8_t symbol_type)
+    bool Program::relocate_index(size_t &index, size_t offset, const unordered_map<string, size_t> &indexes, const format::Relocation &reloc, uint8_t symbol_type)
     {
       if((reloc.type & format::RELOC_TYPE_SYMBOLIC) != 0) {
         format::Symbol *symbol = symbols(reloc.symbol);
@@ -663,7 +693,8 @@ namespace letin
       _M_regs.ai = 0;
       _M_regs.tmp_ptr = nullptr;
       _M_regs.tmp_r = Reference();
-      _M_regs.after_leaving_flag = false;
+      _M_regs.after_leaving_flags[0] = false;
+      _M_regs.after_leaving_flags[1] = false;
       _M_regs.arg_instr_flag = false;
       _M_regs.try_flag = false;
       _M_regs.try_arg2 = Value();
@@ -678,7 +709,7 @@ namespace letin
       if(_M_regs.abp2 + _M_regs.ac2 + 3 < _M_stack_size) {
         _M_stack[_M_regs.abp2 + _M_regs.ac2 + 0].safely_assign_for_gc(Value(_M_regs.abp, _M_regs.ac));
         _M_stack[_M_regs.abp2 + _M_regs.ac2 + 1].safely_assign_for_gc(Value(_M_regs.lvc, _M_regs.ip - 1));
-        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 2].safely_assign_for_gc(Value(static_cast<int64_t>(_M_regs.fp)));
+        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 2].safely_assign_for_gc(Value(static_cast<int64_t>((_M_regs.fp << 8) | (_M_regs.after_leaving_flag_index & 1))));
         atomic_thread_fence(memory_order_release);
         _M_regs.abp = _M_regs.abp2;
         _M_regs.ac = _M_regs.ac2;
@@ -687,7 +718,9 @@ namespace letin
         _M_regs.sec = _M_regs.abp2;
         _M_regs.fp = i;
         _M_regs.ip = 0;
-        _M_regs.after_leaving_flag = false;
+        _M_regs.after_leaving_flags[0] = false;
+        _M_regs.after_leaving_flags[1] = false;
+        _M_regs.after_leaving_flag_index = 0;
         atomic_thread_fence(memory_order_release);
         return true;
       } else
@@ -708,8 +741,9 @@ namespace letin
         _M_regs.lvc = _M_stack[fbp + 1].raw().p.first;
         _M_regs.sec = _M_regs.abp2;
         _M_regs.ip = _M_stack[fbp + 1].raw().p.second;
-        _M_regs.fp = static_cast<size_t>(_M_stack[fbp + 2].raw().i);
-        _M_regs.after_leaving_flag = true;
+        _M_regs.fp = static_cast<size_t>(_M_stack[fbp + 2].raw().i >> 8);
+        _M_regs.after_leaving_flag_index = static_cast<unsigned>(_M_stack[fbp + 2].raw().i & 1);
+        _M_regs.after_leaving_flags[_M_regs.after_leaving_flag_index] = true;
         atomic_thread_fence(memory_order_release);
         return true;
       } else
@@ -722,7 +756,8 @@ namespace letin
       _M_regs.fp = static_cast<size_t>(-1);
       _M_regs.ip = 0;
       _M_regs.rv = ReturnValue(0, 0.0, r, error);
-      _M_regs.after_leaving_flag = false;
+      _M_regs.after_leaving_flags[0] = false;
+      _M_regs.after_leaving_flags[1] = false;
       atomic_thread_fence(memory_order_release);
     }
 
@@ -776,6 +811,10 @@ namespace letin
           return os << *(value.r());
         case VALUE_TYPE_CANCELED_REF:
           return os << "canceled reference";
+        case VALUE_TYPE_LAZY_VALUE_REF:
+          return os << "lazy value reference";
+        case VALUE_TYPE_LAZY_VALUE_REF | VALUE_TYPE_LAZILY_CANCELED:
+          return os << "lazily canceled lazy value reference";
         default:
           return os << "error";
       }
@@ -810,6 +849,8 @@ namespace letin
           break;
         case OBJECT_TYPE_IO:
           return os << "io";
+        case OBJECT_TYPE_LAZY_VALUE:
+          return os << "lazy value";
         default:
           return os << "error";
       }
@@ -898,6 +939,8 @@ namespace letin
           return "unique object";
         case ERROR_AGAIN_USED_UNIQUE:
           return "again used unique object";
+        case ERROR_USER_EXCEPTION:
+          return "user exception";
         default:
           return "unknown error";
       }

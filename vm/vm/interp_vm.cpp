@@ -32,6 +32,40 @@ namespace letin
       // Static inline functions.
       //
 
+      static inline bool get_int_for_const_value(ThreadContext &context, int64_t &i, const Value &value)
+      {
+        if(value.type() != VALUE_TYPE_INT) {
+          context.set_error(ERROR_INCORRECT_VALUE);
+          return false;
+        }
+        i = value.raw().i;
+        return true;
+      }
+
+      static inline bool get_float_for_const_value(ThreadContext &context, double &f, const Value &value)
+      {
+        if(value.type() != VALUE_TYPE_FLOAT) {
+          context.set_error(ERROR_INCORRECT_VALUE);
+          return false;
+        }
+        f = value.raw().f;
+        return true;
+      }
+
+      static inline bool get_ref_for_const_value(ThreadContext &context, Reference &r, const Value &value)
+      {
+        if(value.type() != VALUE_TYPE_REF) {
+          context.set_error(ERROR_INCORRECT_VALUE);
+          return false;
+        }
+        if(value.raw().r->is_unique()) {
+          context.set_error(ERROR_UNIQUE_OBJECT);
+          return false;
+        }
+        r = value.raw().r;
+        return true;
+      }
+
       static inline bool get_int_value(ThreadContext &context, Value &out_value, const Value &value)
       {
         if(value.type() != VALUE_TYPE_INT) {
@@ -352,7 +386,7 @@ namespace letin
         return true;
       }
       
-      static bool cancel_ref_for_unique(Value &value)
+      static inline bool cancel_ref_for_unique(Value &value)
       {
         if(value.is_unique()) {
           return value.cancel_ref();
@@ -364,23 +398,77 @@ namespace letin
       }
 
       //
+      // Static functions.
+      //
+
+      static Value ret_value_to_int_value_for_eager_eval(const ReturnValue &value)
+      { return Value(value.raw().i); }
+      
+      static Value ret_value_to_float_value_for_eager_eval(const ReturnValue &value)
+      { return Value(value.raw().f); }
+
+      static Value ret_value_to_ref_value_for_eager_eval(const ReturnValue &value)
+      { return Value(value.raw().r); }
+
+      static Value ret_value_to_int_value_for_lazy_eval(const ReturnValue &value)
+      {
+        if(!value.raw().r->is_lazy())
+          return Value(value.raw().i);
+        else
+          return Value::lazy_value_ref(value.raw().r, value.raw().i != 0);
+      }
+      
+      static Value ret_value_to_float_value_for_lazy_eval(const ReturnValue &value)
+      {
+        if(!value.raw().r->is_lazy())
+          return Value(value.raw().f);
+        else
+          return Value::lazy_value_ref(value.raw().r, value.raw().i != 0);
+      }
+
+      static Value ret_value_to_ref_value_for_lazy_eval(const ReturnValue &value)
+      {
+        if(!value.raw().r->is_lazy())
+          return Value(value.raw().r);
+        else
+          return Value::lazy_value_ref(value.raw().r, value.raw().i != 0);
+      }
+
+      //
       // An InterpreterVirtualMachine class.
       //
+
+      InterpreterVirtualMachine::InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy) :
+        ImplVirtualMachineBase(loader, gc, native_fun_handler, eval_strategy)
+      {
+        if(_M_eval_strategy->is_eager()) {
+          _M_ret_value_to_int_value = ret_value_to_int_value_for_eager_eval;
+          _M_ret_value_to_float_value = ret_value_to_float_value_for_eager_eval;
+          _M_ret_value_to_ref_value = ret_value_to_ref_value_for_eager_eval;
+        } else {
+          _M_ret_value_to_int_value = ret_value_to_int_value_for_lazy_eval;
+          _M_ret_value_to_float_value = ret_value_to_float_value_for_lazy_eval;
+          _M_ret_value_to_ref_value = ret_value_to_ref_value_for_lazy_eval;
+        }
+      }
 
       InterpreterVirtualMachine::~InterpreterVirtualMachine() {}
       
       ReturnValue InterpreterVirtualMachine::start_in_thread(size_t i, const vector<Value> &args, ThreadContext &context)
       {
         for(auto arg : args) if(!push_arg(context, arg)) return context.regs().rv;
-        if(!call_fun_for_force(context, i))
-          if(context.regs().rv.error() == ERROR_SUCCESS) interpret(context);
+        if(!call_fun_for_force(context, i)) {
+          if(context.regs().rv.error() == ERROR_SUCCESS) {
+            do interpret(context); while(!force(context, context.regs().rv));
+          }
+        }
         return context.regs().rv;
       }
 
       void InterpreterVirtualMachine::interpret(ThreadContext &context)
       { while(interpret_instr(context)); }
 
-      inline bool InterpreterVirtualMachine::get_int(ThreadContext &context, int64_t &i, const Value &value)
+      inline bool InterpreterVirtualMachine::get_int(ThreadContext &context, int64_t &i, Value &value)
       {
         if(value.type() != VALUE_TYPE_INT) {
           if(value.is_lazy()) {
@@ -417,14 +505,14 @@ namespace letin
               context.set_error(ERROR_NO_GLOBAL_VAR);
               return false;
             }
-            return get_int(context, i, context.global_var(arg.gvar));
+            return get_int_for_const_value(context, i, context.global_var(arg.gvar));
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
         }
       }
 
-      inline bool InterpreterVirtualMachine::get_float(ThreadContext &context, double &f, const Value &value)
+      inline bool InterpreterVirtualMachine::get_float(ThreadContext &context, double &f, Value &value)
       {
         if(value.type() != VALUE_TYPE_FLOAT) {
           if(value.is_lazy()) {
@@ -461,7 +549,7 @@ namespace letin
               context.set_error(ERROR_NO_GLOBAL_VAR);
               return false;
             }
-            return get_float(context, f, context.global_var(arg.gvar));
+            return get_float_for_const_value(context, f, context.global_var(arg.gvar));
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -483,31 +571,6 @@ namespace letin
           }
         }
         if(value.raw().r->is_unique()) value.cancel_ref();
-        r = value.raw().r;
-        return true;
-      }
-
-      inline bool InterpreterVirtualMachine::get_ref_for_const_value(ThreadContext &context, Reference &r, const Value &value)
-      {
-        if(value.type() != VALUE_TYPE_REF) {
-          if(value.is_lazy()) {
-            if(value.is_lazily_canceled()) {
-              context.set_error(ERROR_UNIQUE_OBJECT);
-              return false;
-            }
-            return force_ref(context, r, value);
-          } else {
-            if(value.type() == VALUE_TYPE_CANCELED_REF)
-              context.set_error(ERROR_AGAIN_USED_UNIQUE);
-            else
-              context.set_error(ERROR_INCORRECT_VALUE);
-          }
-          return false;
-        }
-        if(value.raw().r->is_unique()) {
-          context.set_error(ERROR_UNIQUE_OBJECT);
-          return false;
-        }
         r = value.raw().r;
         return true;
       }
@@ -916,7 +979,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY8, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
+            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
               force(context, context.pushed_arg(i));
@@ -928,7 +991,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY16, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
+            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
               force(context, context.pushed_arg(i));
@@ -940,7 +1003,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY32, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
+            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
               force(context, context.pushed_arg(i));
@@ -952,7 +1015,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_IARRAY64, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
+            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
               force(context, context.pushed_arg(i));
@@ -964,7 +1027,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_SFARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
+            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_FLOAT)) return Value();
               force(context, context.pushed_arg(i));
@@ -976,7 +1039,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_DFARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
+            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_FLOAT)) return Value();
               force(context, context.pushed_arg(i));
@@ -988,7 +1051,7 @@ namespace letin
           {
             Reference r(new_object(context, OBJECT_TYPE_RARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flag) context.regs().ai = 0;
+            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
             for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_REF)) return Value();
               if(!check_shared_for_object(context, *(context.pushed_arg(i).raw().r))) return Value();
@@ -1280,40 +1343,40 @@ namespace letin
           {
             int64_t i;
             if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!context.regs().after_leaving_flag) {
+            if(!context.regs().after_leaving_flags[0]) {
               if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
               if(!call_fun(context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
             }
-            context.regs().after_leaving_flag = false;
+            context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
-            return Value(context.regs().rv.raw().i);
+            return _M_ret_value_to_int_value(context.regs().rv);
           }
           case OP_FCALL:
           {
             int64_t i;
             if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!context.regs().after_leaving_flag) {
+            if(!context.regs().after_leaving_flags[0]) {
               if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
               if(!call_fun(context, static_cast<uint32_t>(i), VALUE_TYPE_FLOAT)) return Value();
             }
-            context.regs().after_leaving_flag = false;
+            context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
-            if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
-            return Value(context.regs().rv.raw().f);
+            if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_FLOAT)) return Value();
+            return _M_ret_value_to_float_value(context.regs().rv);
           }
           case OP_RCALL:
           {
             int64_t i;
             if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!context.regs().after_leaving_flag) {
+            if(!context.regs().after_leaving_flags[0]) {
               if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
               if(!call_fun(context, static_cast<uint32_t>(i), VALUE_TYPE_REF)) return Value();
             }
-            context.regs().after_leaving_flag = false;
+            context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
-            if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
-            return Value(context.regs().rv.raw().r);
+            if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_REF)) return Value();
+            return _M_ret_value_to_ref_value(context.regs().rv);
           }
           case OP_ITOF:
           {
@@ -2006,7 +2069,7 @@ namespace letin
           }
           case OP_TRY:
           {
-            if(!context.regs().after_leaving_flag) {
+            if(!context.regs().after_leaving_flags[0]) {
               int64_t i1, i2;
               if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
               if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
@@ -2032,7 +2095,8 @@ namespace letin
               int error = context.regs().rv.error();
               Value arg2 = context.regs().try_arg2;
               Reference io_r = context.regs().try_io_r;
-              context.regs().after_leaving_flag = false;
+              if(!force(context, context.regs().rv)) return false;
+              context.regs().after_leaving_flags[0] = false;
               if(!pop_try_regs(context)) return Value();
               if(!pop_tmp_ac2(context)) return Value();
               if(!context.regs().arg_instr_flag) context.restore_abp2_and_ac2();
@@ -2070,7 +2134,7 @@ namespace letin
           }
         }
       }
-
+      
       bool InterpreterVirtualMachine::enter_to_fun(ThreadContext &context, size_t i, bool &is_fun_result)
       {
         is_fun_result = false;
@@ -2108,37 +2172,43 @@ namespace letin
 
       bool InterpreterVirtualMachine::force(ThreadContext &context, Value &value)
       {
-        if(value.is_lazy()) {
+        while(value.is_lazy()) {
           Object &object = *(value.raw().r);
           if(object.raw().lzv.value.is_error()) {
-            if(!context.regs().after_leaving_flag) {
-             if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return false;
-             if(!push_ai(context)) return false;
+            if(!context.regs().after_leaving_flags[1]) {
+              if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return false;
+              if(!push_ai(context)) return false;
               Value *avs = object.raw().lzv.args;
               for(size_t i = 0; i < object.length(); i++)
                 if(!push_arg(context, avs[i])) return false;
+              context.regs().after_leaving_flag_index = 1;
               if(!call_fun_for_force(context, object.raw().lzv.fun)) return false;
             }
+            context.regs().after_leaving_flag_index = 0;
+            context.regs().after_leaving_flags[1] = false;
             context.pop_args();
             if(!pop_ai(context)) return false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return false;
-            switch(object.raw().lzv.value_type) {
-              case VALUE_TYPE_INT:
-                object.raw().lzv.value = Value(context.regs().rv.raw().i);
-                break;
-              case VALUE_TYPE_FLOAT:
-                object.raw().lzv.value = Value(context.regs().rv.raw().f);
-                break;
-              case VALUE_TYPE_REF:
-                object.raw().lzv.value = Value(context.regs().rv.raw().r);
-                break;
-              case VALUE_TYPE_CANCELED_REF:
-                context.set_error(ERROR_AGAIN_USED_UNIQUE);
-                return false;
-              default:
-                context.set_error(ERROR_INCORRECT_VALUE);
-                return false;
-            }
+            if(!context.regs().rv.raw().r->is_lazy()) {
+              switch(object.raw().lzv.value_type) {
+                case VALUE_TYPE_INT:
+                  object.raw().lzv.value = Value(context.regs().rv.raw().i);
+                  break;
+                case VALUE_TYPE_FLOAT:
+                  object.raw().lzv.value = Value(context.regs().rv.raw().f);
+                  break;
+                case VALUE_TYPE_REF:
+                  object.raw().lzv.value = Value(context.regs().rv.raw().r);
+                  break;
+                case VALUE_TYPE_CANCELED_REF:
+                  context.set_error(ERROR_AGAIN_USED_UNIQUE);
+                  return false;
+                default:
+                  context.set_error(ERROR_INCORRECT_VALUE);
+                  return false;
+              }
+            } else
+              object.raw().lzv.value = Value::lazy_value_ref(context.regs().rv.raw().r, context.regs().rv.raw().i != 0);
           }
           if(context.regs().rv.raw().r->is_unique() && value.is_lazily_canceled()) {
             context.set_error(ERROR_AGAIN_USED_UNIQUE);
@@ -2152,27 +2222,35 @@ namespace letin
         return true;
       }
 
-      bool InterpreterVirtualMachine::force_int(ThreadContext &context, int64_t &i, const Value &value)
+      bool InterpreterVirtualMachine::force(ThreadContext &context, ReturnValue &value)
       {
-        Value tmp_value = value;
-        if(!force(context, tmp_value)) return false;
-        i = tmp_value.raw().i;
+        if(value.raw().r->is_lazy()) {
+          Value tmp_value = Value::lazy_value_ref(value.raw().r);
+          if(!force(context, tmp_value)) return false;
+          value = tmp_value;
+          atomic_thread_fence(memory_order_release);
+        }
         return true;
       }
 
-      bool InterpreterVirtualMachine::force_float(ThreadContext &context, double &f, const Value &value)
+      bool InterpreterVirtualMachine::force_int(ThreadContext &context, int64_t &i, Value &value)
       {
-        Value tmp_value = value;
-        if(!force(context, tmp_value)) return false;
-        f = tmp_value.raw().f;
+        if(!force(context, value)) return false;
+        i = value.raw().i;
         return true;
       }
 
-      bool InterpreterVirtualMachine::force_ref(ThreadContext &context, Reference &r, const Value &value)
+      bool InterpreterVirtualMachine::force_float(ThreadContext &context, double &f, Value &value)
       {
-        Value tmp_value = value;
-        if(!force(context, tmp_value)) return false;
-        r = tmp_value.raw().r;
+        if(!force(context, value)) return false;
+        f = value.raw().f;
+        return true;
+      }
+
+      bool InterpreterVirtualMachine::force_ref(ThreadContext &context, Reference &r, Value &value)
+      {
+        if(!force(context, value)) return false;
+        r = value.raw().r;
         return true;
       }
     }

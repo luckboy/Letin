@@ -98,7 +98,7 @@ namespace letin
                     const std::unordered_map<std::string, std::size_t> &fun_indexes,
                     const std::unordered_map<std::string, std::size_t> &var_indexes);
     private:
-      bool relacate_index(std::size_t &index, std::size_t offset, const std::unordered_map<std::string, std::size_t> &indexes, const format::Relocation &reloc, std::uint8_t symbol_type);
+      bool relocate_index(std::size_t &index, std::size_t offset, const std::unordered_map<std::string, std::size_t> &indexes, const format::Relocation &reloc, std::uint8_t symbol_type);
     };
 
     struct Registers
@@ -115,7 +115,9 @@ namespace letin
       std::size_t ai;
       void *tmp_ptr;
       Reference tmp_r;
-      bool after_leaving_flag;
+      Value tmp_v;
+      bool after_leaving_flags[2];
+      unsigned after_leaving_flag_index;
       std::uint32_t tmp_ac2;
       bool arg_instr_flag;
       bool try_flag;

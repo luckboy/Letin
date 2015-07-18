@@ -125,6 +125,8 @@ namespace letin
     class Value
     {
       ValueRaw _M_raw;
+
+      Value(int type, Reference r) { _M_raw.type = type; _M_raw.r = r; }
     public:
       Value() { _M_raw.type = VALUE_TYPE_ERROR; }
 
@@ -142,6 +144,9 @@ namespace letin
       Value(TupleElementType elem_type, TupleElement elem)
       { _M_raw.type = elem_type.raw(); _M_raw.i = elem.raw().i; }
 
+      static Value lazy_value_ref(Reference r, bool is_lazily_canceled = false)
+      { return Value(VALUE_TYPE_LAZY_VALUE_REF | (is_lazily_canceled ? VALUE_TYPE_LAZILY_CANCELED : 0), r); }
+      
       bool operator==(const Value &value) const;
 
       bool operator!=(const Value &value) const { return !(*this == value); }
@@ -242,6 +247,8 @@ namespace letin
 
       bool is_unique() const { return (_M_raw.type & OBJECT_TYPE_UNIQUE) != 0 && !is_error(); }
 
+      bool is_lazy() const { return _M_raw.type == OBJECT_TYPE_LAZY_VALUE; }
+      
       int type() const { return _M_raw.type; }
 
       Value elem(std::size_t i) const;
@@ -531,7 +538,9 @@ namespace letin
     class EvaluationStrategy
     {
     protected:
-      EvaluationStrategy() {}
+      bool _M_is_eager;
+
+      EvaluationStrategy(bool is_eager = true) : _M_is_eager(is_eager) {}
     public:
       virtual ~EvaluationStrategy();
 
@@ -542,6 +551,8 @@ namespace letin
       virtual bool must_pre_enter_to_fun(ThreadContext *context, std::size_t i, int value_type) = 0;
 
       virtual bool must_post_leave_from_fun(ThreadContext *context, std::size_t i, int value_type) = 0;
+
+      bool is_eager() const { return _M_is_eager; }
     };
     
     Loader *new_loader();
