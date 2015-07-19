@@ -85,7 +85,8 @@ namespace letin
             mark_from_object(context->regs().rv.raw().r.ptr());
           if(context->regs().tmp_ptr != nullptr)
             ptr_to_header(context->regs().tmp_ptr)->stack_prev = &_S_nil;
-          mark_from_object(context->regs().tmp_r.ptr());
+          if(!context->regs().tmp_r.has_nil())
+            mark_from_object(context->regs().tmp_r.ptr());
         }
         for(auto context : _M_vm_contexts) {
           for(size_t i = 0; i < context->var_count(); i++) {
