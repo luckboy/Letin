@@ -773,11 +773,35 @@ namespace letin
       }
     }
 
+    void ThreadContext::traverse_root_objects(function<void (Object *)> fun)
+    {
+      for(size_t i = 0; i < _M_regs.sec; i++) {
+        if(is_ref_value_type_for_gc(_M_stack[i].type()) && !_M_stack[i].raw().r.has_nil())
+          fun(_M_stack[i].raw().r.ptr());
+      }
+      if(!_M_regs.rv.raw().r.has_nil())
+        fun(_M_regs.rv.raw().r.ptr());
+      if(!_M_regs.tmp_r.has_nil())
+        fun(_M_regs.tmp_r.ptr());
+      if(is_ref_value_type_for_gc(_M_regs.try_arg2.type()) && !_M_regs.try_arg2.raw().r.has_nil())
+        fun(_M_regs.try_arg2.raw().r.ptr());
+      if(!_M_regs.try_io_r.has_nil())
+        fun(_M_regs.try_io_r.ptr());
+    }
+
     //
     // A VirtualMachineContext class.
     //
 
     VirtualMachineContext::~VirtualMachineContext() {}
+
+    void VirtualMachineContext::traverse_root_objects(function<void (Object *)> fun)
+    {
+      for(size_t i = 0; i < var_count(); i++) {
+        if(is_ref_value_type_for_gc(vars()[i].type()) && !vars()[i].raw().r.has_nil())
+          fun(vars()[i].raw().r.ptr());
+      }
+    }
 
     //
     // Other fuctions.

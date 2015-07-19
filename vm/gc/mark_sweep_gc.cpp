@@ -6,11 +6,13 @@
  *   the full licensing terms.                                              *
  ****************************************************************************/
 #include <atomic>
+#include <functional>
 #include <mutex>
 #include <letin/vm.hpp>
 #include "mark_sweep_gc.hpp"
 
 using namespace std;
+using namespace std::placeholders;
 
 namespace letin
 {
@@ -75,22 +77,12 @@ namespace letin
       void MarkSweepGarbageCollector::mark()
       {
         for(auto context : _M_thread_contexts) {
-          for(size_t i = 0; i < context->regs().sec; i++) {
-            Value elem = context->stack_elem(i);
-            if(is_ref_value_type_for_gc(elem.type()) && !elem.raw().r.has_nil())
-              mark_from_object(elem.raw().r.ptr());
-          }
-          if(!context->regs().rv.raw().r.has_nil())
-            mark_from_object(context->regs().rv.raw().r.ptr());
+          context->traverse_root_objects(bind(&MarkSweepGarbageCollector::mark_from_object, this, _1));
           if(context->regs().tmp_ptr != nullptr)
             ptr_to_header(context->regs().tmp_ptr)->stack_prev = &_S_nil;
-          mark_from_object(context->regs().tmp_r.ptr());
         }
         for(auto context : _M_vm_contexts) {
-          for(size_t i = 0; i < context->var_count(); i++) {
-            if(is_ref_value_type_for_gc(context->vars()[i].type()) && !context->vars()[i].raw().r.has_nil())
-              mark_from_object(context->vars()[i].raw().r.ptr());
-          }
+          context->traverse_root_objects(bind(&MarkSweepGarbageCollector::mark_from_object, this, _1));
         }
       }
 

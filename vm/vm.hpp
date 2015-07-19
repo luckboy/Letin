@@ -319,6 +319,8 @@ namespace letin
         } else
           return false;
       }
+
+      void traverse_root_objects(std::function<void (Object *)> fun);
     };
 
     class VirtualMachineContext
@@ -339,6 +341,8 @@ namespace letin
       virtual Value *vars() = 0;
 
       virtual std::size_t var_count() const = 0;
+
+      void traverse_root_objects(std::function<void (Object *)> fun);
     };
 
     inline bool is_ref_value_type_for_gc(int type)
