@@ -8,9 +8,7 @@ include_directories(../..)
 
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}" vm_test_sources)
 
-set(letinvm_static_name "${CMAKE_STATIC_LIBRARY_PREFIX}letinvm${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set(vm_static_library "${PROJECT_BINARY_DIR}/vm/${letinvm_static_name}")
-list(APPEND vm_test_libraries "${vm_static_library}")
+list(APPEND vm_test_libraries letinvm_static)
 list(APPEND vm_test_libraries ${CPPUNIT_LIBRARIES})
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 	list(APPEND vm_test_libraries "${ws2_library}")

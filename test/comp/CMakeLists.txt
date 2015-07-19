@@ -16,9 +16,7 @@ endif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 
 aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}" comp_test_sources)
 
-set(letincomp_static_name "${CMAKE_STATIC_LIBRARY_PREFIX}letincomp${CMAKE_STATIC_LIBRARY_SUFFIX}")
-set(comp_static_library "${PROJECT_BINARY_DIR}/comp/${letincomp_static_name}")
-list(APPEND comp_test_libraries "${comp_static_library}")
+list(APPEND comp_test_libraries letincomp_static)
 list(APPEND comp_test_libraries ${CPPUNIT_LIBRARIES})
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 	list(APPEND comp_test_libraries "${ws2_library}")
