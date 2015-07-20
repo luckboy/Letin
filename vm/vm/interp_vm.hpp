@@ -22,9 +22,9 @@ namespace letin
     {
       class InterpreterVirtualMachine : public ImplVirtualMachineBase
       {
-        Value (*_M_ret_value_to_int_value)(const ReturnValue &);
-        Value (*_M_ret_value_to_float_value)(const ReturnValue &);
-        Value (*_M_ret_value_to_ref_value)(const ReturnValue &);
+        Value (*_M_return_value_to_int_value)(const ReturnValue &);
+        Value (*_M_return_value_to_float_value)(const ReturnValue &);
+        Value (*_M_return_value_to_ref_value)(const ReturnValue &);
       public:
         InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy);
 

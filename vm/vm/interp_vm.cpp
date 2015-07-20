@@ -401,24 +401,24 @@ namespace letin
       // Static functions.
       //
 
-      static Value ret_value_to_int_value_for_eager_eval(const ReturnValue &value)
+      static Value return_value_to_int_value_for_eager_eval(const ReturnValue &value)
       { return Value(value.raw().i); }
-      
-      static Value ret_value_to_float_value_for_eager_eval(const ReturnValue &value)
+
+      static Value return_value_to_float_value_for_eager_eval(const ReturnValue &value)
       { return Value(value.raw().f); }
 
-      static Value ret_value_to_ref_value_for_eager_eval(const ReturnValue &value)
+      static Value return_value_to_ref_value_for_eager_eval(const ReturnValue &value)
       { return Value(value.raw().r); }
 
-      static Value ret_value_to_int_value_for_lazy_eval(const ReturnValue &value)
+      static Value return_value_to_int_value_for_lazy_eval(const ReturnValue &value)
       {
         if(!value.raw().r->is_lazy())
           return Value(value.raw().i);
         else
           return Value::lazy_value_ref(value.raw().r, value.raw().i != 0);
       }
-      
-      static Value ret_value_to_float_value_for_lazy_eval(const ReturnValue &value)
+
+      static Value return_value_to_float_value_for_lazy_eval(const ReturnValue &value)
       {
         if(!value.raw().r->is_lazy())
           return Value(value.raw().f);
@@ -426,7 +426,7 @@ namespace letin
           return Value::lazy_value_ref(value.raw().r, value.raw().i != 0);
       }
 
-      static Value ret_value_to_ref_value_for_lazy_eval(const ReturnValue &value)
+      static Value return_value_to_ref_value_for_lazy_eval(const ReturnValue &value)
       {
         if(!value.raw().r->is_lazy())
           return Value(value.raw().r);
@@ -442,13 +442,13 @@ namespace letin
         ImplVirtualMachineBase(loader, gc, native_fun_handler, eval_strategy)
       {
         if(_M_eval_strategy->is_eager()) {
-          _M_ret_value_to_int_value = ret_value_to_int_value_for_eager_eval;
-          _M_ret_value_to_float_value = ret_value_to_float_value_for_eager_eval;
-          _M_ret_value_to_ref_value = ret_value_to_ref_value_for_eager_eval;
+          _M_return_value_to_int_value = return_value_to_int_value_for_eager_eval;
+          _M_return_value_to_float_value = return_value_to_float_value_for_eager_eval;
+          _M_return_value_to_ref_value = return_value_to_ref_value_for_eager_eval;
         } else {
-          _M_ret_value_to_int_value = ret_value_to_int_value_for_lazy_eval;
-          _M_ret_value_to_float_value = ret_value_to_float_value_for_lazy_eval;
-          _M_ret_value_to_ref_value = ret_value_to_ref_value_for_lazy_eval;
+          _M_return_value_to_int_value = return_value_to_int_value_for_lazy_eval;
+          _M_return_value_to_float_value = return_value_to_float_value_for_lazy_eval;
+          _M_return_value_to_ref_value = return_value_to_ref_value_for_lazy_eval;
         }
       }
 
@@ -1350,7 +1350,7 @@ namespace letin
             context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
-            return _M_ret_value_to_int_value(context.regs().rv);
+            return _M_return_value_to_int_value(context.regs().rv);
           }
           case OP_FCALL:
           {
@@ -1363,7 +1363,7 @@ namespace letin
             context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_FLOAT)) return Value();
-            return _M_ret_value_to_float_value(context.regs().rv);
+            return _M_return_value_to_float_value(context.regs().rv);
           }
           case OP_RCALL:
           {
@@ -1376,7 +1376,7 @@ namespace letin
             context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_REF)) return Value();
-            return _M_ret_value_to_ref_value(context.regs().rv);
+            return _M_return_value_to_ref_value(context.regs().rv);
           }
           case OP_ITOF:
           {
