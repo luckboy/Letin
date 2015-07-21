@@ -9,6 +9,7 @@
 #include "impl_loader.hpp"
 #include "eager_eval_strategy.hpp"
 #include "interp_vm.hpp"
+#include "lazy_eval_strategy.hpp"
 #include "mark_sweep_gc.hpp"
 #include "new_alloc.hpp"
 #include "util.hpp"
@@ -1629,6 +1630,8 @@ namespace letin
       }
 
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
+
+      DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);
     }
   }
 }

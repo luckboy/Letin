@@ -143,6 +143,8 @@ namespace letin
       };
 
       DECL_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
+
+      DECL_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);
     }
   }
 }
