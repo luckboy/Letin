@@ -159,7 +159,7 @@ namespace letin
       static inline bool get_ref_value(ThreadContext &context, Value &out_value, Value &value)
       {
         if(value.type() != VALUE_TYPE_REF) {
-          if(value.is_lazy() && value.raw().r->raw().lzv.value_type == VALUE_TYPE_FLOAT) {
+          if(value.is_lazy() && value.raw().r->raw().lzv.value_type == VALUE_TYPE_REF) {
             out_value = value;
             value.lazily_cancel_ref();
             return true;
@@ -332,6 +332,24 @@ namespace letin
         return true;
       }
 
+      static inline bool push_tmp_ac2_and_after_leaving_flag1(ThreadContext &context)
+      {
+        if(!context.push_tmp_ac2_and_after_leaving_flag1()) {
+          context.set_error(ERROR_STACK_OVERFLOW);
+          return false;
+        }
+        return true;
+      }
+
+      static inline bool pop_tmp_ac2_and_after_leaving_flag1(ThreadContext &context)
+      {
+        if(!context.pop_tmp_ac2_and_after_leaving_flag1()) {
+          context.set_error(ERROR_EMPTY_STACK);
+          return false;
+        }
+        return true;
+      }
+
       static inline bool push_try_regs(ThreadContext &context)
       {
         if(!context.push_try_regs()) {
@@ -397,6 +415,16 @@ namespace letin
         return false;
       }
 
+      static inline bool restore_and_pop_regs_for_force(ThreadContext &context)
+      {
+        context.regs().after_leaving_flag_index = 0;
+        context.pop_args();
+        if(!pop_ai(context)) return false;
+        if(!pop_tmp_ac2_and_after_leaving_flag1(context)) return false;
+        if(!context.regs().arg_instr_flag) context.restore_abp2_and_ac2();
+        return true;
+      }
+
       //
       // Static functions.
       //
@@ -445,10 +473,12 @@ namespace letin
           _M_return_value_to_int_value = return_value_to_int_value_for_eager_eval;
           _M_return_value_to_float_value = return_value_to_float_value_for_eager_eval;
           _M_return_value_to_ref_value = return_value_to_ref_value_for_eager_eval;
+          _M_force_pushed_args = &InterpreterVirtualMachine::force_pushed_args_for_eager_eval;
         } else {
           _M_return_value_to_int_value = return_value_to_int_value_for_lazy_eval;
           _M_return_value_to_float_value = return_value_to_float_value_for_lazy_eval;
           _M_return_value_to_ref_value = return_value_to_ref_value_for_lazy_eval;
+          _M_force_pushed_args = &InterpreterVirtualMachine::force_pushed_args_for_lazy_eval;
         }
       }
 
@@ -612,6 +642,11 @@ namespace letin
         }
         const Instruction &instr = fun.raw().instrs[context.regs().ip];
         context.regs().ip++;
+        if(context.regs().after_leaving_flags[1]) {
+          if(opcode_to_instr(instr.opcode) == INSTR_ARG) context.regs().arg_instr_flag = true;
+          if(!restore_and_pop_regs_for_force(context)) return false;
+          if(opcode_to_instr(instr.opcode) == INSTR_ARG) context.regs().arg_instr_flag = false;
+        }
         switch(opcode_to_instr(instr.opcode)) {
           case INSTR_LET:
           {
@@ -977,85 +1012,78 @@ namespace letin
           }
           case OP_RIARRAY8:
           {
+            if(!(this->*_M_force_pushed_args)(context)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_IARRAY8, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
-            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
+            for(size_t i = 0; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
-              force(context, context.pushed_arg(i));
               r->raw().is8[i] = context.pushed_arg(i).raw().i;
             }
             return Value(r);
           }
           case OP_RIARRAY16:
           {
+            if(!(this->*_M_force_pushed_args)(context)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_IARRAY16, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
-            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
+            for(size_t i = 0; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
-              force(context, context.pushed_arg(i));
               r->raw().is16[i] = context.pushed_arg(i).raw().i;
             }
             return Value(r);
           }
           case OP_RIARRAY32:
           {
+            if(!(this->*_M_force_pushed_args)(context)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_IARRAY32, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
-            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
+            for(size_t i = 0; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
-              force(context, context.pushed_arg(i));
               r->raw().is32[i] = context.pushed_arg(i).raw().i;
             }
             return Value(r);
           }
           case OP_RIARRAY64:
           {
+            if(!(this->*_M_force_pushed_args)(context)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_IARRAY64, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
-            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
+            for(size_t i = 0; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_INT)) return Value();
-              force(context, context.pushed_arg(i));
               r->raw().is64[i] = context.pushed_arg(i).raw().i;
             }
             return Value(r);
           }
           case OP_RSFARRAY:
           {
+            if(!(this->*_M_force_pushed_args)(context)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_SFARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
-            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
+            for(size_t i = 0; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_FLOAT)) return Value();
-              force(context, context.pushed_arg(i));
               r->raw().sfs[i] = context.pushed_arg(i).raw().f;
             }
             return Value(r);
           }
           case OP_RDFARRAY:
           {
+            if(!(this->*_M_force_pushed_args)(context)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_DFARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
-            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
+            for(size_t i = 0; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_FLOAT)) return Value();
-              force(context, context.pushed_arg(i));
               r->raw().dfs[i] = context.pushed_arg(i).raw().f;
             }
             return Value(r);
           }
           case OP_RRARRAY:
           {
+            if(!(this->*_M_force_pushed_args)(context)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_RARRAY, context.regs().ac2));
             if(r.is_null()) return Value();
-            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
-            for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
+            for(size_t i = 0; i < context.regs().ac2; i++) {
               if(!check_value_type(context, context.pushed_arg(i), VALUE_TYPE_REF)) return Value();
               if(!check_shared_for_object(context, *(context.pushed_arg(i).raw().r))) return Value();
-              force(context, context.pushed_arg(i));
               r->raw().rs[i] = context.pushed_arg(i).raw().r;
             }
             atomic_thread_fence(memory_order_release);
@@ -2095,7 +2123,7 @@ namespace letin
               int error = context.regs().rv.error();
               Value arg2 = context.regs().try_arg2;
               Reference io_r = context.regs().try_io_r;
-              if(!force(context, context.regs().rv)) return false;
+              if(!force(context, context.regs().rv, true)) return Value();
               context.regs().after_leaving_flags[0] = false;
               if(!pop_try_regs(context)) return Value();
               if(!pop_tmp_ac2(context)) return Value();
@@ -2170,25 +2198,24 @@ namespace letin
         return is_fun_result;        
       }
 
-      bool InterpreterVirtualMachine::force(ThreadContext &context, Value &value)
+      bool InterpreterVirtualMachine::force(ThreadContext &context, Value &value, bool is_try)
       {
         while(value.is_lazy()) {
           Object &object = *(value.raw().r);
           if(object.raw().lzv.value.is_error()) {
             if(!context.regs().after_leaving_flags[1]) {
-              if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return false;
+              if(!context.regs().arg_instr_flag) context.hide_args();
+              if(!push_tmp_ac2_and_after_leaving_flag1(context)) return false;
               if(!push_ai(context)) return false;
               Value *avs = object.raw().lzv.args;
               for(size_t i = 0; i < object.length(); i++)
                 if(!push_arg(context, avs[i])) return false;
               context.regs().after_leaving_flag_index = 1;
+              if(is_try) context.set_try_regs_for_force();
               if(!call_fun_for_force(context, object.raw().lzv.fun)) return false;
+              if(!restore_and_pop_regs_for_force(context)) return false;
             }
-            context.regs().after_leaving_flag_index = 0;
             context.regs().after_leaving_flags[1] = false;
-            context.pop_args();
-            if(!pop_ai(context)) return false;
-            if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return false;
             if(!context.regs().rv.raw().r->is_lazy()) {
               switch(object.raw().lzv.value_type) {
                 case VALUE_TYPE_INT:
@@ -2222,11 +2249,11 @@ namespace letin
         return true;
       }
 
-      bool InterpreterVirtualMachine::force(ThreadContext &context, ReturnValue &value)
+      bool InterpreterVirtualMachine::force(ThreadContext &context, ReturnValue &value, bool is_try)
       {
         if(value.raw().r->is_lazy()) {
           Value tmp_value = Value::lazy_value_ref(value.raw().r);
-          if(!force(context, tmp_value)) return false;
+          if(!force(context, tmp_value, is_try)) return false;
           value = tmp_value;
           atomic_thread_fence(memory_order_release);
         }
@@ -2251,6 +2278,18 @@ namespace letin
       {
         if(!force(context, value)) return false;
         r = value.raw().r;
+        return true;
+      }
+
+      bool InterpreterVirtualMachine::force_pushed_args_for_eager_eval(ThreadContext &context)
+      { return true; }
+      
+      bool InterpreterVirtualMachine::force_pushed_args_for_lazy_eval(ThreadContext &context)
+      {
+        if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
+        for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
+          if(!force(context, context.pushed_arg(i))) return false;
+        }
         return true;
       }
     }

@@ -25,6 +25,7 @@ namespace letin
         Value (*_M_return_value_to_int_value)(const ReturnValue &);
         Value (*_M_return_value_to_float_value)(const ReturnValue &);
         Value (*_M_return_value_to_ref_value)(const ReturnValue &);
+        bool (InterpreterVirtualMachine::*_M_force_pushed_args)(ThreadContext &);
       public:
         InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy);
 
@@ -70,15 +71,19 @@ namespace letin
 
         bool call_fun_for_force(ThreadContext &context, std::size_t i);
 
-        bool force(ThreadContext &context, Value &value);
+        bool force(ThreadContext &context, Value &value, bool is_try = false);
         
-        bool force(ThreadContext &context, ReturnValue &value);
+        bool force(ThreadContext &context, ReturnValue &value, bool is_try = false);
 
         bool force_int(ThreadContext &context, std::int64_t &i, Value &value);
 
         bool force_float(ThreadContext &context, double &f, Value &value);
 
         bool force_ref(ThreadContext &context, Reference &r, Value &value);
+
+        bool force_pushed_args_for_eager_eval(ThreadContext &context);
+
+        bool force_pushed_args_for_lazy_eval(ThreadContext &context);
       };
     }
   }

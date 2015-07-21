@@ -264,6 +264,22 @@ namespace letin
           return false;
       }
 
+      bool push_tmp_ac2_and_after_leaving_flag1()
+      { return push_local_var(Value(static_cast<std::uint32_t>(_M_regs.tmp_ac2), _M_regs.after_leaving_flags[0] ? 1 : 0)); }
+
+      bool pop_tmp_ac2_and_after_leaving_flag1()
+      {
+        if(_M_regs.abp2 > 0 && _M_stack[_M_regs.abp2 - 1].type() == VALUE_TYPE_PAIR) {
+          _M_regs.sec--;
+          _M_regs.abp2--;
+          std::atomic_thread_fence(std::memory_order_release);
+          _M_regs.tmp_ac2 = static_cast<std::int32_t>(_M_stack[_M_regs.abp2].raw().p.first);
+          _M_regs.after_leaving_flags[0] = (_M_stack[_M_regs.abp2].raw().p.second != 0);
+          return true;
+        } else
+          return false;
+      }
+
       void set_try_regs(const Value &arg2, const Reference &io_r)
       {
         _M_regs.try_flag = true;
@@ -272,7 +288,13 @@ namespace letin
         _M_regs.try_io_r = io_r;
         std::atomic_thread_fence(std::memory_order_release);
       }
-      
+
+      void set_try_regs_for_force()
+      {
+        _M_regs.try_abp = _M_regs.abp2; _M_regs.try_ac = _M_regs.ac2;
+        std::atomic_thread_fence(std::memory_order_release);
+      }
+
       bool push_try_regs()
       {
         if(!push_local_var(Value(_M_regs.try_flag ? 1 : 0))) return false;

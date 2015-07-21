@@ -253,7 +253,8 @@ namespace letin
           _M_raw.error = ERROR_SUCCESS;
           return *this;
         case VALUE_TYPE_LAZY_VALUE_REF:
-          _M_raw.i = ((value.type() & VALUE_TYPE_CANCELED_REF) != 0 ? 1 : 0);
+        case VALUE_TYPE_LAZY_VALUE_REF | VALUE_TYPE_LAZILY_CANCELED:
+          _M_raw.i = ((value.type() & VALUE_TYPE_LAZILY_CANCELED) != 0 ? 1 : 0);
           _M_raw.f = 0.0;
           _M_raw.r = value.raw().r;
           _M_raw.error = ERROR_SUCCESS;
@@ -768,7 +769,8 @@ namespace letin
       } else {
         _M_regs.abp = _M_regs.try_abp;
         _M_regs.ac = _M_regs.try_ac;
-        _M_regs.rv = ReturnValue(0, 0.0, r, error);        
+        _M_regs.rv = ReturnValue(0, 0.0, r, error);
+        _M_regs.after_leaving_flag_index = 0;
         if(!leave_from_fun()) set_error_without_try(error, r);
       }
     }
