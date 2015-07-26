@@ -8,6 +8,7 @@
 #ifndef _VM_INTERP_VM_HPP
 #define _VM_INTERP_VM_HPP
 
+#include <functional>
 #include <letin/const.hpp>
 #include <letin/opcode.hpp>
 #include <letin/vm.hpp>
@@ -31,7 +32,7 @@ namespace letin
 
         ~InterpreterVirtualMachine();
       protected:
-        ReturnValue start_in_thread(std::size_t i, const std::vector<Value> &args, ThreadContext &context);
+        ReturnValue start_in_thread(std::size_t i, const std::vector<Value> &args, ThreadContext &context, bool is_force);
 
         virtual void interpret(ThreadContext &context);
       private:
@@ -73,7 +74,7 @@ namespace letin
 
         bool force(ThreadContext &context, Value &value, bool is_try = false);
         
-        bool force(ThreadContext &context, ReturnValue &value, bool is_try = false);
+        bool force_rv(ThreadContext &context, bool is_try = false);
 
         bool force_int(ThreadContext &context, std::int64_t &i, Value &value);
 
@@ -84,6 +85,12 @@ namespace letin
         bool force_pushed_args_for_eager_eval(ThreadContext &context);
 
         bool force_pushed_args_for_lazy_eval(ThreadContext &context);
+
+        bool fully_force(ThreadContext &context, Value &value);
+
+        bool fully_force(ThreadContext &context, Value &value, std::function<void (Reference)> fun);
+
+        bool fully_force_rv(ThreadContext &context);
       };
     }
   }

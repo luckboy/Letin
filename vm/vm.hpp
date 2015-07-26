@@ -115,7 +115,6 @@ namespace letin
       std::size_t ai;
       void *tmp_ptr;
       Reference tmp_r;
-      Value tmp_v;
       bool after_leaving_flags[2];
       unsigned after_leaving_flag_index;
       std::uint32_t tmp_ac2;
@@ -125,6 +124,9 @@ namespace letin
       std::uint32_t try_ac;
       Value try_arg2;
       Reference try_io_r;
+      ReturnValue force_tmp_rv;
+      Reference force_tmp_r;
+      Reference force_tmp_r2;
     };
 
     class ThreadContext

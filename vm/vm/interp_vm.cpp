@@ -484,12 +484,13 @@ namespace letin
 
       InterpreterVirtualMachine::~InterpreterVirtualMachine() {}
       
-      ReturnValue InterpreterVirtualMachine::start_in_thread(size_t i, const vector<Value> &args, ThreadContext &context)
+      ReturnValue InterpreterVirtualMachine::start_in_thread(size_t i, const vector<Value> &args, ThreadContext &context, bool is_force)
       {
         for(auto arg : args) if(!push_arg(context, arg)) return context.regs().rv;
         if(!call_fun_for_force(context, i)) {
           if(context.regs().rv.error() == ERROR_SUCCESS) {
-            do interpret(context); while(!force(context, context.regs().rv));
+             interpret(context); 
+             if(is_force) fully_force_rv(context);
           }
         }
         return context.regs().rv;
@@ -2123,7 +2124,7 @@ namespace letin
               int error = context.regs().rv.error();
               Value arg2 = context.regs().try_arg2;
               Reference io_r = context.regs().try_io_r;
-              if(!force(context, context.regs().rv, true)) return Value();
+              if(!force_rv(context, true)) return Value();
               context.regs().after_leaving_flags[0] = false;
               if(!pop_try_regs(context)) return Value();
               if(!pop_tmp_ac2(context)) return Value();
@@ -2249,13 +2250,15 @@ namespace letin
         return true;
       }
 
-      bool InterpreterVirtualMachine::force(ThreadContext &context, ReturnValue &value, bool is_try)
+      bool InterpreterVirtualMachine::force_rv(ThreadContext &context, bool is_try)
       {
-        if(value.raw().r->is_lazy()) {
-          Value tmp_value = Value::lazy_value_ref(value.raw().r);
+        if(!context.regs().after_leaving_flags[1])
+          context.regs().force_tmp_rv = context.regs().rv;
+        if(context.regs().force_tmp_rv.raw().r->is_lazy()) {
+          Value tmp_value = Value::lazy_value_ref(context.regs().force_tmp_rv.raw().r);
           if(!force(context, tmp_value, is_try)) return false;
-          value = tmp_value;
-          atomic_thread_fence(memory_order_release);
+          context.regs().rv = tmp_value;
+          context.regs().force_tmp_rv = ReturnValue();
         }
         return true;
       }
@@ -2289,6 +2292,84 @@ namespace letin
         if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
         for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
           if(!force(context, context.pushed_arg(i))) return false;
+        }
+        return true;
+      }
+
+      bool InterpreterVirtualMachine::fully_force(ThreadContext &context, Value &value)
+      { 
+        bool result = fully_force(context, value, [&context](Reference r) {
+          context.regs().force_tmp_r = r;
+        });
+        atomic_thread_fence(memory_order_release);
+        context.regs().force_tmp_r = Reference();
+        return result;
+      }
+
+      bool InterpreterVirtualMachine::fully_force(ThreadContext &context, Value &value, function<void (Reference)> fun)
+      {
+        if(!force(context, value)) {
+          if(context.regs().rv.raw().error == ERROR_SUCCESS) {
+            bool tmp_result;
+            do {
+              interpret(context);
+              tmp_result = force(context, value);
+            } while(!tmp_result && context.regs().rv.raw().error == ERROR_SUCCESS);
+          }
+        }
+        if(context.regs().rv.raw().error != ERROR_SUCCESS) return false;
+        if(value.type() == VALUE_TYPE_REF) {
+          switch(value.raw().r->type()) {
+            case OBJECT_TYPE_TUPLE:
+            {
+              Reference r(new_object(context, OBJECT_TYPE_TUPLE, value.raw().r->length()));
+              if(r.is_null()) return false;
+              for(size_t i = 0; i < r->length(); i++) r->set_elem(i, Value());
+              fun(r);
+              atomic_thread_fence(memory_order_release);
+              context.regs().tmp_ptr = nullptr;
+              for(size_t i = 0; i < r->length(); i++) {
+                Value tmp_elem_value = value.raw().r->elem(i);
+                if(!fully_force(context, tmp_elem_value, [r, i](Reference elem_r) {
+                  r->set_elem(i, Value(elem_r));
+                })) return false;
+                r->set_elem(i, tmp_elem_value);
+              }
+              value.safely_assign_for_gc(Value(r));
+              break;
+            }
+            case OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE:
+            {
+              for(size_t i = 0; i < value.raw().r->length(); i++) {
+                Value tmp_elem_value = value.raw().r->elem(i);
+                if(!fully_force(context, tmp_elem_value, [&context, i](Reference elem_r) {
+                  context.regs().force_tmp_r2 = elem_r;
+                })) return false;
+                value.raw().r->set_elem(i, tmp_elem_value);
+                atomic_thread_fence(memory_order_release);
+                context.regs().force_tmp_r2 = Reference(); 
+              }
+              break;
+            }
+          }
+        }
+        return true;
+      }
+
+      bool InterpreterVirtualMachine::fully_force_rv(ThreadContext &context)
+      {
+        context.regs().force_tmp_rv = context.regs().rv;
+        if(context.regs().force_tmp_rv.raw().r->is_lazy()) {
+          Value tmp_value = Value::lazy_value_ref(context.regs().force_tmp_rv.raw().r, context.regs().force_tmp_rv.raw().i != 0);
+          if(!fully_force(context, tmp_value)) return false;
+          context.regs().rv = tmp_value;
+          context.regs().force_tmp_rv = ReturnValue();
+        } else {
+          Value tmp_value = Value(context.regs().force_tmp_rv.raw().r);
+          if(!fully_force(context, tmp_value)) return false;
+          if(!check_value_type(context, tmp_value, VALUE_TYPE_REF)) return false;
+          context.regs().rv.raw().r = tmp_value.raw().r;
+          context.regs().force_tmp_rv = ReturnValue();
         }
         return true;
       }

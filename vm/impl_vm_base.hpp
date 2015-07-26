@@ -34,9 +34,9 @@ namespace letin
       private:
         bool load_prog(std::size_t i, Program *prog, std::size_t fun_offset, std::size_t var_offset, std::list<LoadingError> *errors, void *data_to_free);
       public:
-        Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun);
+        Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun, bool is_force);
       protected:
-        virtual ReturnValue start_in_thread(std::size_t i, const std::vector<Value> &args, ThreadContext &context) = 0;
+        virtual ReturnValue start_in_thread(std::size_t i, const std::vector<Value> &args, ThreadContext &context, bool is_force) = 0;
       public:
         Environment &env();
 

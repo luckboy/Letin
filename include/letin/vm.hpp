@@ -428,9 +428,9 @@ namespace letin
 
       bool load(const char *file_name, std::list<LoadingError> *errors = nullptr);
       
-      virtual Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun) = 0;
+      virtual Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun, bool is_force = true) = 0;
 
-      Thread start(const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun) { return start(entry(), args, fun); }
+      Thread start(const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun, bool is_force = true) { return start(entry(), args, fun); }
 
       virtual Environment &env() = 0;
 

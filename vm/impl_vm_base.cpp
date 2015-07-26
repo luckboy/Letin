@@ -288,16 +288,16 @@ namespace letin
         return true;
       }
 
-      Thread ImplVirtualMachineBase::start(size_t i, const vector<Value> &args, function<void (const ReturnValue &)> fun)
+      Thread ImplVirtualMachineBase::start(size_t i, const vector<Value> &args, function<void (const ReturnValue &)> fun, bool is_force)
       {
         ThreadContext *context = new ThreadContext(_M_env);
         Thread thread(context);
         context->set_gc(_M_gc);
         context->set_native_fun_handler(_M_native_fun_handler);
-        context->start([this, i, fun, args, &thread]() {
+        context->start([this, i, fun, args, &thread, is_force]() {
           Thread thread2(thread);
           try {
-            fun(start_in_thread(i, args, *(thread2.context()))); 
+            fun(start_in_thread(i, args, *(thread2.context()), is_force)); 
           } catch(...) {
             fun(ReturnValue(0, 0.0, Reference(), ERROR_EXCEPTION));
           }
