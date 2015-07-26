@@ -701,6 +701,9 @@ namespace letin
       _M_regs.try_arg2 = Value();
       _M_regs.try_io_r = Reference();
       _M_regs.try_abp = _M_regs.try_ac = 0;
+      _M_regs.force_tmp_rv = ReturnValue();
+      _M_regs.force_tmp_r = Reference();
+      _M_regs.force_tmp_r2 = Reference();
       _M_stack = new Value[stack_size];
       _M_stack_size = stack_size;
     }
@@ -789,6 +792,12 @@ namespace letin
         fun(_M_regs.try_arg2.raw().r.ptr());
       if(!_M_regs.try_io_r.has_nil())
         fun(_M_regs.try_io_r.ptr());
+      if(!_M_regs.force_tmp_rv.raw().r.has_nil())
+        fun(_M_regs.force_tmp_rv.raw().r.ptr());
+      if(!_M_regs.force_tmp_r.has_nil())
+        fun(_M_regs.force_tmp_r.ptr());
+      if(!_M_regs.force_tmp_r2.has_nil())
+        fun(_M_regs.force_tmp_r2.ptr());
     }
 
     //
