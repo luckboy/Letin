@@ -655,7 +655,7 @@ namespace letin
             context.pop_args();
             if(!value.is_error())
               if(!context.push_local_var(value)) context.set_error(ERROR_STACK_OVERFLOW);
-            context.regs().tmp_ptr = nullptr;
+            context.regs().gc_tmp_ptr = nullptr;
             break;
           }
           case INSTR_IN:
@@ -668,7 +668,7 @@ namespace letin
               if(!leave_from_fun(context)) context.set_error(ERROR_EMPTY_STACK);
               context.regs().rv = value;
             }
-            context.regs().tmp_ptr = nullptr;
+            context.regs().gc_tmp_ptr = nullptr;
             break;
           }
           case INSTR_JC:
@@ -691,7 +691,7 @@ namespace letin
               context.restore_abp2_and_ac2();
               if(!context.push_arg(value)) context.set_error(ERROR_STACK_OVERFLOW);
             }
-            context.regs().tmp_ptr = nullptr;
+            context.regs().gc_tmp_ptr = nullptr;
             break;
           }
           case INSTR_RETRY:
@@ -723,7 +723,7 @@ namespace letin
                   context.set_error(ERROR_INCORRECT_OBJECT);
               }
             }
-            context.regs().tmp_ptr = nullptr;
+            context.regs().gc_tmp_ptr = nullptr;
             break;
           }
           case INSTR_THROW:
@@ -2327,7 +2327,7 @@ namespace letin
               for(size_t i = 0; i < r->length(); i++) r->set_elem(i, Value());
               fun(r);
               atomic_thread_fence(memory_order_release);
-              context.regs().tmp_ptr = nullptr;
+              context.regs().gc_tmp_ptr = nullptr;
               for(size_t i = 0; i < r->length(); i++) {
                 Value tmp_elem_value = value.raw().r->elem(i);
                 if(!fully_force(context, tmp_elem_value, [r, i](Reference elem_r) {

@@ -51,7 +51,7 @@ namespace letin
         new(header) Header();
         atomic_thread_fence(memory_order_release);
         void *ptr = (reinterpret_cast<char *>(orig_ptr) + sizeof(Header));
-        if(context != nullptr) context->regs().tmp_ptr = ptr;
+        if(context != nullptr) context->regs().gc_tmp_ptr = ptr;
         atomic_thread_fence(memory_order_release);
         {
           lock_guard<GarbageCollector> guard(*this);
@@ -78,8 +78,8 @@ namespace letin
       {
         for(auto context : _M_thread_contexts) {
           context->traverse_root_objects(bind(&MarkSweepGarbageCollector::mark_from_object, this, _1));
-          if(context->regs().tmp_ptr != nullptr)
-            ptr_to_header(context->regs().tmp_ptr)->stack_prev = &_S_nil;
+          if(context->regs().gc_tmp_ptr != nullptr)
+            ptr_to_header(context->regs().gc_tmp_ptr)->stack_prev = &_S_nil;
         }
         for(auto context : _M_vm_contexts) {
           context->traverse_root_objects(bind(&MarkSweepGarbageCollector::mark_from_object, this, _1));

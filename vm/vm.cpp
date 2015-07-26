@@ -692,7 +692,7 @@ namespace letin
       _M_regs.ip = 0;
       _M_regs.rv = ReturnValue();
       _M_regs.ai = 0;
-      _M_regs.tmp_ptr = nullptr;
+      _M_regs.gc_tmp_ptr = nullptr;
       _M_regs.tmp_r = Reference();
       _M_regs.after_leaving_flags[0] = false;
       _M_regs.after_leaving_flags[1] = false;

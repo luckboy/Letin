@@ -113,7 +113,7 @@ namespace letin
       std::uint32_t ip;
       ReturnValue rv;
       std::size_t ai;
-      void *tmp_ptr;
+      void *gc_tmp_ptr;
       Reference tmp_r;
       bool after_leaving_flags[2];
       unsigned after_leaving_flag_index;
