@@ -655,6 +655,7 @@ namespace letin
             context.pop_args();
             if(!value.is_error())
               if(!context.push_local_var(value)) context.set_error(ERROR_STACK_OVERFLOW);
+            context.regs().rv.raw().r = Reference();
             context.regs().gc_tmp_ptr = nullptr;
             break;
           }
@@ -691,6 +692,7 @@ namespace letin
               context.restore_abp2_and_ac2();
               if(!context.push_arg(value)) context.set_error(ERROR_STACK_OVERFLOW);
             }
+            context.regs().rv.raw().r = Reference();
             context.regs().gc_tmp_ptr = nullptr;
             break;
           }
@@ -723,6 +725,7 @@ namespace letin
                   context.set_error(ERROR_INCORRECT_OBJECT);
               }
             }
+            context.regs().rv.raw().r = Reference();
             context.regs().gc_tmp_ptr = nullptr;
             break;
           }
