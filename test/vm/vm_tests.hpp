@@ -27,16 +27,19 @@ public:                                                                         
                          EvaluationStrategy *eval_strategy);                    \
 }
 
-#define DEF_IMPL_VM_TESTS(prefix, clazz)                                        \
+#define DEF_IMPL_VM_TESTS_FOR_EVAL_STRATEGY(prefix, clazz, eval_strategy_class) \
 CPPUNIT_TEST_SUITE_REGISTRATION(prefix##clazz##Tests);                          \
 EvaluationStrategy *prefix##clazz##Tests::new_eval_strategy()                   \
-{ return new impl::prefix##EvaluationStrategy(); }                              \
+{ return new impl::eval_strategy_class(); }                                     \
 VirtualMachine *prefix##clazz##Tests::new_vm(Loader *loader,                    \
                                              GarbageCollector *gc,              \
                                              NativeFunctionHandler *native_fun_handler, \
                                              EvaluationStrategy *eval_strategy) \
 { return new impl::clazz(loader, gc, native_fun_handler, eval_strategy); }      \
 class prefix##clazz##Tests
+
+#define DEF_IMPL_VM_TESTS(prefix, clazz)                                        \
+DEF_IMPL_VM_TESTS_FOR_EVAL_STRATEGY(prefix, clazz, prefix##EvaluationStrategy)
 
 namespace letin
 {
