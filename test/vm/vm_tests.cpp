@@ -1629,6 +1629,139 @@ namespace letin
         CPPUNIT_ASSERT(is_expected);
       }
 
+      void VirtualMachineTests::test_vm_evaluates_local_variable_values_for_lazy_evaluation()
+      {
+        PROG(prog_helper, 0);
+        FUN(2);
+        ARG(ILOAD, A(0), NA());
+        ARG(ILOAD, A(1), NA());
+        LET(ICALL, IMM(1), NA());
+        ARG(ILOAD, A(0), NA());
+        ARG(ILOAD, A(1), NA());
+        LET(ICALL, IMM(2), NA());
+        IN();
+        RET(IADD, LV(0), LV(1)); // 610 + 66 = 676
+        END_FUN();
+        FUN(2);
+        LET(IMUL, A(0), A(1)); // 55 * 11 = 605
+        LET(IDIV, A(0), A(1)); // 55 / 11 = 5
+        IN();
+        RET(IADD, LV(0), LV(1)); // 605 + 5 = 610
+        END_FUN();
+        FUN(2);
+        LET(IAND, A(0), A(1)); // 55 & 11 = 11
+        LET(IOR, A(0), A(1)); // 55 | 11 = 55
+        IN();
+        RET(IADD, LV(0), LV(1)); // 11 + 55 = 66 
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(55));
+        args.push_back(Value(11));
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (Value(676) == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_evaluates_functions_which_returns_passed_arguments_for_lazy_evaluation()
+      {
+        PROG(prog_helper, 0);
+        FUN(4);
+        ARG(ILOAD, A(0), NA());
+        ARG(ILOAD, A(1), NA());
+        LET(ICALL, IMM(1), NA());
+        ARG(ILOAD, A(2), NA());
+        ARG(ILOAD, A(3), NA());
+        LET(ICALL, IMM(2), NA());
+        IN();
+        ARG(ILOAD, LV(0), NA());
+        LET(ICALL, IMM(3), NA());
+        ARG(ILOAD, LV(1), NA());
+        LET(ICALL, IMM(4), NA());
+        IN();
+        RET(IADD, LV(2), LV(3)); // 6 + 200 = 206
+        END_FUN();
+        FUN(2);
+        RET(IADD, A(0), A(1)); // 1 + 5 = 6
+        END_FUN();
+        FUN(2);
+        RET(IMUL, A(0), A(1)); // 10 * 20 = 200
+        END_FUN();
+        FUN(1);
+        RET(ILOAD, A(0), NA());
+        END_FUN();
+        FUN(1);
+        RET(ILOAD, A(0), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(1));
+        args.push_back(Value(5));
+        args.push_back(Value(10));
+        args.push_back(Value(20));
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (Value(206) == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_complains_on_many_references_to_unique_object_for_lazy_evaluation()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(ILOAD, IMM('a'), NA());
+        LET(RCALL, IMM(1), NA());
+        IN();
+        ARG(RLOAD, LV(0), NA());
+        LET(RCALL, IMM(2), NA());
+        ARG(RLOAD, LV(0), NA());
+        LET(RCALL, IMM(2), NA());
+        IN();
+        ARG(ILOAD, IMM('b'), NA());
+        LET(RUIASNTH8, LV(1), IMM(0));
+        ARG(ILOAD, IMM('c'), NA());
+        LET(RUIASNTH8, LV(2), IMM(0));
+        IN();
+        LETTUPLE(RUIANTH8, 2, LV(3), IMM(0));
+        LETTUPLE(RUIANTH8, 2, LV(4), IMM(0));
+        IN();
+        RET(IADD, LV(5), LV(7));
+        END_FUN();
+        FUN(1);
+        RET(RUIAFILL8, IMM(5), A(0));
+        END_FUN();
+        FUN(1);
+        RET(RLOAD, A(0), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_AGAIN_USED_UNIQUE == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);

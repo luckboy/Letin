@@ -88,6 +88,9 @@ namespace letin
         CPPUNIT_TEST(test_vm_throws_and_catches_system_exception);
         CPPUNIT_TEST(test_vm_throws_user_exception);
         CPPUNIT_TEST(test_vm_throws_user_exception_from_catching_function);
+        CPPUNIT_TEST(test_vm_evaluates_local_variable_values_for_lazy_evaluation);
+        CPPUNIT_TEST(test_vm_evaluates_functions_which_returns_passed_arguments_for_lazy_evaluation);
+        CPPUNIT_TEST(test_vm_complains_on_many_references_to_unique_object_for_lazy_evaluation);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -143,6 +146,9 @@ namespace letin
         void test_vm_throws_and_catches_system_exception();
         void test_vm_throws_user_exception();
         void test_vm_throws_user_exception_from_catching_function();
+        void test_vm_evaluates_local_variable_values_for_lazy_evaluation();
+        void test_vm_evaluates_functions_which_returns_passed_arguments_for_lazy_evaluation();
+        void test_vm_complains_on_many_references_to_unique_object_for_lazy_evaluation();
       };
 
       DECL_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
