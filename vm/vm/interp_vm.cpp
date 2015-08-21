@@ -1533,6 +1533,7 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
+            atomic_thread_fence(memory_order_release);
             context.regs().rv = Value(r3);
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
@@ -1549,6 +1550,7 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
+            atomic_thread_fence(memory_order_release);
             context.regs().rv = Value(r3);
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
@@ -1565,6 +1567,7 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
+            atomic_thread_fence(memory_order_release);
             context.regs().rv = Value(r3);
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
@@ -1581,6 +1584,7 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
+            atomic_thread_fence(memory_order_release);
             context.regs().rv = Value(r3);
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
@@ -1597,6 +1601,7 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
+            atomic_thread_fence(memory_order_release);
             context.regs().rv = Value(r3);
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
@@ -1613,6 +1618,7 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
+            atomic_thread_fence(memory_order_release);
             context.regs().rv = Value(r3);
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
@@ -1632,6 +1638,7 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
+            atomic_thread_fence(memory_order_release);
             context.regs().rv = Value(r3);
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
@@ -1653,6 +1660,7 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
+            atomic_thread_fence(memory_order_release);
             context.regs().rv = Value(r3);
             atomic_thread_fence(memory_order_release);
             context.regs().tmp_r = Reference();
