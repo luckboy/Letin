@@ -109,6 +109,7 @@ namespace letin
       std::uint32_t abp2;
       std::uint32_t ac2;
       std::uint32_t sec;
+      std::uint32_t nfbp;
       std::size_t fp;
       std::uint32_t ip;
       ReturnValue rv;
@@ -120,7 +121,7 @@ namespace letin
       std::uint32_t tmp_ac2;
       bool arg_instr_flag;
       bool try_flag;
-      std::size_t try_abp;
+      std::uint32_t try_abp;
       std::uint32_t try_ac;
       Value try_arg2;
       Reference try_io_r;
@@ -141,6 +142,8 @@ namespace letin
       std::size_t _M_fun_count;
       const Value *_M_global_vars;
       std::size_t _M_global_var_count;
+      RegisteredReference *_M_first_registered_r;
+      RegisteredReference *_M_last_registered_r;
     public:
       ThreadContext(const VirtualMachineContext &vm_context, std::size_t stack_size = 32 * 1024);
 
@@ -178,6 +181,14 @@ namespace letin
       const Value &global_var(std::size_t i) const { return _M_global_vars[i]; }
 
       std::size_t global_var_count() const { return _M_global_var_count; }
+
+      const RegisteredReference *first_registered_r() const { return _M_first_registered_r; }
+
+      RegisteredReference *&first_registered_r() { return _M_first_registered_r; }
+
+      const RegisteredReference *last_registered_r() const { return _M_last_registered_r; }
+
+      RegisteredReference *&last_registered_r() { return _M_last_registered_r; }
 
       std::size_t lvbp() const { return _M_regs.abp + _M_regs.ac + 3; }
 
@@ -231,6 +242,8 @@ namespace letin
       bool leave_from_fun();
 
       void in() { _M_regs.lvc = _M_regs.abp2 - lvbp(); }
+
+      ReturnValue invoke_native_fun(VirtualMachine *vm, int nfi, ArgumentList &args);
     private:
       void set_error_without_try(int error, const Reference &r);
     public:
@@ -287,7 +300,7 @@ namespace letin
         _M_regs.try_flag = true;
         _M_regs.try_abp = _M_regs.abp2; _M_regs.try_ac = _M_regs.ac2;
         _M_regs.try_arg2.safely_assign_for_gc(arg2);
-        _M_regs.try_io_r = io_r;
+        _M_regs.try_io_r.safely_assign_for_gc(io_r);
         std::atomic_thread_fence(std::memory_order_release);
       }
 
@@ -316,8 +329,7 @@ namespace letin
           _M_regs.sec -= 4;
           _M_regs.abp2 -= 4;
           std::atomic_thread_fence(std::memory_order_release);
-          _M_regs.try_io_r = _M_stack[_M_regs.abp2 + 3].raw().r;
-          std::atomic_thread_fence(std::memory_order_release);
+          _M_regs.try_io_r.safely_assign_for_gc(_M_stack[_M_regs.abp2 + 3].raw().r);
           _M_regs.try_arg2.safely_assign_for_gc(_M_stack[_M_regs.abp2 + 2]);
           _M_regs.try_abp = _M_stack[_M_regs.abp2 + 1].raw().i >> 32;
           _M_regs.try_ac = _M_stack[_M_regs.abp2 + 1].raw().i & 0xffffffff;
@@ -345,6 +357,13 @@ namespace letin
       }
 
       void traverse_root_objects(std::function<void (Object *)> fun);
+      
+      void safely_set_gc_tmp_ptr_for_gc(void *ptr)
+      {
+        std::atomic_thread_fence(std::memory_order_release);
+        _M_regs.gc_tmp_ptr = ptr;
+        std::atomic_thread_fence(std::memory_order_release);
+      }
     };
 
     class VirtualMachineContext

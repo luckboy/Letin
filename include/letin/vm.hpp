@@ -31,6 +31,7 @@ namespace letin
     class Loader;
     class ThreadContext;
     class VirtualMachineContext;
+    class VirtualMachine;
     class GarbageCollector;
     class NativeFunctionHandler;
     class EvaluationStrategy;
@@ -49,6 +50,14 @@ namespace letin
       Reference(Object *ptr) : _M_ptr(ptr) {}
 
       Reference &operator=(Object *ptr) { _M_ptr = ptr; return *this; }
+
+      Reference &safely_assign_for_gc(Reference r)
+      {
+        std::atomic_thread_fence(std::memory_order_release);
+        _M_ptr = r._M_ptr;
+        std::atomic_thread_fence(std::memory_order_release);
+        return *this;
+      }
       
       bool operator==(Reference ref) const { return _M_ptr == ref._M_ptr; }
 
@@ -72,6 +81,14 @@ namespace letin
       std::int8_t _M_raw;
     public:
       TupleElementType(int type) : _M_raw(type) {}
+
+      TupleElementType &safely_assign_for_gc(TupleElementType type)
+      {
+        std::atomic_thread_fence(std::memory_order_release);
+        _M_raw = type._M_raw;
+        std::atomic_thread_fence(std::memory_order_release);
+        return *this;
+      }
 
       const std::int8_t &raw() const { return _M_raw; }
 
@@ -99,6 +116,14 @@ namespace letin
 
       TupleElement(Reference r) { _M_raw.r = r; }
 
+      TupleElement &safely_assign_for_gc(TupleElement elem)
+      {
+        std::atomic_thread_fence(std::memory_order_release);
+        _M_raw = elem._M_raw;
+        std::atomic_thread_fence(std::memory_order_release);
+        return *this;
+      }
+      
       const TupleElementRaw &raw() const { return _M_raw; }
 
       TupleElementRaw &raw() { return _M_raw; }
@@ -294,6 +319,22 @@ namespace letin
 
       ReturnValue &operator=(const Value &value);
 
+      ReturnValue &safely_assign_for_gc(const ReturnValue &value)
+      {
+        std::atomic_thread_fence(std::memory_order_release);
+        *this = value;
+        std::atomic_thread_fence(std::memory_order_release);
+        return *this;
+      }
+
+      ReturnValue &safely_assign_for_gc(const Value &value)
+      {
+        std::atomic_thread_fence(std::memory_order_release);
+        *this = value; 
+        std::atomic_thread_fence(std::memory_order_release);
+        return *this;
+      }
+
       bool operator==(const ReturnValue &value) const
       { return _M_raw.i == value._M_raw.i && _M_raw.f == value._M_raw.f && _M_raw.r == value._M_raw.r && _M_raw.error == value._M_raw.error; }
 
@@ -362,6 +403,8 @@ namespace letin
     public:
       ArgumentList(Value *args, std::size_t length) : _M_args(args), _M_length(length) {}
 
+      ArgumentList(std::vector<Value> &args) : _M_args(args.data()), _M_length(args.size()) {}
+
       const Value &operator[](std::size_t i) const { return _M_args[i]; }
 
       Value &operator[](std::size_t i) { return _M_args[i]; }
@@ -407,6 +450,44 @@ namespace letin
       const std::string &symbol_name() const { return _M_symbol_name; }
     };
 
+    class RegisteredReference : public Reference
+    {
+      friend ThreadContext;
+      ThreadContext *_M_context;
+      RegisteredReference *_M_prev;
+      RegisteredReference *_M_next;
+    public:
+      RegisteredReference(ThreadContext *context, bool is_registered = true) :
+        Reference(), _M_context(context), _M_prev(nullptr), _M_next(nullptr)
+      { if(is_registered) register_ref(); }
+
+      RegisteredReference(Object *ptr, ThreadContext *context, bool is_registered = true) :
+        Reference(ptr), _M_context(context), _M_prev(nullptr), _M_next(nullptr)
+      { if(is_registered) register_ref(); }
+
+      RegisteredReference(Reference r, ThreadContext *context, bool is_registered = true) :
+        Reference(r.ptr()), _M_context(context), _M_prev(nullptr), _M_next(nullptr)
+      { if(is_registered) register_ref(); }
+
+      RegisteredReference(const RegisteredReference &r) = delete;
+
+      ~RegisteredReference();
+
+      RegisteredReference &operator=(const RegisteredReference &r)
+      {
+        safely_assign_for_gc(r);
+        return *this;
+      }
+
+      RegisteredReference &operator=(const Reference &r)
+      {
+        safely_assign_for_gc(r);
+        return *this;
+      }
+
+      void register_ref();
+    };
+
     class VirtualMachine
     {
     protected:
@@ -439,6 +520,12 @@ namespace letin
       virtual std::size_t entry() = 0;
 
       GarbageCollector *gc() { return _M_gc; }
+
+      virtual int force(ThreadContext *context, Value &value) = 0;
+
+      virtual int fully_force(ThreadContext *context, Value &value) = 0;
+
+      virtual ReturnValue invoke_fun(ThreadContext *context, std::size_t i, const ArgumentList &args) = 0;
     };
 
     class Loader
@@ -501,7 +588,7 @@ namespace letin
         if(static_cast<std::uint64_t>(length) > static_cast<std::uint64_t>(std::numeric_limits<std::size_t>::max())) return nullptr;
         return new_immortal_object(type, length);
       }
-
+      
       virtual void start() = 0;
 
       virtual void stop() = 0;
@@ -568,6 +655,11 @@ namespace letin
     void initialize_gc();
 
     void finalize_gc();
+
+    void set_temporary_root_object(ThreadContext *context, Reference r);
+
+    inline void set_temporary_root_object(ThreadContext *context, Object *object)
+    { set_temporary_root_object(context, Reference(object)); }
 
     std::ostream &operator<<(std::ostream &os, const Value &value);
 

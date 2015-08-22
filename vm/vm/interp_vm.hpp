@@ -31,6 +31,12 @@ namespace letin
         InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy);
 
         ~InterpreterVirtualMachine();
+
+        int force(ThreadContext *context, Value &value);
+
+        int fully_force(ThreadContext *context, Value &value);
+
+        ReturnValue invoke_fun(ThreadContext *context, std::size_t i, const ArgumentList &args);
       protected:
         ReturnValue start_in_thread(std::size_t i, const std::vector<Value> &args, ThreadContext &context, bool is_force);
 
@@ -72,8 +78,8 @@ namespace letin
 
         bool call_fun_for_force(ThreadContext &context, std::size_t i);
 
-        bool force(ThreadContext &context, Value &value, bool is_try = false);
-        
+        bool force_value(ThreadContext &context, Value &value, bool is_try = false);
+
         bool force_rv(ThreadContext &context, bool is_try = false);
 
         bool force_int(ThreadContext &context, std::int64_t &i, Value &value);
@@ -86,9 +92,11 @@ namespace letin
 
         bool force_pushed_args_for_lazy_eval(ThreadContext &context);
 
-        bool fully_force(ThreadContext &context, Value &value);
+        bool force_value_and_interpret(ThreadContext &context, Value &value);
 
-        bool fully_force(ThreadContext &context, Value &value, std::function<void (Reference)> fun);
+        bool fully_force_value(ThreadContext &context, Value &value);
+
+        bool fully_force_value(ThreadContext &context, Value &value, std::function<void (Reference)> fun);
 
         bool fully_force_rv(ThreadContext &context);
       };

@@ -483,7 +483,30 @@ namespace letin
       }
 
       InterpreterVirtualMachine::~InterpreterVirtualMachine() {}
-      
+
+      int InterpreterVirtualMachine::force(ThreadContext *context, Value &value)
+      {
+        if(!force_value_and_interpret(*context, value)) return context->regs().rv.error();
+        return ERROR_SUCCESS;
+      }
+
+      int InterpreterVirtualMachine::fully_force(ThreadContext *context, Value &value)
+      {
+        if(!fully_force_value(*context, value)) return context->regs().rv.error();
+        return ERROR_SUCCESS;
+      }
+
+      ReturnValue InterpreterVirtualMachine::invoke_fun(ThreadContext *context, size_t i, const ArgumentList &args)
+      {
+        for(size_t j = 0; j < args.length(); j++) {
+          if(!push_arg(*context, args[j])) return context->regs().rv;
+        }
+        if(!call_fun_for_force(*context, i)) {
+          if(context->regs().rv.error() == ERROR_SUCCESS) interpret(*context);
+        }
+        return context->regs().rv;
+      }
+
       ReturnValue InterpreterVirtualMachine::start_in_thread(size_t i, const vector<Value> &args, ThreadContext &context, bool is_force)
       {
         for(auto arg : args) if(!push_arg(context, arg)) return context.regs().rv;
@@ -1428,13 +1451,12 @@ namespace letin
             if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
             ArgumentList args = context.pushed_args();
-            ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, args);
+            ReturnValue rv = context.invoke_native_fun(this, i, args);
             if(rv.raw().error != ERROR_SUCCESS) {
               context.set_error(rv.raw().error);
               return Value();
             }
-            atomic_thread_fence(memory_order_release);
-            context.regs().tmp_r = Reference();
+            context.regs().tmp_r.safely_assign_for_gc(Reference());
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             return Value(rv.raw().i);
           }
@@ -1444,13 +1466,12 @@ namespace letin
             if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
             ArgumentList args = context.pushed_args();
-            ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, args);
+            ReturnValue rv = context.invoke_native_fun(this, i, args);
             if(rv.raw().error != ERROR_SUCCESS) {
               context.set_error(rv.raw().error);
               return Value();
             }
-            atomic_thread_fence(memory_order_release);
-            context.regs().tmp_r = Reference();
+            context.regs().tmp_r.safely_assign_for_gc(Reference());
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             return Value(rv.raw().f);
           }
@@ -1460,13 +1481,12 @@ namespace letin
             if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
             if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
             ArgumentList args = context.pushed_args();
-            ReturnValue rv = context.native_fun_handler()->invoke(this, &context, i, args);
+            ReturnValue rv = context.invoke_native_fun(this, i, args);
             if(rv.raw().error != ERROR_SUCCESS) {
               context.set_error(rv.raw().error);
               return Value();
             }
-            atomic_thread_fence(memory_order_release);
-            context.regs().tmp_r = Reference();
+            context.regs().tmp_r.safely_assign_for_gc(Reference());
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             return Value(rv.raw().r);
           }
@@ -1775,8 +1795,7 @@ namespace letin
             if(!get_ref(context, r2, context.pushed_arg(0))) return Value();
             if(!check_object_type(context, *r1, OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE)) return Value();
             if(!check_object_elem_index(context, *r1, i)) return Value();
-            r1->raw().rs[i] = r2;
-            atomic_thread_fence(memory_order_release);
+            r1->raw().rs[i].safely_assign_for_gc(r2);
             return Value(r1);
           }
           case OP_RUTSNTH:
@@ -1790,12 +1809,9 @@ namespace letin
             if(!check_object_elem_index(context, *r, i)) return Value();
             Value value = context.pushed_arg(0);
             cancel_ref_for_unique(context.pushed_arg(0));
-            r->raw().tuple_elem_types()[i] = VALUE_TYPE_ERROR;
-            atomic_thread_fence(memory_order_release);
-            r->raw().tes[i] = value.tuple_elem();
-            atomic_thread_fence(memory_order_release);
-            r->raw().tuple_elem_types()[i] = value.tuple_elem_type();
-            atomic_thread_fence(memory_order_release);
+            r->raw().tuple_elem_types()[i].safely_assign_for_gc(VALUE_TYPE_ERROR);
+            r->raw().tes[i].safely_assign_for_gc(value.tuple_elem());
+            r->raw().tuple_elem_types()[i].safely_assign_for_gc(value.tuple_elem_type());
             return Value(r);
           }
           case OP_RUIALEN8:
@@ -1889,9 +1905,8 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
-            context.regs().rv = Value(r3);
-            atomic_thread_fence(memory_order_release);
-            context.regs().tmp_r = Reference();
+            context.regs().rv.safely_assign_for_gc(Value(r3));
+            context.regs().tmp_r.safely_assign_for_gc(Reference());
             return Value(r3);
           }
           case OP_RUIATOIA16:
@@ -1905,9 +1920,8 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
-            context.regs().rv = Value(r3);
-            atomic_thread_fence(memory_order_release);
-            context.regs().tmp_r = Reference();
+            context.regs().rv.safely_assign_for_gc(Value(r3));
+            context.regs().tmp_r.safely_assign_for_gc(Reference());
             return Value(r3);
           }
           case OP_RUIATOIA32:
@@ -1921,9 +1935,8 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
-            context.regs().rv = Value(r3);
-            atomic_thread_fence(memory_order_release);
-            context.regs().tmp_r = Reference();
+            context.regs().rv.safely_assign_for_gc(Value(r3));
+            context.regs().tmp_r.safely_assign_for_gc(Reference());
             return Value(r3);
           }
           case OP_RUIATOIA64:
@@ -1937,9 +1950,8 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
-            context.regs().rv = Value(r3);
-            atomic_thread_fence(memory_order_release);
-            context.regs().tmp_r = Reference();
+            context.regs().rv.safely_assign_for_gc(Value(r3));
+            context.regs().tmp_r.safely_assign_for_gc(Reference());
             return Value(r3);
           }
           case OP_RUSFATOSFA:
@@ -1953,9 +1965,8 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
-            context.regs().rv = Value(r3);
-            atomic_thread_fence(memory_order_release);
-            context.regs().tmp_r = Reference();
+            context.regs().rv.safely_assign_for_gc(Value(r3));
+            context.regs().tmp_r.safely_assign_for_gc(Reference());
             return Value(r3);
           }
           case OP_RUDFATODFA:
@@ -1969,9 +1980,8 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
-            context.regs().rv = Value(r3);
-            atomic_thread_fence(memory_order_release);
-            context.regs().tmp_r = Reference();
+            context.regs().rv.safely_assign_for_gc(Value(r3));
+            context.regs().tmp_r.safely_assign_for_gc(Reference());
             return Value(r3);
           }
           case OP_RURATORA:
@@ -1988,9 +1998,8 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
-            context.regs().rv = Value(r3);
-            atomic_thread_fence(memory_order_release);
-            context.regs().tmp_r = Reference();
+            context.regs().rv.safely_assign_for_gc(Value(r3));
+            context.regs().tmp_r.safely_assign_for_gc(Reference());
             return Value(r3);
           }
           case OP_RUTTOT:
@@ -2009,9 +2018,8 @@ namespace letin
             context.regs().tmp_r = r2;
             Reference r3(new_unique_pair(context, Value(r2), Value(r)));
             if(r3.is_null()) return Value();
-            context.regs().rv = Value(r3);
-            atomic_thread_fence(memory_order_release);
-            context.regs().tmp_r = Reference();
+            context.regs().rv.safely_assign_for_gc(Value(r3));
+            context.regs().tmp_r.safely_assign_for_gc(Reference());
             return Value(r3);
           }
           case OP_FPOW:
@@ -2202,7 +2210,7 @@ namespace letin
         return is_fun_result;        
       }
 
-      bool InterpreterVirtualMachine::force(ThreadContext &context, Value &value, bool is_try)
+      bool InterpreterVirtualMachine::force_value(ThreadContext &context, Value &value, bool is_try)
       {
         while(value.is_lazy()) {
           Object &object = *(value.raw().r);
@@ -2245,10 +2253,9 @@ namespace letin
             context.set_error(ERROR_AGAIN_USED_UNIQUE);
             return false;
           }
-          context.regs().tmp_r = value.r();
-          atomic_thread_fence(memory_order_release);
+          context.regs().tmp_r.safely_assign_for_gc(value.r());
           value.safely_assign_for_gc(object.raw().lzv.value);
-          context.regs().tmp_r = Reference();
+          context.regs().tmp_r.safely_assign_for_gc(Reference());
         }
         return true;
       }
@@ -2259,7 +2266,7 @@ namespace letin
           context.regs().force_tmp_rv = context.regs().rv;
         if(context.regs().force_tmp_rv.raw().r->is_lazy()) {
           Value tmp_value = Value::lazy_value_ref(context.regs().force_tmp_rv.raw().r);
-          if(!force(context, tmp_value, is_try)) return false;
+          if(!force_value(context, tmp_value, is_try)) return false;
           context.regs().rv = tmp_value;
           context.regs().force_tmp_rv = ReturnValue();
         }
@@ -2268,21 +2275,21 @@ namespace letin
 
       bool InterpreterVirtualMachine::force_int(ThreadContext &context, int64_t &i, Value &value)
       {
-        if(!force(context, value)) return false;
+        if(!force_value(context, value)) return false;
         i = value.raw().i;
         return true;
       }
 
       bool InterpreterVirtualMachine::force_float(ThreadContext &context, double &f, Value &value)
       {
-        if(!force(context, value)) return false;
+        if(!force_value(context, value)) return false;
         f = value.raw().f;
         return true;
       }
 
       bool InterpreterVirtualMachine::force_ref(ThreadContext &context, Reference &r, Value &value)
       {
-        if(!force(context, value)) return false;
+        if(!force_value(context, value)) return false;
         r = value.raw().r;
         return true;
       }
@@ -2294,33 +2301,38 @@ namespace letin
       {
         if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
         for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
-          if(!force(context, context.pushed_arg(i))) return false;
+          if(!force_value(context, context.pushed_arg(i))) return false;
         }
         return true;
       }
 
-      bool InterpreterVirtualMachine::fully_force(ThreadContext &context, Value &value)
-      { 
-        bool result = fully_force(context, value, [&context](Reference r) {
-          context.regs().force_tmp_r = r;
-        });
-        atomic_thread_fence(memory_order_release);
-        context.regs().force_tmp_r = Reference();
-        return result;
-      }
-
-      bool InterpreterVirtualMachine::fully_force(ThreadContext &context, Value &value, function<void (Reference)> fun)
+      bool InterpreterVirtualMachine::force_value_and_interpret(ThreadContext &context, Value &value)
       {
-        if(!force(context, value)) {
+        if(!force_value(context, value)) {
           if(context.regs().rv.raw().error == ERROR_SUCCESS) {
             bool tmp_result;
             do {
               interpret(context);
-              tmp_result = force(context, value);
+              tmp_result = force_value(context, value);
             } while(!tmp_result && context.regs().rv.raw().error == ERROR_SUCCESS);
           }
         }
         if(context.regs().rv.raw().error != ERROR_SUCCESS) return false;
+        return true;
+      }
+
+      bool InterpreterVirtualMachine::fully_force_value(ThreadContext &context, Value &value)
+      { 
+        bool result = fully_force_value(context, value, [&context](Reference r) {
+          context.regs().force_tmp_r.safely_assign_for_gc(r);
+        });
+        context.regs().force_tmp_r.safely_assign_for_gc(Reference());
+        return result;
+      }
+
+      bool InterpreterVirtualMachine::fully_force_value(ThreadContext &context, Value &value, function<void (Reference)> fun)
+      {
+        if(!force_value_and_interpret(context, value)) return false;
         if(value.type() == VALUE_TYPE_REF) {
           switch(value.raw().r->type()) {
             case OBJECT_TYPE_TUPLE:
@@ -2329,11 +2341,10 @@ namespace letin
               if(r.is_null()) return false;
               for(size_t i = 0; i < r->length(); i++) r->set_elem(i, Value());
               fun(r);
-              atomic_thread_fence(memory_order_release);
-              context.regs().gc_tmp_ptr = nullptr;
+              context.safely_set_gc_tmp_ptr_for_gc(nullptr);
               for(size_t i = 0; i < r->length(); i++) {
                 Value tmp_elem_value = value.raw().r->elem(i);
-                if(!fully_force(context, tmp_elem_value, [r, i](Reference elem_r) {
+                if(!fully_force_value(context, tmp_elem_value, [r, i](Reference elem_r) {
                   r->set_elem(i, Value(elem_r));
                 })) return false;
                 r->set_elem(i, tmp_elem_value);
@@ -2345,12 +2356,11 @@ namespace letin
             {
               for(size_t i = 0; i < value.raw().r->length(); i++) {
                 Value tmp_elem_value = value.raw().r->elem(i);
-                if(!fully_force(context, tmp_elem_value, [&context, i](Reference elem_r) {
-                  context.regs().force_tmp_r2 = elem_r;
+                if(!fully_force_value(context, tmp_elem_value, [&context, i](Reference elem_r) {
+                  context.regs().force_tmp_r2.safely_assign_for_gc(elem_r);
                 })) return false;
                 value.raw().r->set_elem(i, tmp_elem_value);
-                atomic_thread_fence(memory_order_release);
-                context.regs().force_tmp_r2 = Reference(); 
+                context.regs().force_tmp_r2.safely_assign_for_gc(Reference()); 
               }
               break;
             }
@@ -2364,12 +2374,12 @@ namespace letin
         context.regs().force_tmp_rv = context.regs().rv;
         if(context.regs().force_tmp_rv.raw().r->is_lazy()) {
           Value tmp_value = Value::lazy_value_ref(context.regs().force_tmp_rv.raw().r, context.regs().force_tmp_rv.raw().i != 0);
-          if(!fully_force(context, tmp_value)) return false;
+          if(!fully_force_value(context, tmp_value)) return false;
           context.regs().rv = tmp_value;
           context.regs().force_tmp_rv = ReturnValue();
         } else {
           Value tmp_value = Value(context.regs().force_tmp_rv.raw().r);
-          if(!fully_force(context, tmp_value)) return false;
+          if(!fully_force_value(context, tmp_value)) return false;
           if(!check_value_type(context, tmp_value, VALUE_TYPE_REF)) return false;
           context.regs().rv.raw().r = tmp_value.raw().r;
           context.regs().force_tmp_rv = ReturnValue();

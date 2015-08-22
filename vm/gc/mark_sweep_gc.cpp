@@ -128,6 +128,17 @@ namespace letin
                 }
               }
               break;
+            case OBJECT_TYPE_LAZY_VALUE:
+              for(size_t i = 0; i < top_object->length(); i++) {
+                if(is_ref_value_type_for_gc(top_object->raw().lzv.args[i].type())) {
+                  Reference elem_ref = top_object->raw().lzv.args[i].raw().r;
+                  if(!elem_ref.has_nil()) {
+                    Header *elem_header = object_to_header(elem_ref.ptr());
+                    if(!elem_header->is_marked()) mark_and_push_header(elem_header);
+                  }
+                }
+              }
+              break;
           }
         }
       }
