@@ -410,6 +410,15 @@ namespace letin
         return nullptr;
     }
 
+    Object *GarbageCollector::new_unique_pair(const Value &value1, const Value &value2, ThreadContext *context)
+    {
+      Object *object = new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2, context);
+      if(object == nullptr) return nullptr;
+      object->set_elem(0, value1);
+      object->set_elem(1, value2);
+      return object;
+    }
+
     //
     // A NativeFunctionHandler class.
     //

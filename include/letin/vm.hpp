@@ -588,7 +588,9 @@ namespace letin
         if(static_cast<std::uint64_t>(length) > static_cast<std::uint64_t>(std::numeric_limits<std::size_t>::max())) return nullptr;
         return new_immortal_object(type, length);
       }
-      
+
+      Object *new_unique_pair(const Value &value1, const Value &value2, ThreadContext *context = nullptr);
+
       virtual void start() = 0;
 
       virtual void stop() = 0;
