@@ -643,7 +643,17 @@ namespace letin
 
       bool is_eager() const { return _M_is_eager; }
     };
-    
+
+    class NativeFunctionHandlerLoader
+    {
+    protected:
+      NativeFunctionHandlerLoader() {}
+    public:
+      virtual ~NativeFunctionHandlerLoader();
+
+      virtual NativeFunctionHandler *load(const char *file_name) = 0;
+    };
+
     Loader *new_loader();
 
     Allocator *new_allocator();
@@ -653,6 +663,8 @@ namespace letin
     EvaluationStrategy *new_evaluation_strategy();
 
     VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy);
+
+    NativeFunctionHandlerLoader *new_native_function_handler();
 
     void initialize_gc();
 

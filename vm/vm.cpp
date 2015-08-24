@@ -615,6 +615,12 @@ namespace letin
     EvaluationStrategy::~EvaluationStrategy() {}
 
     //
+    // A NativeFunctionHandlerLoader class.
+    //
+
+    NativeFunctionHandlerLoader::~NativeFunctionHandlerLoader() {}
+
+    //
     // A Program class.
     //
 
