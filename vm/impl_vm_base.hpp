@@ -9,8 +9,8 @@
 #define _IMPL_VM_BASE_HPP
 
 #include <letin/vm.hpp>
-#include "vm.hpp"
 #include "impl_env.hpp"
+#include "vm.hpp"
 
 namespace letin
 {

@@ -5,7 +5,6 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
-#include <utility>
 #include "impl_env.hpp"
 
 using namespace std;
