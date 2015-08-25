@@ -612,6 +612,12 @@ namespace letin
       virtual ~NativeFunctionHandler();
 
       virtual ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args) = 0;
+
+      virtual const char *native_fun_name(int nfi) const = 0;
+
+      virtual int min_native_fun_index() const = 0;
+
+      virtual int max_native_fun_index() const = 0;
     };
 
     class DefaultNativeFunctionHandler : public NativeFunctionHandler
@@ -622,6 +628,39 @@ namespace letin
       ~DefaultNativeFunctionHandler();
 
       ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args);
+
+      const char *native_fun_name(int nfi) const;
+
+      int min_native_fun_index() const;
+
+      int max_native_fun_index() const;
+    };
+
+    class MultiNativeFunctionHandler : public NativeFunctionHandler
+    {
+    protected:
+      struct HandlerPair
+      {
+        std::unique_ptr<NativeFunctionHandler> handler;
+        int nfi_offset;
+
+        HandlerPair() : handler(nullptr), nfi_offset(0) {}
+      };
+
+      std::unique_ptr<HandlerPair []> _M_handler_pairs;
+      std::size_t _M_handler_pair_count;
+    public:
+      MultiNativeFunctionHandler(const std::vector<NativeFunctionHandler *> &handlers);
+
+      ~MultiNativeFunctionHandler();
+
+      ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args);
+
+      const char *native_fun_name(int nfi) const;
+
+      int min_native_fun_index() const;
+
+      int max_native_fun_index() const;
     };
 
     class EvaluationStrategy
@@ -651,7 +690,7 @@ namespace letin
     public:
       virtual ~NativeFunctionHandlerLoader();
 
-      virtual NativeFunctionHandler *load(const char *file_name) = 0;
+      virtual bool load(const char *file_name, std::function<NativeFunctionHandler *()> &fun) = 0;
     };
 
     Loader *new_loader();
@@ -664,7 +703,7 @@ namespace letin
 
     VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy);
 
-    NativeFunctionHandlerLoader *new_native_function_handler();
+    NativeFunctionHandlerLoader *new_native_function_handler_loader();
 
     void initialize_gc();
 

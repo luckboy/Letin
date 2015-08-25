@@ -19,7 +19,7 @@ namespace letin
       ImplNativeFunctionHandlerLoader::~ImplNativeFunctionHandlerLoader()
       { for(auto lib : _M_libs) close_dyn_lib(lib); }
 
-      NativeFunctionHandler *ImplNativeFunctionHandlerLoader::load(const char *file_name)
+      bool ImplNativeFunctionHandlerLoader::load(const char *file_name, function<NativeFunctionHandler *()> &fun)
       {
         DynamicLibrary *lib = open_dyn_lib(file_name);
         if(lib == nullptr) return nullptr;
@@ -29,17 +29,19 @@ namespace letin
           return false;
         }
         auto fun_ptr = reinterpret_cast<NativeFunctionHandler *(*)()>(ptr);
-        try {
-          NativeFunctionHandler *native_fun_handler = fun_ptr();
-          if(native_fun_handler == nullptr) {
-            close_dyn_lib(lib);
+        fun = [fun_ptr]() -> NativeFunctionHandler * {
+          try {
+            return fun_ptr();
+          } catch(...) {
             return nullptr;
           }
+        };
+        try {
           _M_libs.push_back(lib);
-          return native_fun_handler;
+          return true;
         } catch(...) {
           close_dyn_lib(lib);
-          return nullptr;
+          return false;
         }
       }
     }

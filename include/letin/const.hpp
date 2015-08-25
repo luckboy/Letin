@@ -79,7 +79,10 @@ namespace letin
   const int NATIVE_FUN_PUT_CHAR =       5;
   const int NATIVE_FUN_GET_LINE =       6;
   const int NATIVE_FUN_PUT_STRING =     7;
-  
+
+  const int MAX_DEFAULT_NATIVE_FUN_INDEX = 7;
+  const int MIN_UNRESERVED_NATIVE_FUN_INDEX = 1024;
+
   const int LOADING_ERROR_IO =          0;
   const int LOADING_ERROR_FORMAT =      1;
   const int LOADING_ERROR_NO_FUN_SYM =  2;

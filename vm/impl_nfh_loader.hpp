@@ -26,7 +26,7 @@ namespace letin
 
         ~ImplNativeFunctionHandlerLoader();
 
-        NativeFunctionHandler *load(const char *file_name);
+        bool load(const char *file_name, std::function<NativeFunctionHandler *()> &fun);
       };
     }
   }

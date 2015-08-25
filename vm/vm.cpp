@@ -23,6 +23,7 @@
 #include "strategy/eager_eval_strategy.hpp"
 #include "vm/interp_vm.hpp"
 #include "impl_loader.hpp"
+#include "impl_nfh_loader.hpp"
 #include "thread_stop_cont.hpp"
 #include "vm.hpp"
 
@@ -608,6 +609,97 @@ namespace letin
       }
     }
 
+    const char *DefaultNativeFunctionHandler::native_fun_name(int nfi) const
+    {
+      switch(nfi) {
+        case NATIVE_FUN_ATOI:
+          return "atoi";
+        case NATIVE_FUN_ITOA:
+          return "itoa";
+        case NATIVE_FUN_ATOF:
+          return "atof";
+        case NATIVE_FUN_FTOA:
+          return "ftoa";
+        case NATIVE_FUN_GET_CHAR:
+          return "get_char";
+        case NATIVE_FUN_PUT_CHAR:
+          return "put_char";
+        case NATIVE_FUN_GET_LINE:
+          return "get_line";
+        case NATIVE_FUN_PUT_STRING:
+          return "put_string";
+        default:
+          return nullptr;
+      }
+    }
+
+    int DefaultNativeFunctionHandler::min_native_fun_index() const
+    { return 0; }
+
+    int DefaultNativeFunctionHandler::max_native_fun_index() const
+    { return MAX_DEFAULT_NATIVE_FUN_INDEX; }
+
+    //
+    // A MultiNativeFunctionHandler class.
+    //
+
+    MultiNativeFunctionHandler::MultiNativeFunctionHandler(const std::vector<NativeFunctionHandler *> &handlers)
+    {
+      _M_handler_pair_count = 0;
+      for(auto handler : handlers) {
+        int native_fun_count = handler->max_native_fun_index() - handler->min_native_fun_index() + 1;
+        _M_handler_pair_count += static_cast<size_t>((native_fun_count + 1023) >> 1);
+      }
+      _M_handler_pairs = unique_ptr<HandlerPair []>(new HandlerPair[_M_handler_pair_count]);
+      size_t i = 0;
+      for(auto handler : handlers) {
+        int native_fun_count = handler->max_native_fun_index() - handler->min_native_fun_index() + 1;
+        size_t n = static_cast<size_t>((native_fun_count + 1023) >> 1);
+        for(size_t j = 0; j < n; j++) {
+          _M_handler_pairs[i + j].handler = unique_ptr<NativeFunctionHandler>(handler);
+          _M_handler_pairs[i + j].nfi_offset = (static_cast<int>(i) << 10) - handler->min_native_fun_index();
+        }
+        i += n;
+      }
+    }
+
+    MultiNativeFunctionHandler::~MultiNativeFunctionHandler() {}
+
+    ReturnValue MultiNativeFunctionHandler::invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args)
+    {
+      size_t i = static_cast<size_t>(nfi >> 10);
+      if(i < _M_handler_pair_count)
+        return _M_handler_pairs[i].handler->invoke(vm, context, nfi - _M_handler_pairs[i].nfi_offset, args);
+      else
+        return ReturnValue(0, 0.0, Reference(), ERROR_NO_NATIVE_FUN);
+    }
+
+    const char *MultiNativeFunctionHandler::native_fun_name(int nfi) const
+    {
+      size_t i = static_cast<size_t>(nfi >> 10);
+      if(i < _M_handler_pair_count)
+        return _M_handler_pairs[i].handler->native_fun_name(nfi - _M_handler_pairs[i].nfi_offset);
+      else
+        return nullptr;
+    }
+
+    int MultiNativeFunctionHandler::min_native_fun_index() const
+    {
+      if(_M_handler_pair_count > 0)
+        return _M_handler_pairs[0].handler->min_native_fun_index() + _M_handler_pairs[0].nfi_offset;
+      else
+        return 0;
+    }
+
+    int MultiNativeFunctionHandler::max_native_fun_index() const
+    {
+      if(_M_handler_pair_count > 0) {
+        size_t i = _M_handler_pair_count - 1;
+        return _M_handler_pairs[i].handler->max_native_fun_index() + _M_handler_pairs[i].nfi_offset;
+      } else
+        return 0;
+    }
+
     //
     // An EvaluationStrategy class.
     //
@@ -970,6 +1062,9 @@ namespace letin
 
     void set_temporary_root_object(ThreadContext *context, Reference r)
     { context->regs().tmp_r.safely_assign_for_gc(r); }
+
+    NativeFunctionHandlerLoader *new_native_function_handler_loader()
+    { return new impl::ImplNativeFunctionHandlerLoader(); }
 
     ostream &operator<<(ostream &os, const Value &value)
     {
