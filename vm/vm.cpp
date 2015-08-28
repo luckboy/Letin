@@ -713,6 +713,32 @@ namespace letin
     NativeFunctionHandlerLoader::~NativeFunctionHandlerLoader() {}
 
     //
+    // A NativeLibrary class.
+    //
+
+    NativeLibrary::~NativeLibrary() {}
+
+    ReturnValue NativeLibrary::invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args)
+    {
+      if(nfi >= _M_min_nfi && nfi < static_cast<int>(_M_funs.size()) + _M_min_nfi)
+        return _M_funs[nfi - _M_min_nfi].fun()(vm, context, args);
+      else
+        return ReturnValue(0, 0.0, Reference(), ERROR_NO_NATIVE_FUN);
+    }
+
+    const char *NativeLibrary::native_fun_name(int nfi) const
+    {
+      if(nfi >= _M_min_nfi && nfi < static_cast<int>(_M_funs.size()) + _M_min_nfi)
+        return _M_funs[nfi - _M_min_nfi].name();
+      else
+        return nullptr;
+    }
+
+    int NativeLibrary::min_native_fun_index() const { return _M_min_nfi; }
+
+    int NativeLibrary::max_native_fun_index() const { return _M_min_nfi + static_cast<int>(_M_funs.size()) - 1; }
+
+    //
     // A Program class.
     //
 
@@ -1056,6 +1082,9 @@ namespace letin
     VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy)
     { return new impl::InterpreterVirtualMachine(loader, gc, native_fun_handler, eval_strategy); }
 
+    NativeFunctionHandlerLoader *new_native_function_handler_loader()
+    { return new impl::ImplNativeFunctionHandlerLoader(); }
+
     void initialize_gc() { priv::initialize_thread_stop_cont(); }
 
     void finalize_gc() { priv::finalize_thread_stop_cont(); }
@@ -1063,8 +1092,14 @@ namespace letin
     void set_temporary_root_object(ThreadContext *context, Reference r)
     { context->regs().tmp_r.safely_assign_for_gc(r); }
 
-    NativeFunctionHandlerLoader *new_native_function_handler_loader()
-    { return new impl::ImplNativeFunctionHandlerLoader(); }
+    NativeLibrary *new_native_library_without_throwing(const vector<NativeFunction> &funs, int min_nfi)
+    { try { return new NativeLibrary(funs, min_nfi); } catch(...) { return nullptr; } }
+
+    int &letin_errno()
+    {
+      static thread_local int thread_local_errno;
+      return thread_local_errno;
+    }
 
     ostream &operator<<(ostream &os, const Value &value)
     {

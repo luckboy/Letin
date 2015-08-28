@@ -693,6 +693,39 @@ namespace letin
       virtual bool load(const char *file_name, std::function<NativeFunctionHandler *()> &fun) = 0;
     };
 
+    class NativeFunction
+    {
+      const char *_M_name;
+      std::function<ReturnValue (VirtualMachine *, ThreadContext *, ArgumentList &)> _M_fun;
+    public:
+      NativeFunction(const char *name, std::function<ReturnValue (VirtualMachine *, ThreadContext *, ArgumentList &)> fun) :
+        _M_name(name), _M_fun(fun) {}
+
+      const char *name() const { return _M_name; }
+
+      std::function<ReturnValue (VirtualMachine *, ThreadContext *, ArgumentList &)> fun() const
+      { return _M_fun; }
+    };
+
+    class NativeLibrary : public NativeFunctionHandler
+    {
+      const std::vector<NativeFunction> &_M_funs;
+      int _M_min_nfi;
+    public:
+      NativeLibrary(const std::vector<NativeFunction> &funs, int min_nfi = MIN_UNRESERVED_NATIVE_FUN_INDEX) :
+        _M_funs(funs), _M_min_nfi(min_nfi) {}
+
+      ~NativeLibrary();
+
+      ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args);
+
+      const char *native_fun_name(int nfi) const;
+
+      int min_native_fun_index() const;
+
+      int max_native_fun_index() const;
+    };
+
     Loader *new_loader();
 
     Allocator *new_allocator();
@@ -713,6 +746,10 @@ namespace letin
 
     inline void set_temporary_root_object(ThreadContext *context, Object *object)
     { set_temporary_root_object(context, Reference(object)); }
+
+    NativeLibrary *new_native_library_without_throwing(const std::vector<NativeFunction> &funs, int min_nfi  = MIN_UNRESERVED_NATIVE_FUN_INDEX);
+
+    int &letin_errno();
 
     std::ostream &operator<<(std::ostream &os, const Value &value);
 
