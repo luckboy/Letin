@@ -36,6 +36,7 @@ add_subdirectory(vm)
 add_subdirectory(letinc)
 add_subdirectory(letin)
 add_subdirectory(doc)
+add_subdirectory(nlib)
 
 install(DIRECTORY include/letin DESTINATION include)
 install(FILES README.md LICENSE GPL DOCLICENSE DESTINATION share/doc)
