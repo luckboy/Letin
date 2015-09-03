@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cstddef>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -63,7 +64,7 @@ namespace letin
           elem_size = sizeof(double);
           break;
         case OBJECT_TYPE_RARRAY:
-          elem_size =  sizeof(Reference);
+          elem_size = sizeof(Reference);
           break;
         case OBJECT_TYPE_TUPLE:
           elem_size = sizeof(TupleElement) + sizeof(TupleElementType);
@@ -191,37 +192,46 @@ namespace letin
         case OBJECT_TYPE_IARRAY8:
           if(value.type() != VALUE_TYPE_INT) return false;
           _M_raw.is8[i] = value.raw().i;
+          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_IARRAY16:
           if(value.type() != VALUE_TYPE_INT) return false;
           _M_raw.is16[i] = value.raw().i;
+          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_IARRAY32:
           if(value.type() != VALUE_TYPE_INT) return false;
           _M_raw.is32[i] = value.raw().i;
+          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_IARRAY64:
           if(value.type() != VALUE_TYPE_INT) return false;
           _M_raw.is64[i] = value.raw().i;
+          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_SFARRAY:
           if(value.type() != VALUE_TYPE_FLOAT) return false;
           _M_raw.sfs[i] = value.raw().f;
+          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_DFARRAY:
           if(value.type() != VALUE_TYPE_FLOAT) return false;
           _M_raw.dfs[i] = value.raw().f;
+          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_RARRAY:
           if(value.type() != VALUE_TYPE_REF) return false;
           _M_raw.rs[i] = value.raw().r;
+          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_TUPLE:
           _M_raw.tes[i] = TupleElement(value.raw().i);
           _M_raw.tuple_elem_types()[i] = TupleElementType(value.type());
+          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_LAZY_VALUE:
           _M_raw.lzv.args[i] = value;
+          atomic_thread_fence(memory_order_release);
           return true;
         default:
           return false;
@@ -375,6 +385,30 @@ namespace letin
       return load(file_names, errors);
     }
 
+    int VirtualMachine::force_tuple_elem(ThreadContext *context, Object &object, size_t i)
+    {
+      if((object.type() & ~OBJECT_TYPE_UNIQUE) == OBJECT_TYPE_TUPLE) return ERROR_INCORRECT_OBJECT;
+      if(object.elem(i).is_lazy()) {
+        RegisteredReference tmp_r(object.elem(i).raw().r, context);
+        Value tmp_value = object.elem(i);
+        force(context, tmp_value);
+        object.set_elem(i, tmp_value);
+      }
+      return ERROR_SUCCESS;
+    }
+
+    int VirtualMachine::fully_force_tuple_elem(ThreadContext *context, Object &object, size_t i)
+    {
+      if((object.type() & ~OBJECT_TYPE_UNIQUE) == OBJECT_TYPE_TUPLE) return ERROR_INCORRECT_OBJECT;
+      if(object.elem(i).is_lazy()) {
+        RegisteredReference tmp_r(object.elem(i).raw().r, context);
+        Value tmp_value = object.elem(i);
+        fully_force(context, tmp_value);
+        object.set_elem(i, tmp_value);
+      }
+      return ERROR_SUCCESS;
+    }
+
     //
     // A Loader class.
     //
@@ -411,12 +445,38 @@ namespace letin
         return nullptr;
     }
 
+    Object *GarbageCollector::new_pair(const Value &value1, const Value &value2, ThreadContext *context)
+    {
+      Object *object = new_object(OBJECT_TYPE_TUPLE, 2, context);
+      if(object == nullptr) return nullptr;
+      object->set_elem(0, value1);
+      object->set_elem(1, value2);
+      return object;
+    }
+
     Object *GarbageCollector::new_unique_pair(const Value &value1, const Value &value2, ThreadContext *context)
     {
       Object *object = new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2, context);
       if(object == nullptr) return nullptr;
       object->set_elem(0, value1);
       object->set_elem(1, value2);
+      return object;
+    }
+
+    Object *GarbageCollector::new_string(const string &str, ThreadContext *context)
+    {
+      Object *object = new_object(OBJECT_TYPE_IARRAY8, str.size(), context);
+      if(object == nullptr) return nullptr;
+      copy(str.begin(), str.end(), object->raw().is8);
+      return object;
+    }
+
+    Object *GarbageCollector::new_string(const char *str, ThreadContext *context)
+    {
+      size_t length = strlen(str);
+      Object *object = new_object(OBJECT_TYPE_IARRAY8, length, context);
+      if(object == nullptr) return nullptr;
+      copy_n(str, length, object->raw().is8);
       return object;
     }
 

@@ -71,9 +71,7 @@ namespace letin
 
       bool is_null() const { return _M_ptr == nullptr; }
 
-      const Object *ptr() const { return _M_ptr; }
-
-      Object *ptr() { return _M_ptr; }
+      Object *ptr() const { return _M_ptr; }
     };
 
     class TupleElementType
@@ -180,10 +178,16 @@ namespace letin
 
       ValueRaw &raw() { return _M_raw; }
 
+      bool is_int() const { return _M_raw.type == VALUE_TYPE_INT; }
+
+      bool is_float() const { return _M_raw.type == VALUE_TYPE_FLOAT; }
+
+      bool is_ref() const { return _M_raw.type == VALUE_TYPE_REF; }
+
       bool is_error() const { return _M_raw.type == VALUE_TYPE_ERROR; }
 
       bool is_unique() const;
-      
+
       bool is_lazy() const { return (_M_raw.type & ~VALUE_TYPE_LAZILY_CANCELED) == VALUE_TYPE_LAZY_VALUE_REF; }
 
       bool is_lazily_canceled() const { return (_M_raw.type & VALUE_TYPE_LAZILY_CANCELED) != 0; }
@@ -194,7 +198,8 @@ namespace letin
 
       double f() const { return _M_raw.type == VALUE_TYPE_FLOAT ? _M_raw.f : 0.0; }
 
-      Reference r() const { return _M_raw.type == VALUE_TYPE_REF ? _M_raw.r : Reference(); }
+      Reference r() const
+      { return _M_raw.type == VALUE_TYPE_REF || _M_raw.type == VALUE_TYPE_CANCELED_REF ? _M_raw.r : Reference(); }
       
       void safely_assign_for_gc(const Value &value)
       {
@@ -268,12 +273,48 @@ namespace letin
 
       ObjectRaw &raw() { return _M_raw; }
 
+      bool is_iarray8() const { return _M_raw.type == OBJECT_TYPE_IARRAY8; }
+
+      bool is_iarray16() const { return _M_raw.type == OBJECT_TYPE_IARRAY16; }
+
+      bool is_iarray32() const { return _M_raw.type == OBJECT_TYPE_IARRAY32; }
+
+      bool is_iarray64() const { return _M_raw.type == OBJECT_TYPE_IARRAY64; }
+
+      bool is_sfiarray() const { return _M_raw.type == OBJECT_TYPE_SFARRAY; }
+
+      bool is_dfiarray() const { return _M_raw.type == OBJECT_TYPE_DFARRAY; }
+
+      bool is_rarray() const { return _M_raw.type == OBJECT_TYPE_RARRAY; }
+
+      bool is_tuple() const { return _M_raw.type == OBJECT_TYPE_TUPLE; }
+
+      bool is_io() const { return _M_raw.type == OBJECT_TYPE_IO; }
+
+      bool is_unique_iarray8() const { return _M_raw.type == (OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE); }
+
+      bool is_unique_iarray16() const { return _M_raw.type == (OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE); }
+
+      bool is_unique_iarray32() const { return _M_raw.type == (OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE); }
+
+      bool is_unique_iarray64() const { return _M_raw.type == (OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE); }
+
+      bool is_unique_sfiarray() const { return _M_raw.type == (OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE); }
+
+      bool is_unique_dfiarray() const { return _M_raw.type == (OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE); }
+
+      bool is_unique_rarray() const { return _M_raw.type == (OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE); }
+
+      bool is_unique_tuple() const { return _M_raw.type == (OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE); }
+
+      bool is_unique_io() const { return _M_raw.type == (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE); }
+      
       bool is_error() const { return _M_raw.type == OBJECT_TYPE_ERROR; }
 
       bool is_unique() const { return (_M_raw.type & OBJECT_TYPE_UNIQUE) != 0 && !is_error(); }
 
       bool is_lazy() const { return _M_raw.type == OBJECT_TYPE_LAZY_VALUE; }
-      
+
       int type() const { return _M_raw.type; }
 
       Value elem(std::size_t i) const;
@@ -316,6 +357,8 @@ namespace letin
       { _M_raw.i = i; _M_raw.f = f; _M_raw.r = r; _M_raw.error = error; }
 
       ReturnValue(const Value &value) { *this = value; }
+
+      static ReturnValue error(int error) { return ReturnValue(0, 0.0, Reference(), error); }
 
       ReturnValue &operator=(const Value &value);
 
@@ -463,11 +506,11 @@ namespace letin
 
       RegisteredReference(Object *ptr, ThreadContext *context, bool is_registered = true) :
         Reference(ptr), _M_context(context), _M_prev(nullptr), _M_next(nullptr)
-      { if(is_registered) register_ref(); }
+      { if(is_registered && this->ptr() != nullptr) register_ref(); }
 
       RegisteredReference(Reference r, ThreadContext *context, bool is_registered = true) :
         Reference(r.ptr()), _M_context(context), _M_prev(nullptr), _M_next(nullptr)
-      { if(is_registered) register_ref(); }
+      { if(is_registered && ptr() != nullptr) register_ref(); }
 
       RegisteredReference(const RegisteredReference &r) = delete;
 
@@ -526,6 +569,10 @@ namespace letin
       virtual int fully_force(ThreadContext *context, Value &value) = 0;
 
       virtual ReturnValue invoke_fun(ThreadContext *context, std::size_t i, const ArgumentList &args) = 0;
+
+      int force_tuple_elem(ThreadContext *context, Object &object, std::size_t i);
+
+      int fully_force_tuple_elem(ThreadContext *context, Object &object, std::size_t i);
     };
 
     class Loader
@@ -589,7 +636,13 @@ namespace letin
         return new_immortal_object(type, length);
       }
 
+      Object *new_pair(const Value &value1, const Value &value2, ThreadContext *context = nullptr);
+
       Object *new_unique_pair(const Value &value1, const Value &value2, ThreadContext *context = nullptr);
+
+      Object *new_string(const std::string &str, ThreadContext *context = nullptr);
+
+      Object *new_string(const char *str, ThreadContext *context = nullptr);
 
       virtual void start() = 0;
 
