@@ -192,32 +192,26 @@ namespace letin
         case OBJECT_TYPE_IARRAY8:
           if(value.type() != VALUE_TYPE_INT) return false;
           _M_raw.is8[i] = value.raw().i;
-          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_IARRAY16:
           if(value.type() != VALUE_TYPE_INT) return false;
           _M_raw.is16[i] = value.raw().i;
-          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_IARRAY32:
           if(value.type() != VALUE_TYPE_INT) return false;
           _M_raw.is32[i] = value.raw().i;
-          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_IARRAY64:
           if(value.type() != VALUE_TYPE_INT) return false;
           _M_raw.is64[i] = value.raw().i;
-          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_SFARRAY:
           if(value.type() != VALUE_TYPE_FLOAT) return false;
           _M_raw.sfs[i] = value.raw().f;
-          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_DFARRAY:
           if(value.type() != VALUE_TYPE_FLOAT) return false;
           _M_raw.dfs[i] = value.raw().f;
-          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_RARRAY:
           if(value.type() != VALUE_TYPE_REF) return false;
@@ -225,12 +219,15 @@ namespace letin
           atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_TUPLE:
+          _M_raw.tuple_elem_types()[i] = TupleElementType(VALUE_TYPE_ERROR);
+          atomic_thread_fence(memory_order_release);
           _M_raw.tes[i] = TupleElement(value.raw().i);
+          atomic_thread_fence(memory_order_release);
           _M_raw.tuple_elem_types()[i] = TupleElementType(value.type());
           atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_LAZY_VALUE:
-          _M_raw.lzv.args[i] = value;
+          _M_raw.lzv.args[i].safely_assign_for_gc(value);
           atomic_thread_fence(memory_order_release);
           return true;
         default:
