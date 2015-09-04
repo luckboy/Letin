@@ -59,7 +59,7 @@ namespace letin
           elem_size = sizeof(double);
           break;
         case OBJECT_TYPE_RARRAY:
-          elem_size =  sizeof(Reference);
+          elem_size = sizeof(Reference);
           break;
         case OBJECT_TYPE_TUPLE:
           elem_size = sizeof(TupleElement) + sizeof(TupleElementType);
@@ -193,10 +193,15 @@ namespace letin
         case OBJECT_TYPE_RARRAY:
           if(value.type() != VALUE_TYPE_REF) return false;
           _M_raw.rs[i] = value.raw().r;
+          atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_TUPLE:
+          _M_raw.tuple_elem_types()[i] = TupleElementType(VALUE_TYPE_ERROR);
+          atomic_thread_fence(memory_order_release);
           _M_raw.tes[i] = TupleElement(value.raw().i);
+          atomic_thread_fence(memory_order_release);
           _M_raw.tuple_elem_types()[i] = TupleElementType(value.type());
+          atomic_thread_fence(memory_order_release);
           return true;
         default:
           return false;
