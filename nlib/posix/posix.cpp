@@ -935,7 +935,6 @@ namespace letin
           object->set_elem(0, Value(3));
           object->set_elem(1, Value(system_signal_to_signal(WSTOPSIG(status))));
         } else {
-          object->set_elem(0, Value(0));
 #ifdef WCOREDUMP
           if(WCOREDUMP(status) != 0)
             object->set_elem(0, Value(4));

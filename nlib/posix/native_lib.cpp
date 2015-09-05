@@ -46,6 +46,8 @@ extern "C" {
   bool letin_initialize()
   {
     try {
+      initialize_errors();
+      initialize_consts();
       native_funs = {
 
         //
@@ -346,7 +348,7 @@ extern "C" {
           }
         },
         {
-          "posix.upoll", // (fds: rarray, timeout: int, io: uio) -> ((int, rarray), uio)
+          "posix.upoll", // (fds: urarray, timeout: int, io: uio) -> ((int, urarray), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cupollfds, cint, cuio);
             if(error != ERROR_SUCCESS) return error_return_value(error);
@@ -941,7 +943,10 @@ extern "C" {
             ::pid_t result = ::waitpid(pid, &status, options);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
-            return return_value(vm, context, vut(vsome(vt(vint(result), vwstatus(status))), v(io_v)));
+            if(result != 0) 
+              return return_value(vm, context, vut(vsome(vt(vint(result), vwstatus(status))), v(io_v)));
+            else
+              return return_value(vm, context, vut(vsome(vt(vint(result), vt(vint(0), vint(0)))), v(io_v)));
           }
         },
         {
@@ -1557,6 +1562,8 @@ extern "C" {
       return false;
     }
   }
+
+  void letin_finalize() {}
 
   NativeFunctionHandler *letin_new_native_function_handler()
   {
