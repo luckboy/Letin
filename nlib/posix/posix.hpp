@@ -94,9 +94,9 @@ namespace letin
       LETIN_NATIVE_INT_CONVERTER(tofd, fd_to_system_fd, int);
 
       bool count_to_system_count(std::int64_t count, std::size_t &system_count);
-      LETIN_NATIVE_INT_CONVERTER(tocount, count_to_system_count, size_t);
+      LETIN_NATIVE_INT_CONVERTER(tocount, count_to_system_count, std::size_t);
 
-      bool arg_to_system_arg(std::int64_t arg, int system_arg);
+      bool arg_to_system_arg(std::int64_t arg, int &system_arg);
       LETIN_NATIVE_INT_CONVERTER(toarg, arg_to_system_arg, int);
 
       bool ref_to_system_buffer_ref(vm::Reference buffer_r, vm::Reference &system_buffer_r);

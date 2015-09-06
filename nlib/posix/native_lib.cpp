@@ -125,7 +125,7 @@ extern "C" {
             ::ssize_t result = ::read(fd, buf_r->raw().is8, count);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
-            return return_value(vm, context, vut(vsome(vref(buf_r)), v(io_v)));
+            return return_value(vm, context, vut(vsome(vt(vint(result), vref(buf_r))), v(io_v)));
           }
         },
         {
@@ -328,7 +328,7 @@ extern "C" {
             system_fd_set_to_object(rfds, *(rfds_v.r().ptr()));
             system_fd_set_to_object(wfds, *(wfds_v.r().ptr()));
             system_fd_set_to_object(efds, *(efds_v.r().ptr()));
-            return return_value(vm, context, vut(vt(vint(result), v(rfds_v), v(wfds_v), v(efds_v)), v(io_v)));
+            return return_value(vm, context, vut(vut(vint(result), v(rfds_v), v(wfds_v), v(efds_v)), v(io_v)));
           }
         },
         {

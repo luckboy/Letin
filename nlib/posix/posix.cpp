@@ -13,6 +13,7 @@
 #include <sys/utsname.h>
 #include <sys/wait.h>
 #include <algorithm>
+#include <cerrno>
 #include <fcntl.h>
 #include <map>
 #include <poll.h>
@@ -372,7 +373,7 @@ namespace letin
         return true;
       }
 
-      bool arg_to_system_arg(int64_t arg, int system_arg)
+      bool arg_to_system_arg(int64_t arg, int &system_arg)
       {
         if((arg < numeric_limits<int>::min()) || (arg > numeric_limits<int>::max())) {
           letin_errno() = EINVAL;
