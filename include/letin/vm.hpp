@@ -349,10 +349,8 @@ namespace letin
 
       bool is_lazy() const { return _M_raw.type == OBJECT_TYPE_LAZY_VALUE; }
 
-      bool is_native_object() const { return _M_raw.type == OBJECT_TYPE_NATIVE_OBJECT; }
-
       bool is_native_object(NativeObjectType type) const
-      { return _M_raw.type == OBJECT_TYPE_NATIVE_OBJECT ? _M_raw.ntvo.type == type : false; }
+      { return (_M_raw.type & ~OBJECT_TYPE_UNIQUE) == OBJECT_TYPE_NATIVE_OBJECT ? _M_raw.ntvo.type == type : false; }
 
       int type() const { return _M_raw.type; }
 

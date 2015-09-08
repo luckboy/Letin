@@ -65,25 +65,25 @@ namespace letin
         return result;
       }
 
-      int check_option_value(VirtualMachine *vm, ThreadContext *context, Value &value, CheckerFunction fun)
+      int check_option_value(VirtualMachine *vm, ThreadContext *context, Value &value, CheckerFunction fun, int object_type_flag)
       {
-        int error = check_object_value(vm, context, value, OBJECT_TYPE_TUPLE);
+        int error = check_object_value(vm, context, value, OBJECT_TYPE_TUPLE | object_type_flag);
         if(error != ERROR_SUCCESS) return error;
-        if(value.r()->length() == 1 && value.r()->elem(0).is_int() && value.r()->elem(0).i() == 0)
+        if(value.r()->length() == 1 ? (value.r()->elem(0).is_int() && value.r()->elem(0).i() == 0) : false)
            return ERROR_SUCCESS;
-        else if(value.r()->length() == 2 && value.r()->elem(0).is_int())
+        else if(value.r()->length() == 2 ? value.r()->elem(0).is_int() : false)
           return check_elem(vm, context, *(value.r()), 1, fun);
         else
           return ERROR_INCORRECT_OBJECT;
       }
       
-      int check_either_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, CheckerFunction left, CheckerFunction right)
+      int check_either_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, CheckerFunction left, CheckerFunction right, int object_type_flag)
       {
-        int error = check_object_value(vm, context, value, OBJECT_TYPE_TUPLE);
+        int error = check_object_value(vm, context, value, OBJECT_TYPE_TUPLE | object_type_flag);
         if(error != ERROR_SUCCESS) return error;
-        if(value.r()->length() == 1 && value.r()->elem(0).is_int() && value.r()->elem(0).i() == 0)
+        if(value.r()->length() == 1 ? (value.r()->elem(0).is_int() && value.r()->elem(0).i() == 0) : false)
           return check_elem(vm, context, *(value.r()), 1, left);
-        else if(value.r()->length() == 2 && value.r()->elem(0).is_int())
+        else if(value.r()->length() == 2 ? value.r()->elem(0).is_int() : false)
           return check_elem(vm, context, *(value.r()), 1, right);
         else
           return ERROR_INCORRECT_OBJECT;
@@ -93,8 +93,8 @@ namespace letin
       {
         int error = vm->force(context, value);
         if(error != ERROR_SUCCESS) return error;
-        if(!value.is_ref() || !(is_unique ? value.is_unique() : true))
-          return ERROR_INCORRECT_VALUE;
+        if(!value.is_ref()) return ERROR_INCORRECT_VALUE;
+        if((is_unique ? !value.is_unique() : value.is_unique())) return ERROR_INCORRECT_OBJECT;
         error = fun(vm, context, value.r());
         if(error != ERROR_SUCCESS) return error;
         if(value.is_unique()) value.cancel_ref();
@@ -105,8 +105,8 @@ namespace letin
       {
         int error = vm->force(context, value);
         if(error != ERROR_SUCCESS) return error;
-        if(!value.is_ref() || !(is_unique ? value.is_unique() : true))
-          return ERROR_INCORRECT_VALUE;
+        if(!value.is_ref()) return ERROR_INCORRECT_VALUE;
+        if((is_unique ? !value.is_unique() : value.is_unique())) return ERROR_INCORRECT_OBJECT;
         error = fun(vm, context, *(value.r().ptr()));
         if(error != ERROR_SUCCESS) return error;
         if(value.is_unique()) value.cancel_ref();

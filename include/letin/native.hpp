@@ -191,7 +191,7 @@ namespace letin
         return check_elems_from(vm, context, value, checkers.tail, i + 1);
       }
 
-      template<bool _ObiectTypeFlag, typename... _Ts>
+      template<int _ObiectTypeFlag, typename... _Ts>
       inline int check_tuple_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, const TemplateList<_Ts...> checkers)
       {
         int error = check_object_value(vm, context, value, OBJECT_TYPE_TUPLE | _ObiectTypeFlag);
@@ -200,7 +200,7 @@ namespace letin
         return check_elems_from(vm, context, value, checkers, 0);
       }
 
-      template<bool _ObiectTypeFlag, typename... _Ts>
+      template<int _ObiectTypeFlag, typename... _Ts>
       class TupleChecker
       {
         TemplateList<_Ts...> _M_checkers;
@@ -211,9 +211,9 @@ namespace letin
         { return check_tuple_value<_ObiectTypeFlag, _Ts...>(vm, context, value, _M_checkers); }
       };
 
-      int check_option_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, CheckerFunction fun);
+      int check_option_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, CheckerFunction fun, int object_type_flag);
 
-      template<typename _T>
+      template<typename _T, int _ObjectTypeFlag>
       class OptionChecker
       {
         _T _M_checker;
@@ -221,12 +221,12 @@ namespace letin
         OptionChecker(_T checker) : _M_checker(checker) {}
 
         int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
-        { return check_option_value(vm, context, value, bind_checker(_M_checker)); }
+        { return check_option_value(vm, context, value, bind_checker(_M_checker), _ObjectTypeFlag); }
       };
 
-      int check_either_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, CheckerFunction left, CheckerFunction right);
+      int check_either_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, CheckerFunction left, CheckerFunction right, int object_type_flag);
 
-      template<typename _T, typename _U>
+      template<typename _T, typename _U, int _ObjectTypeFlag>
       class EitherChecker
       {
         _T _M_left; _U _M_right;
@@ -234,7 +234,7 @@ namespace letin
         EitherChecker(_T left, _U right) : _M_left(left), _M_right(right) {}
 
         int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
-        { return check_either_value(vm, context, value, bind_checker(_M_left), bind_checker(_M_right)); }
+        { return check_either_value(vm, context, value, bind_checker(_M_left), bind_checker(_M_right), _ObjectTypeFlag); }
       };
       
       int check_ref_value_for_fun(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, std::function<int (vm::VirtualMachine *, vm::ThreadContext *, vm::Reference)> fun, bool is_unique);
@@ -623,10 +623,16 @@ namespace letin
     inline priv::TupleChecker<OBJECT_TYPE_UNIQUE, _Ts...> cut(_Ts... checkers) { return priv::TupleChecker<OBJECT_TYPE_UNIQUE, _Ts...>(checkers...); }
 
     template<typename _T>
-    inline priv::OptionChecker<_T> coption(_T checker) { return priv::OptionChecker<_T>(checker); }
+    inline priv::OptionChecker<_T, 0> coption(_T checker) { return priv::OptionChecker<_T, 0>(checker); }
+
+    template<typename _T>
+    inline priv::OptionChecker<_T, OBJECT_TYPE_UNIQUE> cuoption(_T checker) { return priv::OptionChecker<_T, OBJECT_TYPE_UNIQUE>(checker); }
 
     template<typename _T, typename _U>
-    inline priv::EitherChecker<_T, _U> ceither(_T left, _U right) { return priv::EitherChecker<_T, _U>(left, right); }
+    inline priv::EitherChecker<_T, _U, 0> ceither(_T left, _U right) { return priv::EitherChecker<_T, _U, 0>(left, right); }
+
+    template<typename _T, typename _U>
+    inline priv::EitherChecker<_T, _U, OBJECT_TYPE_UNIQUE> cueither(_T left, _U right) { return priv::EitherChecker<_T, _U, OBJECT_TYPE_UNIQUE>(left, right); }
 
     template<typename... _Ts>
     inline int check_args(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::ArgumentList &args, _Ts... checkers)
@@ -695,11 +701,22 @@ namespace letin
     template<typename _T>
     inline priv::TupleSetter<0, priv::IntSetter, _T> vsome(_T setter) { return vt(vint(1), setter); }
 
+    const priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::IntSetter> vunone = priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::IntSetter>(priv::IntSetter(0));
+
+    template<typename _T>
+    inline priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::IntSetter, _T> vusome(_T setter) { return vut(vint(1), setter); }
+    
     template<typename _T>
     inline priv::TupleSetter<0, priv::IntSetter, _T> vleft(_T setter) { return vt(vint(0), setter); }
 
     template<typename _T>
     inline priv::TupleSetter<0, priv::IntSetter, _T> vright(_T setter) { return vt(vint(1), setter); }
+
+    template<typename _T>
+    inline priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::IntSetter, _T> vuleft(_T setter) { return vut(vint(0), setter); }
+
+    template<typename _T>
+    inline priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::IntSetter, _T> vuright(_T setter) { return vut(vint(1), setter); }
 
     template<typename _T>
     inline vm::ReturnValue return_value(vm::VirtualMachine *vm, vm::ThreadContext *context, _T setter)
