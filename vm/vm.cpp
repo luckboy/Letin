@@ -76,6 +76,10 @@ namespace letin
           header_size = offsetof(ObjectRaw, lzv.args);
           elem_size = sizeof(Value);
           break;
+        case OBJECT_TYPE_NATIVE_OBJECT:
+          header_size = offsetof(ObjectRaw, ntvo.bs);
+          elem_size = 1;
+          break;
         default:
           return 0;
       }

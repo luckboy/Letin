@@ -45,6 +45,7 @@ namespace letin
   const int OBJECT_TYPE_TUPLE =         7;
   const int OBJECT_TYPE_IO =            8;
   const int OBJECT_TYPE_LAZY_VALUE =    9;
+  const int OBJECT_TYPE_NATIVE_OBJECT = 10;
   const int OBJECT_TYPE_UNIQUE =        256;
   const int OBJECT_TYPE_ERROR =         -1;
   

@@ -225,6 +225,35 @@ namespace letin
       void lazily_cancel_ref() { _M_raw.type |= VALUE_TYPE_LAZILY_CANCELED; }
     };
 
+    class NativeObjectTypeIdentity
+    {
+      int _M_x;
+    public:
+      NativeObjectTypeIdentity() {}
+    };
+
+    class NativeObjectType
+    {
+      const NativeObjectTypeIdentity *_M_ident;
+    public:
+      NativeObjectType(const NativeObjectTypeIdentity *ident) : _M_ident(ident) {}
+
+      bool operator==(NativeObjectType type) const { return _M_ident == type._M_ident; }
+
+      bool operator!=(NativeObjectType type) const { return _M_ident != type._M_ident; }
+    };
+
+    class NativeObjectFinalizator
+    {
+      void (*_M_fun)(const void *);
+    public:
+      NativeObjectFinalizator() : _M_fun(nullptr) {}
+
+      NativeObjectFinalizator(void (*fun)(const void *)) : _M_fun(nullptr) {}
+
+      void operator()(const void *ptr) const { if(_M_fun != nullptr) _M_fun(ptr); }
+    };
+
     struct ObjectRaw
     {
       int type;
@@ -246,6 +275,11 @@ namespace letin
           std::size_t fun;
           Value args[1];
         } lzv;
+        struct {
+          NativeObjectType type;
+          NativeObjectFinalizator finalizator;
+          std::uint8_t bs[1];
+        } ntvo;
       };
 
       ObjectRaw() {}
@@ -314,6 +348,11 @@ namespace letin
       bool is_unique() const { return (_M_raw.type & OBJECT_TYPE_UNIQUE) != 0 && !is_error(); }
 
       bool is_lazy() const { return _M_raw.type == OBJECT_TYPE_LAZY_VALUE; }
+
+      bool is_native_object() const { return _M_raw.type == OBJECT_TYPE_NATIVE_OBJECT; }
+
+      bool is_native_object(NativeObjectType type) const
+      { return _M_raw.type == OBJECT_TYPE_NATIVE_OBJECT ? _M_raw.ntvo.type == type : false; }
 
       int type() const { return _M_raw.type; }
 

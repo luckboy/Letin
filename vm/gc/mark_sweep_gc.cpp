@@ -91,6 +91,9 @@ namespace letin
         Header **header_ptr = &_M_list_first;
         while(*header_ptr != &_S_nil) {
           if(!(*header_ptr)->is_marked()) {
+            Object *object = header_to_object(*header_ptr);
+            if((object->type() & ~OBJECT_TYPE_UNIQUE) == OBJECT_TYPE_NATIVE_OBJECT)
+              object->raw().ntvo.finalizator(reinterpret_cast<void *>(object->raw().ntvo.bs));
             Header *next = (*header_ptr)->list_next;
             _M_alloc->free(reinterpret_cast<void *>(*header_ptr));
             *header_ptr = next;
