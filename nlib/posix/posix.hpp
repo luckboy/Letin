@@ -15,6 +15,7 @@
 #include <sys/utsname.h>
 #include <cstdint>
 #include <ctime>
+#include <dirent.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <termios.h>
@@ -68,7 +69,7 @@ namespace letin
 
         char *&operator[](std::size_t i) { return _M_ptr[i]; }
       };
-      
+
       void initialize_errors();
 
       void initialize_consts();
@@ -98,6 +99,9 @@ namespace letin
 
       bool arg_to_system_arg(std::int64_t arg, int &system_arg);
       LETIN_NATIVE_INT_CONVERTER(toarg, arg_to_system_arg, int);
+
+      bool long_arg_to_system_long_arg(std::int64_t arg, long &system_arg);
+      LETIN_NATIVE_INT_CONVERTER(tolarg, long_arg_to_system_long_arg, long);
 
       bool ref_to_system_buffer_ref(vm::Reference buffer_r, vm::Reference &system_buffer_r);
       LETIN_NATIVE_REF_CONVERTER(tobufref, ref_to_system_buffer_ref, vm::Reference);
@@ -309,6 +313,23 @@ namespace letin
 
       bool set_new_utsname(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &tmp_r, const struct ::utsname &os_info);
       LETIN_NATIVE_REF_SETTER(vutsname, set_new_utsname, struct ::utsname);
+
+      // Functions for DIR *.
+
+      vm::Object *new_dir(vm::VirtualMachine *vm, vm::ThreadContext *context, ::DIR *dir);
+      inline LETINT_NATIVE_OBJECT_SETTER_TYPE(new_dir, ::DIR *) vdir(::DIR * dir)
+      { return LETINT_NATIVE_OBJECT_SETTER_TYPE(new_dir, ::DIR *)(new_dir, dir); }
+
+      bool object_to_system_dir(const vm::Object &object, ::DIR *&dir);
+      LETIN_NATIVE_OBJECT_CONVERTER(todir, object_to_system_dir, ::DIR *);
+
+      int check_dir(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
+      LETIN_NATIVE_UNIQUE_OBJECT_CHECKER(cdir, check_dir);
+
+      // Functions for struct dirent.
+
+      bool set_new_dirent(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &tmp_r, const struct ::dirent &dir_entry);
+      LETIN_NATIVE_REF_SETTER(vdirent, set_new_dirent, struct ::dirent);
     }
   }
 }

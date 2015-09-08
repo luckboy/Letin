@@ -13,11 +13,13 @@
 #include <sys/utsname.h>
 #include <sys/wait.h>
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <dirent.h>
 #include <fcntl.h>
 #include <grp.h>
 #include <limits>
@@ -1554,6 +1556,103 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vutsname(buf)), v(io_v)));
+          }
+        },
+
+        //
+        // Directory native functions.
+        //
+
+        {
+          "posix.opendir", // (dir_name: iarray8, io: uio) -> (uoption unative, uio)
+          [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+            int error = check_args(vm, context, args, ciarray8, cio);
+            if(error != ERROR_SUCCESS) return error_return_value(error);
+            Value &io_v = args[1];
+            string dir_name;
+            if(!convert_args(args, topath(dir_name)))
+              return return_value(vm, context, vut(vunone, v(io_v)));
+            ::DIR *dir = ::opendir(dir_name.c_str());
+            if(dir == nullptr)
+              return return_value_with_errno(vm, context, vut(vunone, v(io_v)));
+            return return_value(vm, context, vut(vusome(vdir(dir)), v(io_v)));
+          }
+        },
+        {
+          "posix.closedir", // (dir: unative, io: uio) -> (int, uio)
+          [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+            int error = check_args(vm, context, args, cdir, cio);
+            if(error != ERROR_SUCCESS) return error_return_value(error);
+            Value &dir_v = args[0], &io_v = args[1];
+            ::DIR *dir;
+            if(!convert_args(args, todir(dir)))
+              return return_value(vm, context, vut(vint(-1), v(io_v)));
+            *reinterpret_cast<::DIR **>(dir_v.r()->raw().ntvo.bs) = nullptr;
+            atomic_thread_fence(memory_order_release);
+            int result = ::closedir(dir);
+            if(result == -1) 
+              return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
+            return return_value(vm, context, vut(vint(0), v(io_v)));
+          }
+        },
+        {
+          "posix.readdir", // (dir: unative, io: uio) -> (option tuple, uio)
+          [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+            int error = check_args(vm, context, args, cdir, cio);
+            if(error != ERROR_SUCCESS) return error_return_value(error);
+            Value &io_v = args[1];
+            ::DIR *dir;
+            unique_ptr<struct ::dirent> dir_entry;
+            if(!convert_args(args, todir(dir)))
+              return return_value(vm, context, vut(vnone, v(io_v)));
+            struct ::dirent *result = nullptr;
+            int tmp_errno = ::readdir_r(dir, dir_entry.get(), &result);
+            if(tmp_errno != 0)
+              return return_value_with_errno(vm, context, vut(vnone, v(io_v)), tmp_errno);
+            if(result != nullptr)
+              return return_value(vm, context, vut(vsome(vdirent(*dir_entry)), v(io_v)));
+            else
+              return return_value(vm, context, vut(vnone, v(io_v)));
+          }
+        },
+        {
+          "posix.rewinddir", // (dir: unative, io: uio) -> (int, uio)
+          [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+            int error = check_args(vm, context, args, cdir, cio);
+            if(error != ERROR_SUCCESS) return error_return_value(error);
+            Value &io_v = args[1];
+            ::DIR *dir;
+            if(!convert_args(args, todir(dir)))
+              return return_value(vm, context, vut(vint(-1), v(io_v)));
+            ::rewinddir(dir);
+            return return_value(vm, context, vut(vint(0), v(io_v)));
+          }
+        },
+        {
+          "posix.seekdir", // (dir: unative, loc: int, io: uio) -> (int, uio)
+          [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+            int error = check_args(vm, context, args, cdir, cint, cio);
+            if(error != ERROR_SUCCESS) return error_return_value(error);
+            Value &io_v = args[2];
+            ::DIR *dir;
+            long loc;
+            if(!convert_args(args, todir(dir), tolarg(loc)))
+              return return_value(vm, context, vut(vint(-1), v(io_v)));
+            ::seekdir(dir, loc);
+            return return_value(vm, context, vut(vint(0), v(io_v)));
+          }
+        },
+        {
+          "posix.telldir", // (dir: unative, io: uio) -> (int, uio)
+          [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+            int error = check_args(vm, context, args, cdir, cio);
+            if(error != ERROR_SUCCESS) return error_return_value(error);
+            Value &io_v = args[1];
+            ::DIR *dir;
+            if(!convert_args(args, todir(dir)))
+              return return_value(vm, context, vut(vint(-1), v(io_v)));
+            long loc = ::telldir(dir);
+            return return_value(vm, context, vut(vint(loc), v(io_v)));
           }
         }
       };

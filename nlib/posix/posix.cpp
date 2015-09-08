@@ -14,6 +14,7 @@
 #include <sys/wait.h>
 #include <algorithm>
 #include <cerrno>
+#include <dirent.h>
 #include <fcntl.h>
 #include <map>
 #include <poll.h>
@@ -44,6 +45,11 @@ namespace letin
       static map<int64_t, ::speed_t> system_speeds;
       static map<::speed_t, int64_t> speeds;
 
+      static NativeObjectTypeIdentity dir_type_ident;
+
+      static void finalize_dir(const void *ptr)
+      { ::closedir(*reinterpret_cast<::DIR * const *>(ptr)); }
+      
       void initialize_consts()
       {
         static_system_clk_tck = ::sysconf(_SC_CLK_TCK);
@@ -1658,6 +1664,55 @@ namespace letin
         RegisteredReference machine_r(vm->gc()->new_string(os_info.machine, context), context);
         if(machine_r.is_null()) return false;
         tmp_r->set_elem(3, Value(machine_r));
+        tmp_r.register_ref();
+        return true;
+      }
+
+      // Functions for DIR *.
+
+      Object *new_dir(VirtualMachine *vm, ThreadContext *context, ::DIR *dir)
+      {
+        Object *object = vm->gc()->new_object(OBJECT_TYPE_NATIVE_OBJECT | OBJECT_TYPE_UNIQUE, sizeof(::DIR *), context);
+        if(object == nullptr) return nullptr;
+        object->raw().ntvo.type = NativeObjectType(&dir_type_ident);
+        object->raw().ntvo.finalizator = NativeObjectFinalizator(finalize_dir);
+        *reinterpret_cast<::DIR **>(object->raw().ntvo.bs) = dir;
+        return object;
+      }
+
+      bool object_to_system_dir(const Object &object, ::DIR *&dir)
+      {
+        ::DIR *tmp_dir = *reinterpret_cast<::DIR * const *>(object.raw().ntvo.bs);
+        if(tmp_dir == nullptr) {
+          letin_errno() = EBADF;
+          return false;
+        }
+        dir = tmp_dir;
+        return true;
+      }
+
+      int check_dir(VirtualMachine *vm, vm::ThreadContext *context, Object &object)
+      {
+        if(!object.is_native_object(NativeObjectType(&dir_type_ident))) return ERROR_INCORRECT_OBJECT;
+        return ERROR_SUCCESS;
+      }
+
+      // A function for struct dirent.
+
+      //
+      // type dirent = (
+      //     int,       // d_ino
+      //     iarray8    // d_name
+      //  )
+      //
+
+      bool set_new_dirent(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &tmp_r, const struct ::dirent &dir_entry)
+      {
+        tmp_r = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 2, context);
+        if(tmp_r.is_null()) return false;
+        tmp_r->set_elem(0, Value(static_cast<int64_t>(dir_entry.d_ino)));
+        RegisteredReference name_r(vm->gc()->new_string(dir_entry.d_name, context), context);
+        tmp_r->set_elem(1, Value(name_r));
         tmp_r.register_ref();
         return true;
       }
