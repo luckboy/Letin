@@ -389,6 +389,16 @@ namespace letin
         return true;
       }
 
+      bool long_arg_to_system_long_arg(int64_t arg, long &system_arg)
+      {
+        if((arg < numeric_limits<long>::min()) || (arg > numeric_limits<long>::max())) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+        system_arg = arg;
+        return true;
+      }
+
       bool ref_to_system_buffer_ref(Reference buffer_r, Reference &system_buffer_r)
       {
         if(buffer_r->length() > static_cast<size_t>(numeric_limits<::ssize_t>::max())) {
