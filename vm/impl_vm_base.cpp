@@ -25,6 +25,14 @@ namespace letin
   {
     namespace impl
     {
+      ImplVirtualMachineBase::ImplVirtualMachineBase(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy) :
+        VirtualMachine(loader, gc, native_fun_handler, eval_strategy)
+      {
+        for(int nfi = _M_native_fun_handler->min_native_fun_index(); nfi <= _M_native_fun_handler->max_native_fun_index(); nfi++) {
+          _M_env.add_native_fun_index(string(_M_native_fun_handler->native_fun_name(nfi)), nfi);
+        }
+      }
+
       ImplVirtualMachineBase::~ImplVirtualMachineBase() {}
 
       bool ImplVirtualMachineBase::load(const vector<pair<void *, size_t>> &pairs, list<LoadingError> *errors, bool is_auto_freeing)
@@ -123,6 +131,15 @@ namespace letin
                   }
                   break;
                 }
+                case format::SYMBOL_TYPE_NATIVE_FUN:
+                {
+                  string name(symbol->name, symbol->length);
+                  if(_M_env.fun_indexes().find(name) == _M_env.fun_indexes().end()) {
+                    if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_NO_NATIVE_FUN_SYM, name));
+                    is_success = false;
+                  }
+                  break;
+                }
               }
             }
           }
@@ -135,7 +152,7 @@ namespace letin
           var_offset = 0;
           for(size_t i = 0; i < progs.size(); i++) {
             Program *prog = progs[i].get();
-            if(!prog->relocate(fun_offset, var_offset, _M_env.fun_indexes(), _M_env.var_indexes())) {
+            if(!prog->relocate(fun_offset, var_offset, _M_env.fun_indexes(), _M_env.var_indexes(), _M_env.native_fun_indexes())) {
               if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_RELOC));
               is_success = false;
             }

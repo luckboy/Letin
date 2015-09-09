@@ -16,6 +16,7 @@ namespace letin
   {
     const std::uint32_t HEADER_FLAG_LIBRARY = 1 << 0;
     const std::uint32_t HEADER_FLAG_RELOCATABLE = 1 << 1;
+    const std::uint32_t HEADER_FLAG_SYMBOLIC_NATIVE_FUNS = 1 << 2;
 
     const std::uint8_t HEADER_MAGIC0 = 0x33;
     const std::uint8_t HEADER_MAGIC1 = 'L';
@@ -139,8 +140,12 @@ namespace letin
     const std::uint32_t RELOC_TYPE_ARG2_VAR = 3;
     const std::uint32_t RELOC_TYPE_ELEM_FUN = 4;
     const std::uint32_t RELOC_TYPE_VAR_FUN = 5;
+    const std::uint32_t RELOC_TYPE_ARG1_NATIVE_FUN = 6; 
+    const std::uint32_t RELOC_TYPE_ARG2_NATIVE_FUN = 7; 
+    const std::uint32_t RELOC_TYPE_ELEM_NATIVE_FUN = 8; 
+    const std::uint32_t RELOC_TYPE_VAR_NATIVE_FUN = 9; 
     const std::uint32_t RELOC_TYPE_SYMBOLIC = 256;
-    
+
     struct Relocation
     {
       std::uint32_t     type;
@@ -150,6 +155,7 @@ namespace letin
 
     const std::uint8_t SYMBOL_TYPE_FUN = 0;
     const std::uint8_t SYMBOL_TYPE_VAR = 1;
+    const std::uint8_t SYMBOL_TYPE_NATIVE_FUN = 2;
     const std::uint8_t SYMBOL_TYPE_DEFINED = 16;
 
     struct Symbol

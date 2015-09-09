@@ -803,7 +803,7 @@ namespace letin
     // A Program class.
     //
 
-    bool Program::relocate(size_t fun_offset, size_t var_offset, const unordered_map<string, size_t> &fun_indexes, const unordered_map<string, size_t> &var_indexes)
+    bool Program::relocate(size_t fun_offset, size_t var_offset, const unordered_map<string, size_t> &fun_indexes, const unordered_map<string, size_t> &var_indexes, const unordered_map<string, int> &native_fun_indexes)
     {
       for(size_t i = 0; i < _M_reloc_count; i++) {
         uint32_t addr = _M_relocs[i].addr;
@@ -846,44 +846,11 @@ namespace letin
           }
           case format::RELOC_TYPE_ELEM_FUN:
           {
-            auto data_addr_iter = _M_data_addrs.upper_bound(addr);
-            if(data_addr_iter == _M_data_addrs.begin()) return false;
-            data_addr_iter--;
-            size_t data_object_addr = *data_addr_iter;
-            format::Object *data_object = reinterpret_cast<format::Object *>(_M_data + data_object_addr);
-            if(data_object_addr + 8 > addr) return false;
+            format::Object *data_object;
             size_t index;
-            switch(data_object->type) {
-              case OBJECT_TYPE_IARRAY32:
-                if(data_object_addr + 8 + data_object->length * 4 <= addr) return false;
-                if(((addr - (data_object_addr + 8)) & 3) != 0) return false;
-                index = *reinterpret_cast<int32_t *>(_M_data + addr);
-                break;
-              case OBJECT_TYPE_IARRAY64:
-              case OBJECT_TYPE_TUPLE:
-                if(data_object_addr + 8 + data_object->length * 8 <= addr) return false;
-                if(((addr - (data_object_addr + 8)) & 7) != 0) return false;
-                if(data_object->type == OBJECT_TYPE_TUPLE) {
-                  size_t j = (addr - (data_object_addr + 8)) >> 3;
-                  if(data_object->tuple_elem_types()[j] != VALUE_TYPE_INT) return false;
-                }
-                index = *reinterpret_cast<int64_t *>(_M_data + addr);
-                break;
-              default:
-                return false;
-            }
+            if(!get_elem_fun_index(addr, index, data_object)) return false;
             if(!relocate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
-            switch(data_object->type) {
-              case OBJECT_TYPE_IARRAY32:
-                *reinterpret_cast<int32_t *>(_M_data + addr) = index;
-                break;
-              case OBJECT_TYPE_IARRAY64:
-              case OBJECT_TYPE_TUPLE:
-                *reinterpret_cast<int64_t *>(_M_data + addr) = index;
-                break;
-              default:
-                return false;
-            }
+            if(!set_elem_fun_index(addr, index, data_object)) return false;
             break;
           }
           case format::RELOC_TYPE_VAR_FUN:
@@ -893,6 +860,53 @@ namespace letin
             size_t index = _M_vars[addr].i;
             if(!relocate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
             _M_vars[addr].i = index;
+            break;
+          }
+          default:
+          {
+            if((_M_flags & format::HEADER_FLAG_SYMBOLIC_NATIVE_FUNS) != 0) {
+              switch(_M_relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) {
+                case format::RELOC_TYPE_ARG1_NATIVE_FUN:
+                {
+                  if(addr >= _M_code_size) return false;
+                  if(opcode_to_arg_type1(_M_code[addr].opcode) != ARG_TYPE_IMM) return false;
+                  int index = _M_code[addr].arg1.i;
+                  if(!relocate_native_fun_index(index, native_fun_indexes, _M_relocs[i])) return false;
+                  _M_code[addr].arg1.i = index;
+                  break;
+                }
+                case format::RELOC_TYPE_ARG2_NATIVE_FUN:
+                {
+                  if(addr >= _M_code_size) return false;
+                  if(opcode_to_arg_type2(_M_code[addr].opcode) != ARG_TYPE_IMM) return false;
+                  int index = _M_code[addr].arg2.i;
+                  if(!relocate_native_fun_index(index, native_fun_indexes, _M_relocs[i])) return false;
+                  _M_code[addr].arg2.i = index;
+                  break;
+                }
+                case format::RELOC_TYPE_ELEM_NATIVE_FUN:
+                {
+                  format::Object *data_object;
+                  size_t tmp_index;
+                  int index;
+                  if(!get_elem_fun_index(addr, tmp_index, data_object)) return false;
+                  index = tmp_index;
+                  if(!relocate_native_fun_index(index, native_fun_indexes, _M_relocs[i])) return false;
+                  tmp_index = index;
+                  if(!set_elem_fun_index(addr, tmp_index, data_object)) return false;
+                  break;
+                }
+                case format::RELOC_TYPE_VAR_NATIVE_FUN:
+                {
+                  if(addr >= _M_var_count) return false;
+                  if(_M_vars[addr].type != VALUE_TYPE_INT) return false;
+                  int index = _M_vars[addr].i;
+                  if(!relocate_native_fun_index(index, native_fun_indexes, _M_relocs[i])) return false;
+                  _M_vars[addr].i = index;
+                  break;
+                }
+              }
+            }
             break;
           }
         }
@@ -918,6 +932,62 @@ namespace letin
         index = index - old_offset + offset;
         if(index > UINT32_MAX) return false;
         return true;
+      }
+    }
+
+    bool Program::relocate_native_fun_index(int &index, const unordered_map<string, int> &indexes, const format::Relocation &reloc)
+    {
+      if((reloc.type & format::RELOC_TYPE_SYMBOLIC) != 0) {
+        format::Symbol *symbol = symbols(reloc.symbol);
+        if(symbol->type != format::SYMBOL_TYPE_NATIVE_FUN) return false;
+        auto iter = indexes.find(string(symbol->name, symbol->length));
+        if(iter == indexes.end()) return false;
+        index = iter->second;
+      }
+      return true;
+    }
+
+    bool Program::get_elem_fun_index(size_t addr, size_t &index, format::Object *&data_object)
+    {
+      auto data_addr_iter = _M_data_addrs.upper_bound(addr);
+      if(data_addr_iter == _M_data_addrs.begin()) return false;
+      data_addr_iter--;
+      size_t data_object_addr = *data_addr_iter;
+      data_object = reinterpret_cast<format::Object *>(_M_data + data_object_addr);
+      if(data_object_addr + 8 > addr) return false;
+      switch(data_object->type) {
+        case OBJECT_TYPE_IARRAY32:
+          if(data_object_addr + 8 + data_object->length * 4 <= addr) return false;
+          if(((addr - (data_object_addr + 8)) & 3) != 0) return false;
+          index = *reinterpret_cast<int32_t *>(_M_data + addr);
+          return true;
+        case OBJECT_TYPE_IARRAY64:
+        case OBJECT_TYPE_TUPLE:
+          if(data_object_addr + 8 + data_object->length * 8 <= addr) return false;
+          if(((addr - (data_object_addr + 8)) & 7) != 0) return false;
+          if(data_object->type == OBJECT_TYPE_TUPLE) {
+            size_t j = (addr - (data_object_addr + 8)) >> 3;
+            if(data_object->tuple_elem_types()[j] != VALUE_TYPE_INT) return false;
+          }
+          index = *reinterpret_cast<int64_t *>(_M_data + addr);
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    bool Program::set_elem_fun_index(size_t addr, size_t index, format::Object *data_object)
+    {
+      switch(data_object->type) {
+        case OBJECT_TYPE_IARRAY32:
+          *reinterpret_cast<int32_t *>(_M_data + addr) = index;
+          return true;
+        case OBJECT_TYPE_IARRAY64:
+        case OBJECT_TYPE_TUPLE:
+          *reinterpret_cast<int64_t *>(_M_data + addr) = index;
+          return true;
+        default:
+          return false;
       }
     }
 

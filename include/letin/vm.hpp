@@ -502,9 +502,9 @@ namespace letin
       virtual Function fun(std::size_t i) = 0;
 
       virtual Value var(std::size_t i) = 0;
-      
+
       virtual Function fun(const std::string &name) = 0;
-      
+
       virtual Value var(const std::string &name) = 0;
     };
 

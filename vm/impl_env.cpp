@@ -59,6 +59,7 @@ namespace letin
         _M_var_count = 0;
         _M_fun_indexes = unordered_map<string, size_t>();
         _M_var_indexes = unordered_map<string, size_t>();
+        _M_native_fun_indexes = unordered_map<string, int>();
         _M_data_list_to_free = list<unique_ptr<char []>>();
       }
     }

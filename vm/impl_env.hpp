@@ -30,6 +30,7 @@ namespace letin
         std::size_t _M_var_count;
         std::unordered_map<std::string, std::size_t> _M_fun_indexes;
         std::unordered_map<std::string, std::size_t> _M_var_indexes;
+        std::unordered_map<std::string, int> _M_native_fun_indexes;
         std::list<std::unique_ptr<char []>> _M_data_list_to_free;
       public:
         ImplEnvironment() { reset(); }
@@ -79,6 +80,8 @@ namespace letin
 
         std::unordered_map<std::string, std::size_t> var_indexes() { return _M_var_indexes; }
 
+        std::unordered_map<std::string, int> native_fun_indexes() { return _M_native_fun_indexes; }
+
         bool add_fun_index(const std::string &name, std::size_t i)
         {
           if(_M_fun_indexes.find(name) != _M_fun_indexes.end()) return false;
@@ -90,6 +93,13 @@ namespace letin
         {
           if(_M_var_indexes.find(name) != _M_var_indexes.end()) return false;
           _M_var_indexes.insert(std::make_pair(name, i));
+          return true;
+        }
+        
+        bool add_native_fun_index(const std::string &name, int i)
+        {
+          if(_M_native_fun_indexes.find(name) != _M_native_fun_indexes.end()) return false;
+          _M_native_fun_indexes.insert(std::make_pair(name, i));
           return true;
         }
 
