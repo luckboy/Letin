@@ -152,6 +152,13 @@ namespace letin
             relocs[i].type = ntohl(relocs[i].type);
             relocs[i].addr = ntohl(relocs[i].addr);
             relocs[i].symbol = ntohl(relocs[i].symbol);
+            if((relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ARG1_FUN &&
+                (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ARG2_FUN &&
+                (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ARG1_VAR &&
+                (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ARG2_VAR &&
+                (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ELEM_FUN &&
+                (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_VAR_FUN)
+              return nullptr;
             if((relocs[i].type & format::RELOC_TYPE_SYMBOLIC) != 0) reloc_symbol_idxs.insert(relocs[i].symbol);
           }
 
@@ -159,6 +166,9 @@ namespace letin
           symbol_count = header->symbol_count;
           for(size_t i = 0, j = 0; j < symbol_count; j++) {
             format::Symbol *symbol = reinterpret_cast<format::Symbol *>(symbols + i);
+            if((symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_FUN &&
+                (symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_VAR)
+              return nullptr;
             if(reloc_symbol_idxs.find(j) != reloc_symbol_idxs.end()) reloc_symbol_idxs.erase(j);
             symbol_offsets.push_back(i);
             symbol->index = ntohl(symbol->index);
@@ -178,4 +188,3 @@ namespace letin
     }
   }
 }
-

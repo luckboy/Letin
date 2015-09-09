@@ -624,6 +624,10 @@ namespace letin
             _M_vars[addr].i = index;
             break;
           }
+          default:
+          {
+            return false;
+          }
         }
       }
       if((_M_flags & format::HEADER_FLAG_LIBRARY) == 0)
