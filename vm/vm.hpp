@@ -103,7 +103,7 @@ namespace letin
 
       bool relocate_native_fun_index(int &index, const std::unordered_map<std::string, int> &indexes, const format::Relocation &reloc);
 
-      bool get_elem_fun_index(std::size_t addr, std::size_t &index, format::Object *&data_object);
+      bool get_elem_fun_index(std::size_t addr, std::size_t &index, format::Object *&data_object, bool is_native_fun_index = false);
 
       bool set_elem_fun_index(std::size_t addr, std::size_t index, format::Object *data_object);
     };

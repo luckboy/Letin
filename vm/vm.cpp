@@ -901,6 +901,7 @@ namespace letin
                 {
                   if(addr >= _M_var_count) return false;
                   if(_M_vars[addr].type != VALUE_TYPE_INT) return false;
+                  if((_M_vars[addr].i < INT32_MIN) || (_M_vars[addr].i > INT32_MAX)) return false;
                   int index = _M_vars[addr].i;
                   if(!relocate_native_fun_index(index, native_fun_indexes, _M_relocs[i])) return false;
                   _M_vars[addr].i = index;
@@ -949,7 +950,7 @@ namespace letin
       return true;
     }
 
-    bool Program::get_elem_fun_index(size_t addr, size_t &index, format::Object *&data_object)
+    bool Program::get_elem_fun_index(size_t addr, size_t &index, format::Object *&data_object, bool is_native_fun_index)
     {
       auto data_addr_iter = _M_data_addrs.upper_bound(addr);
       if(data_addr_iter == _M_data_addrs.begin()) return false;
@@ -965,14 +966,22 @@ namespace letin
           return true;
         case OBJECT_TYPE_IARRAY64:
         case OBJECT_TYPE_TUPLE:
+        {
           if(data_object_addr + 8 + data_object->length * 8 <= addr) return false;
           if(((addr - (data_object_addr + 8)) & 7) != 0) return false;
           if(data_object->type == OBJECT_TYPE_TUPLE) {
             size_t j = (addr - (data_object_addr + 8)) >> 3;
             if(data_object->tuple_elem_types()[j] != VALUE_TYPE_INT) return false;
           }
-          index = *reinterpret_cast<int64_t *>(_M_data + addr);
+          int64_t tmp_index = *reinterpret_cast<int64_t *>(_M_data + addr);
+          if(!is_native_fun_index) {
+            if((tmp_index < 0) || (tmp_index > UINT32_MAX)) return false;
+          } else {
+            if((tmp_index < INT32_MIN) || (tmp_index > INT32_MAX)) return false;
+          }
+          index = tmp_index;
           return true;
+        }
         default:
           return false;
       }
