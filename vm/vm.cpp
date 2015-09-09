@@ -857,6 +857,7 @@ namespace letin
           {
             if(addr >= _M_var_count) return false;
             if(_M_vars[addr].type != VALUE_TYPE_INT) return false;
+            if((_M_vars[addr].i < 0) || (_M_vars[addr].i > UINT32_MAX)) return false;
             size_t index = _M_vars[addr].i;
             if(!relocate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
             _M_vars[addr].i = index;
@@ -906,7 +907,8 @@ namespace letin
                   break;
                 }
               }
-            }
+            } else
+              return false;
             break;
           }
         }
