@@ -585,14 +585,18 @@ namespace letin
                 break;
               case OBJECT_TYPE_IARRAY64:
               case OBJECT_TYPE_TUPLE:
+              {
                 if(data_object_addr + 8 + data_object->length * 8 <= addr) return false;
                 if(((addr - (data_object_addr + 8)) & 7) != 0) return false;
                 if(data_object->type == OBJECT_TYPE_TUPLE) {
                   size_t j = (addr - (data_object_addr + 8)) >> 3;
                   if(data_object->tuple_elem_types()[j] != VALUE_TYPE_INT) return false;
                 }
-                index = *reinterpret_cast<int64_t *>(_M_data + addr);
+                int64_t tmp_index = *reinterpret_cast<int64_t *>(_M_data + addr);
+                if((tmp_index < 0) || (tmp_index > UINT32_MAX)) return false;
+                index = tmp_index;
                 break;
+              }
               default:
                 return false;
             }
@@ -614,6 +618,7 @@ namespace letin
           {
             if(addr >= _M_var_count) return false;
             if(_M_vars[addr].type != VALUE_TYPE_INT) return false;
+            if((_M_vars[addr].i < 0) || (_M_vars[addr].i > UINT32_MAX)) return false;
             size_t index = _M_vars[addr].i;
             if(!relocate_index(index, fun_offset, fun_indexes, _M_relocs[i], format::SYMBOL_TYPE_FUN)) return false;
             _M_vars[addr].i = index;
