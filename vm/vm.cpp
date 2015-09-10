@@ -865,7 +865,7 @@ namespace letin
           }
           default:
           {
-            if((_M_flags & format::HEADER_FLAG_SYMBOLIC_NATIVE_FUNS) != 0) {
+            if((_M_flags & format::HEADER_FLAG_NATIVE_FUN_SYMBOLS) != 0) {
               switch(_M_relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) {
                 case format::RELOC_TYPE_ARG1_NATIVE_FUN:
                 {
