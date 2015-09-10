@@ -1703,7 +1703,7 @@ namespace letin
 
       int check_dir(VirtualMachine *vm, vm::ThreadContext *context, Object &object)
       {
-        if(!object.is_native_object(NativeObjectType(&dir_type_ident))) return ERROR_INCORRECT_OBJECT;
+        if(!object.is_native(NativeObjectType(&dir_type_ident))) return ERROR_INCORRECT_OBJECT;
         return ERROR_SUCCESS;
       }
 
