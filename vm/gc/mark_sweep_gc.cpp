@@ -13,6 +13,7 @@
 
 using namespace std;
 using namespace std::placeholders;
+using namespace letin::vm::priv;
 
 namespace letin
 {

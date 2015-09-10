@@ -395,8 +395,11 @@ namespace letin
       void traverse_root_objects(std::function<void (Object *)> fun);
     };
 
-    inline bool is_ref_value_type_for_gc(int type)
-    { return type == VALUE_TYPE_REF || type == VALUE_TYPE_CANCELED_REF || (type & ~VALUE_TYPE_LAZILY_CANCELED) == VALUE_TYPE_LAZY_VALUE_REF; }
+    namespace priv
+    {
+      inline bool is_ref_value_type_for_gc(int type)
+      { return type == VALUE_TYPE_REF || type == VALUE_TYPE_CANCELED_REF || (type & ~VALUE_TYPE_LAZILY_CANCELED) == VALUE_TYPE_LAZY_VALUE_REF; }
+    }
   }
 }
 

@@ -30,6 +30,7 @@
 
 using namespace std;
 using namespace letin::opcode;
+using namespace letin::vm::priv;
 
 namespace letin
 {
