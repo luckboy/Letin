@@ -157,8 +157,16 @@ namespace letin
                 (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ARG1_VAR &&
                 (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ARG2_VAR &&
                 (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ELEM_FUN &&
-                (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_VAR_FUN)
-              return nullptr;
+                (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_VAR_FUN) {
+              if((header->flags & format::HEADER_FLAG_NATIVE_FUN_SYMBOLS) != 0) {
+                if((relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ARG1_NATIVE_FUN &&
+                    (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ARG2_NATIVE_FUN &&
+                    (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ELEM_NATIVE_FUN &&
+                    (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_VAR_NATIVE_FUN)
+                  return nullptr;
+              } else
+                return nullptr;
+            }
             if((relocs[i].type & format::RELOC_TYPE_SYMBOLIC) != 0) reloc_symbol_idxs.insert(relocs[i].symbol);
           }
 
@@ -167,8 +175,13 @@ namespace letin
           for(size_t i = 0, j = 0; j < symbol_count; j++) {
             format::Symbol *symbol = reinterpret_cast<format::Symbol *>(symbols + i);
             if((symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_FUN &&
-                (symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_VAR)
-              return nullptr;
+                (symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_VAR) {
+              if((header->flags & format::HEADER_FLAG_NATIVE_FUN_SYMBOLS) != 0) {
+                if((symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_NATIVE_FUN)
+                  return nullptr;
+              } else
+                return nullptr;
+            }
             if(reloc_symbol_idxs.find(j) != reloc_symbol_idxs.end()) reloc_symbol_idxs.erase(j);
             symbol_offsets.push_back(i);
             symbol->index = ntohl(symbol->index);
