@@ -47,6 +47,7 @@ namespace letin
   const int OBJECT_TYPE_LAZY_VALUE =    9;
   const int OBJECT_TYPE_NATIVE_OBJECT = 10;
   const int OBJECT_TYPE_UNIQUE =        256;
+  const int OBJECT_TYPE_INTERNAL =      512;
   const int OBJECT_TYPE_ERROR =         -1;
   
   const int ERROR_SUCCESS =             0;
@@ -71,7 +72,7 @@ namespace letin
   const int ERROR_UNIQUE_OBJECT =       19;
   const int ERROR_AGAIN_USED_UNIQUE =   20;
   const int ERROR_USER_EXCEPTION =      21;
-  
+
   const int NATIVE_FUN_ATOI =           0;
   const int NATIVE_FUN_ITOA =           1;
   const int NATIVE_FUN_ATOF =           2;

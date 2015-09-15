@@ -35,6 +35,7 @@ namespace letin
     class GarbageCollector;
     class NativeFunctionHandler;
     class EvaluationStrategy;
+    class MemoizationCache;
 
     typedef format::Argument Argument;
     typedef format::Instruction Instruction;
@@ -51,12 +52,11 @@ namespace letin
 
       Reference &operator=(Object *ptr) { _M_ptr = ptr; return *this; }
 
-      Reference &safely_assign_for_gc(Reference r)
+      void safely_assign_for_gc(Reference r)
       {
         std::atomic_thread_fence(std::memory_order_release);
         _M_ptr = r._M_ptr;
         std::atomic_thread_fence(std::memory_order_release);
-        return *this;
       }
       
       bool operator==(Reference ref) const { return _M_ptr == ref._M_ptr; }
@@ -80,12 +80,11 @@ namespace letin
     public:
       TupleElementType(int type) : _M_raw(type) {}
 
-      TupleElementType &safely_assign_for_gc(TupleElementType type)
+      void  safely_assign_for_gc(TupleElementType type)
       {
         std::atomic_thread_fence(std::memory_order_release);
         _M_raw = type._M_raw;
         std::atomic_thread_fence(std::memory_order_release);
-        return *this;
       }
 
       const std::int8_t &raw() const { return _M_raw; }
@@ -114,12 +113,11 @@ namespace letin
 
       TupleElement(Reference r) { _M_raw.r = r; }
 
-      TupleElement &safely_assign_for_gc(TupleElement elem)
+      void safely_assign_for_gc(TupleElement elem)
       {
         std::atomic_thread_fence(std::memory_order_release);
         _M_raw = elem._M_raw;
         std::atomic_thread_fence(std::memory_order_release);
-        return *this;
       }
       
       const TupleElementRaw &raw() const { return _M_raw; }
@@ -280,6 +278,7 @@ namespace letin
           NativeObjectFinalizator finalizator;
           std::uint8_t bs[1];
         } ntvo;
+        std::uint8_t bs[1];
       };
 
       ObjectRaw() {}
@@ -399,20 +398,18 @@ namespace letin
 
       ReturnValue &operator=(const Value &value);
 
-      ReturnValue &safely_assign_for_gc(const ReturnValue &value)
+      void safely_assign_for_gc(const ReturnValue &value)
       {
         std::atomic_thread_fence(std::memory_order_release);
         *this = value;
         std::atomic_thread_fence(std::memory_order_release);
-        return *this;
       }
 
-      ReturnValue &safely_assign_for_gc(const Value &value)
+      void safely_assign_for_gc(const Value &value)
       {
         std::atomic_thread_fence(std::memory_order_release);
         *this = value; 
         std::atomic_thread_fence(std::memory_order_release);
-        return *this;
       }
 
       bool operator==(const ReturnValue &value) const
@@ -771,6 +768,8 @@ namespace letin
       virtual bool must_post_leave_from_fun(ThreadContext *context, std::size_t i, int value_type) = 0;
 
       bool is_eager() const { return _M_is_eager; }
+
+      virtual void set_fun_count(std::size_t fun_count);
     };
 
     class NativeFunctionHandlerLoader
@@ -816,6 +815,16 @@ namespace letin
       int max_native_fun_index() const;
     };
 
+    class MemoizationCacheFactory
+    {
+    protected:
+      MemoizationCacheFactory() {}
+    public:
+      virtual ~MemoizationCacheFactory();
+
+      virtual MemoizationCache *new_memoization_cache(std::size_t fun_count) = 0;
+    };
+
     Loader *new_loader();
 
     Allocator *new_allocator();
@@ -840,6 +849,10 @@ namespace letin
     NativeLibrary *new_native_library_without_throwing(const std::vector<NativeFunction> &funs, int min_nfi  = MIN_UNRESERVED_NATIVE_FUN_INDEX);
 
     int &letin_errno();
+
+    bool equal_values(const Value &value1, const Value &value2);
+
+    bool equal_objects(const Object &object1, const Object &object2);
 
     std::ostream &operator<<(std::ostream &os, const Value &value);
 

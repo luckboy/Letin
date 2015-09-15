@@ -127,6 +127,7 @@ namespace letin
       unsigned after_leaving_flag_index;
       std::uint32_t tmp_ac2;
       bool arg_instr_flag;
+      bool cached_fun_result_flag;
       bool try_flag;
       std::uint32_t try_abp;
       std::uint32_t try_ac;
@@ -395,10 +396,26 @@ namespace letin
       void traverse_root_objects(std::function<void (Object *)> fun);
     };
 
+    class MemoizationCache
+    {
+    protected:
+      MemoizationCache() {}
+    public:
+      virtual ~MemoizationCache();
+
+      virtual Value fun_result(std::size_t i, int value_type, const ArgumentList &args) const = 0;
+
+      virtual bool add_fun_result(std::size_t i, int value_type, const ArgumentList &args, const Value &fun_result, ThreadContext &context) = 0;
+    };
+
     namespace priv
     {
       inline bool is_ref_value_type_for_gc(int type)
       { return type == VALUE_TYPE_REF || type == VALUE_TYPE_CANCELED_REF || (type & ~VALUE_TYPE_LAZILY_CANCELED) == VALUE_TYPE_LAZY_VALUE_REF; }
+
+      bool are_memoizable_fun_args(const ArgumentList &args);
+
+      bool is_memoizable_fun_result(const Value &value);
     }
   }
 }

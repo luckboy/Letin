@@ -2,6 +2,7 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(..)
 
 aux_source_directory(alloc vm_sources)
+aux_source_directory(cache vm_sources)
 aux_source_directory(gc vm_sources)
 aux_source_directory(strategy vm_sources)
 aux_source_directory(vm vm_sources)

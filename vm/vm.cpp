@@ -82,7 +82,10 @@ namespace letin
           elem_size = 1;
           break;
         default:
-          return 0;
+          if((type & OBJECT_TYPE_INTERNAL) != 0)
+            elem_size = 1;
+          else
+            return 0;
       }
       return header_size + length * elem_size;
     }
@@ -768,6 +771,8 @@ namespace letin
 
     EvaluationStrategy::~EvaluationStrategy() {}
 
+    void EvaluationStrategy::set_fun_count(size_t fun_count) {}
+
     //
     // A NativeFunctionHandlerLoader class.
     //
@@ -1209,6 +1214,12 @@ namespace letin
     }
 
     //
+    // A MemoizationCache class.
+    //
+
+    MemoizationCache::~MemoizationCache() {}
+
+    //
     // Other fuctions.
     //
 
@@ -1240,8 +1251,58 @@ namespace letin
 
     int &letin_errno()
     {
-      static thread_local int thread_local_errno;
+      static thread_local int thread_local_errno = 0;
       return thread_local_errno;
+    }
+
+    bool equal_values(const Value &value1, const Value &value2)
+    {
+      if(value1.type() != value2.type()) return false;
+      switch(value1.type()) {
+        case VALUE_TYPE_INT:
+          return value1.raw().i == value2.raw().i;
+        case VALUE_TYPE_FLOAT:
+          return value1.raw().f == value2.raw().f;
+        case VALUE_TYPE_REF:
+          return value1.raw().r == value2.raw().r || equal_objects(*(value1.raw().r), *(value2.raw().r));
+        default:
+          return false;
+      }
+    }
+
+    bool equal_objects(const Object &object1, const Object &object2)
+    {
+      if(object1.type() != object2.type()) return false;
+      if(object1.length() != object2.length()) return false;
+      switch(object1.type() & ~OBJECT_TYPE_UNIQUE) {
+        case OBJECT_TYPE_IARRAY8:
+          return equal(object1.raw().is8, object1.raw().is8 + object1.length(), object2.raw().is8);
+        case OBJECT_TYPE_IARRAY16:
+          return equal(object1.raw().is16, object1.raw().is16 + object1.length(), object2.raw().is16);
+        case OBJECT_TYPE_IARRAY32:
+          return equal(object1.raw().is32, object1.raw().is32 + object1.length(), object2.raw().is32);
+        case OBJECT_TYPE_IARRAY64:
+          return equal(object1.raw().is64, object1.raw().is64 + object1.length(), object2.raw().is64);
+        case OBJECT_TYPE_SFARRAY:
+          return equal(object1.raw().sfs, object1.raw().sfs + object1.length(), object2.raw().sfs);
+        case OBJECT_TYPE_DFARRAY:
+          return equal(object1.raw().dfs, object1.raw().dfs + object1.length(), object2.raw().dfs);
+        case OBJECT_TYPE_RARRAY:
+          for(size_t i = 0; i < object2.length(); i++) {
+            if(object1.raw().rs[i] != object2.raw().rs[i] && equal_objects(*(object1.raw().rs[i]), *(object2.raw().rs[i])))
+              return false;
+          }
+          return true;
+        case OBJECT_TYPE_TUPLE:
+          for(size_t i = 0; i < object2.length(); i++) {
+            Value value1(object1.raw().tuple_elem_types()[i], object1.raw().tes[i]);
+            Value value2(object2.raw().tuple_elem_types()[i], object2.raw().tes[i]);
+            if(equal_values(value1, value2)) return false;
+          }
+          return true;
+        default:
+          return false;
+      }
     }
 
     ostream &operator<<(ostream &os, const Value &value)
@@ -1295,8 +1356,13 @@ namespace letin
           return os << "io";
         case OBJECT_TYPE_LAZY_VALUE:
           return os << "lazy value";
+        case OBJECT_TYPE_NATIVE_OBJECT:
+          return os << "native object";
         default:
-          return os << "error";
+          if((object.type() & OBJECT_TYPE_INTERNAL) != 0)
+            return os << "internal object";
+          else
+            return os << "error";
       }
       os << ((object.type() & ~ OBJECT_TYPE_UNIQUE) != OBJECT_TYPE_TUPLE ? "[" : "(");
       for(size_t i = 0; i < object.length(); i++) {
@@ -1333,6 +1399,8 @@ namespace letin
           return os << "incorrect function index " << error.symbol_name();
         case LOADING_ERROR_ALLOC:
           return os << "out of memory";
+        case LOADING_ERROR_NO_NATIVE_FUN_SYM:
+          return os << "undefined native function symbol " << error.symbol_name();
         default:
           return os << "unknown error";
       }
@@ -1387,6 +1455,87 @@ namespace letin
           return "user exception";
         default:
           return "unknown error";
+      }
+    }
+
+    //
+    // Private functions.
+    //
+
+    namespace priv
+    {
+      static bool add_object_byte_count(const Object &object, size_t &byte_count);
+
+      static bool add_value_byte_count(const Value &value, size_t &byte_count)
+      {
+        switch(value.type()) {
+          case VALUE_TYPE_INT:
+          case VALUE_TYPE_FLOAT:
+            byte_count += 8;
+            return true;
+          case VALUE_TYPE_REF:
+            byte_count += 8;
+            if(!add_object_byte_count(*(value.raw().r), byte_count)) return false;
+            return true;
+          default:
+            return false;
+        }
+      }
+      
+      static bool add_object_byte_count(const Object &object, size_t &byte_count)
+      {
+        switch(object.type()) {
+          case OBJECT_TYPE_IARRAY8:
+            byte_count += object.length();
+            return true;
+          case OBJECT_TYPE_IARRAY16:
+            byte_count += object.length() * 2;
+            return true;
+          case OBJECT_TYPE_IARRAY32:
+            byte_count += object.length() * 4;
+            return true;
+          case OBJECT_TYPE_IARRAY64:
+            byte_count += object.length() * 8;
+            return true;
+          case OBJECT_TYPE_SFARRAY:
+            byte_count += object.length() * 4;
+            return true;
+          case OBJECT_TYPE_DFARRAY:
+            byte_count += object.length() * 8;
+            return true;
+          case OBJECT_TYPE_RARRAY:
+            byte_count += object.length() * 8;
+            return true;
+          case OBJECT_TYPE_TUPLE:
+            byte_count += object.length() * 8;
+            for(size_t i = 0; i < object.length(); i++) {
+              Value value(object.raw().tuple_elem_types()[i], object.raw().tes[i]);
+              if(!add_value_byte_count(value, byte_count)) return false;
+            }
+            return true;
+          default:
+            return false;
+        }
+      }
+
+      bool are_memoizable_fun_args(const ArgumentList &args)
+      {
+        size_t byte_count = 0;
+        for(size_t i = 0; i < args.length(); i++) {
+          if(args[i].is_unique()) return false;
+          if(!add_value_byte_count(args[i], byte_count)) return false;
+        }
+        if(byte_count > 256) return false;
+        return true;
+      }
+
+      bool is_memoizable_fun_result(const Value &value)
+      {
+        if(value.is_unique()) return false;
+        size_t byte_count = 0;
+        if(!add_value_byte_count(value, byte_count)) return false;
+        if(byte_count > 256) return false;
+        return true;
       }
     }
   }
