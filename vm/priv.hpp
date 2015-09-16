@@ -18,9 +18,9 @@ namespace letin
     {
       const int OBJECT_TYPE_HASH_TABLE = OBJECT_TYPE_INTERNAL + 0;
       const int OBJECT_TYPE_HASH_TABLE_ENTRY = OBJECT_TYPE_INTERNAL + 1;
-      const int OBJECT_TYPE_ALI_HASH_TABLE_ENTRY = OBJECT_TYPE_INTERNAL + 1;
-      const int OBJECT_TYPE_ALF_HASH_TABLE_ENTRY = OBJECT_TYPE_INTERNAL + 2;
-      const int OBJECT_TYPE_ALR_HASH_TABLE_ENTRY = OBJECT_TYPE_INTERNAL + 3;
+      const int OBJECT_TYPE_ALI_HASH_TABLE_ENTRY = OBJECT_TYPE_INTERNAL + 2;
+      const int OBJECT_TYPE_ALF_HASH_TABLE_ENTRY = OBJECT_TYPE_INTERNAL + 3;
+      const int OBJECT_TYPE_ALR_HASH_TABLE_ENTRY = OBJECT_TYPE_INTERNAL + 4;
 
       template<typename _T, typename _U>
       void safely_assign_for_gc(_T &x, const _U &y);
