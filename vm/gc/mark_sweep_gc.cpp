@@ -111,46 +111,10 @@ namespace letin
         mark_and_push_header(header);
         while(!is_empty_stack()) {
           Object *top_object = header_to_object(pop_header());
-          switch(top_object->type() & ~OBJECT_TYPE_UNIQUE) {
-            case OBJECT_TYPE_RARRAY:
-              for(size_t i = 0; i < top_object->length(); i++) {
-                Reference elem_ref = top_object->raw().rs[i];
-                if(!elem_ref.has_nil()) {
-                  Header *elem_header = object_to_header(elem_ref.ptr());
-                  if(!elem_header->is_marked()) mark_and_push_header(elem_header);
-                }
-              }
-              break;
-            case OBJECT_TYPE_TUPLE:
-              for(size_t i = 0; i < top_object->length(); i++) {
-                if(is_ref_value_type_for_gc(top_object->raw().tuple_elem_types()[i].raw())) {
-                  Reference elem_ref = top_object->raw().tes[i].raw().r;
-                  if(!elem_ref.has_nil()) {
-                    Header *elem_header = object_to_header(elem_ref.ptr());
-                    if(!elem_header->is_marked()) mark_and_push_header(elem_header);
-                  }
-                }
-              }
-              break;
-            case OBJECT_TYPE_LAZY_VALUE:
-              if(is_ref_value_type_for_gc(top_object->raw().lzv.value.type())) {
-                Reference value_ref = top_object->raw().lzv.value.raw().r;
-                if(!value_ref.has_nil()) {
-                  Header *value_header = object_to_header(value_ref.ptr());
-                  if(!value_header->is_marked()) mark_and_push_header(value_header);
-                }
-              }
-              for(size_t i = 0; i < top_object->length(); i++) {
-                if(is_ref_value_type_for_gc(top_object->raw().lzv.args[i].type())) {
-                  Reference elem_ref = top_object->raw().lzv.args[i].raw().r;
-                  if(!elem_ref.has_nil()) {
-                    Header *elem_header = object_to_header(elem_ref.ptr());
-                    if(!elem_header->is_marked()) mark_and_push_header(elem_header);
-                  }
-                }
-              }
-              break;
-          }
+          traverse_child_objects(*top_object, [this](Object *child_object) {
+            Header *child_header = object_to_header(child_object);
+            if(!child_header->is_marked()) mark_and_push_header(child_header);
+          });
         }
       }
 

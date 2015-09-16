@@ -365,7 +365,7 @@ namespace letin
       }
 
       void traverse_root_objects(std::function<void (Object *)> fun);
-      
+
       void safely_set_gc_tmp_ptr_for_gc(void *ptr)
       {
         std::atomic_thread_fence(std::memory_order_release);
@@ -416,6 +416,8 @@ namespace letin
       bool are_memoizable_fun_args(const ArgumentList &args);
 
       bool is_memoizable_fun_result(const Value &value);
+
+      void traverse_child_objects(Object &object, std::function<void (Object *)> fun);
     }
   }
 }

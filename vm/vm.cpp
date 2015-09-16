@@ -1537,6 +1537,37 @@ namespace letin
         if(byte_count > 256) return false;
         return true;
       }
+
+      void traverse_child_objects(Object &object, function<void (Object *)> fun)
+      {
+        switch(object.type() & ~OBJECT_TYPE_UNIQUE) {
+          case OBJECT_TYPE_RARRAY:
+            for(size_t i = 0; i < object.length(); i++) {
+              if(!object.raw().rs[i].has_nil()) fun(object.raw().rs[i].ptr());
+            }
+            break;
+          case OBJECT_TYPE_TUPLE:
+            for(size_t i = 0; i < object.length(); i++) {
+              if(is_ref_value_type_for_gc(object.raw().tuple_elem_types()[i].raw())) {
+                Reference elem_ref = object.raw().tes[i].raw().r;
+                if(!elem_ref.has_nil()) fun(elem_ref.ptr());
+              }
+            }
+            break;
+          case OBJECT_TYPE_LAZY_VALUE:
+            if(is_ref_value_type_for_gc(object.raw().lzv.value.type())) {
+              Reference value_ref = object.raw().lzv.value.raw().r;
+              if(!value_ref.has_nil()) fun(value_ref.ptr());
+            }
+            for(size_t i = 0; i < object.length(); i++) {
+              if(is_ref_value_type_for_gc(object.raw().lzv.args[i].type())) {
+                Reference arg_ref = object.raw().lzv.args[i].raw().r;
+                if(!arg_ref.has_nil()) fun(arg_ref.ptr());
+              }
+            }
+            break;
+        }
+      }
     }
   }
 }
