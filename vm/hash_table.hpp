@@ -65,7 +65,7 @@ namespace letin
       };
 
       template<typename _K, typename _V>
-      struct HashTableObjectType
+      struct HashTableEntryObjectType
       { static constexpr int value() { return OBJECT_TYPE_HASH_TABLE_ENTRY; } };
 
       struct HashTableBucket
@@ -173,7 +173,7 @@ namespace letin
           std::size_t i;
           Reference entry_r = find_entry_and_set_bucket_index(key, i);
           if(entry_r.has_nil()) {
-            Reference new_entry_r(context.gc()->new_object(HashTableObjectType<_K, _V>::value(), sizeof(HashTableEntryRaw<_K, _V>), &context));
+            Reference new_entry_r(context.gc()->new_object(HashTableEntryObjectType<_K, _V>::value(), sizeof(HashTableEntryRaw<_K, _V>), &context));
             if(new_entry_r.is_null()) return false;
             entry_raw(new_entry_r).key = HashTableKeyBox<_K>();
             entry_raw(new_entry_r).value = HashTableValueBox<_V>();
@@ -238,7 +238,7 @@ namespace letin
         bool set_bucket_count(std::size_t bucket_count, ThreadContext &context)
         {
           if(bucket_count != 0) {
-            std::size_t raw_size = offsetof(HashTableRaw, buckets) +sizeof(Reference) * bucket_count;
+            std::size_t raw_size = offsetof(HashTableRaw, buckets) + sizeof(Reference) * bucket_count;
             Reference r(context.gc()->new_object(OBJECT_TYPE_HASH_TABLE, raw_size, &context));
             if(r.is_null()) return false;
             raw(r).bucket_count = bucket_count;
@@ -289,15 +289,15 @@ namespace letin
       };
 
       template<>
-      struct HashTableObjectType<ArgumentList, std::int64_t>
+      struct HashTableEntryObjectType<ArgumentList, std::int64_t>
       { static constexpr int value() { return OBJECT_TYPE_ALI_HASH_TABLE_ENTRY; } };
 
       template<>
-      struct HashTableObjectType<ArgumentList, double>
+      struct HashTableEntryObjectType<ArgumentList, double>
       { static constexpr int value() { return OBJECT_TYPE_ALF_HASH_TABLE_ENTRY; } };
 
       template<>
-      struct HashTableObjectType<ArgumentList, Reference>
+      struct HashTableEntryObjectType<ArgumentList, Reference>
       { static constexpr int value() { return OBJECT_TYPE_ALR_HASH_TABLE_ENTRY; } };
     }
   }
