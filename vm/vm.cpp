@@ -1243,8 +1243,8 @@ namespace letin
 
     void finalize_gc() { priv::finalize_thread_stop_cont(); }
 
-    void set_temporary_root_object(ThreadContext *context, Reference r)
-    { context->regs().tmp_r.safely_assign_for_gc(r); }
+    void set_temporary_root_object(ThreadContext *context, Reference ref)
+    { context->regs().tmp_r.safely_assign_for_gc(ref); }
 
     NativeLibrary *new_native_library_without_throwing(const vector<NativeFunction> &funs, int min_nfi)
     { try { return new NativeLibrary(funs, min_nfi); } catch(...) { return nullptr; } }

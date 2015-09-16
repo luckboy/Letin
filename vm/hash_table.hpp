@@ -261,26 +261,26 @@ namespace letin
       public:
         HashTableKeyBox() {}
 
-        bool operator==(const ArgumentList &args) const
+        bool operator==(const ArgumentList &key) const
         {
           if(_M_key_r->type() != OBJECT_TYPE_TUPLE) return false;
-          if(_M_key_r->length() != args.length()) return false;
-          for(size_t i = 0; i < args.length(); i++) {
+          if(_M_key_r->length() != key.length()) return false;
+          for(size_t i = 0; i < key.length(); i++) {
             Value value(_M_key_r->raw().tuple_elem_types()[i], _M_key_r->raw().tes[i]);
-            if(!equal_values(value, args[i])) return false;
+            if(!equal_values(value, key[i])) return false;
           }
           return true;
         }
 
-        Reference key_r() const { return _M_key_r; }
+        Reference key_ref() const { return _M_key_r; }
 
-        bool set_key(const ArgumentList &args, ThreadContext &context)
+        bool set_key(const ArgumentList &key, ThreadContext &context)
         {
-          Reference r(context.gc()->new_object(OBJECT_TYPE_TUPLE, args.length(), &context));
+          Reference r(context.gc()->new_object(OBJECT_TYPE_TUPLE, key.length(), &context));
           if(r.is_null()) return false;
-          for(std::size_t i = 0; i < args.length(); i++) {
-            r->raw().tes[i] = args[i].raw().i;
-            r->raw().tuple_elem_types()[i].raw() = args[i].type();
+          for(std::size_t i = 0; i < key.length(); i++) {
+            r->raw().tes[i] = key[i].raw().i;
+            r->raw().tuple_elem_types()[i].raw() = key[i].type();
           }
           _M_key_r.safely_assign_for_gc(r);
           context.safely_set_gc_tmp_ptr_for_gc(nullptr);

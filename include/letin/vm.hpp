@@ -52,10 +52,10 @@ namespace letin
 
       Reference &operator=(Object *ptr) { _M_ptr = ptr; return *this; }
 
-      void safely_assign_for_gc(Reference r)
+      void safely_assign_for_gc(Reference ref)
       {
         std::atomic_thread_fence(std::memory_order_release);
-        _M_ptr = r._M_ptr;
+        _M_ptr = ref._M_ptr;
         std::atomic_thread_fence(std::memory_order_release);
       }
       
@@ -542,23 +542,23 @@ namespace letin
         Reference(ptr), _M_context(context), _M_prev(nullptr), _M_next(nullptr)
       { if(is_registered && this->ptr() != nullptr) register_ref(); }
 
-      RegisteredReference(Reference r, ThreadContext *context, bool is_registered = true) :
-        Reference(r.ptr()), _M_context(context), _M_prev(nullptr), _M_next(nullptr)
+      RegisteredReference(Reference ref, ThreadContext *context, bool is_registered = true) :
+        Reference(ref.ptr()), _M_context(context), _M_prev(nullptr), _M_next(nullptr)
       { if(is_registered && ptr() != nullptr) register_ref(); }
 
-      RegisteredReference(const RegisteredReference &r) = delete;
+      RegisteredReference(const RegisteredReference &ref) = delete;
 
       ~RegisteredReference();
 
-      RegisteredReference &operator=(const RegisteredReference &r)
+      RegisteredReference &operator=(const RegisteredReference &ref)
       {
-        safely_assign_for_gc(r);
+        safely_assign_for_gc(ref);
         return *this;
       }
 
-      RegisteredReference &operator=(const Reference &r)
+      RegisteredReference &operator=(const Reference &ref)
       {
-        safely_assign_for_gc(r);
+        safely_assign_for_gc(ref);
         return *this;
       }
 
@@ -841,7 +841,7 @@ namespace letin
 
     void finalize_gc();
 
-    void set_temporary_root_object(ThreadContext *context, Reference r);
+    void set_temporary_root_object(ThreadContext *context, Reference ref);
 
     inline void set_temporary_root_object(ThreadContext *context, Object *object)
     { set_temporary_root_object(context, Reference(object)); }
