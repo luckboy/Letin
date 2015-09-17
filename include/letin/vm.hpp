@@ -770,6 +770,8 @@ namespace letin
       bool is_eager() const { return _M_is_eager; }
 
       virtual void set_fun_count(std::size_t fun_count);
+
+      virtual std::list<MemoizationCache *> memo_caches();
     };
 
     class NativeFunctionHandlerLoader

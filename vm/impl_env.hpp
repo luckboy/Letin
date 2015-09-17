@@ -31,6 +31,7 @@ namespace letin
         std::unordered_map<std::string, std::size_t> _M_fun_indexes;
         std::unordered_map<std::string, std::size_t> _M_var_indexes;
         std::unordered_map<std::string, int> _M_native_fun_indexes;
+        std::list<MemoizationCache *> _M_memo_caches;
         std::list<std::unique_ptr<char []>> _M_data_list_to_free;
       public:
         ImplEnvironment() { reset(); }
@@ -48,6 +49,9 @@ namespace letin
           _M_vars = std::unique_ptr<Value []>(new Value[var_count]);
           _M_var_count = var_count;
         }
+
+        void set_memo_caches(const std::list<MemoizationCache *> caches)
+        { _M_memo_caches = caches; }
 
         Function fun(std::size_t i);
 
@@ -68,6 +72,8 @@ namespace letin
         Value *vars();
 
         std::size_t var_count() const;
+
+        const std::list<MemoizationCache *> memo_caches() const;
 
         void set_fun(std::size_t i, const Function &fun);
 

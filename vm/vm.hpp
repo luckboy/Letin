@@ -393,6 +393,8 @@ namespace letin
 
       virtual std::size_t var_count() const = 0;
 
+      virtual const std::list<MemoizationCache *> memo_caches() const = 0;
+
       void traverse_root_objects(std::function<void (Object *)> fun);
     };
 
@@ -406,6 +408,8 @@ namespace letin
       virtual Value fun_result(std::size_t i, int value_type, const ArgumentList &args) const = 0;
 
       virtual bool add_fun_result(std::size_t i, int value_type, const ArgumentList &args, const Value &fun_result, ThreadContext &context) = 0;
+
+      virtual void traverse_root_objects(std::function<void (Object *)> fun) = 0;
     };
 
     namespace priv

@@ -39,6 +39,8 @@ namespace letin
         Value fun_result(std::size_t i, int value_type, const ArgumentList &args) const;
 
         bool add_fun_result(std::size_t i, int value_type, const ArgumentList &args, const Value &fun_result, ThreadContext &context);
+
+        void traverse_root_objects(std::function<void (Object *)> fun);
       };
 
       class HashTableMemoizationCacheFactory : public MemoizationCacheFactory

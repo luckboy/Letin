@@ -775,6 +775,9 @@ namespace letin
 
     void EvaluationStrategy::set_fun_count(size_t fun_count) {}
 
+    list<MemoizationCache *> EvaluationStrategy::memo_caches()
+    { return list<MemoizationCache *>(); }
+
     //
     // A NativeFunctionHandlerLoader class.
     //
@@ -1212,6 +1215,9 @@ namespace letin
       for(size_t i = 0; i < var_count(); i++) {
         if(is_ref_value_type_for_gc(vars()[i].type()) && !vars()[i].raw().r.has_nil())
           fun(vars()[i].raw().r.ptr());
+      }
+      for(auto iter = memo_caches().begin(); iter != memo_caches().end(); iter++) {
+        (*iter)->traverse_root_objects(fun);
       }
     }
 

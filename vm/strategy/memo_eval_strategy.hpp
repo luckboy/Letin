@@ -35,6 +35,8 @@ namespace letin
         bool must_post_leave_from_fun(ThreadContext *context, std::size_t i, int value_type);
 
         void set_fun_count(std::size_t fun_count);
+
+        std::list<MemoizationCache *> memo_caches();
       };
     }
   }

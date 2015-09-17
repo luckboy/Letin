@@ -68,6 +68,13 @@ namespace letin
 
       void MemoizationEvaluationStrategy::set_fun_count(size_t fun_count)
       { _M_cache = unique_ptr<MemoizationCache>(_M_cache_factory->new_memoization_cache(fun_count)); }
+
+      list<MemoizationCache *> MemoizationEvaluationStrategy::memo_caches()
+      {
+        list<MemoizationCache *> caches;
+        caches.push_back(_M_cache.get());
+        return caches;
+      }
     }
   }
 }

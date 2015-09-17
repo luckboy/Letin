@@ -47,6 +47,9 @@ namespace letin
 
       size_t ImplEnvironment::var_count() const { return _M_var_count; }
 
+      const list<MemoizationCache *> ImplEnvironment::memo_caches() const
+      { return _M_memo_caches; }
+
       void ImplEnvironment::set_fun(size_t i, const Function &fun) { _M_funs[i] = fun; }
 
       void ImplEnvironment::set_var(size_t i, const Value &value) { _M_vars[i] = value; }
@@ -60,6 +63,7 @@ namespace letin
         _M_fun_indexes = unordered_map<string, size_t>();
         _M_var_indexes = unordered_map<string, size_t>();
         _M_native_fun_indexes = unordered_map<string, int>();
+        _M_memo_caches = list<MemoizationCache *>();
         _M_data_list_to_free = list<unique_ptr<char []>>();
       }
     }
