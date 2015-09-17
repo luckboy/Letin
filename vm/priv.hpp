@@ -8,7 +8,9 @@
 #ifndef _PRIV_HPP
 #define _PRIV_HPP
 
+#include <cmath>
 #include <letin/vm.hpp>
+#include "util.hpp"
 
 namespace letin
 {
@@ -42,7 +44,29 @@ namespace letin
 
       template<typename _K>
       std::uint64_t hash(const _K &key);
-      
+
+      inline std::uint64_t hash(const int &key)
+      { return static_cast<std::uint64_t>(key); }
+
+      inline std::uint64_t hash(const std::int64_t &key)
+      { return static_cast<std::uint64_t>(key); }
+
+      inline std::uint64_t hash(const float &key)
+      { return util::float_to_format_float(key).word; }
+
+      inline std::uint64_t hash(const double &key)
+      { return util::double_to_format_double(key).dword; }
+
+      std::uint64_t hash(const Reference &key);
+
+      std::uint64_t hash(const Value &key);
+
+      std::uint64_t hash(const Object &key);
+
+      std::uint64_t hash(const ArgumentList &key);
+
+      inline std::uint64_t hash(const Reference &key) { return hash(*key); }
+
       template<typename _T, typename _U>
       struct Equal
       { std::uint64_t operator()(const _T &x, const _U &y) const { return x == y; } };
