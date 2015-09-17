@@ -55,11 +55,15 @@ namespace letin
         { safely_assign_for_gc(_M_value, value); return true; }
       };
 
-      template<typename _K, typename _V>
-      struct HashTableEntryRaw
+      struct HashTableEntryRawBase
       {
         Reference prev_r;
         Reference next_r;
+      };
+      
+      template<typename _K, typename _V>
+      struct HashTableEntryRaw : public HashTableEntryRawBase
+      {
         HashTableKeyBox<_K> key;
         HashTableValueBox<_V> value;
       };

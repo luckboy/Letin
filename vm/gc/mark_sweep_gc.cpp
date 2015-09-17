@@ -10,6 +10,7 @@
 #include <mutex>
 #include <letin/vm.hpp>
 #include "mark_sweep_gc.hpp"
+#include "vm.hpp"
 
 using namespace std;
 using namespace std::placeholders;

@@ -23,8 +23,10 @@
 #include "gc/mark_sweep_gc.hpp"
 #include "strategy/eager_eval_strategy.hpp"
 #include "vm/interp_vm.hpp"
+#include "hash_table.hpp"
 #include "impl_loader.hpp"
 #include "impl_nfh_loader.hpp"
+#include "priv.hpp"
 #include "thread_stop_cont.hpp"
 #include "vm.hpp"
 
@@ -1566,6 +1568,37 @@ namespace letin
               }
             }
             break;
+          case OBJECT_TYPE_HASH_TABLE:
+          {
+            HashTableRaw *raw = reinterpret_cast<HashTableRaw *>(object.raw().bs);
+            for(size_t i = 0; i < raw->bucket_count; i++) {
+              Reference entry_ref = raw->buckets[i].first_entry_r;
+              while(!entry_ref.has_nil()) {
+                fun(entry_ref.ptr());
+                entry_ref = reinterpret_cast<HashTableEntryRawBase *>(entry_ref->raw().bs)->next_r;
+              }
+            }
+            break;
+          }
+          case OBJECT_TYPE_ALI_HASH_TABLE_ENTRY:
+          {
+            HashTableEntryRaw<ArgumentList, int64_t> *raw = reinterpret_cast<HashTableEntryRaw<ArgumentList, int64_t> *>(object.raw().bs);
+            if(!raw->key.key_ref().has_nil()) fun(raw->key.key_ref().ptr());
+            break;
+          }
+          case OBJECT_TYPE_ALF_HASH_TABLE_ENTRY:
+          {
+            HashTableEntryRaw<ArgumentList, double> *raw = reinterpret_cast<HashTableEntryRaw<ArgumentList, double> *>(object.raw().bs);
+            if(!raw->key.key_ref().has_nil()) fun(raw->key.key_ref().ptr());
+            break;
+          }
+          case OBJECT_TYPE_ALR_HASH_TABLE_ENTRY:
+          {
+            HashTableEntryRaw<ArgumentList, Reference> *raw = reinterpret_cast<HashTableEntryRaw<ArgumentList, Reference> *>(object.raw().bs);
+            if(!raw->key.key_ref().has_nil()) fun(raw->key.key_ref().ptr());
+            if(!raw->value.value().has_nil()) fun(raw->value.value().ptr());
+            break;
+          }
         }
       }
     }
