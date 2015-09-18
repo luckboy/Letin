@@ -1034,6 +1034,7 @@ namespace letin
       _M_regs.after_leaving_flags[0] = false;
       _M_regs.after_leaving_flags[1] = false;
       _M_regs.arg_instr_flag = false;
+      _M_regs.cached_fun_result_flag = 0;
       _M_regs.try_flag = false;
       _M_regs.try_arg2 = Value();
       _M_regs.try_io_r = Reference();
@@ -1052,7 +1053,7 @@ namespace letin
       if(_M_regs.abp2 + _M_regs.ac2 + 3 < _M_stack_size) {
         _M_stack[_M_regs.abp2 + _M_regs.ac2 + 0].safely_assign_for_gc(Value(_M_regs.abp, _M_regs.ac));
         _M_stack[_M_regs.abp2 + _M_regs.ac2 + 1].safely_assign_for_gc(Value(_M_regs.lvc, _M_regs.ip - 1));
-        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 2].safely_assign_for_gc(Value(static_cast<int64_t>((_M_regs.fp << 8) | (_M_regs.after_leaving_flag_index & 1))));
+        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 2].safely_assign_for_gc(Value(static_cast<int64_t>((_M_regs.fp << 8) | (_M_regs.after_leaving_flag_index & 1) | ((_M_regs.cached_fun_result_flag & 1) << 1))));
         atomic_thread_fence(memory_order_release);
         _M_regs.abp = _M_regs.abp2;
         _M_regs.ac = _M_regs.ac2;
@@ -1087,6 +1088,7 @@ namespace letin
         _M_regs.fp = static_cast<size_t>(_M_stack[fbp + 2].raw().i >> 8);
         _M_regs.after_leaving_flag_index = static_cast<unsigned>(_M_stack[fbp + 2].raw().i & 1);
         _M_regs.after_leaving_flags[_M_regs.after_leaving_flag_index] = true;
+        _M_regs.cached_fun_result_flag = (_M_stack[fbp + 2].raw().i >> 1) & 1;
         atomic_thread_fence(memory_order_release);
         return true;
       } else

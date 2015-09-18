@@ -22,19 +22,18 @@ namespace letin
       {
         Value fun_value = _M_cache->fun_result(i, value_type, context->pushed_args());
         if(fun_value.is_error()) {
-          context->regs().cached_fun_result_flag = false;
+          context->regs().cached_fun_result_flag = 0;
           return true;
         }
         is_fun_result = true;
         context->regs().rv = fun_value;
-        context->regs().cached_fun_result_flag = true;
+        context->regs().cached_fun_result_flag = 1;
         return false;
       }
 
       bool MemoizationEvaluationStrategy::post_leave_from_fun(ThreadContext *context, size_t i, int value_type)
       {
-        if(!context->regs().cached_fun_result_flag) {
-          context->regs().cached_fun_result_flag = false;
+        if(context->regs().cached_fun_result_flag == 0) {
           bool result = true;
           if(!context->regs().rv.raw().r->is_lazy()) {
             switch(value_type) {
@@ -56,6 +55,7 @@ namespace letin
             context->set_error(ERROR_OUT_OF_MEMORY);
             return false;
           }
+          context->regs().cached_fun_result_flag = 1;
         }
         return true;
       }

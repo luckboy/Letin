@@ -127,7 +127,7 @@ namespace letin
       unsigned after_leaving_flag_index;
       std::uint32_t tmp_ac2;
       bool arg_instr_flag;
-      bool cached_fun_result_flag;
+      unsigned cached_fun_result_flag;
       bool try_flag;
       std::uint32_t try_abp;
       std::uint32_t try_ac;
