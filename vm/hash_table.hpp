@@ -192,7 +192,7 @@ namespace letin
               context.safely_set_gc_tmp_ptr_for_gc(nullptr);
               return false;
             }
-            Reference &first_entry_r = raw().buckets[i].last_entry_r;
+            Reference &first_entry_r = raw().buckets[i].first_entry_r;
             Reference &last_entry_r = raw().buckets[i].last_entry_r;
             {
               std::lock_guard<GarbageCollector> gc_guard(*(context.gc()));
@@ -218,7 +218,7 @@ namespace letin
           std::size_t i;
           Reference entry_r = find_entry_and_set_bucket_index(key, i);
           if(entry_r.has_nil()) return false;
-          Reference &first_entry_r = raw().buckets[i].last_entry_r;
+          Reference &first_entry_r = raw().buckets[i].first_entry_r;
           Reference &last_entry_r = raw().buckets[i].last_entry_r;
           {
             std::lock_guard<GarbageCollector> gc_guard(*(context.gc()));
@@ -242,7 +242,7 @@ namespace letin
         bool set_bucket_count(std::size_t bucket_count, ThreadContext &context)
         {
           if(bucket_count != 0) {
-            std::size_t raw_size = offsetof(HashTableRaw, buckets) + sizeof(Reference) * bucket_count;
+            std::size_t raw_size = offsetof(HashTableRaw, buckets) + sizeof(HashTableBucket) * bucket_count;
             Reference r(context.gc()->new_object(OBJECT_TYPE_HASH_TABLE, raw_size, &context));
             if(r.is_null()) return false;
             raw(r).bucket_count = bucket_count;
