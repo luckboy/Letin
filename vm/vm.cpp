@@ -1310,6 +1310,8 @@ namespace letin
             if(equal_values(value1, value2)) return false;
           }
           return true;
+        case OBJECT_TYPE_NATIVE_OBJECT:
+          return object1.raw().ntvo.equal_fun(reinterpret_cast<const void *>(object1.raw().ntvo.bs), reinterpret_cast<const void *>(object2.raw().ntvo.bs));
         default:
           return false;
       }

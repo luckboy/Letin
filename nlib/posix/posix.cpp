@@ -49,7 +49,13 @@ namespace letin
 
       static void finalize_dir(const void *ptr)
       { ::closedir(*reinterpret_cast<::DIR * const *>(ptr)); }
-      
+
+      static uint64_t hash_dir(const void *ptr)
+      { return reinterpret_cast<uint64_t>(*reinterpret_cast<::DIR * const *>(ptr)); }
+
+      static bool equal_dirs(const void *ptr1, const void *ptr2)
+      { return *reinterpret_cast<::DIR * const *>(ptr1) == *reinterpret_cast<::DIR * const *>(ptr2); }
+
       void initialize_consts()
       {
         static_system_clk_tck = ::sysconf(_SC_CLK_TCK);
@@ -1643,7 +1649,7 @@ namespace letin
         return ERROR_SUCCESS;        
       }
 
-      // A function for struct utsname.
+      // Functions for struct utsname.
       
       //
       // type utsname = (
@@ -1686,6 +1692,8 @@ namespace letin
         if(object == nullptr) return nullptr;
         object->raw().ntvo.type = NativeObjectType(&dir_type_ident);
         object->raw().ntvo.finalizator = NativeObjectFinalizator(finalize_dir);
+        object->raw().ntvo.hash_fun = NativeObjectHashFunction(hash_dir);
+        object->raw().ntvo.equal_fun = NativeObjectEqualFunction(equal_dirs);
         *reinterpret_cast<::DIR **>(object->raw().ntvo.bs) = dir;
         return object;
       }
@@ -1707,13 +1715,13 @@ namespace letin
         return ERROR_SUCCESS;
       }
 
-      // A function for struct dirent.
+      // Functions for struct dirent.
 
       //
       // type dirent = (
       //     int,       // d_ino
       //     iarray8    // d_name
-      //  )
+      //   )
       //
 
       bool set_new_dirent(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &tmp_r, const struct ::dirent &dir_entry)

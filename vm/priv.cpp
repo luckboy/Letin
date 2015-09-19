@@ -122,6 +122,8 @@ namespace letin
             return murmur_hash64a(key.raw().rs, key.length());
           case OBJECT_TYPE_TUPLE:
             return murmur_hash64a(TupleElementList(key.raw().tuple_elem_types(), key.raw().tes), key.length());
+          case OBJECT_TYPE_NATIVE_OBJECT:
+            return key.raw().ntvo.hash_fun(reinterpret_cast<const void *>(key.raw().bs));
           default:
             return 0;
         }

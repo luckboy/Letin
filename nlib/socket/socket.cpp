@@ -520,7 +520,7 @@ namespace letin
         }
       }
 
-      // A function for struct linger.
+      // Functions for struct linger.
 
       //
       // type linger = (
@@ -584,7 +584,7 @@ namespace letin
         return ERROR_SUCCESS;
       }
 
-      // Function for OptionValue.
+      // Functions for OptionValue.
 
       bool object_to_system_option_value(Object &object, OptionValue &option_value)
       {

@@ -252,6 +252,29 @@ namespace letin
       void operator()(const void *ptr) const { if(_M_fun != nullptr) _M_fun(ptr); }
     };
 
+    class NativeObjectHashFunction
+    {
+      std::uint64_t (*_M_fun)(const void *);
+    public:
+      NativeObjectHashFunction() : _M_fun(nullptr) {}
+
+      NativeObjectHashFunction(std::uint64_t (*fun)(const void *)) : _M_fun(nullptr) {}
+
+      bool operator()(const void *ptr) const { return _M_fun != nullptr ?_M_fun(ptr) : 0; }
+    };
+
+    class NativeObjectEqualFunction
+    {
+      bool (*_M_fun)(const void *, const void *);
+    public:
+      NativeObjectEqualFunction() : _M_fun(nullptr) {}
+
+      NativeObjectEqualFunction(bool (*fun)(const void *, const void *)) : _M_fun(nullptr) {}
+
+      bool operator()(const void *ptr1, const void *ptr2) const
+      { return _M_fun != nullptr ? _M_fun(ptr1, ptr2) : false; }
+    };
+
     struct ObjectRaw
     {
       int type;
@@ -276,6 +299,8 @@ namespace letin
         struct {
           NativeObjectType type;
           NativeObjectFinalizator finalizator;
+          NativeObjectHashFunction hash_fun;
+          NativeObjectEqualFunction equal_fun;
           std::uint8_t bs[1];
         } ntvo;
         std::uint8_t bs[1];
