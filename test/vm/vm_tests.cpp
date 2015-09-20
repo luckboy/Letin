@@ -8,9 +8,11 @@
 #include <cstring>
 #include "impl_loader.hpp"
 #include "eager_eval_strategy.hpp"
+#include "ht_memo_cache.hpp"
 #include "interp_vm.hpp"
 #include "lazy_eval_strategy.hpp"
 #include "mark_sweep_gc.hpp"
+#include "memo_eval_strategy.hpp"
 #include "new_alloc.hpp"
 #include "util.hpp"
 #include "vm_tests.hpp"
@@ -32,6 +34,7 @@ namespace letin
         _M_alloc = new impl::NewAllocator();
         _M_gc = new impl::MarkSweepGarbageCollector(_M_alloc);
         _M_native_fun_handler = new DefaultNativeFunctionHandler();
+        _M_memo_cache_factory = new_memo_cache_factory();
         _M_eval_strategy = new_eval_strategy();
         _M_vm = new_vm(_M_loader, _M_gc, _M_native_fun_handler, _M_eval_strategy);
       }
@@ -40,6 +43,7 @@ namespace letin
       {
         delete _M_vm;
         delete _M_eval_strategy;
+        if(_M_memo_cache_factory != nullptr) delete _M_memo_cache_factory;
         delete _M_native_fun_handler;
         delete _M_gc;
         delete _M_alloc;
@@ -1765,6 +1769,8 @@ namespace letin
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);
+
+      DEF_IMPL_VM_TESTS_WITH_MEMO_CACHE(HashTable, Memoization, InterpreterVirtualMachine, 32 * 1024);
     }
   }
 }

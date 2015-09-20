@@ -21,6 +21,7 @@ class prefix##clazz##Tests : public VirtualMachineTests                         
   CPPUNIT_TEST_SUB_SUITE(prefix##clazz##Tests, VirtualMachineTests);            \
   CPPUNIT_TEST_SUITE_END();                                                     \
 public:                                                                         \
+  MemoizationCacheFactory *new_memo_cache_factory();                            \
   EvaluationStrategy *new_eval_strategy();                                      \
   VirtualMachine *new_vm(Loader *loader, GarbageCollector *gc,                  \
                          NativeFunctionHandler *native_fun_handler,             \
@@ -29,6 +30,8 @@ public:                                                                         
 
 #define DEF_IMPL_VM_TESTS_FOR_EVAL_STRATEGY(prefix, clazz, eval_strategy_class) \
 CPPUNIT_TEST_SUITE_REGISTRATION(prefix##clazz##Tests);                          \
+MemoizationCacheFactory *prefix##clazz##Tests::new_memo_cache_factory()         \
+{ return nullptr; }                                                             \
 EvaluationStrategy *prefix##clazz##Tests::new_eval_strategy()                   \
 { return new impl::eval_strategy_class(); }                                     \
 VirtualMachine *prefix##clazz##Tests::new_vm(Loader *loader,                    \
@@ -40,6 +43,25 @@ class prefix##clazz##Tests
 
 #define DEF_IMPL_VM_TESTS(prefix, clazz)                                        \
 DEF_IMPL_VM_TESTS_FOR_EVAL_STRATEGY(prefix, clazz, prefix##EvaluationStrategy)
+
+#define DEF_IMPL_VM_TESTS_FOR_EVAL_STRATEGY_WITH_MEMO_CACHE(prefix, clazz, eval_strategy_class, memo_cache_factory_class, memo_cache_arg) \
+CPPUNIT_TEST_SUITE_REGISTRATION(prefix##clazz##Tests);                          \
+MemoizationCacheFactory *prefix##clazz##Tests::new_memo_cache_factory()         \
+{ return new impl::memo_cache_factory_class(memo_cache_arg); }                  \
+EvaluationStrategy *prefix##clazz##Tests::new_eval_strategy()                   \
+{ return new impl::eval_strategy_class(_M_memo_cache_factory); }                \
+VirtualMachine *prefix##clazz##Tests::new_vm(Loader *loader,                    \
+                                             GarbageCollector *gc,              \
+                                             NativeFunctionHandler *native_fun_handler, \
+                                             EvaluationStrategy *eval_strategy) \
+{ return new impl::clazz(loader, gc, native_fun_handler, eval_strategy); }      \
+class prefix##clazz##Tests
+
+#define DECL_IMPL_VM_TESTS_WITH_MEMO_CACHE(prefix1, prefix2, clazz)             \
+DECL_IMPL_VM_TESTS(prefix1##prefix2, clazz)
+
+#define DEF_IMPL_VM_TESTS_WITH_MEMO_CACHE(prefix1, prefix2, clazz, arg)         \
+DEF_IMPL_VM_TESTS_FOR_EVAL_STRATEGY_WITH_MEMO_CACHE(prefix1##prefix2, clazz, prefix2##EvaluationStrategy, prefix1##MemoizationCacheFactory, arg)
 
 namespace letin
 {
@@ -97,9 +119,14 @@ namespace letin
         Allocator *_M_alloc;
         GarbageCollector *_M_gc;
         NativeFunctionHandler *_M_native_fun_handler;
+      protected:
+        MemoizationCacheFactory *_M_memo_cache_factory;
+      private:
         EvaluationStrategy *_M_eval_strategy;
         VirtualMachine *_M_vm;
       public:
+        virtual MemoizationCacheFactory *new_memo_cache_factory() = 0;
+        
         virtual EvaluationStrategy *new_eval_strategy() = 0;
 
         virtual VirtualMachine *new_vm(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy) = 0;
@@ -154,6 +181,8 @@ namespace letin
       DECL_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DECL_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);
+
+      DECL_IMPL_VM_TESTS_WITH_MEMO_CACHE(HashTable, Memoization, InterpreterVirtualMachine);
     }
   }
 }

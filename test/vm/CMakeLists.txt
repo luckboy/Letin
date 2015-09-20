@@ -1,6 +1,7 @@
 include_directories("${CPPUNIT_INCLUDE_DIR}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(../../vm/alloc)
+include_directories(../../vm/cache)
 include_directories(../../vm/gc)
 include_directories(../../vm/strategy)
 include_directories(../../vm/vm)
