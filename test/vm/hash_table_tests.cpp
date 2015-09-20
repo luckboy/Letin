@@ -51,6 +51,7 @@ namespace letin
         _M_hash_table->set_bucket_count(1000, *_M_thread_context);
         CPPUNIT_ASSERT(_M_hash_table->add(Key(1), 2, *_M_thread_context));
         int value;
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), _M_hash_table->size());
         CPPUNIT_ASSERT(_M_hash_table->get(Key(1), value));
         CPPUNIT_ASSERT_EQUAL(2, value);
       }
@@ -63,6 +64,7 @@ namespace letin
         CPPUNIT_ASSERT(_M_hash_table->add(Key(30), 3, *_M_thread_context));
         CPPUNIT_ASSERT(_M_hash_table->add(Key(40), 4, *_M_thread_context));
         int value;
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(4), _M_hash_table->size());
         CPPUNIT_ASSERT(_M_hash_table->get(Key(10), value));
         CPPUNIT_ASSERT_EQUAL(1, value);
         CPPUNIT_ASSERT(_M_hash_table->get(Key(20), value));
@@ -80,6 +82,7 @@ namespace letin
         CPPUNIT_ASSERT(_M_hash_table->add(Key(2), 22, *_M_thread_context));
         CPPUNIT_ASSERT(_M_hash_table->add(Key(3), 33, *_M_thread_context));
         int value;
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(3), _M_hash_table->size());
         CPPUNIT_ASSERT(_M_hash_table->get(Key(1), value));
         CPPUNIT_ASSERT_EQUAL(11, value);
         CPPUNIT_ASSERT(_M_hash_table->get(Key(2), value));
@@ -88,6 +91,7 @@ namespace letin
         CPPUNIT_ASSERT_EQUAL(33, value);
         CPPUNIT_ASSERT(_M_hash_table->add(Key(2), 200, *_M_thread_context));
         CPPUNIT_ASSERT(_M_hash_table->add(Key(3), 300, *_M_thread_context));
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(3), _M_hash_table->size());
         CPPUNIT_ASSERT(_M_hash_table->get(Key(1), value));
         CPPUNIT_ASSERT_EQUAL(11, value);
         CPPUNIT_ASSERT(_M_hash_table->get(Key(2), value));
@@ -103,6 +107,7 @@ namespace letin
         CPPUNIT_ASSERT(_M_hash_table->add(Key(2), 25, *_M_thread_context));
         CPPUNIT_ASSERT(_M_hash_table->add(Key(3), 35, *_M_thread_context));
         int value;
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(3), _M_hash_table->size());
         CPPUNIT_ASSERT(_M_hash_table->get(Key(1), value));
         CPPUNIT_ASSERT_EQUAL(15, value);
         CPPUNIT_ASSERT(_M_hash_table->get(Key(2), value));
@@ -111,6 +116,7 @@ namespace letin
         CPPUNIT_ASSERT_EQUAL(35, value);
         CPPUNIT_ASSERT(_M_hash_table->add(Key(10001), 45, *_M_thread_context));
         CPPUNIT_ASSERT(_M_hash_table->add(Key(20002), 55, *_M_thread_context));
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(5), _M_hash_table->size());
         CPPUNIT_ASSERT(_M_hash_table->get(Key(1), value));
         CPPUNIT_ASSERT_EQUAL(15, value);
         CPPUNIT_ASSERT(_M_hash_table->get(Key(2), value));
@@ -131,6 +137,7 @@ namespace letin
         CPPUNIT_ASSERT(_M_hash_table->add(Key(7), 3, *_M_thread_context));
         CPPUNIT_ASSERT(_M_hash_table->add(Key(8), 4, *_M_thread_context));
         int value;
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(4), _M_hash_table->size());
         CPPUNIT_ASSERT(_M_hash_table->get(Key(5), value));
         CPPUNIT_ASSERT_EQUAL(1, value);
         CPPUNIT_ASSERT(_M_hash_table->get(Key(6), value));
@@ -141,6 +148,7 @@ namespace letin
         CPPUNIT_ASSERT_EQUAL(4, value);
         CPPUNIT_ASSERT(_M_hash_table->del(Key(6), *_M_thread_context));
         CPPUNIT_ASSERT(_M_hash_table->del(Key(8), *_M_thread_context));
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(2), _M_hash_table->size());
         CPPUNIT_ASSERT(_M_hash_table->get(Key(5), value));
         CPPUNIT_ASSERT_EQUAL(1, value);
         CPPUNIT_ASSERT(!_M_hash_table->get(Key(6), value));
@@ -157,6 +165,7 @@ namespace letin
         CPPUNIT_ASSERT(_M_hash_table->add(Key(34), 3, *_M_thread_context));
         CPPUNIT_ASSERT(_M_hash_table->add(Key(45), 4, *_M_thread_context));
         int value;
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(4), _M_hash_table->size());
         CPPUNIT_ASSERT(_M_hash_table->get(Key(12), value));
         CPPUNIT_ASSERT_EQUAL(1, value);
         CPPUNIT_ASSERT(_M_hash_table->get(Key(23), value));
@@ -167,6 +176,7 @@ namespace letin
         CPPUNIT_ASSERT_EQUAL(4, value);
         CPPUNIT_ASSERT(!_M_hash_table->del(Key(10012), *_M_thread_context));
         CPPUNIT_ASSERT(!_M_hash_table->del(Key(20045), *_M_thread_context));
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(4), _M_hash_table->size());
         CPPUNIT_ASSERT(_M_hash_table->get(Key(12), value));
         CPPUNIT_ASSERT_EQUAL(1, value);
         CPPUNIT_ASSERT(_M_hash_table->get(Key(23), value));

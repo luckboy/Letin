@@ -81,6 +81,7 @@ namespace letin
       struct HashTableRaw
       {
         std::size_t bucket_count;
+        std::size_t entry_count;
         HashTableBucket buckets[1];
       };
 
@@ -206,6 +207,7 @@ namespace letin
             }
             context.regs().tmp_r.safely_assign_for_gc(Reference());
             context.safely_set_gc_tmp_ptr_for_gc(nullptr);
+            raw().entry_count++;
           } else
             safely_assign_for_gc(entry_raw(entry_r).value.value(), value);
           return true;
@@ -230,6 +232,7 @@ namespace letin
             if(!next_r.has_nil()) entry_raw(next_r).prev_r = entry_raw(entry_r).prev_r;
             entry_raw(entry_r).prev_r = Reference();
             entry_raw(entry_r).next_r = Reference();
+            raw().entry_count--;
           }
           return true;
         }
@@ -246,6 +249,7 @@ namespace letin
             Reference r(context.gc()->new_object(OBJECT_TYPE_HASH_TABLE, raw_size, &context));
             if(r.is_null()) return false;
             raw(r).bucket_count = bucket_count;
+            raw(r).entry_count = 0;
             for(std::size_t i = 0; i < raw(r).bucket_count; i++) {
               raw(r).buckets[i].first_entry_r = Reference();
               raw(r).buckets[i].last_entry_r = Reference();
@@ -256,6 +260,9 @@ namespace letin
             _M_r.safely_assign_for_gc(Reference());
           return true;
         }
+
+        std::size_t size() const
+        { return !_M_r.has_nil() ? raw().entry_count : 0; }
       };
 
       template<>
