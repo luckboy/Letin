@@ -811,6 +811,12 @@ namespace letin
     int NativeLibrary::max_native_fun_index() const { return _M_min_nfi + static_cast<int>(_M_funs.size()) - 1; }
 
     //
+    // A MemoizationCacheFactory class.
+    //
+
+    MemoizationCacheFactory::~MemoizationCacheFactory() {}
+
+    //
     // A Program class.
     //
 
