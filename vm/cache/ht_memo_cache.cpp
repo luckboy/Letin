@@ -28,13 +28,27 @@ namespace letin
         if(!are_memoizable_fun_args(args)) return Value();
         switch(value_type) {
           case VALUE_TYPE_INT:
-            return Value(_M_fun_results.get()[i].is[args]);
+          {
+            int64_t j;
+            if(!_M_fun_results.get()[i].is.get(args, j)) return Value();
+            return Value(j);
+          }
           case VALUE_TYPE_FLOAT:
-            return Value(_M_fun_results.get()[i].fs[args]);
+          {
+            double f;
+            if(!_M_fun_results.get()[i].fs.get(args, f)) return Value();
+            return Value(f);
+          }
           case VALUE_TYPE_REF:
-            return Value(_M_fun_results.get()[i].rs[args]);
+          {
+            Reference r;
+            if(!_M_fun_results.get()[i].rs.get(args, r)) return Value();
+            return Value(r);
+          }
           default:
+          {
             return Value();
+          }
         }
       }
 

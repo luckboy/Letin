@@ -20,13 +20,13 @@ namespace letin
 
       bool MemoizationEvaluationStrategy::pre_enter_to_fun(ThreadContext *context, size_t i, int value_type, bool &is_fun_result)
       {
-        Value fun_value = _M_cache->fun_result(i, value_type, context->pushed_args());
-        if(fun_value.is_error()) {
+        Value fun_result = _M_cache->fun_result(i, value_type, context->pushed_args());
+        if(fun_result.is_error()) {
           context->regs().cached_fun_result_flag = 0;
           return true;
         }
         is_fun_result = true;
-        context->regs().rv = fun_value;
+        context->regs().rv = fun_result;
         context->regs().cached_fun_result_flag = 1;
         return false;
       }

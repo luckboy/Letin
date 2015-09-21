@@ -27,14 +27,14 @@ namespace letin
       };
       
       template<typename _T>
-      static inline uint64_t next_dword(_T xs, size_t i, size_t length)
+      static inline uint64_t next_dword(_T xs, size_t &i, size_t length)
       {
         uint64_t k = hash(xs[i]);
         i++;
         return k;
       }
 
-      static inline  uint64_t next_dword(const int8_t *xs, size_t i, size_t length)
+      static inline  uint64_t next_dword(const int8_t *xs, size_t &i, size_t length)
       {
         uint64_t k = static_cast<uint64_t>(xs[i]);
         if(i + 1 < length) k |= static_cast<uint64_t>(xs[i + 1]) << 8;
@@ -48,7 +48,7 @@ namespace letin
         return k;
       }
 
-      static inline uint64_t next_dword(const int16_t *xs, size_t i, size_t length)
+      static inline uint64_t next_dword(const int16_t *xs, size_t &i, size_t length)
       {
         uint64_t k = static_cast<uint64_t>(xs[i]);
         if(i + 1 < length) k |= static_cast<uint64_t>(xs[i + 1]) << 16;
@@ -58,7 +58,7 @@ namespace letin
         return k;
       }
 
-      static inline uint64_t next_dword(const int32_t *xs, size_t i, size_t length)
+      static inline uint64_t next_dword(const int32_t *xs, size_t &i, size_t length)
       {
         uint64_t k = static_cast<uint64_t>(xs[i]);
         if(i + 1 < length) k |= static_cast<uint64_t>(xs[i + 1]) << 32;
@@ -66,7 +66,7 @@ namespace letin
         return k;
       }
 
-      static inline uint64_t next_dword(const float *xs, size_t i, size_t length)
+      static inline uint64_t next_dword(const float *xs, size_t &i, size_t length)
       {
         uint64_t k = hash(xs[i]);
         if(i + 1 < length) k |= hash(xs[i + 1]) << 32;
