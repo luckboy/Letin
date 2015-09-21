@@ -221,6 +221,8 @@ namespace letin
       }
 
       void lazily_cancel_ref() { _M_raw.type |= VALUE_TYPE_LAZILY_CANCELED; }
+
+      std::uint64_t hash() const;
     };
 
     class NativeObjectTypeIdentity
@@ -397,6 +399,8 @@ namespace letin
       Value operator[](std::size_t i) const { return elem(i); }
 
       std::size_t length() const { return _M_raw.length; }
+
+      std::uint64_t hash() const;
     };
 
     struct ReturnValueRaw
@@ -877,10 +881,26 @@ namespace letin
 
     int &letin_errno();
 
+    std::uint64_t hash_value(const Value &value);
+
+    inline std::uint64_t Value::hash() const { return hash_value(*this); }
+
+    std::uint64_t hash_object(const Object &object);
+
+    inline std::uint64_t Object::hash() const { return hash_object(*this); }
+
     bool equal_values(const Value &value1, const Value &value2);
 
     bool equal_objects(const Object &object1, const Object &object2);
 
+    std::uint64_t hash_bytes(const std::uint8_t *bytes, std::size_t length);
+
+    std::uint64_t hash_hwords(const std::uint16_t *hwords, std::size_t length);
+
+    std::uint64_t hash_words(const std::uint32_t *words, std::size_t length);
+
+    std::uint64_t hash_dwords(const std::uint64_t *dwords, std::size_t length);
+    
     std::ostream &operator<<(std::ostream &os, const Value &value);
 
     std::ostream &operator<<(std::ostream &os, const Object &object);

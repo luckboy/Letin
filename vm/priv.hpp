@@ -57,15 +57,13 @@ namespace letin
       inline std::uint64_t hash(const double &key)
       { return util::double_to_format_double(key).dword; }
 
-      std::uint64_t hash(const Reference &key);
+      inline std::uint64_t hash(const Reference &key) { return key->hash(); }
 
-      std::uint64_t hash(const Value &key);
+      inline std::uint64_t hash(const Value &key) { return key.hash(); }
 
-      std::uint64_t hash(const Object &key);
+      inline std::uint64_t hash(const Object &key) { return key.hash(); }
 
       std::uint64_t hash(const ArgumentList &key);
-
-      inline std::uint64_t hash(const Reference &key) { return hash(*key); }
 
       template<typename _T, typename _U>
       struct Equal
