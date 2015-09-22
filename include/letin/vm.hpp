@@ -293,7 +293,8 @@ namespace letin
         TupleElement tes[1];
         TupleElementType tets[1];
         struct {
-          int value_type;
+          short value_type;
+          bool must_be_shared;
           Value value;
           std::size_t fun;
           Value args[1];

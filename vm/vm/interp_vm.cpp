@@ -286,6 +286,23 @@ namespace letin
         return true;
       }
 
+      static inline bool set_lazy_values_as_shared(ThreadContext &context, const Value &value)
+      {
+        if(value.type() == VALUE_TYPE_LAZY_VALUE_REF) {
+          Reference r = value.raw().r;
+          while(r->type() == OBJECT_TYPE_LAZY_VALUE && !r->raw().lzv.must_be_shared) {
+            if(r->raw().lzv.value.is_unique()) {
+              context.set_error(ERROR_UNIQUE_OBJECT);
+              return false;
+            }
+            r->raw().lzv.must_be_shared = true;
+            if(r->raw().lzv.value.type() != VALUE_TYPE_LAZY_VALUE_REF) break;
+            r = r->raw().lzv.value.raw().r;
+          }
+        }
+        return true;
+      }
+
       static inline bool add_object_lengths(ThreadContext &context, size_t &length, size_t length1, size_t length2)
       {
         length = length1 + length2;
@@ -1122,6 +1139,7 @@ namespace letin
             if(r.is_null()) return Value();
             for(size_t i = 0; i < context.regs().ac2; i++) {
               if(!check_shared_for_value(context, context.pushed_arg(i))) return Value();
+              if(!set_lazy_values_as_shared(context, context.pushed_arg(i))) return Value();
               r->raw().tes[i] = context.pushed_arg(i).tuple_elem();
               r->raw().tuple_elem_types()[i] = context.pushed_arg(i).tuple_elem_type();
             }
@@ -2012,6 +2030,7 @@ namespace letin
             for(size_t i = 0; i < r->length(); i++) {
               Value value(r->raw().tuple_elem_types()[i], r->raw().tes[i]);
               if(!check_shared_for_value(context, value)) return Value();
+              if(!set_lazy_values_as_shared(context, value)) return Value();
               r2->raw().tes[i] = r->raw().tes[i];
               r2->raw().tuple_elem_types()[i] = r->raw().tuple_elem_types()[i];
             }
@@ -2249,9 +2268,15 @@ namespace letin
             } else
               object.raw().lzv.value = Value::lazy_value_ref(context.regs().rv.raw().r, context.regs().rv.raw().i != 0);
           }
-          if(context.regs().rv.raw().r->is_unique() && value.is_lazily_canceled()) {
-            context.set_error(ERROR_AGAIN_USED_UNIQUE);
-            return false;
+          if(context.regs().rv.raw().r->is_unique()) {
+            if(value.is_lazily_canceled()) {
+              context.set_error(ERROR_AGAIN_USED_UNIQUE);
+              return false;
+            }
+            if(object.raw().lzv.must_be_shared) {
+              context.set_error(ERROR_UNIQUE_OBJECT);
+              return false;
+            }
           }
           context.regs().tmp_r.safely_assign_for_gc(value.r());
           value.safely_assign_for_gc(object.raw().lzv.value);

@@ -29,6 +29,7 @@ namespace letin
         }
         is_fun_result = true;
         r->raw().lzv.value_type = value_type;
+        r->raw().lzv.must_be_shared = false;
         r->raw().lzv.value = Value();
         r->raw().lzv.fun = i;
         for(size_t j = 0; j < context->regs().ac2; j++) {
