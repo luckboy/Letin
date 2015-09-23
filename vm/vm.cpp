@@ -1109,6 +1109,9 @@ namespace letin
       uint32_t saved_lvc = _M_regs.lvc;
       uint32_t saved_abp2 = _M_regs.abp2;
       uint32_t saved_ac2 = _M_regs.ac2;
+      bool saved_after_leaving_flag1 = _M_regs.after_leaving_flags[0];
+      bool saved_after_leaving_flag2 = _M_regs.after_leaving_flags[1];
+      unsigned saved_after_leaving_flag_index = _M_regs.after_leaving_flag_index;
       bool saved_try_flag = _M_regs.try_flag;
       uint32_t saved_try_abp = _M_regs.try_abp;
       uint32_t saved_try_ac = _M_regs.try_ac;
@@ -1119,6 +1122,9 @@ namespace letin
       _M_regs.nfbp = sec + 1;
       _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp;
       _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
+      _M_regs.after_leaving_flags[0] = false;
+      _M_regs.after_leaving_flags[1] = false;
+      _M_regs.after_leaving_flag_index = 0;
       _M_regs.try_flag = false;
       _M_regs.try_arg2 = Value();
       _M_regs.try_io_r = Reference();
@@ -1147,6 +1153,9 @@ namespace letin
         _M_regs.try_ac = 0;
         value = ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
       }
+      _M_regs.after_leaving_flag_index = saved_after_leaving_flag_index;
+      _M_regs.after_leaving_flags[1] = saved_after_leaving_flag2;
+      _M_regs.after_leaving_flags[0] = saved_after_leaving_flag1;
       _M_regs.sec = saved_abp2 + saved_ac2;
       _M_regs.ac2 = saved_ac2;
       _M_regs.abp2 = saved_abp2;
