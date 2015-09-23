@@ -1766,6 +1766,36 @@ namespace letin
         CPPUNIT_ASSERT(is_expected_error);
       }
 
+      void VirtualMachineTests::test_vm_complains_on_unique_reference_in_shared_tuple_for_lazy_evaluation()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(ILOAD, IMM('a'), NA());
+        LET(RCALL, IMM(1), NA());
+        IN();
+        ARG(RLOAD, LV(0), NA());
+        LET(RTUPLE, NA(), NA());
+        IN();
+        LET(RUTFILLI, IMM(2), IMM(0));
+        IN();
+        ARG(RTNTH, LV(1), IMM(0));
+        RET(RUTSNTH, LV(2), IMM(0));
+        END_FUN();
+        FUN(1);
+        RET(RUIAFILL8, IMM(2), A(0));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_UNIQUE_OBJECT == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);        
+      }
+
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);

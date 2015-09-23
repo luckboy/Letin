@@ -113,6 +113,7 @@ namespace letin
         CPPUNIT_TEST(test_vm_evaluates_local_variable_values_for_lazy_evaluation);
         CPPUNIT_TEST(test_vm_evaluates_functions_which_returns_passed_arguments_for_lazy_evaluation);
         CPPUNIT_TEST(test_vm_complains_on_many_references_to_unique_object_for_lazy_evaluation);
+        CPPUNIT_TEST(test_vm_complains_on_unique_reference_in_shared_tuple_for_lazy_evaluation);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -176,6 +177,7 @@ namespace letin
         void test_vm_evaluates_local_variable_values_for_lazy_evaluation();
         void test_vm_evaluates_functions_which_returns_passed_arguments_for_lazy_evaluation();
         void test_vm_complains_on_many_references_to_unique_object_for_lazy_evaluation();
+        void test_vm_complains_on_unique_reference_in_shared_tuple_for_lazy_evaluation();
       };
 
       DECL_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
