@@ -2333,6 +2333,12 @@ namespace letin
 
       bool InterpreterVirtualMachine::force_value_and_interpret(ThreadContext &context, Value &value)
       {
+        bool saved_after_leaving_flag1 = context.regs().after_leaving_flags[0];
+        bool saved_after_leaving_flag2 = context.regs().after_leaving_flags[1];
+        unsigned saved_after_leaving_flag_index = context.regs().after_leaving_flag_index;
+        context.regs().after_leaving_flags[0] = false;
+        context.regs().after_leaving_flags[1] = false;
+        context.regs().after_leaving_flag_index = 0;
         if(!force_value(context, value)) {
           if(context.regs().rv.raw().error == ERROR_SUCCESS) {
             bool tmp_result;
@@ -2342,6 +2348,9 @@ namespace letin
             } while(!tmp_result && context.regs().rv.raw().error == ERROR_SUCCESS);
           }
         }
+        context.regs().after_leaving_flags[0] = saved_after_leaving_flag1;
+        context.regs().after_leaving_flags[1] = saved_after_leaving_flag2;
+        context.regs().after_leaving_flag_index = saved_after_leaving_flag_index;
         if(context.regs().rv.raw().error != ERROR_SUCCESS) return false;
         return true;
       }
