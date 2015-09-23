@@ -1039,6 +1039,7 @@ namespace letin
       _M_regs.tmp_r = Reference();
       _M_regs.after_leaving_flags[0] = false;
       _M_regs.after_leaving_flags[1] = false;
+      _M_regs.after_leaving_flag_index = 0;
       _M_regs.arg_instr_flag = false;
       _M_regs.cached_fun_result_flag = 0;
       _M_regs.try_flag = false;
