@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -22,10 +22,6 @@ namespace letin
 
       void NewAllocator::free(void *ptr)
       { delete[] (reinterpret_cast<char *>(ptr)); }
-
-      void NewAllocator::lock() { new_mutex.lock(); }
-
-      void NewAllocator::unlock() { new_mutex.unlock(); }
     }
   }
 }
