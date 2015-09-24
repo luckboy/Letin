@@ -16,6 +16,7 @@
 #include <limits>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <thread>
 #include <vector>
 #include <letin/const.hpp>
@@ -659,6 +660,10 @@ namespace letin
       virtual void *allocate(std::size_t size) = 0;
 
       virtual void free(void *ptr) = 0;
+
+      virtual void lock() = 0;
+      
+      virtual void unlock() = 0;
     };
 
     class GarbageCollector
@@ -712,9 +717,9 @@ namespace letin
 
       virtual void stop() = 0;
 
-      virtual void lock() = 0;
+      void lock() { _M_alloc->lock(); }
 
-      virtual void unlock() = 0;
+      void unlock() { _M_alloc->unlock(); }
 
       virtual std::thread &system_thread() = 0;
       
@@ -909,6 +914,8 @@ namespace letin
     std::ostream &operator<<(std::ostream &os, const LoadingError &error);
 
     const char *error_to_string(int error);
+
+    extern std::recursive_mutex new_mutex;
   }
 }
 
