@@ -102,6 +102,10 @@ namespace letin
         if(_M_gc_thread.joinable()) _M_gc_thread.join();
       }
 
+      void ImplGarbageCollectorBase::lock() { _M_gc_mutex.lock(); }
+
+      void ImplGarbageCollectorBase::unlock() { _M_gc_mutex.unlock(); }
+
       thread &ImplGarbageCollectorBase::system_thread() { return _M_gc_thread; }
     }
   }
