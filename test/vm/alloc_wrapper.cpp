@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -28,6 +28,10 @@ namespace letin
         _M_alloc->free(ptr);
         _M_alloc_ops.push_back(AllocatorOperation(FREE, ptr));
       }
+
+      void AllocatorWrapper::lock() { _M_alloc->lock(); }
+
+      void AllocatorWrapper::unlock() { _M_alloc->unlock(); }
     }
   }
 }

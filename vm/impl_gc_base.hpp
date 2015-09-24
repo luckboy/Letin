@@ -45,7 +45,6 @@ namespace letin
         };
 
         std::thread _M_gc_thread;
-        std::recursive_mutex _M_gc_mutex;
         std::set<ThreadContext *> _M_thread_contexts;
         std::set<VirtualMachineContext *> _M_vm_contexts;
         Threads _M_threads;
@@ -72,10 +71,6 @@ namespace letin
         void start();
 
         void stop();
-
-        void lock();
-
-        void unlock();
 
         std::thread &system_thread();
       };
