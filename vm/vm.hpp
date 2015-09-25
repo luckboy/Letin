@@ -436,7 +436,7 @@ namespace letin
       extern int thread_count;
 
       inline bool is_ref_value_type_for_gc(int type)
-      { return type == VALUE_TYPE_REF || type == VALUE_TYPE_CANCELED_REF || (type & ~VALUE_TYPE_LAZILY_CANCELED) == VALUE_TYPE_LAZY_VALUE_REF; }
+      { return type == VALUE_TYPE_REF || type == VALUE_TYPE_CANCELED_REF || (type & ~VALUE_TYPE_LAZILY_CANCELED) == VALUE_TYPE_LAZY_VALUE_REF || type == VALUE_TYPE_LOCKED_LAZY_VALUE_REF; }
 
       bool are_memoizable_fun_args(const ArgumentList &args);
 

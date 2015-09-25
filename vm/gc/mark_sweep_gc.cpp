@@ -96,10 +96,7 @@ namespace letin
         while(*header_ptr != &_S_nil) {
           if(!(*header_ptr)->is_marked()) {
             Object *object = header_to_object(*header_ptr);
-            if((object->type() & ~OBJECT_TYPE_UNIQUE) == OBJECT_TYPE_NATIVE_OBJECT)
-              object->raw().ntvo.finalizator(reinterpret_cast<void *>(object->raw().ntvo.bs));
-            if(object->type() == OBJECT_TYPE_LAZY_VALUE)
-              object->raw().lzv.mutex.~LazyValueMutex();
+            finalize_object(object);
             Header *next = (*header_ptr)->list_next;
             _M_alloc->free(reinterpret_cast<void *>(*header_ptr));
             *header_ptr = next;
