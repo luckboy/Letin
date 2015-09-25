@@ -168,6 +168,9 @@ namespace letin
 
       static Value lazy_value_ref(Reference r, bool is_lazily_canceled = false)
       { return Value(VALUE_TYPE_LAZY_VALUE_REF | (is_lazily_canceled ? VALUE_TYPE_LAZILY_CANCELED : 0), r); }
+
+      static Value locked_lazy_value_ref(Reference r)
+      { return Value(VALUE_TYPE_LOCKED_LAZY_VALUE_REF, r); }
       
       bool operator==(const Value &value) const;
 
@@ -280,6 +283,8 @@ namespace letin
 
     class LazyValueMutex
     {
+      static thread_local std::size_t _S_locked_mutex_count;
+      
       std::mutex _M_mutex;
     public:
       LazyValueMutex() {}

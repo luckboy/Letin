@@ -254,6 +254,8 @@ namespace letin
 
       ReturnValue invoke_native_fun(VirtualMachine *vm, int nfi, ArgumentList &args);
     private:
+      void unlock_lazy_values(std::size_t stack_elem_count);
+
       void set_error_without_try(int error, const Reference &r);
     public:
       void set_error(int error, const Reference &r = Reference());
@@ -360,6 +362,20 @@ namespace letin
           _M_regs.sec--;
           _M_regs.abp2--;
           _M_regs.ai = _M_stack[_M_regs.abp2].raw().i;
+          return true;
+        } else
+          return false;
+      }
+
+      bool push_locked_lazy_value_ref(Reference r)
+      { return push_local_var(Value::locked_lazy_value_ref(r)); }
+
+      bool pop_locked_lazy_value_ref()
+      {
+        if(_M_regs.abp2 > 0 && _M_stack[_M_regs.abp2 - 1].type() == VALUE_TYPE_LOCKED_LAZY_VALUE_REF) {
+          _M_regs.sec--;
+          _M_regs.abp2--;
+          std::atomic_thread_fence(std::memory_order_release);
           return true;
         } else
           return false;

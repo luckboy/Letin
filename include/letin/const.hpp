@@ -32,6 +32,7 @@ namespace letin
   const int VALUE_TYPE_PAIR =           3;
   const int VALUE_TYPE_CANCELED_REF =   4;
   const int VALUE_TYPE_LAZY_VALUE_REF = 5;
+  const int VALUE_TYPE_LOCKED_LAZY_VALUE_REF = 6;
   const int VALUE_TYPE_LAZILY_CANCELED = 64;
   const int VALUE_TYPE_ERROR =          -1;
 

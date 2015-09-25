@@ -131,17 +131,22 @@ namespace letin
     // A LazyValueMutex class.
     //
 
+    thread_local size_t LazyValueMutex::_S_locked_mutex_count = 0;
+
     void LazyValueMutex::lock()
     {
-      lazy_value_mutex_sem.op(-1);
+      if(_S_locked_mutex_count == 0) lazy_value_mutex_sem.op(-1);
+      _S_locked_mutex_count++;
       _M_mutex.lock();
     }
 
     bool LazyValueMutex::try_lock()
     {
-      lazy_value_mutex_sem.op(-1);
+      if(_S_locked_mutex_count == 0) lazy_value_mutex_sem.op(-1);
+      _S_locked_mutex_count++;
       if(!_M_mutex.try_lock()) {
-        lazy_value_mutex_sem.op(1);
+        if(_S_locked_mutex_count > 0) _S_locked_mutex_count--;
+        if(_S_locked_mutex_count == 0) lazy_value_mutex_sem.op(1);
         return false;
       }
       return true;
@@ -150,7 +155,8 @@ namespace letin
     void LazyValueMutex::unlock()
     {
       _M_mutex.unlock();
-      lazy_value_mutex_sem.op(1);
+      if(_S_locked_mutex_count > 0) _S_locked_mutex_count--;
+      if(_S_locked_mutex_count == 0) lazy_value_mutex_sem.op(1);
     }
 
     //
@@ -1194,8 +1200,20 @@ namespace letin
       return value;
     }
 
+    void ThreadContext::unlock_lazy_values(size_t new_stack_elem_count)
+    {
+      size_t i = _M_regs.abp2 + _M_regs.ac2;
+      while(i > new_stack_elem_count) {
+        i--;
+        if(_M_stack[i].type() == VALUE_TYPE_LOCKED_LAZY_VALUE_REF)
+          _M_stack[i].raw().r->raw().lzv.mutex.unlock();
+      }
+      atomic_thread_fence(memory_order_release);
+    }
+    
     void ThreadContext::set_error_without_try(int error, const Reference &r)
     {
+      unlock_lazy_values(_M_regs.nfbp);
       _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp;
       _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
       _M_regs.fp = static_cast<size_t>(-1);
@@ -1211,6 +1229,7 @@ namespace letin
       if(!_M_regs.try_flag || _M_regs.try_abp < _M_regs.nfbp) {
         set_error_without_try(error, r);
       } else {
+        unlock_lazy_values(_M_regs.try_abp + _M_regs.try_ac);
         _M_regs.abp = _M_regs.try_abp;
         _M_regs.ac = _M_regs.try_ac;
         _M_regs.rv = ReturnValue(0, 0.0, r, error);

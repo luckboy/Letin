@@ -33,7 +33,7 @@ namespace letin
             _M_cv.notify_one();
           } else if(value < 0) {
             std::unique_lock<std::mutex> lock(_M_mutex);
-            while(_M_value + value <= 0) _M_cv.wait(lock);
+            while(_M_value + value < 0) _M_cv.wait(lock);
             _M_value += value;
           }
         }

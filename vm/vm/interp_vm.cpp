@@ -405,6 +405,24 @@ namespace letin
         return true;
       }
 
+      static inline bool push_locked_lazy_value_ref(ThreadContext &context, Reference r)
+      {
+        if(!context.push_locked_lazy_value_ref(r)) {
+          context.set_error(ERROR_STACK_OVERFLOW);
+          return false;
+        }
+        return true;
+      }
+
+      static inline bool pop_locked_lazy_value_ref(ThreadContext &context)
+      {
+        if(!context.pop_locked_lazy_value_ref()) {
+          context.set_error(ERROR_EMPTY_STACK);
+          return false;
+        }
+        return true;
+      }
+
       static inline bool check_fun(ThreadContext &context, size_t i)
       {
         if(i >= context.fun_count()) {
@@ -438,6 +456,7 @@ namespace letin
       {
         context.regs().after_leaving_flag_index = 0;
         context.pop_args();
+        if(!pop_locked_lazy_value_ref(context)) return false;
         if(!pop_ai(context)) return false;
         if(!pop_tmp_ac2_and_after_leaving_flag1(context)) return false;
         if(!context.regs().arg_instr_flag) context.restore_abp2_and_ac2();
@@ -2235,13 +2254,17 @@ namespace letin
       {
         while(value.is_lazy()) {
           Object &object = *(value.raw().r);
-          unique_lock<LazyValueMutex> lock(object.raw().lzv.mutex, defer_lock);
-          if(!context.regs().after_leaving_flags[1]) lock.lock();
+          unique_lock<LazyValueMutex> lock;
+          if(!context.regs().after_leaving_flags[1])
+            lock = unique_lock<LazyValueMutex>(object.raw().lzv.mutex);
+          else
+            lock = unique_lock<LazyValueMutex>(object.raw().lzv.mutex, adopt_lock);
           if(object.raw().lzv.value.is_error()) {
             if(!context.regs().after_leaving_flags[1]) {
               if(!context.regs().arg_instr_flag) context.hide_args();
               if(!push_tmp_ac2_and_after_leaving_flag1(context)) return false;
               if(!push_ai(context)) return false;
+              if(!push_locked_lazy_value_ref(context, value.raw().r)) return false;
               Value *args = object.raw().lzv.args;
               for(size_t i = 0; i < object.length(); i++)
                 if(!push_arg(context, args[i])) return false;
