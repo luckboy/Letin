@@ -290,7 +290,9 @@ namespace letin
       {
         if(value.type() == VALUE_TYPE_LAZY_VALUE_REF) {
           Reference r = value.raw().r;
-          while(r->type() == OBJECT_TYPE_LAZY_VALUE && !r->raw().lzv.must_be_shared) {
+          while(r->type() == OBJECT_TYPE_LAZY_VALUE) {
+            lock_guard<LazyValueMutex> guard(r->raw().lzv.mutex);
+            if(r->raw().lzv.must_be_shared) break;
             if(r->raw().lzv.value.is_unique()) {
               context.set_error(ERROR_UNIQUE_OBJECT);
               return false;
@@ -2233,17 +2235,22 @@ namespace letin
       {
         while(value.is_lazy()) {
           Object &object = *(value.raw().r);
+          unique_lock<LazyValueMutex> lock(object.raw().lzv.mutex, defer_lock);
+          if(!context.regs().after_leaving_flags[1]) lock.lock();
           if(object.raw().lzv.value.is_error()) {
             if(!context.regs().after_leaving_flags[1]) {
               if(!context.regs().arg_instr_flag) context.hide_args();
               if(!push_tmp_ac2_and_after_leaving_flag1(context)) return false;
               if(!push_ai(context)) return false;
-              Value *avs = object.raw().lzv.args;
+              Value *args = object.raw().lzv.args;
               for(size_t i = 0; i < object.length(); i++)
-                if(!push_arg(context, avs[i])) return false;
+                if(!push_arg(context, args[i])) return false;
               context.regs().after_leaving_flag_index = 1;
               if(is_try) context.set_try_regs_for_force();
-              if(!call_fun_for_force(context, object.raw().lzv.fun)) return false;
+              if(!call_fun_for_force(context, object.raw().lzv.fun)) {
+                if(context.regs().rv.raw().error == ERROR_SUCCESS) lock.release();
+                return false;
+              }
               if(!restore_and_pop_regs_for_force(context)) return false;
             }
             context.regs().after_leaving_flags[1] = false;
@@ -2268,6 +2275,7 @@ namespace letin
             } else
               object.raw().lzv.value = Value::lazy_value_ref(context.regs().rv.raw().r, context.regs().rv.raw().i != 0);
           }
+          object.raw().lzv.mutex.unlock();
           if(context.regs().rv.raw().r->is_unique()) {
             if(value.is_lazily_canceled()) {
               context.set_error(ERROR_AGAIN_USED_UNIQUE);

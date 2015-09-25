@@ -23,7 +23,7 @@ namespace letin
         std::condition_variable _M_cv;
         int _M_value;
       public:
-        Semaphore() {}
+        Semaphore(int value = 0) : _M_value(value) {}
 
         void op(int value)
         {

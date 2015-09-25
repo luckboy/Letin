@@ -28,6 +28,7 @@ namespace letin
           return false;
         }
         is_fun_result = true;
+        new (&(r->raw().lzv.mutex)) LazyValueMutex;
         r->raw().lzv.value_type = value_type;
         r->raw().lzv.must_be_shared = false;
         r->raw().lzv.value = Value();

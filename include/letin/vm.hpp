@@ -16,6 +16,7 @@
 #include <limits>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <thread>
 #include <vector>
 #include <letin/const.hpp>
@@ -277,6 +278,19 @@ namespace letin
       { return _M_fun != nullptr ? _M_fun(ptr1, ptr2) : false; }
     };
 
+    class LazyValueMutex
+    {
+      std::mutex _M_mutex;
+    public:
+      LazyValueMutex() {}
+
+      void lock();
+
+      bool try_lock();
+
+      void unlock();
+    };
+    
     struct ObjectRaw
     {
       int type;
@@ -293,6 +307,7 @@ namespace letin
         TupleElement tes[1];
         TupleElementType tets[1];
         struct {
+          LazyValueMutex mutex;
           short value_type;
           bool must_be_shared;
           Value value;

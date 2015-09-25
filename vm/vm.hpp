@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <letin/format.hpp>
 #include <letin/vm.hpp>
+#include "sem.hpp"
 
 namespace letin
 {
@@ -414,6 +415,10 @@ namespace letin
 
     namespace priv
     {
+      extern Semaphore lazy_value_mutex_sem;
+      extern std::mutex thread_count_mutex;
+      extern int thread_count;
+
       inline bool is_ref_value_type_for_gc(int type)
       { return type == VALUE_TYPE_REF || type == VALUE_TYPE_CANCELED_REF || (type & ~VALUE_TYPE_LAZILY_CANCELED) == VALUE_TYPE_LAZY_VALUE_REF; }
 

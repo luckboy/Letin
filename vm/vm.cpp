@@ -128,6 +128,32 @@ namespace letin
     }
 
     //
+    // A LazyValueMutex class.
+    //
+
+    void LazyValueMutex::lock()
+    {
+      lazy_value_mutex_sem.op(-1);
+      _M_mutex.lock();
+    }
+
+    bool LazyValueMutex::try_lock()
+    {
+      lazy_value_mutex_sem.op(-1);
+      if(!_M_mutex.try_lock()) {
+        lazy_value_mutex_sem.op(1);
+        return false;
+      }
+      return true;
+    }
+
+    void LazyValueMutex::unlock()
+    {
+      _M_mutex.unlock();
+      lazy_value_mutex_sem.op(1);
+    }
+
+    //
     // An Object class.
     //
 
@@ -1487,11 +1513,15 @@ namespace letin
     }
 
     //
-    // Private functions.
+    // Private variables and private functions.
     //
 
     namespace priv
     {
+      Semaphore lazy_value_mutex_sem;
+      mutex thread_count_mutex;
+      int thread_count = 0;
+
       static bool add_object_byte_count(const Object &object, size_t &byte_count);
 
       static bool add_value_byte_count(const Value &value, size_t &byte_count)
