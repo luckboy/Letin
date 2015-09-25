@@ -25,7 +25,8 @@ namespace letin
   {
     namespace impl
     {
-      ImplVirtualMachineBase::~ImplVirtualMachineBase() {}
+      ImplVirtualMachineBase::~ImplVirtualMachineBase()
+      { _M_gc->delete_vm_context(&_M_env); }
 
       bool ImplVirtualMachineBase::load(const vector<pair<void *, size_t>> &pairs, list<LoadingError> *errors, bool is_auto_freeing)
       {

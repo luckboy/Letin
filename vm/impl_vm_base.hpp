@@ -26,7 +26,8 @@ namespace letin
         std::size_t _M_entry;
 
         ImplVirtualMachineBase(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler) :
-          VirtualMachine(loader, gc, native_fun_handler) {}
+          VirtualMachine(loader, gc, native_fun_handler)
+        { _M_gc->add_vm_context(&_M_env); }
       public:
         ~ImplVirtualMachineBase();
 
