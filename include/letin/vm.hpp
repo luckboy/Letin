@@ -948,6 +948,8 @@ namespace letin
 
     void delete_fork_handler(int prio, ForkHandler *handler);
 
+    extern std::recursive_mutex new_mutex;
+
     std::ostream &operator<<(std::ostream &os, const Value &value);
 
     std::ostream &operator<<(std::ostream &os, const Object &object);

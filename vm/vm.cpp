@@ -46,6 +46,7 @@ namespace letin
 
     static mutex fork_handler_set_map_mutex;
     static map<int, set<ForkHandler *>> fork_handler_set_map;
+    static NewForkHandler new_fork_handler;
     static InternalForkHandler internal_fork_handler;
 
     //
@@ -1356,12 +1357,14 @@ namespace letin
     void initialize_vm()
     {
       initialize_thread_stop_cont();
+      add_fork_handler(FORK_HANDLER_PRIO_NEW, &new_fork_handler);
       add_fork_handler(FORK_HANDLER_PRIO_INTERNAL, &internal_fork_handler);
     }
 
     void finalize_vm()
     {
       delete_fork_handler(FORK_HANDLER_PRIO_INTERNAL, &internal_fork_handler);
+      delete_fork_handler(FORK_HANDLER_PRIO_NEW, &new_fork_handler);
       finalize_thread_stop_cont();
     }
 
@@ -1656,6 +1659,16 @@ namespace letin
             return false;
         }
       }
+
+      //
+      // An InternalForkHandler class.
+      //
+
+      NewForkHandler::~NewForkHandler() {}
+
+      void NewForkHandler::pre_fork() { new_mutex.lock(); }
+
+      void NewForkHandler::post_fork(bool is_child) { new_mutex.unlock(); }
 
       //
       // An InternalForkHandler class.

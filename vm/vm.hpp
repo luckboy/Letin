@@ -433,6 +433,18 @@ namespace letin
 
     namespace priv
     {
+      class NewForkHandler : public ForkHandler
+      {
+      public:
+        NewForkHandler() {}
+
+        ~NewForkHandler();
+
+        void pre_fork();
+
+        void post_fork(bool is_child);
+      };
+
       class InternalForkHandler : public ForkHandler
       {
       public:
@@ -444,7 +456,7 @@ namespace letin
 
         void post_fork(bool is_child);
       };
-
+      
       extern Semaphore lazy_value_mutex_sem;
       extern std::mutex thread_count_mutex;
       extern int thread_count;

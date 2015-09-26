@@ -1576,7 +1576,11 @@ extern "C" {
             string dir_name;
             if(!convert_args(args, topath(dir_name)))
               return return_value(vm, context, vut(vunone, v(io_v)));
-            ::DIR *dir = ::opendir(dir_name.c_str());
+            ::DIR *dir;
+            {
+              lock_guard<recursive_mutex> guard(new_mutex);
+              dir = ::opendir(dir_name.c_str());
+            }
             if(dir == nullptr)
               return return_value_with_errno(vm, context, vut(vunone, v(io_v)));
             return return_value(vm, context, vut(vusome(vdir(dir)), v(io_v)));
@@ -1593,7 +1597,11 @@ extern "C" {
               return return_value(vm, context, vut(vint(-1), v(io_v)));
             *reinterpret_cast<::DIR **>(dir_v.r()->raw().ntvo.bs) = nullptr;
             atomic_thread_fence(memory_order_release);
-            int result = ::closedir(dir);
+            int result;
+            {
+              lock_guard<recursive_mutex> guard(new_mutex);
+              result = ::closedir(dir);
+            }
             if(result == -1) 
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
