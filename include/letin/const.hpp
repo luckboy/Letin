@@ -105,9 +105,8 @@ namespace letin
   const int FORK_HANDLER_PRIO_GC =      2;
   const int FORK_HANDLER_PRIO_INTERNAL = 3;
   const int FORK_HANDLER_PRIO_EVAL_STRATEGY = 4;
-  const int FORK_HANDLER_PRIO_NATIVE_FUN_HANDLER = 5;
-  const int FORK_HANDLER_PRIO_NATIVE_LIB = 6;
-  const int FORK_HANDLER_PRIO_VM =      7;
+  const int FORK_HANDLER_PRIO_NATIVE_FUN = 5;
+  const int FORK_HANDLER_PRIO_VM =      6;
 }
 
 #endif

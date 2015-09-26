@@ -456,6 +456,18 @@ namespace letin
 
         void post_fork(bool is_child);
       };
+
+      class DefaultNativeFunctionForkHandler : public ForkHandler
+      {
+      public:
+        DefaultNativeFunctionForkHandler() {}
+
+        ~DefaultNativeFunctionForkHandler();
+
+        void pre_fork();
+
+        void post_fork(bool is_child);
+      };
       
       extern Semaphore lazy_value_mutex_sem;
       extern std::mutex thread_count_mutex;

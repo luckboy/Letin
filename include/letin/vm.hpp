@@ -761,7 +761,7 @@ namespace letin
     class DefaultNativeFunctionHandler : public NativeFunctionHandler
     {
     public:
-      DefaultNativeFunctionHandler() {}
+      DefaultNativeFunctionHandler();
 
       ~DefaultNativeFunctionHandler();
 

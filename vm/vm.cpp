@@ -14,6 +14,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <list>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -44,10 +45,12 @@ namespace letin
     // Static variables.
     //
 
-    static mutex fork_handler_set_map_mutex;
-    static map<int, set<ForkHandler *>> fork_handler_set_map;
+    static mutex fork_handler_list_map_mutex;
+    static map<int, list<ForkHandler *>> fork_handler_list_map;
     static NewForkHandler new_fork_handler;
     static InternalForkHandler internal_fork_handler;
+    static DefaultNativeFunctionForkHandler default_native_fun_fork_handler;
+    static mutex io_stream_mutex;
 
     //
     // Static inline functions.
@@ -539,8 +542,12 @@ namespace letin
     //
     // A DefualtNativeFunctionHandler class.
     //
+    
+    DefaultNativeFunctionHandler::DefaultNativeFunctionHandler()
+    { add_fork_handler(FORK_HANDLER_PRIO_NATIVE_FUN, &default_native_fun_fork_handler); }
 
-    DefaultNativeFunctionHandler::~DefaultNativeFunctionHandler() {}
+    DefaultNativeFunctionHandler::~DefaultNativeFunctionHandler()
+    { delete_fork_handler(FORK_HANDLER_PRIO_NATIVE_FUN, &default_native_fun_fork_handler); }
 
     ReturnValue DefaultNativeFunctionHandler::invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args)
     {
@@ -627,7 +634,10 @@ namespace letin
           if(args[0].r()->type() != (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE))
             return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
           char c;
-          cin >> c;
+          {
+            lock_guard<mutex> guard(io_stream_mutex);
+            cin >> c;
+          }
           Reference r = vm->gc()->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2, context);
           if(r.is_null())
             return ReturnValue(0, 0.0, Reference(), ERROR_OUT_OF_MEMORY);
@@ -651,7 +661,10 @@ namespace letin
             return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
           if(args[1].r()->type() != (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE))
             return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
-          cout << static_cast<char>(args[0].i());
+          {
+            lock_guard<mutex> guard(io_stream_mutex);
+            cout << static_cast<char>(args[0].i());
+          }
           Reference r = vm->gc()->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2, context);
           if(r.is_null())
             return ReturnValue(0, 0.0, Reference(), ERROR_OUT_OF_MEMORY);
@@ -672,7 +685,10 @@ namespace letin
           if(args[0].r()->type() != (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE))
             return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
           string str;
-          getline(cin, str);
+          {
+            lock_guard<mutex> guard(io_stream_mutex);
+            getline(cin, str);
+          }
           context->regs().tmp_r.safely_assign_for_gc(vm->gc()->new_object(OBJECT_TYPE_IARRAY8, str.length(), context));
           if(context->regs().tmp_r.is_null())
             return ReturnValue(0, 0.0, Reference(), ERROR_OUT_OF_MEMORY);
@@ -703,7 +719,10 @@ namespace letin
             return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
           if(args[1].r()->type() != (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE))
             return ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_OBJECT);
-          cout.write(reinterpret_cast<const char *>(args[0].r()->raw().is8), args[0].r()->length());
+          {
+            lock_guard<mutex> guard(io_stream_mutex);
+            cout.write(reinterpret_cast<const char *>(args[0].r()->raw().is8), args[0].r()->length());
+          }
           Reference r = vm->gc()->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2, context);
           if(r.is_null())
             return ReturnValue(0, 0.0, Reference(), ERROR_OUT_OF_MEMORY);
@@ -867,9 +886,9 @@ namespace letin
     {
       _M_pid = getpid();
       {
-        unique_lock<mutex> lock(fork_handler_set_map_mutex);
+        unique_lock<mutex> lock(fork_handler_list_map_mutex);
         lock.release();
-        for(auto iter = fork_handler_set_map.rbegin(); iter != fork_handler_set_map.rend(); iter++) {
+        for(auto iter = fork_handler_list_map.rbegin(); iter != fork_handler_list_map.rend(); iter++) {
           for(auto handler : iter->second) handler->pre_fork();
         }
       }
@@ -879,8 +898,8 @@ namespace letin
     {
       bool is_child = (_M_pid != getpid());
       {
-        unique_lock<mutex> lock(fork_handler_set_map_mutex, adopt_lock);
-        for(auto iter = fork_handler_set_map.begin(); iter != fork_handler_set_map.end(); iter++) {
+        unique_lock<mutex> lock(fork_handler_list_map_mutex, adopt_lock);
+        for(auto iter = fork_handler_list_map.begin(); iter != fork_handler_list_map.end(); iter++) {
           for(auto handler : iter->second) handler->post_fork(is_child);
         }
       }
@@ -1434,17 +1453,19 @@ namespace letin
 
     void add_fork_handler(int prio, ForkHandler *handler)
     {
-      lock_guard<mutex> guard(fork_handler_set_map_mutex);
-      set<ForkHandler *> &handler_set = fork_handler_set_map[prio];
-      handler_set.insert(handler);
+      lock_guard<mutex> guard(fork_handler_list_map_mutex);
+      list<ForkHandler *> &handlers = fork_handler_list_map[prio];
+      handlers.push_back(handler);
     }
 
     void delete_fork_handler(int prio, ForkHandler *handler)
     {
-      lock_guard<mutex> guard(fork_handler_set_map_mutex);
-      auto iter = fork_handler_set_map.find(prio);
-      iter->second.erase(handler);
-      if(iter->second.empty()) fork_handler_set_map.erase(iter);
+      lock_guard<mutex> guard(fork_handler_list_map_mutex);
+      auto iter = fork_handler_list_map.find(prio);
+      if(iter == fork_handler_list_map.end()) return;
+      auto iter2 = find(iter->second.begin(), iter->second.end(), handler);
+      if(iter2 != iter->second.end()) iter->second.erase(iter2);
+      if(iter->second.empty()) fork_handler_list_map.erase(iter);
     }
 
     ostream &operator<<(ostream &os, const Value &value)
@@ -1661,7 +1682,7 @@ namespace letin
       }
 
       //
-      // An InternalForkHandler class.
+      // A NewForkHandler class.
       //
 
       NewForkHandler::~NewForkHandler() {}
@@ -1681,6 +1702,18 @@ namespace letin
 
       void InternalForkHandler::post_fork(bool is_child)
       { lazy_value_mutex_sem.unlock(); }
+
+      //
+      // A DefaultNativeFunctionForkHandler class.
+      //
+
+      DefaultNativeFunctionForkHandler::~DefaultNativeFunctionForkHandler() {}
+
+      void DefaultNativeFunctionForkHandler::pre_fork()
+      { io_stream_mutex.lock(); }
+
+      void DefaultNativeFunctionForkHandler::post_fork(bool is_child)
+      { io_stream_mutex.unlock(); }
 
       //
       // Private variables.
