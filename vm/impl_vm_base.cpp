@@ -32,9 +32,11 @@ namespace letin
         for(int nfi = _M_native_fun_handler->min_native_fun_index(); nfi <= _M_native_fun_handler->max_native_fun_index(); nfi++) {
           _M_env.add_native_fun_index(string(_M_native_fun_handler->native_fun_name(nfi)), nfi);
         }
+        _M_gc->add_vm_context(&_M_env);
       }
 
-      ImplVirtualMachineBase::~ImplVirtualMachineBase() {}
+      ImplVirtualMachineBase::~ImplVirtualMachineBase()
+      { _M_gc->delete_vm_context(&_M_env); }
 
       bool ImplVirtualMachineBase::load(const vector<pair<void *, size_t>> &pairs, list<LoadingError> *errors, bool is_auto_freeing)
       {
