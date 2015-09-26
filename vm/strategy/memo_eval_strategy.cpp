@@ -16,7 +16,20 @@ namespace letin
   {
     namespace impl
     {
-      MemoizationEvaluationStrategy::~MemoizationEvaluationStrategy() {}
+      void MemoizationEvaluationStrategy::ImplForkHandler::pre_fork()
+      { 
+        if(_M_eval_strategy->_M_cache.get() != nullptr)
+          _M_eval_strategy->_M_cache->fork_handler()->pre_fork();
+      }
+
+      void MemoizationEvaluationStrategy::ImplForkHandler::post_fork(bool is_child)
+      { 
+        if(_M_eval_strategy->_M_cache.get() != nullptr)
+          _M_eval_strategy->_M_cache->fork_handler()->post_fork(is_child);
+      }
+
+      MemoizationEvaluationStrategy::~MemoizationEvaluationStrategy()
+      { delete_fork_handler(FORK_HANDLER_PRIO_EVAL_STRATEGY, &_M_impl_fork_handler); }
 
       bool MemoizationEvaluationStrategy::pre_enter_to_fun(ThreadContext *context, size_t i, int value_type, bool &is_fun_result)
       {

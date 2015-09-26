@@ -263,6 +263,10 @@ namespace letin
 
         std::size_t size() const
         { return !_M_r.has_nil() ? raw().entry_count : 0; }
+
+        void lock() { _M_mutex.lock(); }
+
+        void unlock() { _M_mutex.unlock(); }
       };
 
       template<>

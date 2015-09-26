@@ -8,6 +8,7 @@
 #ifndef _LETIN_VM_HPP
 #define _LETIN_VM_HPP
 
+#include <sys/types.h>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -877,6 +878,27 @@ namespace letin
       virtual MemoizationCache *new_memoization_cache(std::size_t fun_count) = 0;
     };
 
+    class ForkAround
+    {
+      ::pid_t _M_pid;
+    public:
+      ForkAround();
+
+      ~ForkAround();
+    };
+
+    class ForkHandler
+    {
+    protected:
+      ForkHandler() {}
+    public:
+      virtual ~ForkHandler();
+
+      virtual void pre_fork() = 0;
+
+      virtual void post_fork(bool is_child = false) = 0;
+    };
+    
     Loader *new_loader();
 
     Allocator *new_allocator();
@@ -889,9 +911,9 @@ namespace letin
 
     NativeFunctionHandlerLoader *new_native_function_handler_loader();
 
-    void initialize_gc();
+    void initialize_vm();
 
-    void finalize_gc();
+    void finalize_vm();
 
     void set_temporary_root_object(ThreadContext *context, Reference ref);
 
@@ -921,7 +943,11 @@ namespace letin
     std::uint64_t hash_words(const std::uint32_t *words, std::size_t length);
 
     std::uint64_t hash_dwords(const std::uint64_t *dwords, std::size_t length);
-    
+
+    void add_fork_handler(int prio, ForkHandler *handler);
+
+    void delete_fork_handler(int prio, ForkHandler *handler);
+
     std::ostream &operator<<(std::ostream &os, const Value &value);
 
     std::ostream &operator<<(std::ostream &os, const Object &object);

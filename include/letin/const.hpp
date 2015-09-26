@@ -99,6 +99,15 @@ namespace letin
   const int LOADING_ERROR_VAR_INDEX =   10;
   const int LOADING_ERROR_ALLOC =       11;
   const int LOADING_ERROR_NO_NATIVE_FUN_SYM = 12;
+  
+  const int FORK_HANDLER_PRIO_NEW =     0;
+  const int FORK_HANDLER_PRIO_ALLOC =   1;
+  const int FORK_HANDLER_PRIO_GC =      2;
+  const int FORK_HANDLER_PRIO_INTERNAL = 3;
+  const int FORK_HANDLER_PRIO_EVAL_STRATEGY = 4;
+  const int FORK_HANDLER_PRIO_NATIVE_FUN_HANDLER = 5;
+  const int FORK_HANDLER_PRIO_NATIVE_LIB = 6;
+  const int FORK_HANDLER_PRIO_VM =      7;
 }
 
 #endif

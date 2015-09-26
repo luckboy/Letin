@@ -23,9 +23,9 @@ using namespace letin;
 using namespace letin::vm;
 using namespace letin::util;
 
-struct GarbageCollectionFinalization
+struct VirtualMachineFinalization
 {
-  ~GarbageCollectionFinalization() { finalize_gc(); }
+  ~VirtualMachineFinalization() { finalize_vm(); }
 };
 
 static bool find_lib(const string &lib_name, vector<string> lib_dirs, string &file_name)
@@ -80,8 +80,8 @@ int main(int argc, char **argv)
       file_names.push_back(file_name);
     }
     file_names.push_back(argv[optind]);
-    initialize_gc();
-    GarbageCollectionFinalization final_gc;
+    initialize_vm();
+    VirtualMachineFinalization final;
     unique_ptr<Loader> loader(new_loader());
     unique_ptr<Allocator> alloc(new_allocator());
     unique_ptr<GarbageCollector> gc(new_garbage_collector(alloc.get()));

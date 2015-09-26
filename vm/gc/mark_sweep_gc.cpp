@@ -29,7 +29,9 @@ namespace letin
         ImplGarbageCollectorBase(alloc, interval_usecs),
         _M_list_first(&_S_nil),
         _M_stack_top(&_S_nil),
-        _M_immortal_list_first(&_S_nil) {}
+        _M_immortal_list_first(&_S_nil),
+        _M_gc_fork_handler(this)
+      { add_impl_fork_handler(&_M_gc_fork_handler); }
 
       MarkSweepGarbageCollector::~MarkSweepGarbageCollector()
       {

@@ -925,7 +925,11 @@ extern "C" {
             int error = check_args(vm, context, args, cuio);
             if(error != ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
-            ::pid_t pid = ::fork();
+            ::pid_t pid;
+            {
+              ForkAround fork_around;
+              pid = ::fork();
+            }
             if(pid == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(pid), v(io_v)));

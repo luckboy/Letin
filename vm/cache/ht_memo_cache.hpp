@@ -18,7 +18,7 @@ namespace letin
   {
     namespace impl
     {
-      class HashTableMemoizationCache : public MemoizationCache
+      class HashTableMemoizationCache : public MemoizationCache, public ForkHandler
       {
         struct FunctionResultCache
         {
@@ -41,6 +41,12 @@ namespace letin
         bool add_fun_result(std::size_t i, int value_type, const ArgumentList &args, const Value &fun_result, ThreadContext &context);
 
         void traverse_root_objects(std::function<void (Object *)> fun);
+        
+        ForkHandler *fork_handler();
+
+        void pre_fork();
+
+        void post_fork(bool is_child);
       };
 
       class HashTableMemoizationCacheFactory : public MemoizationCacheFactory

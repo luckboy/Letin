@@ -91,6 +91,28 @@ namespace letin
         }
       }
 
+      ForkHandler *HashTableMemoizationCache::fork_handler() { return this; }
+
+      void HashTableMemoizationCache::pre_fork()
+      {
+        for(size_t i = 0; i < _M_fun_count; i++) {
+          _M_fun_results.get()[i].is.lock();
+          _M_fun_results.get()[i].fs.lock();
+          _M_fun_results.get()[i].rs.lock();
+        }
+      }
+
+      void HashTableMemoizationCache::post_fork(bool is_child)
+      {
+        size_t i = _M_fun_count; 
+        while(i > 0) {
+          i--;
+          _M_fun_results.get()[i].rs.lock();
+          _M_fun_results.get()[i].fs.lock();
+          _M_fun_results.get()[i].is.lock();
+        }
+      }
+
       //
       // A HashTableMemoizationCacheFactory class.
       //

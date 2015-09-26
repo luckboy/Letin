@@ -427,14 +427,28 @@ namespace letin
       virtual bool add_fun_result(std::size_t i, int value_type, const ArgumentList &args, const Value &fun_result, ThreadContext &context) = 0;
 
       virtual void traverse_root_objects(std::function<void (Object *)> fun) = 0;
+      
+      virtual ForkHandler *fork_handler() = 0;
     };
 
     namespace priv
     {
+      class InternalForkHandler : public ForkHandler
+      {
+      public:
+        InternalForkHandler() {}
+
+        ~InternalForkHandler();
+
+        void pre_fork();
+
+        void post_fork(bool is_child);
+      };
+
       extern Semaphore lazy_value_mutex_sem;
       extern std::mutex thread_count_mutex;
       extern int thread_count;
-
+      
       inline bool is_ref_value_type_for_gc(int type)
       { return type == VALUE_TYPE_REF || type == VALUE_TYPE_CANCELED_REF || (type & ~VALUE_TYPE_LAZILY_CANCELED) == VALUE_TYPE_LAZY_VALUE_REF || type == VALUE_TYPE_LOCKED_LAZY_VALUE_REF; }
 

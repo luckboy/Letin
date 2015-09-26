@@ -14,9 +14,11 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <unistd.h>
 #include <letin/const.hpp>
 #include <letin/vm.hpp>
 #include "alloc/new_alloc.hpp"
@@ -38,6 +40,14 @@ namespace letin
 {
   namespace vm
   {
+    //
+    // Static variables.
+    //
+
+    static mutex fork_handler_set_map_mutex;
+    static map<int, set<ForkHandler *>> fork_handler_set_map;
+    static InternalForkHandler internal_fork_handler;
+
     //
     // Static inline functions.
     //
@@ -849,6 +859,39 @@ namespace letin
     MemoizationCacheFactory::~MemoizationCacheFactory() {}
 
     //
+    // A ForkAround class.
+    //
+
+    ForkAround::ForkAround()
+    {
+      _M_pid = getpid();
+      {
+        unique_lock<mutex> lock(fork_handler_set_map_mutex);
+        lock.release();
+        for(auto iter = fork_handler_set_map.rbegin(); iter != fork_handler_set_map.rend(); iter++) {
+          for(auto handler : iter->second) handler->pre_fork();
+        }
+      }
+    }
+
+    ForkAround::~ForkAround()
+    {
+      bool is_child = (_M_pid != getpid());
+      {
+        unique_lock<mutex> lock(fork_handler_set_map_mutex, adopt_lock);
+        for(auto iter = fork_handler_set_map.begin(); iter != fork_handler_set_map.end(); iter++) {
+          for(auto handler : iter->second) handler->post_fork(is_child);
+        }
+      }
+    }
+
+    //
+    // A ForkHandler class.
+    //
+
+    ForkHandler::~ForkHandler() {}
+
+    //
     // A Program class.
     //
 
@@ -1310,9 +1353,17 @@ namespace letin
     NativeFunctionHandlerLoader *new_native_function_handler_loader()
     { return new impl::ImplNativeFunctionHandlerLoader(); }
 
-    void initialize_gc() { priv::initialize_thread_stop_cont(); }
+    void initialize_vm()
+    {
+      initialize_thread_stop_cont();
+      add_fork_handler(FORK_HANDLER_PRIO_INTERNAL, &internal_fork_handler);
+    }
 
-    void finalize_gc() { priv::finalize_thread_stop_cont(); }
+    void finalize_vm()
+    {
+      delete_fork_handler(FORK_HANDLER_PRIO_INTERNAL, &internal_fork_handler);
+      finalize_thread_stop_cont();
+    }
 
     void set_temporary_root_object(ThreadContext *context, Reference ref)
     { context->regs().tmp_r.safely_assign_for_gc(ref); }
@@ -1376,6 +1427,21 @@ namespace letin
         default:
           return false;
       }
+    }
+
+    void add_fork_handler(int prio, ForkHandler *handler)
+    {
+      lock_guard<mutex> guard(fork_handler_set_map_mutex);
+      set<ForkHandler *> &handler_set = fork_handler_set_map[prio];
+      handler_set.insert(handler);
+    }
+
+    void delete_fork_handler(int prio, ForkHandler *handler)
+    {
+      lock_guard<mutex> guard(fork_handler_set_map_mutex);
+      auto iter = fork_handler_set_map.find(prio);
+      iter->second.erase(handler);
+      if(iter->second.empty()) fork_handler_set_map.erase(iter);
     }
 
     ostream &operator<<(ostream &os, const Value &value)
@@ -1531,15 +1597,11 @@ namespace letin
       }
     }
 
-    //
-    // Private variables and private functions.
-    //
-
     namespace priv
     {
-      Semaphore lazy_value_mutex_sem;
-      mutex thread_count_mutex;
-      int thread_count = 0;
+      //
+      // Private static functions.
+      //
 
       static bool add_object_byte_count(const Object &object, size_t &byte_count);
 
@@ -1594,6 +1656,30 @@ namespace letin
             return false;
         }
       }
+
+      //
+      // An InternalForkHandler class.
+      //
+
+      InternalForkHandler::~InternalForkHandler() {}
+
+      void InternalForkHandler::pre_fork()
+      { lazy_value_mutex_sem.lock(); }
+
+      void InternalForkHandler::post_fork(bool is_child)
+      { lazy_value_mutex_sem.unlock(); }
+
+      //
+      // Private variables.
+      //
+
+      Semaphore lazy_value_mutex_sem;
+      mutex thread_count_mutex;
+      int thread_count = 0;
+
+      //
+      // Private functions.
+      //
 
       bool are_memoizable_fun_args(const ArgumentList &args)
       {

@@ -35,6 +35,7 @@ namespace letin
         Header *_M_list_first;
         Header *_M_stack_top;
         Header *_M_immortal_list_first;
+        ImplForkHandler _M_gc_fork_handler;
 
         bool is_emtpy_list()
         { return _M_list_first == &_S_nil; }

@@ -18,11 +18,26 @@ namespace letin
     {
       class MemoizationEvaluationStrategy : public EvaluationStrategy
       {
+      private:
+        class ImplForkHandler : public ForkHandler
+        {
+          MemoizationEvaluationStrategy *_M_eval_strategy;
+        public:
+          ImplForkHandler(MemoizationEvaluationStrategy *eval_strategy) :
+            _M_eval_strategy(eval_strategy) {}
+
+          void pre_fork();
+
+          void post_fork(bool is_child);
+        };
+
         MemoizationCacheFactory *_M_cache_factory;
         std::unique_ptr<MemoizationCache> _M_cache;
+        ImplForkHandler _M_impl_fork_handler;
       public:
-        MemoizationEvaluationStrategy(MemoizationCacheFactory *cache_factory)
-          : _M_cache_factory(cache_factory) {}
+        MemoizationEvaluationStrategy(MemoizationCacheFactory *cache_factory) :
+          _M_cache_factory(cache_factory), _M_impl_fork_handler(this)
+        { add_fork_handler(FORK_HANDLER_PRIO_EVAL_STRATEGY, &_M_impl_fork_handler); }
 
         ~MemoizationEvaluationStrategy();
 
