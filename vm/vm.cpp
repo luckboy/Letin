@@ -379,6 +379,51 @@ namespace letin
     }
 
     //
+    // A ForkAround class.
+    //
+
+    ForkAround::ForkAround()
+    {
+      _M_pid = getpid();
+      {
+        unique_lock<mutex> lock(fork_handler_list_map_mutex);
+        lock.release();
+        for(auto iter = fork_handler_list_map.rbegin(); iter != fork_handler_list_map.rend(); iter++) {
+          for(auto handler : iter->second) handler->pre_fork();
+        }
+      }
+    }
+
+    ForkAround::~ForkAround()
+    {
+      bool is_child = (_M_pid != getpid());
+      {
+        unique_lock<mutex> lock(fork_handler_list_map_mutex, adopt_lock);
+        for(auto iter = fork_handler_list_map.begin(); iter != fork_handler_list_map.end(); iter++) {
+          for(auto handler : iter->second) handler->post_fork(is_child);
+        }
+      }
+    }
+
+    //
+    // A ForkHandler class.
+    //
+
+    ForkHandler::~ForkHandler() {}
+
+    //
+    // A MutexForkHandler class.
+    //
+
+    MutexForkHandler::~MutexForkHandler() {}
+
+    void MutexForkHandler::pre_fork()
+    { for(auto iter = _M_mutexes.begin(); iter != _M_mutexes.end(); iter++) (*iter)->lock(); }
+
+    void MutexForkHandler::post_fork(bool is_child)
+    { for(auto iter = _M_mutexes.rbegin(); iter != _M_mutexes.rend(); iter++) (*iter)->unlock(); }
+
+    //
     // A VirtualMachine class.
     //
 
@@ -850,7 +895,12 @@ namespace letin
     // A NativeLibrary class.
     //
 
-    NativeLibrary::~NativeLibrary() {}
+    NativeLibrary::NativeLibrary(const vector<NativeFunction> &funs, ForkHandler *fork_handler, int min_nfi) :
+      _M_funs(funs), _M_fork_handler(fork_handler), _M_min_nfi(min_nfi)
+    { if(_M_fork_handler != nullptr) add_fork_handler(FORK_HANDLER_PRIO_NATIVE_FUN, _M_fork_handler); }
+
+    NativeLibrary::~NativeLibrary()
+    { if(_M_fork_handler != nullptr) delete_fork_handler(FORK_HANDLER_PRIO_NATIVE_FUN, _M_fork_handler); }
 
     ReturnValue NativeLibrary::invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args)
     {
@@ -877,39 +927,6 @@ namespace letin
     //
 
     MemoizationCacheFactory::~MemoizationCacheFactory() {}
-
-    //
-    // A ForkAround class.
-    //
-
-    ForkAround::ForkAround()
-    {
-      _M_pid = getpid();
-      {
-        unique_lock<mutex> lock(fork_handler_list_map_mutex);
-        lock.release();
-        for(auto iter = fork_handler_list_map.rbegin(); iter != fork_handler_list_map.rend(); iter++) {
-          for(auto handler : iter->second) handler->pre_fork();
-        }
-      }
-    }
-
-    ForkAround::~ForkAround()
-    {
-      bool is_child = (_M_pid != getpid());
-      {
-        unique_lock<mutex> lock(fork_handler_list_map_mutex, adopt_lock);
-        for(auto iter = fork_handler_list_map.begin(); iter != fork_handler_list_map.end(); iter++) {
-          for(auto handler : iter->second) handler->post_fork(is_child);
-        }
-      }
-    }
-
-    //
-    // A ForkHandler class.
-    //
-
-    ForkHandler::~ForkHandler() {}
 
     //
     // A Program class.
@@ -1390,8 +1407,8 @@ namespace letin
     void set_temporary_root_object(ThreadContext *context, Reference ref)
     { context->regs().tmp_r.safely_assign_for_gc(ref); }
 
-    NativeLibrary *new_native_library_without_throwing(const vector<NativeFunction> &funs, int min_nfi)
-    { try { return new NativeLibrary(funs, min_nfi); } catch(...) { return nullptr; } }
+    NativeLibrary *new_native_library_without_throwing(const vector<NativeFunction> &funs, ForkHandler *fork_handler, int min_nfi)
+    { try { return new NativeLibrary(funs, fork_handler, min_nfi); } catch(...) { return nullptr; } }
 
     int &letin_errno()
     {

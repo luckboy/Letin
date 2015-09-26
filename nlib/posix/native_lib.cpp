@@ -44,6 +44,8 @@ static mutex getgroups_fun_mutex;
 
 static vector<NativeFunction> native_funs;
 
+static MutexForkHandler fork_handler;
+
 extern "C" {
   bool letin_initialize()
   {
@@ -1668,6 +1670,7 @@ extern "C" {
           }
         }
       };
+      fork_handler.mutexes() = { &getgroups_fun_mutex };
       return true;
     } catch(...) {
       return false;
@@ -1678,6 +1681,6 @@ extern "C" {
 
   NativeFunctionHandler *letin_new_native_function_handler()
   {
-    return new_native_library_without_throwing(native_funs);
+    return new_native_library_without_throwing(native_funs, &fork_handler);
   }
 }

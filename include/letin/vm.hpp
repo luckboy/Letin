@@ -616,6 +616,44 @@ namespace letin
       void register_ref();
     };
 
+    class ForkAround
+    {
+      ::pid_t _M_pid;
+    public:
+      ForkAround();
+
+      ~ForkAround();
+    };
+
+    class ForkHandler
+    {
+    protected:
+      ForkHandler() {}
+    public:
+      virtual ~ForkHandler();
+
+      virtual void pre_fork() = 0;
+
+      virtual void post_fork(bool is_child = false) = 0;
+    };
+
+    class MutexForkHandler : public ForkHandler
+    {
+      std::vector<std::mutex *> _M_mutexes;
+    public:
+      MutexForkHandler() {}
+
+      ~MutexForkHandler();
+
+      virtual void pre_fork();
+
+      virtual void post_fork(bool is_child);
+      
+      const std::vector<std::mutex *> &mutexes() const { return _M_mutexes; }
+
+      std::vector<std::mutex *> &mutexes() { return _M_mutexes; }
+    };
+    
     class VirtualMachine
     {
     protected:
@@ -852,10 +890,10 @@ namespace letin
     class NativeLibrary : public NativeFunctionHandler
     {
       const std::vector<NativeFunction> &_M_funs;
+      ForkHandler *_M_fork_handler;
       int _M_min_nfi;
     public:
-      NativeLibrary(const std::vector<NativeFunction> &funs, int min_nfi = MIN_UNRESERVED_NATIVE_FUN_INDEX) :
-        _M_funs(funs), _M_min_nfi(min_nfi) {}
+      NativeLibrary(const std::vector<NativeFunction> &funs, ForkHandler *fork_handler = nullptr, int min_nfi = MIN_UNRESERVED_NATIVE_FUN_INDEX);
 
       ~NativeLibrary();
 
@@ -876,27 +914,6 @@ namespace letin
       virtual ~MemoizationCacheFactory();
 
       virtual MemoizationCache *new_memoization_cache(std::size_t fun_count) = 0;
-    };
-
-    class ForkAround
-    {
-      ::pid_t _M_pid;
-    public:
-      ForkAround();
-
-      ~ForkAround();
-    };
-
-    class ForkHandler
-    {
-    protected:
-      ForkHandler() {}
-    public:
-      virtual ~ForkHandler();
-
-      virtual void pre_fork() = 0;
-
-      virtual void post_fork(bool is_child = false) = 0;
     };
     
     Loader *new_loader();
@@ -920,7 +937,7 @@ namespace letin
     inline void set_temporary_root_object(ThreadContext *context, Object *object)
     { set_temporary_root_object(context, Reference(object)); }
 
-    NativeLibrary *new_native_library_without_throwing(const std::vector<NativeFunction> &funs, int min_nfi  = MIN_UNRESERVED_NATIVE_FUN_INDEX);
+    NativeLibrary *new_native_library_without_throwing(const std::vector<NativeFunction> &funs, ForkHandler *fork_handler = nullptr, int min_nfi  = MIN_UNRESERVED_NATIVE_FUN_INDEX);
 
     int &letin_errno();
 
