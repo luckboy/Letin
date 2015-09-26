@@ -1694,13 +1694,15 @@ namespace letin
         object->raw().ntvo.finalizator = NativeObjectFinalizator(finalize_dir);
         object->raw().ntvo.hash_fun = NativeObjectHashFunction(hash_dir);
         object->raw().ntvo.equal_fun = NativeObjectEqualFunction(equal_dirs);
-        *reinterpret_cast<::DIR **>(object->raw().ntvo.bs) = dir;
+        ::DIR **dir_ptr = reinterpret_cast<::DIR **>(object->raw().ntvo.bs);
+        *dir_ptr = dir;
         return object;
       }
 
       bool object_to_system_dir(const Object &object, ::DIR *&dir)
       {
-        ::DIR *tmp_dir = *reinterpret_cast<::DIR * const *>(object.raw().ntvo.bs);
+        ::DIR * const *dir_ptr = reinterpret_cast<::DIR * const *>(object.raw().ntvo.bs);
+        ::DIR *tmp_dir = *dir_ptr;
         if(tmp_dir == nullptr) {
           letin_errno() = EBADF;
           return false;

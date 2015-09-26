@@ -1799,7 +1799,8 @@ namespace letin
               Reference entry_ref = raw->buckets[i].first_entry_r;
               while(!entry_ref.has_nil()) {
                 fun(entry_ref.ptr());
-                entry_ref = reinterpret_cast<HashTableEntryRawBase *>(entry_ref->raw().bs)->next_r;
+                HashTableEntryRawBase *raw = reinterpret_cast<HashTableEntryRawBase *>(entry_ref->raw().bs);
+                entry_ref = raw->next_r;
               }
             }
             break;
