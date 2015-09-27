@@ -22,21 +22,21 @@ namespace letin
       // Private types and private functions for a checking.
       //
 
-      int IntChecker::check(VirtualMachine *vm, ThreadContext *context, Value &value) const
+      int check_int_value(VirtualMachine *vm, ThreadContext *context, Value &value)
       {
         int error = vm->force(context, value);
         if(error != ERROR_SUCCESS) return error;
         return (value.is_int() ? ERROR_SUCCESS : ERROR_INCORRECT_VALUE);
       }
 
-      int FloatChecker::check(VirtualMachine *vm, ThreadContext *context, Value &value) const
+      int check_float_value(VirtualMachine *vm, ThreadContext *context, Value &value)
       {
         int error = vm->force(context, value);
         if(error != ERROR_SUCCESS) return error;
         return (value.is_float() ? ERROR_SUCCESS : ERROR_INCORRECT_VALUE);
       }
       
-      int ReferenceChecker::check(VirtualMachine *vm, ThreadContext *context, Value &value) const
+      int check_ref_value(VirtualMachine *vm, ThreadContext *context, Value &value)
       {
         int error = vm->force(context, value);
         if(error != ERROR_SUCCESS) return error;
@@ -153,22 +153,22 @@ namespace letin
         return ERROR_SUCCESS;
       }
 
-      int StringSetter::set(VirtualMachine *vm, ThreadContext *context, Value& value, RegisteredReference &tmp_r) const
+      int set_string_value(VirtualMachine *vm, ThreadContext *context, Value& value, RegisteredReference &tmp_r, const string &string)
       {
-        tmp_r= vm->gc()->new_object(OBJECT_TYPE_IARRAY8, _M_string.length(), context);
+        tmp_r= vm->gc()->new_object(OBJECT_TYPE_IARRAY8, string.length(), context);
         if(tmp_r.is_null()) return ERROR_OUT_OF_MEMORY;
-        copy(_M_string.begin(), _M_string.end(), reinterpret_cast<char *>(tmp_r->raw().is8));
+        copy(string.begin(), string.end(), reinterpret_cast<char *>(tmp_r->raw().is8));
         tmp_r.register_ref();
         value = Value(tmp_r);
         return ERROR_SUCCESS;
       }
 
-      int CStringSetter::set(VirtualMachine *vm, ThreadContext *context, Value& value, RegisteredReference &tmp_r) const
+      int set_cstring_value(VirtualMachine *vm, ThreadContext *context, Value& value, RegisteredReference &tmp_r, const char *string, size_t length, bool is_length)
       {
-        size_t length = (_M_is_length ? _M_length : strlen(_M_string));
+        size_t tmp_length = (is_length ? length : strlen(string));
         tmp_r = vm->gc()->new_object(OBJECT_TYPE_IARRAY8, length, context);
         if(tmp_r.is_null()) return ERROR_OUT_OF_MEMORY;
-        copy_n(_M_string, length, reinterpret_cast<char *>(tmp_r->raw().is8));
+        copy_n(string, tmp_length, reinterpret_cast<char *>(tmp_r->raw().is8));
         tmp_r.register_ref();
         value = Value(tmp_r);
         return ERROR_SUCCESS;
