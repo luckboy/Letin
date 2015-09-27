@@ -50,6 +50,8 @@ namespace letin
         CPPUNIT_TEST(test_hash_table_add_method_adds_pairs_for_two_keys_with_hash_conflict);
         CPPUNIT_TEST(test_hash_table_del_method_deletes_many_pairs);
         CPPUNIT_TEST(test_hash_table_del_method_does_not_delete_pairs_for_existent_keys);
+        CPPUNIT_TEST(test_hash_table_add_method_adds_pairs_for_more_keys_with_hash_conflict);
+        CPPUNIT_TEST(test_hash_table_del_method_deletes_pairs_for_keys_with_hash_conflict);
         CPPUNIT_TEST_SUITE_END();
 
         Allocator *_M_alloc;
@@ -69,6 +71,8 @@ namespace letin
         void test_hash_table_add_method_adds_pairs_for_two_keys_with_hash_conflict();
         void test_hash_table_del_method_deletes_many_pairs();
         void test_hash_table_del_method_does_not_delete_pairs_for_existent_keys();
+        void test_hash_table_add_method_adds_pairs_for_more_keys_with_hash_conflict();
+        void test_hash_table_del_method_deletes_pairs_for_keys_with_hash_conflict();
       };
     }
   }
