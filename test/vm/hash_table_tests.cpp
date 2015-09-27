@@ -19,6 +19,8 @@ namespace letin
   {
     namespace test
     {
+      CPPUNIT_TEST_SUITE_REGISTRATION(HashTableTests);
+
       void HashTableTests::setUp()
       {
         _M_alloc = new_allocator();
@@ -37,6 +39,7 @@ namespace letin
 
       void HashTableTests::tearDown()
       {
+        delete _M_hash_table;
         _M_thread_context_mutex->unlock();
         _M_thread_context->system_thread().join();
         delete _M_thread_context;

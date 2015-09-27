@@ -70,8 +70,6 @@ namespace letin
         void test_hash_table_del_method_deletes_many_pairs();
         void test_hash_table_del_method_does_not_delete_pairs_for_existent_keys();
       };
-
-      CPPUNIT_TEST_SUITE_REGISTRATION(HashTableTests);
     }
   }
 }
