@@ -254,7 +254,7 @@ namespace letin
     public:
       NativeObjectFinalizator() : _M_fun(nullptr) {}
 
-      NativeObjectFinalizator(void (*fun)(const void *)) : _M_fun(nullptr) {}
+      NativeObjectFinalizator(void (*fun)(const void *)) : _M_fun(fun) {}
 
       void operator()(const void *ptr) const { if(_M_fun != nullptr) _M_fun(ptr); }
     };
@@ -265,7 +265,7 @@ namespace letin
     public:
       NativeObjectHashFunction() : _M_fun(nullptr) {}
 
-      NativeObjectHashFunction(std::uint64_t (*fun)(const void *)) : _M_fun(nullptr) {}
+      NativeObjectHashFunction(std::uint64_t (*fun)(const void *)) : _M_fun(fun) {}
 
       bool operator()(const void *ptr) const { return _M_fun != nullptr ?_M_fun(ptr) : 0; }
     };
@@ -276,7 +276,7 @@ namespace letin
     public:
       NativeObjectEqualFunction() : _M_fun(nullptr) {}
 
-      NativeObjectEqualFunction(bool (*fun)(const void *, const void *)) : _M_fun(nullptr) {}
+      NativeObjectEqualFunction(bool (*fun)(const void *, const void *)) : _M_fun(fun) {}
 
       bool operator()(const void *ptr1, const void *ptr2) const
       { return _M_fun != nullptr ? _M_fun(ptr1, ptr2) : false; }
