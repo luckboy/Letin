@@ -389,6 +389,18 @@ namespace letin
         _M_regs.gc_tmp_ptr = ptr;
         std::atomic_thread_fence(std::memory_order_release);
       }
+
+      RegisteredReference *first_registered_ref()
+      { return _M_first_registered_r; }
+
+      RegisteredReference *last_registered_ref()
+      { return _M_last_registered_r; }
+      
+      RegisteredReference *prev_registered_ref(const RegisteredReference &r)
+      { return r._M_prev; }
+
+      RegisteredReference *next_registered_ref(const RegisteredReference &r)
+      { return r._M_next; }
     };
 
     class VirtualMachineContext
