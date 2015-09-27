@@ -433,18 +433,6 @@ namespace letin
 
     namespace priv
     {
-      class NewForkHandler : public ForkHandler
-      {
-      public:
-        NewForkHandler() {}
-
-        ~NewForkHandler();
-
-        void pre_fork();
-
-        void post_fork(bool is_child);
-      };
-
       class InternalForkHandler : public ForkHandler
       {
       public:
