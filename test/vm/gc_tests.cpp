@@ -7,6 +7,7 @@
  ****************************************************************************/
 #include <algorithm>
 #include <cstring>
+#include <new>
 #include "gc_tests.hpp"
 #include "mark_sweep_gc.hpp"
 #include "new_alloc.hpp"
@@ -20,6 +21,32 @@ namespace letin
   {
     namespace test
     {
+      static NativeObjectTypeIdentity int_ptr_ident1;
+      static NativeObjectTypeIdentity int_ptr_ident2;
+      static NativeObjectTypeIdentity int_ptr_ident3;
+
+      static void finalize_int_ptr1(const void *ptr)
+      {
+        int * const *tmp = reinterpret_cast<int * const *>(ptr);
+        **tmp = 1;
+      }
+
+      static void finalize_int_ptr2(const void *ptr)
+      {
+        int * const *tmp = reinterpret_cast<int * const *>(ptr);
+        **tmp = 2;
+      }
+
+      static void finalize_int_ptr3(const void *ptr)
+      {
+        int * const *tmp = reinterpret_cast<int * const *>(ptr);
+        **tmp = 3;
+      }
+
+      static NativeObjectFunctions int_ptr_funs1(finalize_int_ptr1, nullptr, nullptr);
+      static NativeObjectFunctions int_ptr_funs2(finalize_int_ptr2, nullptr, nullptr);
+      static NativeObjectFunctions int_ptr_funs3(finalize_int_ptr3, nullptr, nullptr);
+
       void GarbageCollectorTests::setUp()
       {
         _M_alloc = new AllocatorWrapper(new impl::NewAllocator());
@@ -380,6 +407,124 @@ namespace letin
         CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref1)) == 1);
         CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref2)) == 1);
         CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref3)) == 1);
+        _M_thread_context_mutex->unlock();
+        thread_context->system_thread().join();
+      }
+
+      void GarbageCollectorTests::test_gc_collects_lazy_value_objects()
+      {
+        unique_ptr<VirtualMachineContext> vm_context(new_vm_context());
+        unique_ptr<ThreadContext> thread_context(new_thread_context(*vm_context));
+        _M_gc->add_vm_context(vm_context.get());
+        _M_gc->add_thread_context(thread_context.get());
+        Reference ref1(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 11));
+        strcpy(reinterpret_cast<char *>(ref1->raw().is8), "1234567890");
+        Reference ref2(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 21));
+        strcpy(reinterpret_cast<char *>(ref2->raw().is8), "12345678901234567890");
+        Reference ref3(_M_gc->new_object(OBJECT_TYPE_LAZY_VALUE, 2));
+        new (&(ref3->raw().lzv.mutex)) LazyValueMutex;
+        ref3->raw().lzv.must_be_shared = false;
+        ref3->raw().lzv.value = Value(ref1);
+        ref3->raw().lzv.fun = 0;
+        ref3->raw().lzv.args[0] = Value(0);
+        ref3->raw().lzv.args[1] = Value(ref2);
+        Reference ref4(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 16));
+        strcpy(reinterpret_cast<char *>(ref4->raw().is8), "123456789012345");
+        Reference ref5(_M_gc->new_object(OBJECT_TYPE_LAZY_VALUE, 3));
+        new (&(ref5->raw().lzv.mutex)) LazyValueMutex;
+        ref5->raw().lzv.must_be_shared = false;
+        ref5->raw().lzv.value = Value(1.2345);
+        ref5->raw().lzv.fun = 0;
+        ref5->raw().lzv.args[0] = Value(ref4);
+        ref5->raw().lzv.args[1] = Value(ref2);
+        ref5->raw().lzv.args[2] = Value(0);
+        Reference ref6(_M_gc->new_object(OBJECT_TYPE_LAZY_VALUE, 2));
+        new (&(ref6->raw().lzv.mutex)) LazyValueMutex;
+        ref6->raw().lzv.must_be_shared = false;
+        ref6->raw().lzv.value = Value(1.2345);
+        ref6->raw().lzv.fun = 0;
+        ref6->raw().lzv.args[0] = Value(0);
+        ref6->raw().lzv.args[1] = Value(ref1);
+        Reference ref7(_M_gc->new_object(OBJECT_TYPE_TUPLE, 3));
+        ref7->set_elem(0, Value::lazy_value_ref(ref3, false));
+        ref7->set_elem(1, Value::lazy_value_ref(ref5, true));
+        ref7->set_elem(2, Value::lazy_value_ref(ref6, false));
+        thread_context->regs().rv.raw().r = ref7;
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(7), _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(make_alloc(ref1) == _M_alloc->alloc_ops()[0]);
+        CPPUNIT_ASSERT(make_alloc(ref2) == _M_alloc->alloc_ops()[1]);
+        CPPUNIT_ASSERT(make_alloc(ref3) == _M_alloc->alloc_ops()[2]);
+        CPPUNIT_ASSERT(make_alloc(ref4) == _M_alloc->alloc_ops()[3]);
+        CPPUNIT_ASSERT(make_alloc(ref5) == _M_alloc->alloc_ops()[4]);
+        CPPUNIT_ASSERT(make_alloc(ref6) == _M_alloc->alloc_ops()[5]);
+        CPPUNIT_ASSERT(make_alloc(ref7) == _M_alloc->alloc_ops()[6]);
+        _M_gc->collect();
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(7), _M_alloc->alloc_ops().size());
+        ref7->set_elem(0, Value());
+        ref7->set_elem(1, Value());
+        _M_gc->collect();
+        const vector<AllocatorOperation> &alloc_ops = _M_alloc->alloc_ops();
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(11), _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref2)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref3)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref4)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref5)) == 1);
+        _M_thread_context_mutex->unlock();
+        thread_context->system_thread().join();
+      }
+
+      void GarbageCollectorTests::test_gc_collects_native_objects()
+      {
+        unique_ptr<VirtualMachineContext> vm_context(new_vm_context());
+        unique_ptr<ThreadContext> thread_context(new_thread_context(*vm_context));
+        _M_gc->add_vm_context(vm_context.get());
+        _M_gc->add_thread_context(thread_context.get());
+        int i1 = 0;
+        int i2 = 1;
+        int i3 = 2;
+        Reference ref1(_M_gc->new_object(OBJECT_TYPE_NATIVE_OBJECT, sizeof(int *)));
+        ref1->raw().ntvo.type = NativeObjectType(&int_ptr_ident1);
+        ref1->raw().ntvo.clazz = NativeObjectClass(&int_ptr_funs1);
+        int **i_ptr1 = reinterpret_cast<int **>(ref1->raw().ntvo.bs);
+        *i_ptr1 = &i1;
+        Reference ref2(_M_gc->new_object(OBJECT_TYPE_NATIVE_OBJECT, sizeof(int *)));
+        ref2->raw().ntvo.type = NativeObjectType(&int_ptr_ident2);
+        ref2->raw().ntvo.clazz = NativeObjectClass(&int_ptr_funs2);
+        int **i_ptr2 = reinterpret_cast<int **>(ref2->raw().ntvo.bs);
+        *i_ptr2 = &i2;
+        Reference ref3(_M_gc->new_object(OBJECT_TYPE_NATIVE_OBJECT | OBJECT_TYPE_UNIQUE, sizeof(int *)));
+        ref3->raw().ntvo.type = NativeObjectType(&int_ptr_ident3);
+        ref3->raw().ntvo.clazz = NativeObjectClass(&int_ptr_funs3);
+        int **i_ptr3 = reinterpret_cast<int **>(ref3->raw().ntvo.bs);
+        *i_ptr3 = &i3;
+        Reference ref4(_M_gc->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 3));
+        ref4->set_elem(0, Value(ref1));
+        ref4->set_elem(1, Value(ref2));
+        ref4->set_elem(2, Value(ref3));
+        thread_context->regs().rv.raw().r = ref4;
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(4), _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(make_alloc(ref1) == _M_alloc->alloc_ops()[0]);
+        CPPUNIT_ASSERT(make_alloc(ref2) == _M_alloc->alloc_ops()[1]);
+        CPPUNIT_ASSERT(make_alloc(ref3) == _M_alloc->alloc_ops()[2]);
+        CPPUNIT_ASSERT(make_alloc(ref4) == _M_alloc->alloc_ops()[3]);
+        CPPUNIT_ASSERT_EQUAL(0, i1);
+        CPPUNIT_ASSERT_EQUAL(1, i2);
+        CPPUNIT_ASSERT_EQUAL(2, i3);
+        _M_gc->collect();
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(4), _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT_EQUAL(0, i1);
+        CPPUNIT_ASSERT_EQUAL(1, i2);
+        CPPUNIT_ASSERT_EQUAL(2, i3);
+        ref4->set_elem(1, Value());
+        ref4->set_elem(2, Value());
+        _M_gc->collect();
+        const vector<AllocatorOperation> &alloc_ops = _M_alloc->alloc_ops();
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(6), _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref2)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref3)) == 1);
+        CPPUNIT_ASSERT_EQUAL(0, i1);
+        CPPUNIT_ASSERT_EQUAL(2, i2);
+        CPPUNIT_ASSERT_EQUAL(3, i3);
         _M_thread_context_mutex->unlock();
         thread_context->system_thread().join();
       }

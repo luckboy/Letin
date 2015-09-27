@@ -51,6 +51,8 @@ namespace letin
         CPPUNIT_TEST(test_gc_destructor_free_all_objects);
         CPPUNIT_TEST(test_gc_collects_unique_objects);
         CPPUNIT_TEST(test_gc_collects_objects_from_canceled_references);
+        CPPUNIT_TEST(test_gc_collects_lazy_value_objects);
+        CPPUNIT_TEST(test_gc_collects_native_objects);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         AllocatorWrapper *_M_alloc;
@@ -99,6 +101,8 @@ namespace letin
         void test_gc_destructor_free_all_objects();
         void test_gc_collects_unique_objects();
         void test_gc_collects_objects_from_canceled_references();
+        void test_gc_collects_lazy_value_objects();
+        void test_gc_collects_native_objects();
       };
 
       DECL_IMPL_GC_TESTS(MarkSweepGarbageCollector);
