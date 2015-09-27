@@ -282,6 +282,45 @@ namespace letin
       { return _M_fun != nullptr ? _M_fun(ptr1, ptr2) : false; }
     };
 
+    class NativeObjectFunctions
+    {
+      NativeObjectFinalizator _M_finalizator;
+      NativeObjectHashFunction _M_hash_fun;
+      NativeObjectEqualFunction _M_equal_fun;
+    public:
+      NativeObjectFunctions(void (*finalizator)(const void *), std::uint64_t (*hash_fun)(const void *), bool (*equal_fun)(const void *, const void *)) :
+        _M_finalizator(NativeObjectFinalizator(finalizator)),
+        _M_hash_fun(NativeObjectHashFunction(hash_fun)),
+        _M_equal_fun(NativeObjectEqualFunction(equal_fun)) {}
+
+      NativeObjectFunctions(NativeObjectFinalizator finalizator, NativeObjectHashFunction hash_fun, NativeObjectEqualFunction equal_fun) :
+        _M_finalizator(finalizator), _M_hash_fun(hash_fun), _M_equal_fun(equal_fun) {}
+
+      NativeObjectFinalizator finalizator() const { return _M_finalizator; }
+
+      NativeObjectHashFunction hash_fun() const { return _M_hash_fun; }
+
+      NativeObjectEqualFunction equal_fun() const { return _M_equal_fun; }
+    };
+
+    class NativeObjectClass
+    {
+      const NativeObjectFunctions *_M_funs;
+    public:
+      NativeObjectClass() : _M_funs(nullptr) {}
+
+      NativeObjectClass(const NativeObjectFunctions *funs) : _M_funs(funs) {}
+
+      NativeObjectFinalizator finalizator() const
+      { return _M_funs != nullptr ? _M_funs->finalizator() : NativeObjectFinalizator(); }
+
+      NativeObjectHashFunction hash_fun() const
+      { return _M_funs != nullptr ? _M_funs->hash_fun() : NativeObjectHashFunction(); }
+
+      NativeObjectEqualFunction equal_fun() const
+      { return _M_funs != nullptr ? _M_funs->equal_fun() : NativeObjectEqualFunction(); }
+    };
+
     class LazyValueMutex
     {
       static thread_local std::size_t _S_locked_mutex_count;
@@ -322,9 +361,7 @@ namespace letin
         } lzv;
         struct {
           NativeObjectType type;
-          NativeObjectFinalizator finalizator;
-          NativeObjectHashFunction hash_fun;
-          NativeObjectEqualFunction equal_fun;
+          NativeObjectClass clazz;
           std::uint8_t bs[1];
         } ntvo;
         std::uint8_t bs[1];

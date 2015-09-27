@@ -56,6 +56,8 @@ namespace letin
       static bool equal_dirs(const void *ptr1, const void *ptr2)
       { return *reinterpret_cast<::DIR * const *>(ptr1) == *reinterpret_cast<::DIR * const *>(ptr2); }
 
+      static NativeObjectFunctions dir_funs(finalize_dir, hash_dir, equal_dirs);
+      
       void initialize_consts()
       {
         static_system_clk_tck = ::sysconf(_SC_CLK_TCK);
@@ -1691,9 +1693,7 @@ namespace letin
         Object *object = vm->gc()->new_object(OBJECT_TYPE_NATIVE_OBJECT | OBJECT_TYPE_UNIQUE, sizeof(::DIR *), context);
         if(object == nullptr) return nullptr;
         object->raw().ntvo.type = NativeObjectType(&dir_type_ident);
-        object->raw().ntvo.finalizator = NativeObjectFinalizator(finalize_dir);
-        object->raw().ntvo.hash_fun = NativeObjectHashFunction(hash_dir);
-        object->raw().ntvo.equal_fun = NativeObjectEqualFunction(equal_dirs);
+        object->raw().ntvo.clazz = NativeObjectClass(&dir_funs);
         ::DIR **dir_ptr = reinterpret_cast<::DIR **>(object->raw().ntvo.bs);
         *dir_ptr = dir;
         return object;

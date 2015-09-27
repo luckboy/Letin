@@ -134,7 +134,7 @@ namespace letin
         case OBJECT_TYPE_TUPLE:
           return murmur_hash64a(TupleElementList(object.raw().tuple_elem_types(), object.raw().tes), object.length());
         case OBJECT_TYPE_NATIVE_OBJECT:
-          return object.raw().ntvo.hash_fun(reinterpret_cast<const void *>(object.raw().bs));
+          return object.raw().ntvo.clazz.hash_fun()(reinterpret_cast<const void *>(object.raw().bs));
         default:
           return 0;
       }
