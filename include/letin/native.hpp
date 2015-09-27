@@ -443,7 +443,7 @@ namespace letin
       {
         const std::int64_t &_M_i;
       public:
-        IntSetter(const std::int64_t i) : _M_i(i) {}
+        IntSetter(const std::int64_t &i) : _M_i(i) {}
 
         int set(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value& value, vm::RegisteredReference &tmp_r) const
         { value = vm::Value(_M_i); return ERROR_SUCCESS; }

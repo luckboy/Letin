@@ -1639,7 +1639,7 @@ namespace letin
         int error = vm->force_tuple_elem(context, object, 4);
         if(error != ERROR_SUCCESS) return error;
         if(!object.elem(4).is_ref()) return ERROR_INCORRECT_OBJECT;
-        if(!object.elem(4).r()->is_iarray32() || !object.elem(4).r()->length() != system_termios_cc_indexes.size())
+        if(!object.elem(4).r()->is_iarray32() || object.elem(4).r()->length() != system_termios_cc_indexes.size())
           return ERROR_INCORRECT_OBJECT;
         for(size_t i = 5; i < 6; i++) {
           int error = vm->force_tuple_elem(context, object, i);
@@ -1650,7 +1650,7 @@ namespace letin
       }
 
       // Functions for struct utsname.
-      
+
       //
       // type utsname = (
       //     iarray8,   // sysname
@@ -1702,12 +1702,11 @@ namespace letin
       bool object_to_system_dir(const Object &object, ::DIR *&dir)
       {
         ::DIR * const *dir_ptr = reinterpret_cast<::DIR * const *>(object.raw().ntvo.bs);
-        ::DIR *tmp_dir = *dir_ptr;
-        if(tmp_dir == nullptr) {
+        if(*dir_ptr == nullptr) {
           letin_errno() = EBADF;
           return false;
         }
-        dir = tmp_dir;
+        dir = *dir_ptr;
         return true;
       }
 

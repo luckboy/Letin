@@ -28,7 +28,7 @@ void *operator new(size_t size)
   return ptr;
 }
 
-void *operator new(size_t size, const nothrow_t &nothrow)
+void *operator new(size_t size, const nothrow_t &nothrow) noexcept
 {
   lock_guard<recursive_mutex> guard(new_mutex);
   return malloc(size > 0 ? size : 1);
@@ -36,7 +36,7 @@ void *operator new(size_t size, const nothrow_t &nothrow)
 
 void *operator new[](size_t size) { return operator new(size); }
 
-void *operator new[](size_t size, const nothrow_t &nothrow) { return operator new(size, nothrow); }
+void *operator new[](size_t size, const nothrow_t &nothrow) noexcept { return operator new(size, nothrow); }
 
 void operator delete(void *ptr) noexcept
 {
@@ -44,7 +44,7 @@ void operator delete(void *ptr) noexcept
   free(ptr);
 }
 
-void operator delete(void *ptr, const nothrow_t &nothrow) { operator delete(ptr); }
+void operator delete(void *ptr, const nothrow_t &nothrow) noexcept { operator delete(ptr); }
 
 void operator delete[](void *ptr) noexcept { operator delete(ptr); }
 

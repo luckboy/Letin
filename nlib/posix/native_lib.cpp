@@ -1597,7 +1597,8 @@ extern "C" {
             ::DIR *dir;
             if(!convert_args(args, todir(dir)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
-            *reinterpret_cast<::DIR **>(dir_v.r()->raw().ntvo.bs) = nullptr;
+            ::DIR **dir_ptr = reinterpret_cast<::DIR **>(dir_v.r()->raw().ntvo.bs);
+            *dir_ptr = nullptr;
             atomic_thread_fence(memory_order_release);
             int result;
             {

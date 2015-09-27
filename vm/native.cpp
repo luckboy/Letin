@@ -49,8 +49,8 @@ namespace letin
       {
         int error = vm->force(context, value);
         if(error != ERROR_SUCCESS) return error;
-        if(!value.is_ref()) return ERROR_INCORRECT_VALUE;
-        if(!value.r()->type() != object_type) return ERROR_INCORRECT_OBJECT;
+        if(value.is_ref()) return ERROR_INCORRECT_VALUE;
+        if(value.r()->type() != object_type) return ERROR_INCORRECT_OBJECT;
         if(value.is_unique()) value.cancel_ref();
         return ERROR_SUCCESS;
       }
