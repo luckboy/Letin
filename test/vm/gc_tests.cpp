@@ -650,6 +650,7 @@ namespace letin
         raw4->next_r = Reference();
         CPPUNIT_ASSERT(raw4->key.set_key(args1, *thread_context));
         CPPUNIT_ASSERT(raw4->value.set_value(static_cast<int64_t>(1), *thread_context));
+        Reference key_ref4 = raw4->key.key_ref();
         Reference ref5(_M_gc->new_object(OBJECT_TYPE_ALF_HASH_TABLE_ENTRY, sizeof(HashTableEntryRaw<ArgumentList, double>)));
         thread_context->regs().gc_tmp_ptr = nullptr;
         HashTableEntryRaw<ArgumentList, double> *raw5 = reinterpret_cast<HashTableEntryRaw<ArgumentList, double> *>(ref5->raw().bs);
@@ -657,6 +658,7 @@ namespace letin
         raw5->next_r = Reference();
         CPPUNIT_ASSERT(raw5->key.set_key(args2, *thread_context));
         CPPUNIT_ASSERT(raw5->value.set_value(2.0, *thread_context));
+        Reference key_ref5 = raw5->key.key_ref();
         Reference ref6(_M_gc->new_object(OBJECT_TYPE_ALR_HASH_TABLE_ENTRY, sizeof(HashTableEntryRaw<ArgumentList, Reference>)));
         thread_context->regs().gc_tmp_ptr = nullptr;
         HashTableEntryRaw<ArgumentList, Reference> *raw6 = reinterpret_cast<HashTableEntryRaw<ArgumentList, Reference> *>(ref6->raw().bs);
@@ -664,6 +666,7 @@ namespace letin
         raw6->next_r = Reference();
         CPPUNIT_ASSERT(raw6->key.set_key(args2, *thread_context));
         CPPUNIT_ASSERT(raw6->value.set_value(ref3, *thread_context));
+        Reference key_ref6 = raw6->key.key_ref();
         Reference ref7(_M_gc->new_object(OBJECT_TYPE_TUPLE, 3));
         ref7->set_elem(0, Value(ref4));
         ref7->set_elem(1, Value(ref5));
@@ -675,11 +678,11 @@ namespace letin
         CPPUNIT_ASSERT(make_alloc(ref2) == _M_alloc->alloc_ops()[1]);
         CPPUNIT_ASSERT(make_alloc(ref3) == _M_alloc->alloc_ops()[2]);
         CPPUNIT_ASSERT(make_alloc(ref4) == _M_alloc->alloc_ops()[3]);
-        CPPUNIT_ASSERT(make_alloc(raw4->key.key_ref()) == _M_alloc->alloc_ops()[4]);
+        CPPUNIT_ASSERT(make_alloc(key_ref4) == _M_alloc->alloc_ops()[4]);
         CPPUNIT_ASSERT(make_alloc(ref5) == _M_alloc->alloc_ops()[5]);
-        CPPUNIT_ASSERT(make_alloc(raw5->key.key_ref()) == _M_alloc->alloc_ops()[6]);
+        CPPUNIT_ASSERT(make_alloc(key_ref5) == _M_alloc->alloc_ops()[6]);
         CPPUNIT_ASSERT(make_alloc(ref6) == _M_alloc->alloc_ops()[7]);
-        CPPUNIT_ASSERT(make_alloc(raw6->key.key_ref()) == _M_alloc->alloc_ops()[8]);
+        CPPUNIT_ASSERT(make_alloc(key_ref6) == _M_alloc->alloc_ops()[8]);
         CPPUNIT_ASSERT(make_alloc(ref7) == _M_alloc->alloc_ops()[9]);
         _M_gc->collect();
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(10), _M_alloc->alloc_ops().size());
@@ -690,16 +693,16 @@ namespace letin
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(15), _M_alloc->alloc_ops().size());
         CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref1)) == 1);
         CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref4)) == 1);
-        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(raw4->key.key_ref())) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(key_ref4)) == 1);
         CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref5)) == 1);
-        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(raw5->key.key_ref())) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(key_ref5)) == 1);
         ref7->set_elem(2, Value());
         _M_gc->collect();
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(19), _M_alloc->alloc_ops().size());
         CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref2)) == 1);
         CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref3)) == 1);
         CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref6)) == 1);
-        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(raw6->key.key_ref())) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(key_ref6)) == 1);
         _M_thread_context_mutex->unlock();
         thread_context->system_thread().join();
       }
