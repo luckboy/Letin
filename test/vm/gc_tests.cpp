@@ -672,7 +672,6 @@ namespace letin
         ref7->set_elem(1, Value(ref5));
         ref7->set_elem(2, Value(ref6));
         thread_context->regs().rv.raw().r = ref7;
-        _M_gc->collect();
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(10), _M_alloc->alloc_ops().size());
         CPPUNIT_ASSERT(make_alloc(ref1) == _M_alloc->alloc_ops()[0]);
         CPPUNIT_ASSERT(make_alloc(ref2) == _M_alloc->alloc_ops()[1]);
