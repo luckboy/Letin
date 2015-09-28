@@ -9,11 +9,14 @@
 #include <cstring>
 #include <new>
 #include "gc_tests.hpp"
+#include "hash_table.hpp"
 #include "mark_sweep_gc.hpp"
 #include "new_alloc.hpp"
+#include "priv.hpp"
 
 using namespace std;
 using namespace letin::vm;
+using namespace letin::vm::priv;
 
 namespace letin
 {
@@ -525,6 +528,178 @@ namespace letin
         CPPUNIT_ASSERT_EQUAL(0, i1);
         CPPUNIT_ASSERT_EQUAL(2, i2);
         CPPUNIT_ASSERT_EQUAL(3, i3);
+        _M_thread_context_mutex->unlock();
+        thread_context->system_thread().join();
+      }
+
+      void GarbageCollectorTests::test_gc_collects_hash_table_objects()
+      {
+        unique_ptr<VirtualMachineContext> vm_context(new_vm_context());
+        unique_ptr<ThreadContext> thread_context(new_thread_context(*vm_context));
+        _M_gc->add_vm_context(vm_context.get());
+        _M_gc->add_thread_context(thread_context.get());
+        Reference ref1(_M_gc->new_object(OBJECT_TYPE_HASH_TABLE_ENTRY, sizeof(HashTableEntryRaw<int, int>)));
+        HashTableEntryRaw<int, int> *raw1 = reinterpret_cast<HashTableEntryRaw<int, int> *>(ref1->raw().bs);
+        Reference ref2(_M_gc->new_object(OBJECT_TYPE_HASH_TABLE_ENTRY, sizeof(HashTableEntryRaw<int, int>)));
+        HashTableEntryRaw<int, int> *raw2 = reinterpret_cast<HashTableEntryRaw<int, int> *>(ref2->raw().bs);
+        Reference ref3(_M_gc->new_object(OBJECT_TYPE_HASH_TABLE_ENTRY, sizeof(HashTableEntryRaw<int, int>)));
+        HashTableEntryRaw<int, int> *raw3 = reinterpret_cast<HashTableEntryRaw<int, int> *>(ref3->raw().bs);
+        Reference ref4(_M_gc->new_object(OBJECT_TYPE_HASH_TABLE_ENTRY, sizeof(HashTableEntryRaw<int, int>)));
+        HashTableEntryRaw<int, int> *raw4 = reinterpret_cast<HashTableEntryRaw<int, int> *>(ref4->raw().bs);
+        raw1->prev_r = Reference();
+        raw1->next_r = ref2;
+        CPPUNIT_ASSERT(raw1->key.set_key(101, *thread_context));
+        CPPUNIT_ASSERT(raw1->value.set_value(201, *thread_context));
+        raw2->prev_r = ref1;
+        raw2->next_r = ref3;
+        CPPUNIT_ASSERT(raw2->key.set_key(102, *thread_context));
+        CPPUNIT_ASSERT(raw2->value.set_value(202, *thread_context));
+        raw3->prev_r = ref2;
+        raw3->next_r = ref4;
+        CPPUNIT_ASSERT(raw3->key.set_key(103, *thread_context));
+        CPPUNIT_ASSERT(raw3->value.set_value(203, *thread_context));
+        raw4->prev_r = ref3;
+        raw4->next_r = Reference();
+        CPPUNIT_ASSERT(raw4->key.set_key(104, *thread_context));
+        CPPUNIT_ASSERT(raw4->value.set_value(204, *thread_context));
+        Reference ref5(_M_gc->new_object(OBJECT_TYPE_HASH_TABLE_ENTRY, sizeof(HashTableEntryRaw<int, int>)));
+        HashTableEntryRaw<int, int> *raw5 = reinterpret_cast<HashTableEntryRaw<int, int> *>(ref5->raw().bs);
+        Reference ref6(_M_gc->new_object(OBJECT_TYPE_HASH_TABLE_ENTRY, sizeof(HashTableEntryRaw<int, int>)));
+        HashTableEntryRaw<int, int> *raw6 = reinterpret_cast<HashTableEntryRaw<int, int> *>(ref6->raw().bs);
+        raw5->prev_r = Reference();
+        raw5->next_r = ref6;
+        CPPUNIT_ASSERT(raw5->key.set_key(105, *thread_context));
+        CPPUNIT_ASSERT(raw5->value.set_value(205, *thread_context));
+        raw6->prev_r = ref5;
+        raw6->next_r = Reference();
+        CPPUNIT_ASSERT(raw6->key.set_key(106, *thread_context));
+        CPPUNIT_ASSERT(raw6->value.set_value(206, *thread_context));
+        Reference ref7(_M_gc->new_object(OBJECT_TYPE_HASH_TABLE, offsetof(HashTableRaw, buckets) + sizeof(HashTableBucket) * 4));
+        HashTableRaw *raw7 = reinterpret_cast<HashTableRaw *>(ref7->raw().bs);
+        raw7->bucket_count = 4;
+        raw7->buckets[0].first_entry_r = ref1;
+        raw7->buckets[0].last_entry_r = ref4;
+        raw7->buckets[1].first_entry_r = Reference();
+        raw7->buckets[1].last_entry_r = Reference();
+        raw7->buckets[2].first_entry_r = ref5;
+        raw7->buckets[2].last_entry_r = ref6;
+        raw7->buckets[3].first_entry_r = Reference();
+        raw7->buckets[3].last_entry_r = Reference();
+        thread_context->regs().rv.raw().r = ref7;
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(7), _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(make_alloc(ref1) == _M_alloc->alloc_ops()[0]);
+        CPPUNIT_ASSERT(make_alloc(ref2) == _M_alloc->alloc_ops()[1]);
+        CPPUNIT_ASSERT(make_alloc(ref3) == _M_alloc->alloc_ops()[2]);
+        CPPUNIT_ASSERT(make_alloc(ref4) == _M_alloc->alloc_ops()[3]);
+        CPPUNIT_ASSERT(make_alloc(ref5) == _M_alloc->alloc_ops()[4]);
+        CPPUNIT_ASSERT(make_alloc(ref6) == _M_alloc->alloc_ops()[5]);
+        CPPUNIT_ASSERT(make_alloc(ref7) == _M_alloc->alloc_ops()[6]);
+        _M_gc->collect();
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(7), _M_alloc->alloc_ops().size());
+        raw7->buckets[0].first_entry_r = Reference();
+        raw7->buckets[0].last_entry_r = Reference();
+        _M_gc->collect();
+        const vector<AllocatorOperation> &alloc_ops = _M_alloc->alloc_ops();
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(11), _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref1)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref2)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref3)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref4)) == 1);
+        thread_context->regs().rv.raw().r = Reference();
+        _M_gc->collect();
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(14), _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref5)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref6)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref7)) == 1);
+        _M_thread_context_mutex->unlock();
+        thread_context->system_thread().join();
+      }
+
+      void GarbageCollectorTests::test_gc_collects_special_hash_table_entry_objects()
+      {
+        unique_ptr<VirtualMachineContext> vm_context(new_vm_context());
+        unique_ptr<ThreadContext> thread_context(new_thread_context(*vm_context));
+        thread_context->set_gc(_M_gc);
+        _M_gc->add_vm_context(vm_context.get());
+        _M_gc->add_thread_context(thread_context.get());
+        Reference ref1(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 6));
+        strcpy(reinterpret_cast<char *>(ref1->raw().is8), "test1");
+        Reference ref2(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 6));
+        strcpy(reinterpret_cast<char *>(ref2->raw().is8), "test2");
+        Reference ref3(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 6));
+        strcpy(reinterpret_cast<char *>(ref3->raw().is8), "test3");
+        Value arg_array1[2];
+        arg_array1[0] = Value(ref1);
+        arg_array1[1] = Value(ref2);
+        ArgumentList args1(arg_array1, 2);
+        Value arg_array2[3];
+        arg_array2[0] = Value(1);
+        arg_array2[1] = Value(ref2);
+        arg_array2[2] = Value(2);
+        ArgumentList args2(arg_array2, 3);
+        Value arg_array3[4];
+        arg_array3[0] = Value(ref2);
+        arg_array3[1] = Value(1);
+        arg_array3[2] = Value(ref3);
+        arg_array3[3] = Value(2);
+        ArgumentList args3(arg_array3, 4);
+        Reference ref4(_M_gc->new_object(OBJECT_TYPE_ALI_HASH_TABLE_ENTRY, sizeof(HashTableEntryRaw<ArgumentList, int64_t>)));
+        thread_context->regs().gc_tmp_ptr = nullptr;
+        HashTableEntryRaw<ArgumentList, int64_t> *raw4 = reinterpret_cast<HashTableEntryRaw<ArgumentList, int64_t> *>(ref4->raw().bs);
+        raw4->prev_r = Reference();
+        raw4->next_r = Reference();
+        CPPUNIT_ASSERT(raw4->key.set_key(args1, *thread_context));
+        CPPUNIT_ASSERT(raw4->value.set_value(static_cast<int64_t>(1), *thread_context));
+        Reference ref5(_M_gc->new_object(OBJECT_TYPE_ALF_HASH_TABLE_ENTRY, sizeof(HashTableEntryRaw<ArgumentList, double>)));
+        thread_context->regs().gc_tmp_ptr = nullptr;
+        HashTableEntryRaw<ArgumentList, double> *raw5 = reinterpret_cast<HashTableEntryRaw<ArgumentList, double> *>(ref5->raw().bs);
+        raw5->prev_r = Reference();
+        raw5->next_r = Reference();
+        CPPUNIT_ASSERT(raw5->key.set_key(args2, *thread_context));
+        CPPUNIT_ASSERT(raw5->value.set_value(2.0, *thread_context));
+        Reference ref6(_M_gc->new_object(OBJECT_TYPE_ALR_HASH_TABLE_ENTRY, sizeof(HashTableEntryRaw<ArgumentList, Reference>)));
+        thread_context->regs().gc_tmp_ptr = nullptr;
+        HashTableEntryRaw<ArgumentList, Reference> *raw6 = reinterpret_cast<HashTableEntryRaw<ArgumentList, Reference> *>(ref6->raw().bs);
+        raw6->prev_r = Reference();
+        raw6->next_r = Reference();
+        CPPUNIT_ASSERT(raw6->key.set_key(args2, *thread_context));
+        CPPUNIT_ASSERT(raw6->value.set_value(ref3, *thread_context));
+        Reference ref7(_M_gc->new_object(OBJECT_TYPE_TUPLE, 3));
+        ref7->set_elem(0, Value(ref4));
+        ref7->set_elem(1, Value(ref5));
+        ref7->set_elem(2, Value(ref6));
+        thread_context->regs().rv.raw().r = ref7;
+        _M_gc->collect();
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(10), _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(make_alloc(ref1) == _M_alloc->alloc_ops()[0]);
+        CPPUNIT_ASSERT(make_alloc(ref2) == _M_alloc->alloc_ops()[1]);
+        CPPUNIT_ASSERT(make_alloc(ref3) == _M_alloc->alloc_ops()[2]);
+        CPPUNIT_ASSERT(make_alloc(ref4) == _M_alloc->alloc_ops()[3]);
+        CPPUNIT_ASSERT(make_alloc(raw4->key.key_ref()) == _M_alloc->alloc_ops()[4]);
+        CPPUNIT_ASSERT(make_alloc(ref5) == _M_alloc->alloc_ops()[5]);
+        CPPUNIT_ASSERT(make_alloc(raw5->key.key_ref()) == _M_alloc->alloc_ops()[6]);
+        CPPUNIT_ASSERT(make_alloc(ref6) == _M_alloc->alloc_ops()[7]);
+        CPPUNIT_ASSERT(make_alloc(raw6->key.key_ref()) == _M_alloc->alloc_ops()[8]);
+        CPPUNIT_ASSERT(make_alloc(ref7) == _M_alloc->alloc_ops()[9]);
+        _M_gc->collect();
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(10), _M_alloc->alloc_ops().size());
+        ref7->set_elem(0, Value());
+        ref7->set_elem(1, Value());
+        _M_gc->collect();
+        const vector<AllocatorOperation> &alloc_ops = _M_alloc->alloc_ops();
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(15), _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref1)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref4)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(raw4->key.key_ref())) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref5)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(raw5->key.key_ref())) == 1);
+        ref7->set_elem(2, Value());
+        _M_gc->collect();
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(19), _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref2)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref3)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(ref6)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(raw6->key.key_ref())) == 1);
         _M_thread_context_mutex->unlock();
         thread_context->system_thread().join();
       }
