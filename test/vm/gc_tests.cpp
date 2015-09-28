@@ -704,6 +704,49 @@ namespace letin
         thread_context->system_thread().join();
       }
 
+      void GarbageCollectorTests::test_gc_collects_registered_references()
+      {
+        unique_ptr<VirtualMachineContext> vm_context(new_vm_context());
+        unique_ptr<ThreadContext> thread_context(new_thread_context(*vm_context));
+        thread_context->set_gc(_M_gc);
+        _M_gc->add_vm_context(vm_context.get());
+        _M_gc->add_thread_context(thread_context.get());
+        RegisteredReference ref1(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 6), thread_context.get());
+        strcpy(reinterpret_cast<char *>(ref1->raw().is8), "test1");
+        RegisteredReference ref2(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 6), thread_context.get());
+        strcpy(reinterpret_cast<char *>(ref1->raw().is8), "test2");
+        Reference tmp_ref3;
+        Reference tmp_ref4;
+        Reference tmp_ref5;
+        {
+          RegisteredReference ref3(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 6), thread_context.get());
+          strcpy(reinterpret_cast<char *>(ref1->raw().is8), "test3");
+          tmp_ref3 = ref3;
+          RegisteredReference ref4(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 6), thread_context.get());
+          strcpy(reinterpret_cast<char *>(ref1->raw().is8), "test4");
+          tmp_ref4 = ref4;
+          RegisteredReference ref5(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 6), thread_context.get());
+          strcpy(reinterpret_cast<char *>(ref1->raw().is8), "test5");
+          tmp_ref5 = ref5;
+          CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(5), _M_alloc->alloc_ops().size());
+          CPPUNIT_ASSERT(make_alloc(ref1) == _M_alloc->alloc_ops()[0]);
+          CPPUNIT_ASSERT(make_alloc(ref2) == _M_alloc->alloc_ops()[1]);
+          CPPUNIT_ASSERT(make_alloc(ref3) == _M_alloc->alloc_ops()[2]);
+          CPPUNIT_ASSERT(make_alloc(ref4) == _M_alloc->alloc_ops()[3]);
+          CPPUNIT_ASSERT(make_alloc(ref5) == _M_alloc->alloc_ops()[4]);
+          _M_gc->collect();
+          CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(5), _M_alloc->alloc_ops().size());
+        }
+        _M_gc->collect();
+        const vector<AllocatorOperation> &alloc_ops = _M_alloc->alloc_ops();
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(8), _M_alloc->alloc_ops().size());
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(tmp_ref3)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(tmp_ref4)) == 1);
+        CPPUNIT_ASSERT(count(alloc_ops.begin(), alloc_ops.end(), make_free(tmp_ref5)) == 1);
+        _M_thread_context_mutex->unlock();
+        thread_context->system_thread().join();
+      }
+
       DEF_IMPL_GC_TESTS(MarkSweepGarbageCollector);
     }
   }

@@ -55,6 +55,7 @@ namespace letin
         CPPUNIT_TEST(test_gc_collects_native_objects);
         CPPUNIT_TEST(test_gc_collects_hash_table_objects);
         CPPUNIT_TEST(test_gc_collects_special_hash_table_entry_objects);
+        CPPUNIT_TEST(test_gc_collects_registered_references);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         AllocatorWrapper *_M_alloc;
@@ -107,6 +108,7 @@ namespace letin
         void test_gc_collects_native_objects();
         void test_gc_collects_hash_table_objects();
         void test_gc_collects_special_hash_table_entry_objects();
+        void test_gc_collects_registered_references();
       };
 
       DECL_IMPL_GC_TESTS(MarkSweepGarbageCollector);
