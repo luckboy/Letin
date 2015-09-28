@@ -26,6 +26,7 @@ namespace letin
         CPPUNIT_TEST(test_registered_ref_constructor_does_not_register);
         CPPUNIT_TEST(test_registered_ref_register_ref_method_registers);
         CPPUNIT_TEST(test_registered_ref_destructor_unregisters);
+        CPPUNIT_TEST(test_registered_ref_destructor_unregisters_out_of_order);
         CPPUNIT_TEST_SUITE_END();
 
         Allocator *_M_alloc;
@@ -42,6 +43,7 @@ namespace letin
         void test_registered_ref_constructor_does_not_register();
         void test_registered_ref_register_ref_method_registers();
         void test_registered_ref_destructor_unregisters();
+        void test_registered_ref_destructor_unregisters_out_of_order();
       };
     }
   }

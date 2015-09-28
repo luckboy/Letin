@@ -156,6 +156,53 @@ namespace letin
         CPPUNIT_ASSERT(nullptr == _M_thread_context->first_registered_ref());
         CPPUNIT_ASSERT(nullptr == _M_thread_context->last_registered_ref());
       }
+
+      void RegisteredReferenceTests::test_registered_ref_destructor_unregisters_out_of_order()
+      {
+        {
+          RegisteredReference ref1(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1, _M_thread_context), _M_thread_context, false);
+          {
+            RegisteredReference ref2(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 2, _M_thread_context), _M_thread_context);
+            {
+              RegisteredReference ref3(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 3, _M_thread_context), _M_thread_context);
+              {
+                RegisteredReference ref4(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 4, _M_thread_context), _M_thread_context);
+                ref1.register_ref();
+                CPPUNIT_ASSERT_EQUAL(&ref2, _M_thread_context->first_registered_ref());
+                CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->prev_registered_ref(ref2));
+                CPPUNIT_ASSERT_EQUAL(&ref3, _M_thread_context->next_registered_ref(ref2));
+                CPPUNIT_ASSERT_EQUAL(&ref2, _M_thread_context->prev_registered_ref(ref3));
+                CPPUNIT_ASSERT_EQUAL(&ref4, _M_thread_context->next_registered_ref(ref3));
+                CPPUNIT_ASSERT_EQUAL(&ref3, _M_thread_context->prev_registered_ref(ref4));
+                CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->next_registered_ref(ref4));
+                CPPUNIT_ASSERT_EQUAL(&ref4, _M_thread_context->prev_registered_ref(ref1));
+                CPPUNIT_ASSERT_EQUAL(&ref2, _M_thread_context->next_registered_ref(ref1));
+                CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->last_registered_ref());
+              }
+              CPPUNIT_ASSERT_EQUAL(&ref2, _M_thread_context->first_registered_ref());
+              CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->prev_registered_ref(ref2));
+              CPPUNIT_ASSERT_EQUAL(&ref3, _M_thread_context->next_registered_ref(ref2));
+              CPPUNIT_ASSERT_EQUAL(&ref2, _M_thread_context->prev_registered_ref(ref3));
+              CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->next_registered_ref(ref3));
+              CPPUNIT_ASSERT_EQUAL(&ref3, _M_thread_context->prev_registered_ref(ref1));
+              CPPUNIT_ASSERT_EQUAL(&ref2, _M_thread_context->next_registered_ref(ref1));
+              CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->last_registered_ref());
+            }
+            CPPUNIT_ASSERT_EQUAL(&ref2, _M_thread_context->first_registered_ref());
+            CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->prev_registered_ref(ref2));
+            CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->next_registered_ref(ref2));
+            CPPUNIT_ASSERT_EQUAL(&ref2, _M_thread_context->prev_registered_ref(ref1));
+            CPPUNIT_ASSERT_EQUAL(&ref2, _M_thread_context->next_registered_ref(ref1));
+            CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->last_registered_ref());
+          }
+          CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->first_registered_ref());
+          CPPUNIT_ASSERT_EQUAL(&ref1,_M_thread_context->prev_registered_ref(ref1));
+          CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->next_registered_ref(ref1));
+          CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->last_registered_ref());
+        }
+        CPPUNIT_ASSERT(nullptr == _M_thread_context->first_registered_ref());
+        CPPUNIT_ASSERT(nullptr == _M_thread_context->last_registered_ref());
+      }
     }
   }
 }
