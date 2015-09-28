@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -39,13 +39,13 @@ namespace letin
       public:
         AllocatorWrapper(Allocator *alloc) : _M_alloc(alloc) {}
 
-        virtual ~AllocatorWrapper();
+        ~AllocatorWrapper();
 
         void *allocate(std::size_t size);
 
         void free(void *ptr);
 
-        const std::vector<AllocatorOperation> alloc_ops() const
+        const std::vector<AllocatorOperation> &alloc_ops() const
         { return _M_alloc_ops; }
       };
       
