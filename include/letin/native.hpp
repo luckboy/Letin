@@ -774,7 +774,7 @@ namespace letin
       template<typename... _Ts>
       inline priv::TupleSetter<OBJECT_TYPE_UNIQUE, _Ts...> vut(_Ts... setters) { return priv::TupleSetter<OBJECT_TYPE_UNIQUE, _Ts...>(setters...); }
 
-      inline priv::ValueSetter v(vm::Value &value) { return priv::ValueSetter(value); }
+      inline priv::ValueSetter v(const vm::Value &value) { return priv::ValueSetter(value); }
 
       inline priv::StringSetter vstr(const std::string &string) { return priv::StringSetter(string); }
 
