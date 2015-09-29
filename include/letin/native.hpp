@@ -141,7 +141,7 @@ namespace letin
       namespace
       {
         template<typename _T>
-        inline CheckerFunction bind_checker(_T checker)
+        inline CheckerFunction bind_checker(_T &checker)
         {
           using namespace std::placeholders;
           return std::bind(&_T::check, &checker, _1, _2, _3);
@@ -325,7 +325,7 @@ namespace letin
       namespace
       {
         template<typename _T>
-        inline ConverterFunction bind_converter(_T converter)
+        inline ConverterFunction bind_converter(_T &converter)
         {
           using namespace std::placeholders;
           return std::bind(&_T::convert, &converter, _1);
@@ -486,7 +486,7 @@ namespace letin
       namespace
       {
         template<typename _T>
-        inline SetterFunction bind_setter(_T setter)
+        inline SetterFunction bind_setter(_T &setter)
         {
           using namespace std::placeholders;
           return std::bind(&_T::set, &setter, _1, _2, _3, _4);
@@ -760,9 +760,7 @@ namespace letin
 
     namespace
     {
-      inline priv::IntSetter vint(int i) { return priv::IntSetter(static_cast<std::int64_t>(i)); }
-
-      inline priv::IntSetter vint(std::int64_t i) { return priv::IntSetter(i); }
+      inline priv::IntSetter vint(const std::int64_t &i) { return priv::IntSetter(i); }
 
       inline priv::FloatSetter vfloat(const double &f) { return priv::FloatSetter(f); }
 

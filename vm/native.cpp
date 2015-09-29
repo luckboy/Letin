@@ -49,7 +49,7 @@ namespace letin
       {
         int error = vm->force(context, value);
         if(error != ERROR_SUCCESS) return error;
-        if(value.is_ref()) return ERROR_INCORRECT_VALUE;
+        if(!value.is_ref()) return ERROR_INCORRECT_VALUE;
         if(value.r()->type() != object_type) return ERROR_INCORRECT_OBJECT;
         if(value.is_unique()) value.cancel_ref();
         return ERROR_SUCCESS;
@@ -81,7 +81,7 @@ namespace letin
       {
         int error = check_object_value(vm, context, value, OBJECT_TYPE_TUPLE | object_type_flag);
         if(error != ERROR_SUCCESS) return error;
-        if(value.r()->length() == 1 ? (value.r()->elem(0).is_int() && value.r()->elem(0).i() == 0) : false)
+        if(value.r()->length() == 2 ? (value.r()->elem(0).is_int() && value.r()->elem(0).i() == 0) : false)
           return check_elem(vm, context, *(value.r()), 1, left);
         else if(value.r()->length() == 2 ? value.r()->elem(0).is_int() : false)
           return check_elem(vm, context, *(value.r()), 1, right);
@@ -166,7 +166,7 @@ namespace letin
       int set_cstring_value(VirtualMachine *vm, ThreadContext *context, Value& value, RegisteredReference &tmp_r, const char *string, size_t length, bool is_length)
       {
         size_t tmp_length = (is_length ? length : strlen(string));
-        tmp_r = vm->gc()->new_object(OBJECT_TYPE_IARRAY8, length, context);
+        tmp_r = vm->gc()->new_object(OBJECT_TYPE_IARRAY8, tmp_length, context);
         if(tmp_r.is_null()) return ERROR_OUT_OF_MEMORY;
         copy_n(string, tmp_length, reinterpret_cast<char *>(tmp_r->raw().is8));
         tmp_r.register_ref();
