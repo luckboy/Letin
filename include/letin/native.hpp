@@ -411,7 +411,7 @@ namespace letin
           EitherConverter(_T left, _U right, bool &right_flag) : _M_left(left), _M_right(right), _M_right_flag(right_flag) {}
 
           bool convert(const vm::Value &value) const
-          { return convert_option_value(value, bind_converter(_M_left), bind_converter(_M_right), _M_right_flag); }
+          { return convert_either_value(value, bind_converter(_M_left), bind_converter(_M_right), _M_right_flag); }
         };
 
         class StringConverter
