@@ -35,7 +35,7 @@ namespace letin
         if(error != ERROR_SUCCESS) return error;
         return (value.is_float() ? ERROR_SUCCESS : ERROR_INCORRECT_VALUE);
       }
-      
+
       int check_ref_value(VirtualMachine *vm, ThreadContext *context, Value &value)
       {
         int error = vm->force(context, value);
@@ -76,7 +76,7 @@ namespace letin
         else
           return ERROR_INCORRECT_OBJECT;
       }
-      
+
       int check_either_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, CheckerFunction left, CheckerFunction right, int object_type_flag)
       {
         int error = check_object_value(vm, context, value, OBJECT_TYPE_TUPLE | object_type_flag);

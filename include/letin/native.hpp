@@ -612,7 +612,7 @@ namespace letin
       namespace
       {
         template<typename _Fun, typename _T>
-        inline std::function<bool (vm::VirtualMachine *, vm::ThreadContext *, vm::RegisteredReference &)> bind_set_new_ref_fun(_Fun fun, const _T &x)
+        inline std::function<bool (vm::VirtualMachine *, vm::ThreadContext *, vm::RegisteredReference &)> bind_set_new_ref_fun(_Fun &fun, const _T &x)
         {
           return [&fun, &x](vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &r) -> bool {
             return fun(vm, context, r, x);
@@ -636,7 +636,7 @@ namespace letin
         };
 
         template<typename _Fun, typename _T>
-        inline std::function<vm::Object *(vm::VirtualMachine *, vm::ThreadContext *)> bind_new_object_fun(_Fun fun, const _T &x)
+        inline std::function<vm::Object *(vm::VirtualMachine *, vm::ThreadContext *)> bind_new_object_fun(_Fun &fun, const _T &x)
         {
           return [&fun, &x](vm::VirtualMachine * vm, vm::ThreadContext * context) -> vm::Object * {
             return fun(vm, context, x);
