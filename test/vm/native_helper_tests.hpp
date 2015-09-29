@@ -39,6 +39,23 @@ namespace letin
         CPPUNIT_TEST(test_native_helper_complains_on_incorrect_object);
         CPPUNIT_TEST(test_native_helper_complains_on_shared_object);
         CPPUNIT_TEST(test_native_helper_complains_on_unique_object);
+        CPPUNIT_TEST(test_native_helper_complains_on_incorrect_tuple_object);
+        CPPUNIT_TEST(test_native_helper_complains_on_incorrect_option_object);
+        CPPUNIT_TEST(test_native_helper_complains_on_incorrect_either_object);
+        CPPUNIT_TEST(test_function_reference_checker_checks_value);
+        CPPUNIT_TEST(test_function_object_checker_checks_value);
+        CPPUNIT_TEST(test_function_int_converter_converts_value);
+        CPPUNIT_TEST(test_function_float_converter_converts_value);
+        CPPUNIT_TEST(test_function_reference_converter_converts_value);
+        CPPUNIT_TEST(test_function_object_converter_converts_value);
+        CPPUNIT_TEST(test_function_reference_setter_sets_value);
+        CPPUNIT_TEST(test_function_object_setter_sets_value);
+        CPPUNIT_TEST(test_function_reference_checker_conplains_on_incorrect_object);
+        CPPUNIT_TEST(test_function_object_checker_conplains_on_incorrect_object);
+        CPPUNIT_TEST(test_function_int_converter_conplains_on_incorrect_value);
+        CPPUNIT_TEST(test_function_float_converter_conplains_on_incorrect_value);
+        CPPUNIT_TEST(test_function_reference_converter_conplains_on_incorrect_object);
+        CPPUNIT_TEST(test_function_object_converter_conplains_on_incorrect_object);
         CPPUNIT_TEST_SUITE_END();
 
         Allocator *_M_alloc;
@@ -67,6 +84,23 @@ namespace letin
         void test_native_helper_complains_on_incorrect_object();
         void test_native_helper_complains_on_shared_object();
         void test_native_helper_complains_on_unique_object();
+        void test_native_helper_complains_on_incorrect_tuple_object();
+        void test_native_helper_complains_on_incorrect_option_object();
+        void test_native_helper_complains_on_incorrect_either_object();
+        void test_function_reference_checker_checks_value();
+        void test_function_object_checker_checks_value();
+        void test_function_int_converter_converts_value();
+        void test_function_float_converter_converts_value();
+        void test_function_reference_converter_converts_value();
+        void test_function_object_converter_converts_value();
+        void test_function_reference_setter_sets_value();
+        void test_function_object_setter_sets_value();
+        void test_function_reference_checker_conplains_on_incorrect_object();
+        void test_function_object_checker_conplains_on_incorrect_object();
+        void test_function_int_converter_conplains_on_incorrect_value();
+        void test_function_float_converter_conplains_on_incorrect_value();
+        void test_function_reference_converter_conplains_on_incorrect_object();
+        void test_function_object_converter_conplains_on_incorrect_object();
       };
     }
   }

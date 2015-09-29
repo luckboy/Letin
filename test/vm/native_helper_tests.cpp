@@ -43,6 +43,69 @@ namespace letin
   {
     namespace test
     {
+      static int check_test1(VirtualMachine *vm, ThreadContext *context, Reference r)
+      { return ERROR_SUCCESS; }
+      LETIN_NATIVE_REF_CHECKER(ctest1, check_test1);
+
+      static int check_test2(VirtualMachine *vm, ThreadContext *context, Object &object)
+      { return ERROR_SUCCESS; }
+      LETIN_NATIVE_OBJECT_CHECKER(ctest2, check_test2);
+
+      static int check_test3(VirtualMachine *vm, ThreadContext *context, Reference r)
+      { return ERROR_INCORRECT_OBJECT; }
+      LETIN_NATIVE_REF_CHECKER(ctest3, check_test3);
+
+      static int check_test4(VirtualMachine *vm, ThreadContext *context, Object &object)
+      { return ERROR_INCORRECT_OBJECT; }
+      LETIN_NATIVE_OBJECT_CHECKER(ctest4, check_test4);
+
+      static bool int_to_test1(int64_t i, int &test_value)
+      { test_value = i; return true; }
+      LETIN_NATIVE_INT_CONVERTER(totest1, int_to_test1, int);
+
+      static bool float_to_test2(double f, int &test_value)
+      { test_value = f; return true; }
+      LETIN_NATIVE_FLOAT_CONVERTER(totest2, float_to_test2, int);
+
+      static bool ref_to_test3(Reference r, int &test_value)
+      { test_value = 10; return true; }
+      LETIN_NATIVE_REF_CONVERTER(totest3, ref_to_test3, int);
+
+      static bool object_to_test4(const Object &object, int &test_value)
+      { test_value = 20; return true; }
+      LETIN_NATIVE_OBJECT_CONVERTER(totest4, object_to_test4, int);
+
+      static bool int_to_test5(int64_t i, int &test_value) { return false; }
+      LETIN_NATIVE_INT_CONVERTER(totest5, int_to_test5, int);
+
+      static bool float_to_test6(double f, int &test_value) { return false; }
+      LETIN_NATIVE_FLOAT_CONVERTER(totest6, float_to_test6, int);
+
+      static bool ref_to_test7(Reference r, int &test_value) { return false; }
+      LETIN_NATIVE_REF_CONVERTER(totest7, ref_to_test7, int);
+
+      static bool object_to_test8(const Object &object, int &test_value) { return false; }
+      LETIN_NATIVE_OBJECT_CONVERTER(totest8, object_to_test8, int);
+
+      static bool set_new_test1(VirtualMachine *vm, ThreadContext *context, RegisteredReference &tmp_r, const int &i)
+      {
+        tmp_r = vm->gc()->new_object(OBJECT_TYPE_IARRAY64, 1, context);
+        if(tmp_r.is_null()) return false;
+        tmp_r->set_elem(0, Value(i));
+        tmp_r.register_ref();
+        return true;
+      }
+      LETIN_NATIVE_REF_SETTER(vtest1, set_new_test1, int);
+
+      static Object *new_test2(VirtualMachine *vm, ThreadContext *context, const int &i)
+      {
+        Object *object = vm->gc()->new_object(OBJECT_TYPE_IARRAY64, 1, context);
+        if(object == nullptr) return nullptr;
+        object->set_elem(0, Value(i));
+        return object;
+      }
+      LETIN_NATIVE_OBJECT_SETTER(vtest2, new_test2, int);
+
       CPPUNIT_TEST_SUITE_REGISTRATION(NativeHelperTests);
 
       void NativeHelperTests::setUp()
@@ -667,7 +730,7 @@ namespace letin
         unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
         unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
         PROG(prog_helper, 0);
-        FUN_RNCALL(4, 0, LIA(0) LIA(1) LIA(2) LIA(3));
+        FUN_INCALL(4, 0, LIA(0) LIA(1) LIA(2) LIA(3));
         END_PROG();
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
@@ -695,7 +758,7 @@ namespace letin
         unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
         unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
         PROG(prog_helper, 0);
-        FUN_RNCALL(3, 0, LIA(0) LIA(1) LIA(2));
+        FUN_INCALL(3, 0, LIA(0) LIA(1) LIA(2));
         END_PROG();
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
@@ -723,7 +786,7 @@ namespace letin
         unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
         unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
         PROG(prog_helper, 0);
-        FUN_RNCALL(1, 0, LRA(0));
+        FUN_INCALL(1, 0, LRA(0));
         END_PROG();
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
@@ -753,7 +816,7 @@ namespace letin
         unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
         unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
         PROG(prog_helper, 0);
-        FUN_RNCALL(1, 0, LRA(0));
+        FUN_INCALL(1, 0, LRA(0));
         END_PROG();
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
@@ -783,7 +846,7 @@ namespace letin
         unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
         unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
         PROG(prog_helper, 0);
-        FUN_RNCALL(1, 0, LRA(0));
+        FUN_INCALL(1, 0, LRA(0));
         END_PROG();
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
@@ -793,6 +856,535 @@ namespace letin
         vector<Value> args { Value(ref) };
         Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
           is_expected = (ERROR_INCORRECT_OBJECT == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_native_helper_complains_on_incorrect_tuple_object()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, ct(cint, cfloat));
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              return return_value(vm, context, vint(1));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LRA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Reference ref(_M_gc->new_object(OBJECT_TYPE_TUPLE, 2));
+        ref->set_elem(0, Value(1.1));
+        ref->set_elem(1, Value(2));
+        vector<Value> args { Value(ref) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_INCORRECT_VALUE == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_native_helper_complains_on_incorrect_option_object()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, coption(cint));
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              return return_value(vm, context, vint(1));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LRA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Reference ref(_M_gc->new_object(OBJECT_TYPE_TUPLE, 2));
+        ref->set_elem(0, Value(1));
+        ref->set_elem(1, Value(2.5));
+        vector<Value> args { Value(ref) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_INCORRECT_VALUE == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_native_helper_complains_on_incorrect_either_object()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, ceither(cfloat, cint));
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              return return_value(vm, context, vint(1));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LRA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Reference ref(_M_gc->new_object(OBJECT_TYPE_TUPLE, 2));
+        ref->set_elem(0, Value(1));
+        ref->set_elem(1, Value(2.5));
+        vector<Value> args { Value(ref) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_INCORRECT_VALUE == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_reference_checker_checks_value()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, ctest1);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              return return_value(vm, context, vint(1));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LRA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Reference ref(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1));
+        ref->set_elem(0, Value('a'));
+        vector<Value> args { Value(ref) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_SUCCESS == value.error() && 1 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_object_checker_checks_value()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, ctest2);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              return return_value(vm, context, vint(1));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LRA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Reference ref(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1));
+        ref->set_elem(0, Value('a'));
+        vector<Value> args { Value(ref) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_SUCCESS == value.error() && 1 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_int_converter_converts_value()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, cint);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              int i;
+              if(!convert_args(args, totest1(i)))
+                return return_value(vm, context, vint(0));
+              return return_value(vm, context, vint(i));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LIA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        vector<Value> args { Value(1) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_SUCCESS == value.error() && 1 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_float_converter_converts_value()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, cfloat);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              int i;
+              if(!convert_args(args, totest2(i)))
+                return return_value(vm, context, vint(0));
+              return return_value(vm, context, vint(i));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LFA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        vector<Value> args { Value(2.5) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_SUCCESS == value.error() && 2 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_reference_converter_converts_value()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, native::cref);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              int i;
+              if(!convert_args(args, totest3(i)))
+                return return_value(vm, context, vint(0));
+              return return_value(vm, context, vint(i));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LRA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Reference ref(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1));
+        ref->set_elem(0, Value('a'));
+        vector<Value> args { Value(ref) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_SUCCESS == value.error() && 10 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_object_converter_converts_value()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, native::cref);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              int i;
+              if(!convert_args(args, totest4(i)))
+                return return_value(vm, context, vint(0));
+              return return_value(vm, context, vint(i));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LRA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Reference ref(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1));
+        ref->set_elem(0, Value('a'));
+        vector<Value> args { Value(ref) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_SUCCESS == value.error() && 20 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_reference_setter_sets_value()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              return return_value(vm, context, vtest1(1));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_RNCALL(0, 0, NLA());
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Thread thread = vm->start(vector<Value>(), [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_SUCCESS == value.error());
+          is_expected &= (OBJECT_TYPE_IARRAY64 == value.r()->type());
+          is_expected &= (1 == value.r()->length());
+          is_expected &= (Value(1) == value.r()->elem(0));
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_object_setter_sets_value()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              return return_value(vm, context, vtest2(2));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_RNCALL(0, 0, NLA());
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Thread thread = vm->start(vector<Value>(), [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_SUCCESS == value.error());
+          is_expected &= (OBJECT_TYPE_IARRAY64 == value.r()->type());
+          is_expected &= (1 == value.r()->length());
+          is_expected &= (Value(2) == value.r()->elem(0));
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_reference_checker_conplains_on_incorrect_object()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, ctest3);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              return return_value(vm, context, vint(1));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LRA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Reference ref(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1));
+        ref->set_elem(0, Value('a'));
+        vector<Value> args { Value(ref) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_INCORRECT_OBJECT == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_object_checker_conplains_on_incorrect_object()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, ctest4);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              return return_value(vm, context, vint(1));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LRA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Reference ref(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1));
+        ref->set_elem(0, Value('a'));
+        vector<Value> args { Value(ref) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_INCORRECT_OBJECT == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_int_converter_conplains_on_incorrect_value()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, cint);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              int i;
+              if(!convert_args(args, totest5(i)))
+                return return_value(vm, context, vint(0));
+              return return_value(vm, context, vint(i));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LIA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        vector<Value> args { Value(1) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_SUCCESS == value.error() && 0 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_float_converter_conplains_on_incorrect_value()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, cfloat);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              int i;
+              if(!convert_args(args, totest6(i)))
+                return return_value(vm, context, vint(0));
+              return return_value(vm, context, vint(i));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LFA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        vector<Value> args { Value(2.5) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_SUCCESS == value.error() && 0 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_reference_converter_conplains_on_incorrect_object()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, native::cref);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              int i;
+              if(!convert_args(args, totest7(i)))
+                return return_value(vm, context, vint(0));
+              return return_value(vm, context, vint(i));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LRA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Reference ref(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1));
+        ref->set_elem(0, Value('a'));
+        vector<Value> args { Value(ref) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_SUCCESS == value.error() && 0 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void NativeHelperTests::test_function_object_converter_conplains_on_incorrect_object()
+      {
+        vector<NativeFunction> native_funs = {
+          {
+            "test",
+            [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+              int error = check_args(vm, context, args, native::cref);
+              if(error != ERROR_SUCCESS) return error_return_value(error);
+              int i;
+              if(!convert_args(args, totest8(i)))
+                return return_value(vm, context, vint(0));
+              return return_value(vm, context, vint(i));
+            }
+          }
+        };
+        unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
+        unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
+        PROG(prog_helper, 0);
+        FUN_INCALL(1, 0, LRA(0));
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
+        bool is_expected = false;
+        Reference ref(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1));
+        ref->set_elem(0, Value('a'));
+        vector<Value> args { Value(ref) };
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
+          is_expected = (ERROR_SUCCESS == value.error() && 0 == value.i());
         });
         thread.system_thread().join();
         CPPUNIT_ASSERT(is_expected);
