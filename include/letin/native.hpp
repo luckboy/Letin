@@ -683,15 +683,15 @@ namespace letin
       const priv::ObjectChecker<OBJECT_TYPE_TUPLE> ctuple = priv::ObjectChecker<OBJECT_TYPE_TUPLE>();
       const priv::ObjectChecker<OBJECT_TYPE_IO> cio = priv::ObjectChecker<OBJECT_TYPE_IO>();
 
-      const priv::ObjectChecker < OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE > cuiarray8 = priv::ObjectChecker < OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE > ();
-      const priv::ObjectChecker < OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE > cuiarray16 = priv::ObjectChecker < OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE > ();
-      const priv::ObjectChecker < OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE > cuiarray32 = priv::ObjectChecker < OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE > ();
-      const priv::ObjectChecker < OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE > cuiarray64 = priv::ObjectChecker < OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE > ();
-      const priv::ObjectChecker < OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE > cusfarray = priv::ObjectChecker < OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE > ();
-      const priv::ObjectChecker < OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE > cudfarray = priv::ObjectChecker < OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE > ();
-      const priv::ObjectChecker < OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE > curarray = priv::ObjectChecker < OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE > ();
-      const priv::ObjectChecker < OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE > cutuple = priv::ObjectChecker < OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE > ();
-      const priv::ObjectChecker < OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE > cuio = priv::ObjectChecker < OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE > ();
+      const priv::ObjectChecker<OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE> cuiarray8 = priv::ObjectChecker < OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE > ();
+      const priv::ObjectChecker<OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE> cuiarray16 = priv::ObjectChecker < OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE > ();
+      const priv::ObjectChecker<OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE> cuiarray32 = priv::ObjectChecker < OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE > ();
+      const priv::ObjectChecker<OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE> cuiarray64 = priv::ObjectChecker < OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE > ();
+      const priv::ObjectChecker<OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE> cusfarray = priv::ObjectChecker < OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE > ();
+      const priv::ObjectChecker<OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE> cudfarray = priv::ObjectChecker < OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE > ();
+      const priv::ObjectChecker<OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE> curarray = priv::ObjectChecker < OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE > ();
+      const priv::ObjectChecker<OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE> cutuple = priv::ObjectChecker < OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE > ();
+      const priv::ObjectChecker<OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE> cuio = priv::ObjectChecker < OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE > ();
 
       const priv::ForceChecker cforce = priv::ForceChecker();
       const priv::IgnoreChecker cingore = priv::IgnoreChecker();
