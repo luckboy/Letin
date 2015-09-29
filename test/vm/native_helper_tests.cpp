@@ -158,7 +158,7 @@ namespace letin
         ref2->set_elem(0, Value(1));
         ref2->set_elem(1, Value(ref1));
         ref2->set_elem(2, Value(2.5));
-        Reference ref3(_M_gc->new_object(OBJECT_TYPE_SFARRAY, 4));
+        Reference ref3(_M_gc->new_object(OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE, 4));
         ref3->set_elem(0, Value(1.1));
         ref3->set_elem(1, Value(2.2));
         ref3->set_elem(2, Value(3.3));
@@ -167,7 +167,7 @@ namespace letin
         ref4->set_elem(0, Value(ref3));
         ref4->set_elem(1, Value(100));
         Reference ref5(_M_gc->new_object(OBJECT_TYPE_TUPLE, 0));
-        vector<Value> args { Value(ref1), Value(ref4), Value(ref5) };
+        vector<Value> args { Value(ref2), Value(ref4), Value(ref5) };
         Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
           is_expected = (ERROR_SUCCESS == value.error() && (1 == value.i()));
         });
@@ -181,7 +181,7 @@ namespace letin
           {
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-              int error = check_args(vm, context, args, coption(cint), cuoption(cfloat), coption(cint), cuoption(cfloat));
+              int error = check_args(vm, context, args, coption(cint), cuoption(cfloat), cuoption(cint), coption(cfloat));
               if(error != ERROR_SUCCESS) return error_return_value(error);
               return return_value(vm, context, vint(1));
             }
@@ -197,10 +197,10 @@ namespace letin
         bool is_expected = false;
         Reference ref1(_M_gc->new_object(OBJECT_TYPE_TUPLE, 1));
         ref1->set_elem(0, Value(0));
-        Reference ref2(_M_gc->new_object(OBJECT_TYPE_TUPLE, 2));
+        Reference ref2(_M_gc->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2));
         ref2->set_elem(0, Value(1));
         ref2->set_elem(1, Value(2.25));
-        Reference ref3(_M_gc->new_object(OBJECT_TYPE_TUPLE, 2));
+        Reference ref3(_M_gc->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2));
         ref3->set_elem(0, Value(1));
         ref3->set_elem(1, Value(2));
         Reference ref4(_M_gc->new_object(OBJECT_TYPE_TUPLE, 1));
@@ -219,7 +219,7 @@ namespace letin
           {
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-              int error = check_args(vm, context, args, ceither(cint, cfloat), cueither(cfloat, cint), ceither(cint, cfloat), cueither(cfloat, cint));
+              int error = check_args(vm, context, args, cueither(cint, cfloat), ceither(cfloat, cint), cueither(cint, cfloat), ceither(cfloat, cint));
               if(error != ERROR_SUCCESS) return error_return_value(error);
               return return_value(vm, context, vint(1));
             }
@@ -233,18 +233,18 @@ namespace letin
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
         bool is_expected = false;
-        Reference ref1(_M_gc->new_object(OBJECT_TYPE_TUPLE, 2));
+        Reference ref1(_M_gc->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2));
         ref1->set_elem(0, Value(0));
-        ref1->set_elem(0, Value(1));
+        ref1->set_elem(1, Value(1));
         Reference ref2(_M_gc->new_object(OBJECT_TYPE_TUPLE, 2));
         ref2->set_elem(0, Value(1));
-        ref2->set_elem(1, Value(2.25));
-        Reference ref3(_M_gc->new_object(OBJECT_TYPE_TUPLE, 2));
+        ref2->set_elem(1, Value(2));
+        Reference ref3(_M_gc->new_object(OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, 2));
         ref3->set_elem(0, Value(1));
-        ref3->set_elem(1, Value(1));
+        ref3->set_elem(1, Value(2.5));
         Reference ref4(_M_gc->new_object(OBJECT_TYPE_TUPLE, 2));
         ref4->set_elem(0, Value(0));
-        ref2->set_elem(1, Value(4.75));
+        ref4->set_elem(1, Value(4.75));
         vector<Value> args { Value(ref1), Value(ref2), Value(ref3), Value(ref4) };
         Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
           is_expected = (ERROR_SUCCESS == value.error() && (1 == value.i()));
@@ -259,7 +259,7 @@ namespace letin
           {
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-              int error = check_args(vm, context, args, cint, cfloat, native::cref, cfloat);
+              int error = check_args(vm, context, args, cfloat, cint, native::cref, cfloat);
               if(error != ERROR_SUCCESS) return error_return_value(error);
               double f1;
               int64_t i2;
@@ -274,7 +274,7 @@ namespace letin
         unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
         unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
         PROG(prog_helper, 0);
-        FUN_RNCALL(4, 0, LIA(0) LFA(1) LRA(2) LFA(3));
+        FUN_RNCALL(4, 0, LFA(0) LIA(1) LRA(2) LFA(3));
         END_PROG();
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
@@ -305,7 +305,7 @@ namespace letin
               int64_t i1;
               double f2;
               int64_t i3, i4;
-              if(!convert_args(args, toint(i1), tot(toint(i1), tofloat(f2)), tot(), tot(toint(i3), toint(i4))))
+              if(!convert_args(args, tot(toint(i1), tofloat(f2)), tot(), tot(toint(i3), toint(i4))))
                 return return_value(vm, context, vt(vint(0)));
               return return_value(vm, context, vt(vint(i1 + 20), vfloat(f2 - 0.25), vint(i3 * i4)));
             }
@@ -351,7 +351,7 @@ namespace letin
               double f1 = 0.0;
               bool is_some2;
               int64_t i2 = 0;
-              if(!convert_args(args, tooption(tofloat(f1), is_some1),tooption(toint(i2), is_some2)))
+              if(!convert_args(args, tooption(tofloat(f1), is_some1), tooption(toint(i2), is_some2)))
                 return return_value(vm, context, vt(vint(0)));
               return return_value(vm, context, vt(vint(is_some1 ? 1 : 0), vfloat(f1), vint(is_some2 ? 1 : 0), vint(i2)));
             }
@@ -412,7 +412,7 @@ namespace letin
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
         bool is_expected = false;
-        Reference ref1(_M_gc->new_object(OBJECT_TYPE_TUPLE, 1));
+        Reference ref1(_M_gc->new_object(OBJECT_TYPE_TUPLE, 2));
         ref1->set_elem(0, Value(0));
         ref1->set_elem(1, Value(2.5));
         Reference ref2(_M_gc->new_object(OBJECT_TYPE_TUPLE, 2));
@@ -426,8 +426,8 @@ namespace letin
           is_expected &= (Value(0) == value.r()->elem(0));
           is_expected &= (Value(2.5) == value.r()->elem(1));
           is_expected &= (Value(0) == value.r()->elem(2));
-          is_expected &= (Value(0) == value.r()->elem(3));
-          is_expected &= (Value(1) == value.r()->elem(4));
+          is_expected &= (Value(1) == value.r()->elem(3));
+          is_expected &= (Value(0) == value.r()->elem(4));
           is_expected &= (Value(4.5) == value.r()->elem(5));
         });
         thread.system_thread().join();
@@ -478,9 +478,9 @@ namespace letin
         ARG(RLOAD, LV(2), NA());
         RET(RTUPLE, NA(), NA());
         END_FUN();
-        FUN_INCALL(0, 1, NLA());
-        FUN_FNCALL(0, 2, NLA());
-        FUN_RNCALL(0, 3, NLA());
+        FUN_INCALL(0, 0, NLA());
+        FUN_FNCALL(0, 1, NLA());
+        FUN_RNCALL(0, 2, NLA());
         END_PROG();
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
@@ -534,21 +534,27 @@ namespace letin
         LET(RCALL, IMM(2), NA());
         LET(RCALL, IMM(3), NA());
         IN();
+        LET(RUTFILLI, IMM(3), IMM(0));
+        IN();
         ARG(RLOAD, LV(0), NA());
+        LET(RUTSNTH, LV(3), IMM(0));
+        IN();
         ARG(RLOAD, LV(1), NA());
+        LET(RUTSNTH, LV(4), IMM(1));
+        IN();
         ARG(RLOAD, LV(2), NA());
-        RET(RTUPLE, NA(), NA());
+        RET(RUTSNTH, LV(5), IMM(2));
         END_FUN();
+        FUN_RNCALL(0, 0, NLA());
         FUN_RNCALL(0, 1, NLA());
         FUN_RNCALL(0, 2, NLA());
-        FUN_RNCALL(0, 3, NLA());
         END_PROG();
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
         bool is_expected = false;
         Thread thread = vm->start(vector<Value>(), [&is_expected](const ReturnValue &value) {
           is_expected = (ERROR_SUCCESS == value.error());
-          is_expected &= (OBJECT_TYPE_TUPLE == value.r()->type());
+          is_expected &= ((OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) == value.r()->type());
           is_expected &= (3 == value.r()->length());
           is_expected &= (VALUE_TYPE_REF == value.r()->elem(0).type());
           Reference ref1 = value.r()->elem(0).r();
@@ -613,9 +619,9 @@ namespace letin
         ARG(RLOAD, LV(2), NA());
         RET(RTUPLE, NA(), NA());
         END_FUN();
+        FUN_RNCALL(0, 0, NLA());
         FUN_RNCALL(0, 1, NLA());
         FUN_RNCALL(0, 2, NLA());
-        FUN_RNCALL(0, 3, NLA());
         END_PROG();
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
@@ -667,7 +673,7 @@ namespace letin
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
         bool is_expected = false;
         vector<Value> args { Value(1), Value(2), Value(3), Value(4) };
-        Thread thread = vm->start(vector<Value>(), [&is_expected](const ReturnValue &value) {
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
           is_expected = (ERROR_INCORRECT_ARG_COUNT == value.error());
         });
         thread.system_thread().join();
@@ -689,13 +695,13 @@ namespace letin
         unique_ptr<NativeLibrary> native_lib(new NativeLibrary(native_funs));
         unique_ptr<VirtualMachine> vm(new_virtual_machine(_M_loader, _M_gc, native_lib.get(), _M_eval_strategy));
         PROG(prog_helper, 0);
-        FUN_RNCALL(3, 0, LIA(0) LFA(1) LRA(2));
+        FUN_RNCALL(3, 0, LIA(0) LIA(1) LIA(2));
         END_PROG();
         unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
         CPPUNIT_ASSERT(vm->load(ptr.get(), prog_helper.size()));
         bool is_expected = false;
         vector<Value> args { Value(1), Value(2), Value(3) };
-        Thread thread = vm->start(vector<Value>(), [&is_expected](const ReturnValue &value) {
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
           is_expected = (ERROR_INCORRECT_VALUE == value.error());
         });
         thread.system_thread().join();
@@ -725,7 +731,7 @@ namespace letin
         Reference ref(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1));
         ref->set_elem(0, Value('a'));
         vector<Value> args { Value(ref) };
-        Thread thread = vm->start(vector<Value>(), [&is_expected](const ReturnValue &value) {
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
           is_expected = (ERROR_INCORRECT_OBJECT == value.error());
         });
         thread.system_thread().join();
@@ -755,7 +761,7 @@ namespace letin
         Reference ref(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1));
         ref->set_elem(0, Value('a'));
         vector<Value> args { Value(ref) };
-        Thread thread = vm->start(vector<Value>(), [&is_expected](const ReturnValue &value) {
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
           is_expected = (ERROR_INCORRECT_OBJECT == value.error());
         });
         thread.system_thread().join();
@@ -785,7 +791,7 @@ namespace letin
         Reference ref(_M_gc->new_object(OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE, 1));
         ref->set_elem(0, Value(1234));
         vector<Value> args { Value(ref) };
-        Thread thread = vm->start(vector<Value>(), [&is_expected](const ReturnValue &value) {
+        Thread thread = vm->start(args, [&is_expected](const ReturnValue &value) {
           is_expected = (ERROR_INCORRECT_OBJECT == value.error());
         });
         thread.system_thread().join();
