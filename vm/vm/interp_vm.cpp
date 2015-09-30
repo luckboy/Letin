@@ -2325,7 +2325,7 @@ namespace letin
       bool InterpreterVirtualMachine::force_rv(ThreadContext &context, bool is_try)
       {
         if(!context.regs().after_leaving_flags[1])
-          context.regs().force_tmp_rv = context.regs().rv;
+          context.regs().force_tmp_rv.safely_assign_for_gc(context.regs().rv);
         if(context.regs().force_tmp_rv.raw().r->is_lazy()) {
           Value tmp_value = Value::lazy_value_ref(context.regs().force_tmp_rv.raw().r);
           if(!force_value(context, tmp_value, is_try)) return false;
@@ -2442,18 +2442,18 @@ namespace letin
 
       bool InterpreterVirtualMachine::fully_force_rv(ThreadContext &context)
       {
-        context.regs().force_tmp_rv = context.regs().rv;
-        if(context.regs().force_tmp_rv.raw().r->is_lazy()) {
-          Value tmp_value = Value::lazy_value_ref(context.regs().force_tmp_rv.raw().r, context.regs().force_tmp_rv.raw().i != 0);
+        context.regs().force_tmp_rv2.safely_assign_for_gc(context.regs().rv);
+        if(context.regs().force_tmp_rv2.raw().r->is_lazy()) {
+          Value tmp_value = Value::lazy_value_ref(context.regs().force_tmp_rv2.raw().r, context.regs().force_tmp_rv2.raw().i != 0);
           if(!fully_force_value(context, tmp_value)) return false;
           context.regs().rv = tmp_value;
-          context.regs().force_tmp_rv = ReturnValue();
+          context.regs().force_tmp_rv2 = ReturnValue();
         } else {
-          Value tmp_value = Value(context.regs().force_tmp_rv.raw().r);
+          Value tmp_value = Value(context.regs().force_tmp_rv2.raw().r);
           if(!fully_force_value(context, tmp_value)) return false;
           if(!check_value_type(context, tmp_value, VALUE_TYPE_REF)) return false;
           context.regs().rv.raw().r = tmp_value.raw().r;
-          context.regs().force_tmp_rv = ReturnValue();
+          context.regs().force_tmp_rv2 = ReturnValue();
         }
         return true;
       }

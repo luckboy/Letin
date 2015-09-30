@@ -1161,6 +1161,7 @@ namespace letin
       _M_regs.force_tmp_rv = ReturnValue();
       _M_regs.force_tmp_r = Reference();
       _M_regs.force_tmp_r2 = Reference();
+      _M_regs.force_tmp_rv2 = ReturnValue();
       _M_first_registered_r = _M_last_registered_r = nullptr;
       _M_stack = new Value[stack_size];
       _M_stack_size = stack_size;
@@ -1289,6 +1290,8 @@ namespace letin
         fun(_M_regs.force_tmp_r.ptr());
       if(!_M_regs.force_tmp_r2.has_nil())
         fun(_M_regs.force_tmp_r2.ptr());
+      if(!_M_regs.force_tmp_rv2.raw().r.has_nil())
+        fun(_M_regs.force_tmp_rv2.raw().r.ptr());
       if(_M_first_registered_r != nullptr) {
         RegisteredReference *r = _M_first_registered_r; 
         do {
@@ -1314,10 +1317,14 @@ namespace letin
       saved_regs.try_ac = _M_regs.try_ac;
       saved_regs.sec = _M_regs.abp2 + _M_regs.ac2;
       uint32_t sec = saved_regs.sec;
-      if(sec + 2 > _M_stack_size) return false;
+      if(sec + 6 > _M_stack_size) return false;
       _M_stack[sec + 0].safely_assign_for_gc(_M_regs.try_arg2);
       _M_stack[sec + 1].safely_assign_for_gc(Value(_M_regs.try_io_r));
-      _M_regs.nfbp = sec + 1;
+      _M_stack[sec + 2].safely_assign_for_gc(Value(_M_regs.force_tmp_rv.raw().r));
+      _M_stack[sec + 3].safely_assign_for_gc(Value(_M_regs.force_tmp_r));
+      _M_stack[sec + 4].safely_assign_for_gc(Value(_M_regs.force_tmp_r2));
+      _M_stack[sec + 5].safely_assign_for_gc(Value(_M_regs.force_tmp_rv2.raw().r));
+      _M_regs.nfbp = sec + 6;
       _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp;
       _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
       _M_regs.after_leaving_flags[0] = false;
@@ -1336,13 +1343,21 @@ namespace letin
     {
       uint32_t sec = saved_regs.sec;
       bool result = true;
-      if(_M_stack[sec + 1].type() == VALUE_TYPE_REF) {
+      if(_M_stack[sec + 5].type() == VALUE_TYPE_REF &&
+          _M_stack[sec + 4].type() == VALUE_TYPE_REF &&
+          _M_stack[sec + 3].type() == VALUE_TYPE_REF &&
+          _M_stack[sec + 2].type() == VALUE_TYPE_REF &&
+          _M_stack[sec + 1].type() == VALUE_TYPE_REF) {
+        _M_regs.force_tmp_r2.safely_assign_for_gc(_M_stack[sec + 4].raw().r);
+        _M_regs.force_tmp_r.safely_assign_for_gc(_M_stack[sec + 3].raw().r);
         _M_regs.try_io_r = _M_stack[sec + 1].raw().r;
         _M_regs.try_arg2.safely_assign_for_gc(_M_stack[sec + 0]);
         _M_regs.try_ac = saved_regs.try_ac;
         _M_regs.try_abp = saved_regs.try_abp;
         _M_regs.try_flag = saved_regs.try_flag;
       } else {
+        _M_regs.force_tmp_r2 = Reference();
+        _M_regs.force_tmp_r = Reference();
         _M_regs.try_flag = false;
         _M_regs.try_arg2 = Value();
         _M_regs.try_io_r = Reference();

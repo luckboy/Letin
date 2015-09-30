@@ -137,6 +137,7 @@ namespace letin
       ReturnValue force_tmp_rv;
       Reference force_tmp_r;
       Reference force_tmp_r2;
+      ReturnValue force_tmp_rv2;
     };
 
     struct SavedRegisters
