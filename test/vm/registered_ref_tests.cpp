@@ -47,7 +47,7 @@ namespace letin
         delete _M_alloc;
       }
 
-      void RegisteredReferenceTests::test_registered_ref_constructor_registers()
+      void RegisteredReferenceTests::test_registered_reference_constructor_registers()
       {
         RegisteredReference ref1(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1, _M_thread_context), _M_thread_context);
         CPPUNIT_ASSERT_EQUAL(&ref1, _M_thread_context->first_registered_ref());
@@ -83,14 +83,14 @@ namespace letin
         CPPUNIT_ASSERT_EQUAL(&ref4, _M_thread_context->last_registered_ref());
       }
 
-      void RegisteredReferenceTests::test_registered_ref_constructor_does_not_register()
+      void RegisteredReferenceTests::test_registered_reference_constructor_does_not_register()
       {
         RegisteredReference ref(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 10, _M_thread_context), _M_thread_context, false);
         CPPUNIT_ASSERT(nullptr == _M_thread_context->first_registered_ref());
         CPPUNIT_ASSERT(nullptr == _M_thread_context->last_registered_ref());
       }
 
-      void RegisteredReferenceTests::test_registered_ref_register_ref_method_registers()
+      void RegisteredReferenceTests::test_registered_reference_register_ref_method_registers()
       {
         RegisteredReference ref1(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1, _M_thread_context), _M_thread_context, false);
         RegisteredReference ref2(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 2, _M_thread_context), _M_thread_context, false);
@@ -120,7 +120,7 @@ namespace letin
         CPPUNIT_ASSERT_EQUAL(&ref3, _M_thread_context->last_registered_ref());
       }
 
-      void RegisteredReferenceTests::test_registered_ref_destructor_unregisters()
+      void RegisteredReferenceTests::test_registered_reference_destructor_unregisters()
       {
         {
           RegisteredReference ref1(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1, _M_thread_context), _M_thread_context);
@@ -157,7 +157,7 @@ namespace letin
         CPPUNIT_ASSERT(nullptr == _M_thread_context->last_registered_ref());
       }
 
-      void RegisteredReferenceTests::test_registered_ref_destructor_unregisters_out_of_order()
+      void RegisteredReferenceTests::test_registered_reference_destructor_unregisters_out_of_order()
       {
         {
           RegisteredReference ref1(_M_gc->new_object(OBJECT_TYPE_IARRAY8, 1, _M_thread_context), _M_thread_context, false);
