@@ -311,6 +311,10 @@ namespace letin
 
       NativeObjectClass(const NativeObjectFunctions *funs) : _M_funs(funs) {}
 
+      bool operator==(NativeObjectClass clazz) const { return _M_funs == clazz._M_funs; }
+
+      bool operator!=(NativeObjectClass clazz) const { return _M_funs != clazz._M_funs; }
+
       NativeObjectFinalizator finalizator() const
       { return _M_funs != nullptr ? _M_funs->finalizator() : NativeObjectFinalizator(); }
 

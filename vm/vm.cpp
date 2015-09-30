@@ -133,6 +133,8 @@ namespace letin
           return _M_raw.r == value._M_raw.r;
         case VALUE_TYPE_LAZY_VALUE_REF | VALUE_TYPE_LAZILY_CANCELED:
           return _M_raw.r == value._M_raw.r;
+        case VALUE_TYPE_LOCKED_LAZY_VALUE_REF:
+          return _M_raw.r == value._M_raw.r;
         case VALUE_TYPE_ERROR:
           return true;
         default:
@@ -204,14 +206,22 @@ namespace letin
           return true;
         case OBJECT_TYPE_LAZY_VALUE:
           if(_M_raw.lzv.value_type != object._M_raw.lzv.value_type) return false;
+          if(_M_raw.lzv.must_be_shared != object._M_raw.lzv.must_be_shared) return false;
           if(_M_raw.lzv.value != object._M_raw.lzv.value) return false;
           if(_M_raw.lzv.fun != object._M_raw.lzv.fun) return false;
           for(size_t i = 0; i < _M_raw.length; i++) {
             if(_M_raw.lzv.args[i] != object._M_raw.lzv.args[i]) return false;
           }
           return true;
+        case OBJECT_TYPE_NATIVE_OBJECT:
+          if(_M_raw.ntvo.type != object._M_raw.ntvo.type) return false;
+          if(_M_raw.ntvo.clazz != object._M_raw.ntvo.clazz) return false;
+          return equal(_M_raw.ntvo.bs, _M_raw.ntvo.bs + _M_raw.length, object._M_raw.ntvo.bs);
         default:
-          return false;
+          if((_M_raw.type & OBJECT_TYPE_INTERNAL) != 0)
+            return equal(_M_raw.bs, _M_raw.bs + _M_raw.length, object._M_raw.bs);
+          else
+            return false;
       }
     }
 
@@ -1536,6 +1546,8 @@ namespace letin
           return os << "lazy value reference";
         case VALUE_TYPE_LAZY_VALUE_REF | VALUE_TYPE_LAZILY_CANCELED:
           return os << "lazily canceled lazy value reference";
+        case VALUE_TYPE_LOCKED_LAZY_VALUE_REF:
+          return os << "locked lazy value reference";
         default:
           return os << "error";
       }
@@ -1728,6 +1740,8 @@ namespace letin
               Value value(object.raw().tuple_elem_types()[i], object.raw().tes[i]);
               if(!add_value_byte_count(value, byte_count)) return false;
             }
+            return true;
+          case OBJECT_TYPE_NATIVE_OBJECT:
             return true;
           default:
             return false;
