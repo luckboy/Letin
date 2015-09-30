@@ -895,6 +895,10 @@ namespace letin
 
       virtual bool must_post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type) = 0;
 
+      virtual bool pre_enter_to_fun_for_force(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type, bool &is_fun_result);
+
+      virtual bool post_leave_from_fun_for_force(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type);
+
       bool is_eager() const { return _M_is_eager; }
 
       virtual void set_fun_count(std::size_t fun_count);

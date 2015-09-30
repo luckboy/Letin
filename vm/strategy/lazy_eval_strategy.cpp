@@ -48,6 +48,12 @@ namespace letin
 
       bool LazyEvaluationStrategy::must_post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
       { return false; }
+
+      bool LazyEvaluationStrategy::pre_enter_to_fun_for_force(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type, bool &is_fun_result)
+      { return true; }
+
+      bool LazyEvaluationStrategy::post_leave_from_fun_for_force(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
+      { return true; }
     }
   }
 }

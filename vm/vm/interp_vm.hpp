@@ -80,6 +80,8 @@ namespace letin
 
         bool call_fun_for_force(ThreadContext &context, std::size_t i);
 
+        bool call_fun_for_force_with_eval_strategy(ThreadContext &context, std::size_t i, int value_type);
+
         bool force_value(ThreadContext &context, Value &value, bool is_try = false);
 
         bool force_rv(ThreadContext &context, bool is_try = false);

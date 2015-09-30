@@ -30,6 +30,10 @@ namespace letin
         bool must_pre_enter_to_fun(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type);
 
         bool must_post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type);
+
+        bool pre_enter_to_fun_for_force(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type, bool &is_fun_result);
+
+        bool post_leave_from_fun_for_force(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type);
       };
     }
   }

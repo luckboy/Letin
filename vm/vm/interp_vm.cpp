@@ -2256,6 +2256,20 @@ namespace letin
         return is_fun_result;        
       }
 
+      bool InterpreterVirtualMachine::call_fun_for_force_with_eval_strategy(ThreadContext &context, std::size_t i, int value_type)
+      {
+        if(!check_fun(context, i)) return false;
+        bool is_fun_result;
+        if(!_M_eval_strategy->pre_enter_to_fun_for_force(this, &context, i, value_type, is_fun_result))
+          return is_fun_result;
+        if(!enter_to_fun(context, i, is_fun_result)) {
+          context.set_error(ERROR_STACK_OVERFLOW);
+          is_fun_result = false;
+          return false;
+        }
+        return is_fun_result;
+      }
+
       bool InterpreterVirtualMachine::force_value(ThreadContext &context, Value &value, bool is_try)
       {
         while(value.is_lazy()) {
@@ -2276,13 +2290,15 @@ namespace letin
                 if(!push_arg(context, args[i])) return false;
               context.regs().after_leaving_flag_index = 1;
               if(is_try) context.set_try_regs_for_force();
-              if(!call_fun_for_force(context, object.raw().lzv.fun)) {
+              if(!call_fun_for_force_with_eval_strategy(context, object.raw().lzv.fun, object.raw().lzv.value_type)) {
                 if(context.regs().rv.raw().error == ERROR_SUCCESS) lock.release();
                 return false;
               }
               if(!restore_and_pop_regs_for_force(context)) return false;
             }
             context.regs().after_leaving_flags[1] = false;
+            if(!_M_eval_strategy->post_leave_from_fun_for_force(this, &context, object.raw().lzv.fun, object.raw().lzv.value_type))
+              return false;
             if(!context.regs().rv.raw().r->is_lazy()) {
               switch(object.raw().lzv.value_type) {
                 case VALUE_TYPE_INT:

@@ -879,6 +879,12 @@ namespace letin
 
     EvaluationStrategy::~EvaluationStrategy() {}
 
+    bool EvaluationStrategy::pre_enter_to_fun_for_force(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type, bool &is_fun_result)
+    { return pre_enter_to_fun(vm, context, i, value_type, is_fun_result); }
+
+    bool EvaluationStrategy::post_leave_from_fun_for_force(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
+    { return must_post_leave_from_fun(vm, context, i, value_type); }
+
     void EvaluationStrategy::set_fun_count(size_t fun_count) {}
 
     list<MemoizationCache *> EvaluationStrategy::memo_caches()
