@@ -24,16 +24,16 @@ namespace letin
       {
         SavedRegisters saved_regs;
         if(!context->save_regs_and_set_regs(saved_regs)) {
-          context->regs().rv.safely_assign_for_gc(ReturnValue(0, 0.0, Reference(), ERROR_STACK_OVERFLOW));
+          context->set_error(ERROR_STACK_OVERFLOW);
           return false;
         }
         int error = vm->fully_force(context, value);
         if(!context->restore_regs(saved_regs)) {
-          context->regs().rv.safely_assign_for_gc(ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE));
+          context->set_error(ERROR_INCORRECT_VALUE);
           return false;
         }
         if(error != ERROR_SUCCESS) {
-          context->regs().rv.safely_assign_for_gc(ReturnValue(0, 0.0, Reference(), error));
+          context->set_error(error);
           return false;
         }
         return true;
@@ -43,16 +43,16 @@ namespace letin
       {
         SavedRegisters saved_regs;
         if(!context->save_regs_and_set_regs(saved_regs)) {
-          context->regs().rv.safely_assign_for_gc(ReturnValue(0, 0.0, Reference(), ERROR_STACK_OVERFLOW));
+          context->set_error(ERROR_STACK_OVERFLOW);
           return false;
         }
         int error = vm->fully_force_return_value(context);
         if(!context->restore_regs(saved_regs)) {
-          context->regs().rv.safely_assign_for_gc(ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE));
+          context->set_error(ERROR_INCORRECT_VALUE);
           return false;
         }
         if(error != ERROR_SUCCESS) {
-          context->regs().rv.safely_assign_for_gc(ReturnValue(0, 0.0, Reference(), error));
+          context->set_error(error);
           return false;
         }
         return true;
