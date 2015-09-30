@@ -139,6 +139,23 @@ namespace letin
       Reference force_tmp_r2;
     };
 
+    struct SavedRegisters
+    {
+      std::uint32_t nfbp;
+      std::uint32_t abp;
+      std::uint32_t ac;
+      std::uint32_t lvc;
+      std::uint32_t abp2;
+      std::uint32_t ac2;
+      bool after_leaving_flag1;
+      bool after_leaving_flag2;
+      unsigned after_leaving_flag_index;
+      bool try_flag;
+      std::uint32_t try_abp;
+      std::uint32_t try_ac;
+      std::uint32_t sec;
+    };
+
     class ThreadContext
     {
       GarbageCollector *_M_gc;
@@ -389,6 +406,10 @@ namespace letin
         _M_regs.gc_tmp_ptr = ptr;
         std::atomic_thread_fence(std::memory_order_release);
       }
+
+      bool save_regs_and_set_regs(SavedRegisters &saved_regs);
+
+      bool restore_regs(const SavedRegisters &saved_regs);
 
       RegisteredReference *first_registered_ref()
       { return _M_first_registered_r; }

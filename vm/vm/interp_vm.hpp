@@ -37,6 +37,8 @@ namespace letin
         int fully_force(ThreadContext *context, Value &value);
 
         ReturnValue invoke_fun(ThreadContext *context, std::size_t i, const ArgumentList &args);
+
+        int fully_force_return_value(ThreadContext *context);
       protected:
         ReturnValue start_in_thread(std::size_t i, const std::vector<Value> &args, ThreadContext &context, bool is_force);
 

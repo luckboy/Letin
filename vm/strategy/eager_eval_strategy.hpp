@@ -23,9 +23,9 @@ namespace letin
 
         ~EagerEvaluationStrategy();
 
-        bool pre_enter_to_fun(ThreadContext *context, std::size_t i, int value_type, bool &is_fun_result);
+        bool pre_enter_to_fun(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type, bool &is_fun_result);
 
-        bool post_leave_from_fun(ThreadContext *context, std::size_t i, int value_type);
+        bool post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type);
 
         bool must_pre_enter_to_fun(ThreadContext *context, std::size_t i, int value_type);
 

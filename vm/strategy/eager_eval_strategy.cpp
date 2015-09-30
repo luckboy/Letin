@@ -17,10 +17,10 @@ namespace letin
     {
       EagerEvaluationStrategy::~EagerEvaluationStrategy() {}
 
-      bool EagerEvaluationStrategy::pre_enter_to_fun(ThreadContext *context, size_t i, int value_type, bool &is_fun_result)
+      bool EagerEvaluationStrategy::pre_enter_to_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type, bool &is_fun_result)
       { return true; }
 
-      bool EagerEvaluationStrategy::post_leave_from_fun(ThreadContext *context, size_t i, int value_type)
+      bool EagerEvaluationStrategy::post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
       { return true; }
 
       bool EagerEvaluationStrategy::must_pre_enter_to_fun(ThreadContext *context, size_t i, int value_type)

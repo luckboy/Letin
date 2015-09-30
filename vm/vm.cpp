@@ -1215,34 +1215,9 @@ namespace letin
 
     ReturnValue ThreadContext::invoke_native_fun(VirtualMachine *vm, int nfi, ArgumentList &args)
     {
-      uint32_t saved_nfbp = _M_regs.nfbp;
-      uint32_t saved_abp = _M_regs.abp;
-      uint32_t saved_ac = _M_regs.ac;
-      uint32_t saved_lvc = _M_regs.lvc;
-      uint32_t saved_abp2 = _M_regs.abp2;
-      uint32_t saved_ac2 = _M_regs.ac2;
-      bool saved_after_leaving_flag1 = _M_regs.after_leaving_flags[0];
-      bool saved_after_leaving_flag2 = _M_regs.after_leaving_flags[1];
-      unsigned saved_after_leaving_flag_index = _M_regs.after_leaving_flag_index;
-      bool saved_try_flag = _M_regs.try_flag;
-      uint32_t saved_try_abp = _M_regs.try_abp;
-      uint32_t saved_try_ac = _M_regs.try_ac;
-      uint32_t sec = _M_regs.abp2 + _M_regs.ac2;
-      if(sec + 2 > _M_stack_size) return ReturnValue(0, 0.0, Reference(), ERROR_STACK_OVERFLOW);
-      _M_stack[sec + 0].safely_assign_for_gc(_M_regs.try_arg2);
-      _M_stack[sec + 1].safely_assign_for_gc(Value(_M_regs.try_io_r));
-      _M_regs.nfbp = sec + 1;
-      _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp;
-      _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
-      _M_regs.after_leaving_flags[0] = false;
-      _M_regs.after_leaving_flags[1] = false;
-      _M_regs.after_leaving_flag_index = 0;
-      _M_regs.try_flag = false;
-      _M_regs.try_arg2 = Value();
-      _M_regs.try_io_r = Reference();
-      _M_regs.try_abp = _M_regs.nfbp;
-      _M_regs.try_ac = 0;
-      atomic_thread_fence(memory_order_release);
+      SavedRegisters saved_regs;
+      if(!save_regs_and_set_regs(saved_regs))
+        return ReturnValue(0, 0.0, Reference(), ERROR_STACK_OVERFLOW);
       ReturnValue value;
       try {
         value = _M_native_fun_handler->invoke(vm, this, nfi, args);
@@ -1251,31 +1226,8 @@ namespace letin
       } catch(...) {
         return ReturnValue(0, 0.0, Reference(), ERROR_EXCEPTION);
       }
-      if(_M_stack[sec + 1].type() == VALUE_TYPE_REF) {
-        _M_regs.try_io_r = _M_stack[sec + 1].raw().r;
-        _M_regs.try_arg2.safely_assign_for_gc(_M_stack[sec + 0]);
-        _M_regs.try_ac = saved_try_ac;
-        _M_regs.try_abp = saved_try_abp;
-        _M_regs.try_flag = saved_try_flag;
-      } else {
-        _M_regs.try_flag = false;
-        _M_regs.try_arg2 = Value();
-        _M_regs.try_io_r = Reference();
-        _M_regs.try_abp = saved_nfbp;
-        _M_regs.try_ac = 0;
-        value = ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
-      }
-      _M_regs.after_leaving_flag_index = saved_after_leaving_flag_index;
-      _M_regs.after_leaving_flags[1] = saved_after_leaving_flag2;
-      _M_regs.after_leaving_flags[0] = saved_after_leaving_flag1;
-      _M_regs.sec = saved_abp2 + saved_ac2;
-      _M_regs.ac2 = saved_ac2;
-      _M_regs.abp2 = saved_abp2;
-      _M_regs.lvc = saved_lvc;
-      _M_regs.ac = saved_ac;
-      _M_regs.abp = saved_abp;
-      _M_regs.nfbp = saved_nfbp;
-      atomic_thread_fence(memory_order_release);
+      if(!restore_regs(saved_regs))
+        ReturnValue(0, 0.0, Reference(), ERROR_INCORRECT_VALUE);
       return value;
     }
 
@@ -1344,6 +1296,72 @@ namespace letin
           r = r->_M_next;
         } while(r != _M_first_registered_r);
       }
+    }
+
+    bool ThreadContext::save_regs_and_set_regs(SavedRegisters &saved_regs)
+    {
+      saved_regs.nfbp = _M_regs.nfbp;
+      saved_regs.abp = _M_regs.abp;
+      saved_regs.ac = _M_regs.ac;
+      saved_regs.lvc = _M_regs.lvc;
+      saved_regs.abp2 = _M_regs.abp2;
+      saved_regs.ac2 = _M_regs.ac2;
+      saved_regs.after_leaving_flag1 = _M_regs.after_leaving_flags[0];
+      saved_regs.after_leaving_flag2 = _M_regs.after_leaving_flags[1];
+      saved_regs.after_leaving_flag_index = _M_regs.after_leaving_flag_index;
+      saved_regs.try_flag = _M_regs.try_flag;
+      saved_regs.try_abp = _M_regs.try_abp;
+      saved_regs.try_ac = _M_regs.try_ac;
+      saved_regs.sec = _M_regs.abp2 + _M_regs.ac2;
+      uint32_t sec = saved_regs.sec;
+      if(sec + 2 > _M_stack_size) return false;
+      _M_stack[sec + 0].safely_assign_for_gc(_M_regs.try_arg2);
+      _M_stack[sec + 1].safely_assign_for_gc(Value(_M_regs.try_io_r));
+      _M_regs.nfbp = sec + 1;
+      _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp;
+      _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
+      _M_regs.after_leaving_flags[0] = false;
+      _M_regs.after_leaving_flags[1] = false;
+      _M_regs.after_leaving_flag_index = 0;
+      _M_regs.try_flag = false;
+      _M_regs.try_arg2 = Value();
+      _M_regs.try_io_r = Reference();
+      _M_regs.try_abp = _M_regs.nfbp;
+      _M_regs.try_ac = 0;
+      atomic_thread_fence(memory_order_release);
+      return true;
+    }
+
+    bool ThreadContext::restore_regs(const SavedRegisters &saved_regs)
+    {
+      uint32_t sec = saved_regs.sec;
+      bool result = true;
+      if(_M_stack[sec + 1].type() == VALUE_TYPE_REF) {
+        _M_regs.try_io_r = _M_stack[sec + 1].raw().r;
+        _M_regs.try_arg2.safely_assign_for_gc(_M_stack[sec + 0]);
+        _M_regs.try_ac = saved_regs.try_ac;
+        _M_regs.try_abp = saved_regs.try_abp;
+        _M_regs.try_flag = saved_regs.try_flag;
+      } else {
+        _M_regs.try_flag = false;
+        _M_regs.try_arg2 = Value();
+        _M_regs.try_io_r = Reference();
+        _M_regs.try_abp = saved_regs.nfbp;
+        _M_regs.try_ac = 0;
+        result = false;
+      }
+      _M_regs.after_leaving_flag_index = saved_regs.after_leaving_flag_index;
+      _M_regs.after_leaving_flags[1] = saved_regs.after_leaving_flag2;
+      _M_regs.after_leaving_flags[0] = saved_regs.after_leaving_flag1;
+      _M_regs.sec = saved_regs.abp2 + saved_regs.ac2;
+      _M_regs.ac2 = saved_regs.ac2;
+      _M_regs.abp2 = saved_regs.abp2;
+      _M_regs.lvc = saved_regs.lvc;
+      _M_regs.ac = saved_regs.ac;
+      _M_regs.abp = saved_regs.abp;
+      _M_regs.nfbp = saved_regs.nfbp;
+      atomic_thread_fence(memory_order_release);
+      return result;
     }
 
     //

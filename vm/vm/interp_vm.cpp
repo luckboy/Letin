@@ -545,6 +545,12 @@ namespace letin
         return context->regs().rv;
       }
 
+      int InterpreterVirtualMachine::fully_force_return_value(ThreadContext *context)
+      {
+        if(!fully_force_rv(*context)) return context->regs().rv.error();
+        return ERROR_SUCCESS;
+      }
+
       ReturnValue InterpreterVirtualMachine::start_in_thread(size_t i, const vector<Value> &args, ThreadContext &context, bool is_force)
       {
         for(auto arg : args) if(!push_arg(context, arg)) return context.regs().rv;
@@ -1443,7 +1449,7 @@ namespace letin
             }
             context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
-            if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
+            if(!_M_eval_strategy->post_leave_from_fun(this, &context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
             return _M_return_value_to_int_value(context.regs().rv);
           }
           case OP_FCALL:
@@ -1456,7 +1462,7 @@ namespace letin
             }
             context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
-            if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_FLOAT)) return Value();
+            if(!_M_eval_strategy->post_leave_from_fun(this, &context, static_cast<uint32_t>(i), VALUE_TYPE_FLOAT)) return Value();
             return _M_return_value_to_float_value(context.regs().rv);
           }
           case OP_RCALL:
@@ -1469,7 +1475,7 @@ namespace letin
             }
             context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
-            if(!_M_eval_strategy->post_leave_from_fun(&context, static_cast<uint32_t>(i), VALUE_TYPE_REF)) return Value();
+            if(!_M_eval_strategy->post_leave_from_fun(this, &context, static_cast<uint32_t>(i), VALUE_TYPE_REF)) return Value();
             return _M_return_value_to_ref_value(context.regs().rv);
           }
           case OP_ITOF:
@@ -2228,7 +2234,7 @@ namespace letin
       {
         if(!check_fun(context, i)) return false;
         bool is_fun_result;
-        if(!_M_eval_strategy->pre_enter_to_fun(&context, i, value_type, is_fun_result))
+        if(!_M_eval_strategy->pre_enter_to_fun(this, &context, i, value_type, is_fun_result))
           return is_fun_result;
         if(!enter_to_fun(context, i, is_fun_result)) {
           context.set_error(ERROR_STACK_OVERFLOW);

@@ -730,6 +730,8 @@ namespace letin
 
       virtual ReturnValue invoke_fun(ThreadContext *context, std::size_t i, const ArgumentList &args) = 0;
 
+      virtual int fully_force_return_value(ThreadContext *context) = 0;
+
       int force_tuple_elem(ThreadContext *context, Object &object, std::size_t i);
 
       int fully_force_tuple_elem(ThreadContext *context, Object &object, std::size_t i);
@@ -885,9 +887,9 @@ namespace letin
     public:
       virtual ~EvaluationStrategy();
 
-      virtual bool pre_enter_to_fun(ThreadContext *context, std::size_t i, int value_type, bool &is_fun_result) = 0;
+      virtual bool pre_enter_to_fun(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type, bool &is_fun_result) = 0;
 
-      virtual bool post_leave_from_fun(ThreadContext *context, std::size_t i, int value_type) = 0;
+      virtual bool post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type) = 0;
 
       virtual bool must_pre_enter_to_fun(ThreadContext *context, std::size_t i, int value_type) = 0;
 
