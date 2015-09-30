@@ -129,10 +129,10 @@ namespace letin
         return true;
       }
 
-      bool MemoizationEvaluationStrategy::must_pre_enter_to_fun(ThreadContext *context, size_t i, int value_type)
+      bool MemoizationEvaluationStrategy::must_pre_enter_to_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
       { return true; }
 
-      bool MemoizationEvaluationStrategy::must_post_leave_from_fun(ThreadContext *context, size_t i, int value_type)
+      bool MemoizationEvaluationStrategy::must_post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
       { return true; }
 
       void MemoizationEvaluationStrategy::set_fun_count(size_t fun_count)

@@ -891,9 +891,9 @@ namespace letin
 
       virtual bool post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type) = 0;
 
-      virtual bool must_pre_enter_to_fun(ThreadContext *context, std::size_t i, int value_type) = 0;
+      virtual bool must_pre_enter_to_fun(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type) = 0;
 
-      virtual bool must_post_leave_from_fun(ThreadContext *context, std::size_t i, int value_type) = 0;
+      virtual bool must_post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type) = 0;
 
       bool is_eager() const { return _M_is_eager; }
 

@@ -43,10 +43,10 @@ namespace letin
       bool LazyEvaluationStrategy::post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
       { return true; }
 
-      bool LazyEvaluationStrategy::must_pre_enter_to_fun(ThreadContext *context, size_t i, int value_type)
+      bool LazyEvaluationStrategy::must_pre_enter_to_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
       { return true; }
 
-      bool LazyEvaluationStrategy::must_post_leave_from_fun(ThreadContext *context, size_t i, int value_type)
+      bool LazyEvaluationStrategy::must_post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
       { return false; }
     }
   }
