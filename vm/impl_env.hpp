@@ -28,6 +28,7 @@ namespace letin
         std::size_t _M_fun_count;
         std::unique_ptr<Value []> _M_vars;
         std::size_t _M_var_count;
+        std::unique_ptr<FunctionInfo []> _M_fun_infos;
         std::unordered_map<std::string, std::size_t> _M_fun_indexes;
         std::unordered_map<std::string, std::size_t> _M_var_indexes;
         std::unordered_map<std::string, int> _M_native_fun_indexes;
@@ -41,6 +42,7 @@ namespace letin
         void set_fun_count(std::size_t fun_count)
         {
           _M_funs = std::unique_ptr<Function []>(new Function[fun_count]);
+          _M_fun_infos = std::unique_ptr<FunctionInfo []>(new FunctionInfo[fun_count]);
           _M_fun_count = fun_count;
         }
 
@@ -57,9 +59,13 @@ namespace letin
 
         Value var(std::size_t i);
 
+        FunctionInfo fun_info(std::size_t i);
+
         Function fun(const std::string &name);
 
         Value var(const std::string &name);
+
+        FunctionInfo fun_info(const std::string &name);
         
         const Function *funs() const;
 
@@ -73,11 +79,17 @@ namespace letin
 
         std::size_t var_count() const;
 
+        const FunctionInfo *fun_infos() const;
+
+        FunctionInfo *fun_infos();
+
         const std::list<MemoizationCache *> memo_caches() const;
 
         void set_fun(std::size_t i, const Function &fun);
 
         void set_var(std::size_t i, const Value &value);
+
+        void set_fun_info(std::size_t i, const FunctionInfo &fun_info);
 
         void add_data_to_free(void *ptr)
         { _M_data_list_to_free.push_back(std::unique_ptr<char []>(reinterpret_cast<char *>(ptr))); }

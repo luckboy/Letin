@@ -554,6 +554,30 @@ namespace letin
       std::size_t instr_count() const { return _M_raw.instr_count; }
     };
 
+    struct FunctionInfoRaw
+    {
+      unsigned eval_strategy;
+      unsigned eval_strategy_mask;
+    };
+    
+    class FunctionInfo
+    {
+      FunctionInfoRaw _M_raw;
+    public:
+      FunctionInfo() { _M_raw.eval_strategy = 0; _M_raw.eval_strategy_mask = 0xff; }
+
+      FunctionInfo(unsigned eval_strategy, unsigned eval_strategy_mask)
+      { _M_raw.eval_strategy = eval_strategy; _M_raw.eval_strategy_mask = eval_strategy_mask; }
+
+      const FunctionInfoRaw &raw() const { return _M_raw; }
+
+      FunctionInfoRaw &raw() { return _M_raw; }
+
+      unsigned eval_strategy() const { return _M_raw.eval_strategy; }
+
+      unsigned eval_strategy_mask() const { return _M_raw.eval_strategy_mask; }
+    };
+
     class Thread
     {
       std::shared_ptr<ThreadContext> _M_context;
@@ -592,9 +616,13 @@ namespace letin
 
       virtual Value var(std::size_t i) = 0;
 
+      virtual FunctionInfo fun_info(std::size_t i) = 0;
+
       virtual Function fun(const std::string &name) = 0;
 
       virtual Value var(const std::string &name) = 0;
+
+      virtual FunctionInfo fun_info(const std::string &name) = 0;
     };
 
     class LoadingError

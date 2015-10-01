@@ -99,6 +99,12 @@ namespace letin
 
       std::size_t symbol_count() const { return _M_symbol_count; }
 
+      const format::FunctionInfo &fun_info(std::size_t i) const { return _M_fun_infos[i]; }
+
+      format::FunctionInfo &fun_info(std::size_t i) { return _M_fun_infos[i]; }
+
+      std::size_t fun_info_count() const { return _M_fun_info_count; }
+
       bool relocate(std::size_t fun_offset, std::size_t var_offset,
                     const std::unordered_map<std::string, std::size_t> &fun_indexes,
                     const std::unordered_map<std::string, std::size_t> &var_indexes,
@@ -175,6 +181,8 @@ namespace letin
       std::size_t _M_fun_count;
       const Value *_M_global_vars;
       std::size_t _M_global_var_count;
+      const FunctionInfo *_M_fun_infos;
+      std::size_t _M_fun_info_count;
       RegisteredReference *_M_first_registered_r;
       RegisteredReference *_M_last_registered_r;
     public:
@@ -214,6 +222,8 @@ namespace letin
       const Value &global_var(std::size_t i) const { return _M_global_vars[i]; }
 
       std::size_t global_var_count() const { return _M_global_var_count; }
+
+      const FunctionInfo &fun_info(std::size_t i) const { return _M_fun_infos[i]; }
 
       const RegisteredReference *first_registered_r() const { return _M_first_registered_r; }
 
@@ -449,6 +459,10 @@ namespace letin
       virtual Value *vars() = 0;
 
       virtual std::size_t var_count() const = 0;
+
+      virtual const FunctionInfo *fun_infos() const = 0;
+
+      virtual FunctionInfo *fun_infos() = 0;
 
       virtual const std::list<MemoizationCache *> memo_caches() const = 0;
 

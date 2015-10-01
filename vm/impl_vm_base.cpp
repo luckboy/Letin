@@ -311,6 +311,12 @@ namespace letin
           _M_has_entry = true;
           _M_entry = prog->entry();
         }
+        if((prog->flags() & format::HEADER_FLAG_FUN_INFOS) != 0) {
+          for(size_t i = 0; i < prog->fun_info_count(); i++) {
+            format::FunctionInfo &fun_info = prog->fun_info(i);
+            _M_env.set_fun_info(fun_offset + fun_info.fun_index, FunctionInfo(fun_info.eval_strategy, fun_info.eval_strategy_mask));
+          }
+        }
         return true;
       }
 
