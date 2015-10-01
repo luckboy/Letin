@@ -1325,6 +1325,8 @@ namespace letin
       saved_regs.lvc = _M_regs.lvc;
       saved_regs.abp2 = _M_regs.abp2;
       saved_regs.ac2 = _M_regs.ac2;
+      saved_regs.fp = _M_regs.fp;
+      saved_regs.ip = _M_regs.ip;
       saved_regs.after_leaving_flag1 = _M_regs.after_leaving_flags[0];
       saved_regs.after_leaving_flag2 = _M_regs.after_leaving_flags[1];
       saved_regs.after_leaving_flag_index = _M_regs.after_leaving_flag_index;
@@ -1392,6 +1394,8 @@ namespace letin
       _M_regs.after_leaving_flag_index = saved_regs.after_leaving_flag_index;
       _M_regs.after_leaving_flags[1] = saved_regs.after_leaving_flag2;
       _M_regs.after_leaving_flags[0] = saved_regs.after_leaving_flag1;
+      _M_regs.ip = saved_regs.ip;
+      _M_regs.fp = saved_regs.fp;
       _M_regs.sec = saved_regs.abp2 + saved_regs.ac2;
       _M_regs.ac2 = saved_regs.ac2;
       _M_regs.abp2 = saved_regs.abp2;

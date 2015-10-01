@@ -158,6 +158,8 @@ namespace letin
       std::uint32_t lvc;
       std::uint32_t abp2;
       std::uint32_t ac2;
+      std::size_t fp;
+      std::uint32_t ip;
       bool after_leaving_flag1;
       bool after_leaving_flag2;
       unsigned after_leaving_flag_index;
