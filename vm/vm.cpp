@@ -1345,6 +1345,8 @@ namespace letin
       _M_regs.nfbp = sec + 6;
       _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp;
       _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
+      _M_regs.fp = static_cast<size_t>(-1);
+      _M_regs.ip = 0;
       _M_regs.after_leaving_flags[0] = false;
       _M_regs.after_leaving_flags[1] = false;
       _M_regs.after_leaving_flag_index = 0;
