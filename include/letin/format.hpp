@@ -17,6 +17,7 @@ namespace letin
     const std::uint32_t HEADER_FLAG_LIBRARY = 1 << 0;
     const std::uint32_t HEADER_FLAG_RELOCATABLE = 1 << 1;
     const std::uint32_t HEADER_FLAG_NATIVE_FUN_SYMBOLS = 1 << 2;
+    const std::uint32_t HEADER_FLAG_FUN_INFOS = 1 << 3;
 
     const std::uint8_t HEADER_MAGIC0 = 0x33;
     const std::uint8_t HEADER_MAGIC1 = 'L';
@@ -49,7 +50,8 @@ namespace letin
       std::uint32_t     data_size;
       std::uint32_t     reloc_count;
       std::uint32_t     symbol_count;
-      std::uint32_t     reserved[2];
+      std::uint32_t     fun_info_count;
+      std::uint32_t     reserved[1];
     };
 
     struct Float
@@ -164,6 +166,14 @@ namespace letin
       std::uint16_t     length;
       std::uint8_t      type;
       char              name[1];
+    };
+
+    struct FunctionInfo
+    {
+      std::uint32_t     fun_index;
+      std::uint8_t      eval_strategy;
+      std::uint8_t      eval_strategy_mask;
+      std::uint8_t      reserved[6];
     };
   }
 }

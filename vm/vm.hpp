@@ -40,6 +40,8 @@ namespace letin
       std::uint8_t *_M_symbols;
       std::size_t _M_symbol_count;
       std::vector<std::uint32_t> _M_symbol_offsets;
+      format::FunctionInfo *_M_fun_infos;
+      std::size_t _M_fun_info_count;
       std::size_t _M_fun_offset;
       std::size_t _M_var_offset;
     public:
@@ -48,13 +50,15 @@ namespace letin
               format::Instruction *code, std::size_t code_size, uint8_t *data, std::size_t data_size,
               std::set<std::uint32_t> data_addrs,
               format::Relocation *relocs, std::size_t reloc_count, std::uint8_t *symbols, std::size_t symbol_count,
-              std::vector<std::uint32_t> symbol_offsets) :
+              std::vector<std::uint32_t> symbol_offsets,
+              format::FunctionInfo *fun_infos, std::size_t fun_info_count) :
         _M_flags(flags), _M_entry(entry),
         _M_funs(funs), _M_fun_count(fun_count), _M_vars(vars), _M_var_count(var_count),
         _M_code(code), _M_code_size(code_size), _M_data(data), _M_data_size(data_size),
         _M_data_addrs(data_addrs),
         _M_relocs(relocs), _M_reloc_count(reloc_count), _M_symbols(symbols), _M_symbol_count(symbol_count),
         _M_symbol_offsets(symbol_offsets),
+        _M_fun_infos(fun_infos), _M_fun_info_count(fun_info_count),
         _M_fun_offset(0), _M_var_offset(0)
       {}
 

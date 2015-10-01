@@ -186,7 +186,9 @@ namespace letin
             symbol_offsets.push_back(i);
             symbol->index = ntohl(symbol->index);
             symbol->length = ntohs(symbol->length);
-            i += align(sizeof(format::Symbol) - 1 + symbol->length, 8);
+            size_t symbol_size = sizeof(format::Symbol) - 1 + symbol->length;
+            i += align(symbol_size, 8);
+            tmp_idx += (j + 1 < symbol_count ? align(symbol_size, 8) : symbol_size);
           }
           if(tmp_idx > size) return nullptr;
           if(!reloc_symbol_idxs.empty()) return nullptr;
@@ -196,7 +198,24 @@ namespace letin
           symbols = tmp_ptr + tmp_idx;
           symbol_count = 0;
         }
-        return new Program(header->flags, header->entry, funs, fun_count, vars, var_count, code, code_size, data, data_size, data_addrs, relocs, reloc_count, symbols, symbol_count, symbol_offsets);
+
+        format::FunctionInfo *fun_infos;
+        size_t fun_info_count;
+        if((header->flags & format::HEADER_FLAG_FUN_INFOS) != 0) {
+          tmp_idx = align(tmp_idx, 8);
+          fun_infos = reinterpret_cast<format::FunctionInfo *>(tmp_ptr + tmp_idx);
+          fun_info_count = header->fun_info_count;
+          tmp_idx += align(sizeof(format::FunctionInfo) * fun_info_count, 8);
+          if(tmp_idx > size) return nullptr;
+          for(size_t i = 0; i < fun_info_count; i++) {
+            fun_infos[i].fun_index = ntohl(fun_infos[i].fun_index);
+            if(fun_infos[i].fun_index >= fun_count) return nullptr;
+          }
+        } else {
+          fun_infos = reinterpret_cast<format::FunctionInfo *>(tmp_ptr + tmp_idx);
+          fun_info_count = 0;
+        }
+        return new Program(header->flags, header->entry, funs, fun_count, vars, var_count, code, code_size, data, data_size, data_addrs, relocs, reloc_count, symbols, symbol_count, symbol_offsets, fun_infos, fun_info_count);
       }
     }
   }
