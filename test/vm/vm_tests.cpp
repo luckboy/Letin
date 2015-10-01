@@ -13,6 +13,7 @@
 #include "lazy_eval_strategy.hpp"
 #include "mark_sweep_gc.hpp"
 #include "memo_eval_strategy.hpp"
+#include "memo_lazy_eval_strategy.hpp"
 #include "new_alloc.hpp"
 #include "util.hpp"
 #include "vm_tests.hpp"
@@ -1801,6 +1802,8 @@ namespace letin
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS_WITH_MEMO_CACHE(HashTable, Memoization, InterpreterVirtualMachine, 32 * 1024);
+
+      DEF_IMPL_VM_TESTS_WITH_MEMO_CACHE(HashTable, MemoizationLazy, InterpreterVirtualMachine, 32 * 1024);
     }
   }
 }

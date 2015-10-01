@@ -185,6 +185,8 @@ namespace letin
       DECL_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);
 
       DECL_IMPL_VM_TESTS_WITH_MEMO_CACHE(HashTable, Memoization, InterpreterVirtualMachine);
+
+      DECL_IMPL_VM_TESTS_WITH_MEMO_CACHE(HashTable, MemoizationLazy, InterpreterVirtualMachine);
     }
   }
 }
