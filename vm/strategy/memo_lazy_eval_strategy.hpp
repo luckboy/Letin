@@ -40,6 +40,10 @@ namespace letin
 
         bool post_leave_from_fun_for_force(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type);
 
+        void set_fun_count(std::size_t fun_count);
+
+        std::list<MemoizationCache *> memo_caches();
+
         LazyEvaluationStrategy &lazy_eval_strategy() { return _M_lazy_eval_strategy; }
 
         MemoizationEvaluationStrategy &memo_eval_strategy() { return _M_memo_eval_strategy; }
