@@ -166,6 +166,8 @@ namespace letin
           symbol_count = header->symbol_count;
           for(size_t i = 0, j = 0; j < symbol_count; j++) {
             format::Symbol *symbol = reinterpret_cast<format::Symbol *>(symbols + i);
+            size_t symbol_size = sizeof(format::Symbol) - 1;
+            if(tmp_idx + symbol_size > size) return nullptr;
             if((symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_FUN &&
                 (symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_VAR)
               return nullptr;
@@ -173,9 +175,10 @@ namespace letin
             symbol_offsets.push_back(i);
             symbol->index = ntohl(symbol->index);
             symbol->length = ntohs(symbol->length);
-            size_t symbol_size = sizeof(format::Symbol) - 1 + symbol->length;
-            i += align(symbol_size, 8);
+            symbol_size += symbol->length;
             tmp_idx += (j + 1 < symbol_count ? align(symbol_size, 8) : symbol_size);
+            if(tmp_idx > size) return nullptr;
+            i += align(symbol_size, 8);
           }
           if(tmp_idx > size) return nullptr;
           if(!reloc_symbol_idxs.empty()) return nullptr;
