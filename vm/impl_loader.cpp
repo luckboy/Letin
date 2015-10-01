@@ -173,7 +173,9 @@ namespace letin
             symbol_offsets.push_back(i);
             symbol->index = ntohl(symbol->index);
             symbol->length = ntohs(symbol->length);
-            i += align(sizeof(format::Symbol) - 1 + symbol->length, 8);
+            size_t symbol_size = sizeof(format::Symbol) - 1 + symbol->length;
+            i += align(symbol_size, 8);
+            tmp_idx += (j + 1 < symbol_count ? align(symbol_size, 8) : symbol_size);
           }
           if(tmp_idx > size) return nullptr;
           if(!reloc_symbol_idxs.empty()) return nullptr;
