@@ -154,6 +154,8 @@ namespace letin
       bool try_flag;
       std::uint32_t try_abp;
       std::uint32_t try_ac;
+      ReturnValue force_tmp_rv;
+      ReturnValue force_tmp_rv2;
       std::uint32_t sec;
     };
 

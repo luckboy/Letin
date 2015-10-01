@@ -1331,6 +1331,8 @@ namespace letin
       saved_regs.try_flag = _M_regs.try_flag;
       saved_regs.try_abp = _M_regs.try_abp;
       saved_regs.try_ac = _M_regs.try_ac;
+      saved_regs.force_tmp_rv = _M_regs.force_tmp_rv;
+      saved_regs.force_tmp_rv2 = _M_regs.force_tmp_rv2;
       saved_regs.sec = _M_regs.abp2 + _M_regs.ac2;
       uint32_t sec = saved_regs.sec;
       if(sec + 6 > _M_stack_size) return false;
@@ -1359,10 +1361,14 @@ namespace letin
     {
       uint32_t sec = saved_regs.sec;
       bool result = true;
+      _M_regs.force_tmp_rv.safely_assign_for_gc(saved_regs.force_tmp_rv);
+      _M_regs.force_tmp_rv2.safely_assign_for_gc(saved_regs.force_tmp_rv2);
       if(_M_stack[sec + 5].type() == VALUE_TYPE_REF &&
+          _M_stack[sec + 5].raw().r == _M_regs.force_tmp_rv2.raw().r &&
           _M_stack[sec + 4].type() == VALUE_TYPE_REF &&
           _M_stack[sec + 3].type() == VALUE_TYPE_REF &&
           _M_stack[sec + 2].type() == VALUE_TYPE_REF &&
+          _M_stack[sec + 2].raw().r == _M_regs.force_tmp_rv.raw().r &&
           _M_stack[sec + 1].type() == VALUE_TYPE_REF) {
         _M_regs.force_tmp_r2.safely_assign_for_gc(_M_stack[sec + 4].raw().r);
         _M_regs.force_tmp_r.safely_assign_for_gc(_M_stack[sec + 3].raw().r);
