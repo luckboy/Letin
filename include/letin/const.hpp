@@ -109,6 +109,7 @@ namespace letin
 
   const unsigned EVAL_STRATEGY_LAZY =   1 << 0;
   const unsigned EVAL_STRATEGY_MEMO =   1 << 1;
+  const unsigned MAX_EVAL_STRATEGY =    1 << 1;
 }
 
 #endif

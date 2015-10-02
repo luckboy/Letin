@@ -520,6 +520,9 @@ namespace letin
       inline bool is_ref_value_type_for_gc(int type)
       { return type == VALUE_TYPE_REF || type == VALUE_TYPE_CANCELED_REF || (type & ~VALUE_TYPE_LAZILY_CANCELED) == VALUE_TYPE_LAZY_VALUE_REF || type == VALUE_TYPE_LOCKED_LAZY_VALUE_REF; }
 
+      inline unsigned fun_eval_strategy(const FunctionInfo &fun_info, unsigned default_fun_eval_strategy)
+      { return (default_fun_eval_strategy | fun_info.eval_strategy()) & fun_info.eval_strategy_mask() & ((MAX_EVAL_STRATEGY << 1) - 1); }
+      
       bool are_memoizable_fun_args(const ArgumentList &args);
 
       bool is_memoizable_fun_result(const Value &value);
