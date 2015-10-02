@@ -39,7 +39,7 @@ namespace letin
       void MemoizationLazyEvaluationStrategy::set_fun_count(size_t fun_count)
       { _M_memo_eval_strategy.set_fun_count(fun_count); }
 
-      std::list<MemoizationCache *> MemoizationLazyEvaluationStrategy::memo_caches()
+      list<MemoizationCache *> MemoizationLazyEvaluationStrategy::memo_caches()
       { return _M_memo_eval_strategy.memo_caches(); }
     }
   }
