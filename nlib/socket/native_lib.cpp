@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <netdb.h>
 #include <poll.h>
 #include <unistd.h>
 #include <letin/native.hpp>
@@ -21,11 +22,22 @@ using namespace letin::nlib::socket;
 
 static vector<NativeFunction> native_funs;
 
+struct AddrinfoDelete
+{
+  void operator()(struct ::addrinfo *addr_info) const
+  { ::freeaddrinfo(addr_info); }
+};
+
 extern "C" {
   bool letin_initialize()
   {
     try {
       native_funs = {
+
+        //
+        // Socket native functions.
+        //
+
         {
           "socket.socket", // (domain: int, type: int, protocol: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
@@ -378,6 +390,11 @@ extern "C" {
             return return_value(vm, context, vut(vint(-1), v(io_v)));
           }
         },
+
+        //
+        // IO multiplexing native functions.
+        //
+
         {
           "socket.FD_SETSIZE", // () -> int
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
@@ -456,6 +473,79 @@ extern "C" {
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(fds_v)), v(io_v)));
             system_pollfds_to_object(fds, *(fds_v.r().ptr()));
             return return_value(vm, context, vut(vut(vint(result), v(fds_v)), v(io_v)));
+          }
+        },
+
+        //
+        // Address netive functions.
+        //
+
+        {
+          "socket.getaddrinfo", // (node: option iarray8, service: option iarray8, hints: option tuple, io: uio) -> (either int (list tuple), uio)
+          [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+            int error = check_args(vm, context, args, ciarray8, ciarray8, coption(caddrinfo), cuio);
+            if(error != ERROR_SUCCESS) return error_return_value(error);
+            Value &io_v = args[3];
+            string node, service;
+            bool is_node, is_service;
+            AddressInfo addr_info;
+            bool is_addr_info;
+            unique_ptr<struct ::addrinfo, AddrinfoDelete> res;
+            int tmp_errno = letin_errno();
+            letin_errno() = 0;
+            if(!convert_args(args, tooption(tostr(node), is_node), tooption(tostr(service), is_service), tooption(toaddrinfo(addr_info), is_addr_info))) {
+              if(letin_errno() == 0) {
+                int addr_info_error = system_addr_info_error_to_addr_info_error(EAI_SYSTEM);
+                return return_value(vm, context, vut(vleft(vint(addr_info_error)), v(io_v)));
+              } else {
+                int addr_info_error = system_addr_info_error_to_addr_info_error(EAI_BADFLAGS);
+                return return_value(vm, context, vut(vleft(vint(addr_info_error)), v(io_v)));
+              }
+            }
+            letin_errno() = tmp_errno;
+            struct ::addrinfo *tmp_res;
+            int result = ::getaddrinfo((is_node ? node.c_str() : nullptr), (is_service ? service.c_str() : nullptr), &(addr_info.info), &tmp_res);
+            res = unique_ptr<struct ::addrinfo, AddrinfoDelete>(tmp_res);
+            if(result != 0) {
+              int addr_info_error = system_addr_info_error_to_addr_info_error(result);
+              if(result == EAI_SYSTEM)
+                return return_value_with_errno(vm, context, vut(vleft(vint(addr_info_error)), v(io_v)));
+              else
+                return return_value(vm, context, vut(vleft(vint(addr_info_error)), v(io_v)));
+            }
+            return return_value(vm, context, vut(vright(vaddrinfo(res.get())), v(io_v)));
+          }
+        },
+        {
+          "socket.getnameinfo", // (sa: tuple, flags: int, io: uio) -> (either int (iarray8, iarray8), uio)
+          [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+            int error = check_args(vm, context, args, csockaddr, cint, cuio);
+            if(error != ERROR_SUCCESS) return error_return_value(error);
+            Value &io_v = args[2];
+            SocketAddress addr;
+            int flags, tmp_errno = letin_errno();
+            unique_ptr<char []> host(new char[NI_MAXHOST]);
+            unique_ptr<char []> service(new char[NI_MAXSERV]);
+            letin_errno() = 0;
+            if(!convert_args(args, tosockaddr(addr), toniflags(flags))) {
+              if(letin_errno() == 0) {
+                int addr_info_error = system_addr_info_error_to_addr_info_error(EAI_SYSTEM);
+                return return_value(vm, context, vut(vleft(vint(addr_info_error)), v(io_v)));
+              } else {
+                int addr_info_error = system_addr_info_error_to_addr_info_error(EAI_BADFLAGS);
+                return return_value(vm, context, vut(vleft(vint(addr_info_error)), v(io_v)));
+              }
+            }
+            letin_errno() = tmp_errno;
+            int result = ::getnameinfo(&(addr.addr), addr.length(), host.get(), NI_MAXHOST, service.get(), NI_MAXSERV, flags);
+            if(result != 0) {
+              int addr_info_error = system_addr_info_error_to_addr_info_error(result);
+              if(result == EAI_SYSTEM)
+                return return_value_with_errno(vm, context, vut(vleft(vint(addr_info_error)), v(io_v)));
+              else
+                return return_value(vm, context, vut(vleft(vint(addr_info_error)), v(io_v)));
+            }
+            return return_value(vm, context, vut(vright(vt(vcstr(host.get()), vcstr(service.get()))), v(io_v)));
           }
         }
       };

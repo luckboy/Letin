@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/un.h>
+#include <netdb.h>
 #include <poll.h>
 #include <unistd.h>
 #include <letin/native.hpp>
@@ -77,8 +78,19 @@ namespace letin
         ::socklen_t length() const;
       };
 
+      struct AddressInfo
+      {
+        struct ::addrinfo info;
+        std::unique_ptr<SocketAddress> addr;
+        std::string canonical_name;
+      };
+
+      typedef struct ::addrinfo *AddinfoPointer;
+
       void initialize_consts();
 
+      std::int64_t system_domain_to_domain(int system_domain);
+      
       bool domain_to_system_domain(std::int64_t domain, int &system_domain);
       LETIN_NATIVE_INT_CONVERTER(todomain, domain_to_system_domain, int);
 
@@ -121,12 +133,21 @@ namespace letin
 
       bool poll_events_to_system_poll_events(std::int64_t events, short &system_events);
 
+      std::int64_t system_addr_info_flags_to_addr_info_flags(int system_flags);
+
+      bool addr_info_flags_to_system_addr_info_flags(std::int64_t flags, int &system_flags);
+
+      std::int64_t system_addr_info_error_to_addr_info_error(int system_error);
+
+      bool name_info_flags_to_system_name_info_flags(std::int64_t flags, int &system_flags);
+      LETIN_NATIVE_INT_CONVERTER(toniflags, name_info_flags_to_system_name_info_flags, int);
+
       bool size_to_system_size(std::int64_t size, std::size_t &system_size);
       LETIN_NATIVE_INT_CONVERTER(tosize, size_to_system_size, std::size_t);
 
       bool in_port_to_system_in_port(std::int64_t port, ::in_port_t &system_port);
 
-      bool in_addr_to_system_in_addr(std::int64_t size, ::in_addr_t &system_addr);
+      bool in_addr_to_system_in_addr(std::int64_t addr, ::in_addr_t &system_addr);
 
       bool uint32_to_system_uint32(std::int64_t i, std::uint32_t &system_i);
 
@@ -190,6 +211,19 @@ namespace letin
 
       int check_unique_pollfds(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
       LETIN_NATIVE_UNIQUE_OBJECT_CHECKER(cupollfds, check_unique_pollfds);
+      
+      // Functions for AddressInfo.
+
+      bool object_to_system_address_info(vm::Object &object, AddressInfo &addr_info);
+      LETIN_NATIVE_OBJECT_CONVERTER(toaddrinfo, object_to_system_address_info, AddressInfo);
+
+      bool check_address_info(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
+      LETIN_NATIVE_UNIQUE_OBJECT_CHECKER(caddrinfo, check_address_info);
+
+      // Functions for struct addrinfo.
+
+      bool set_new_addrinfo(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &tmp_r, const AddinfoPointer &addr_info);
+      LETIN_NATIVE_REF_SETTER(vaddrinfo, set_new_addrinfo, AddinfoPointer);
     }
   }
 }

@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <limits>
+#include <netdb.h>
 #include <poll.h>
 #include <unistd.h>
 #include <vector>
@@ -66,7 +67,7 @@ namespace letin
             return 0;
         }
       }
-      
+
       ::socklen_t OptionValue::length() const
       {
         switch(type) {
@@ -78,6 +79,22 @@ namespace letin
             return sizeof(struct ::timeval);
           default:
             return 0;
+        }
+      }
+
+      int64_t system_domain_to_domain(int system_domain)
+      {
+        switch(system_domain) {
+          case AF_UNIX:
+            return 1;
+          case AF_INET:
+            return 2;
+#ifdef AF_INET6
+          case AF_INET6:
+            return 3;
+#endif
+          default:
+            return -1;
         }
       }
 
@@ -163,7 +180,7 @@ namespace letin
 
       bool flags_to_system_flags(int64_t flags, int &system_flags)
       {
-        if((flags & ~static_cast<int64_t>((1 << 7) - 1))) {
+        if((flags & ~static_cast<int64_t>((1 << 7) - 1)) != 0) {
           letin_errno() = EINVAL;
           return false;
         }
@@ -285,7 +302,7 @@ namespace letin
 
       bool poll_events_to_system_poll_events(int64_t events, short &system_events)
       {
-        if(events & ~static_cast<int64_t>((1 << 10) - 1)) {
+        if((events & ~static_cast<int64_t>((1 << 10) - 1)) != 0) {
           letin_errno() = EINVAL;
           return false;
         }
@@ -300,6 +317,73 @@ namespace letin
         if((events & (1 << 7)) != 0) return POLLERR;
         if((events & (1 << 8)) != 0) return POLLHUP;
         if((events & (1 << 9)) != 0) return POLLNVAL;
+        return true;
+      }
+
+     int64_t system_addr_info_flags_to_addr_info_flags(int system_flags)
+      {
+        int64_t flags = 0;
+        if((system_flags & AI_PASSIVE) != 0) flags |= 1 << 0;
+        if((system_flags & AI_CANONNAME) != 0) flags |= 1 << 1;
+        if((system_flags & AI_NUMERICHOST) != 0) flags |= 1 << 2;
+        if((system_flags & AI_NUMERICSERV) != 0) flags |= 1 << 3;
+        if((system_flags & AI_V4MAPPED) != 0) flags |= 1 << 4;
+        if((system_flags & AI_ALL) != 0) flags |= 1 << 5;
+        if((system_flags & AI_ADDRCONFIG) != 0) flags |= 1 << 6;
+        return flags;
+      }
+
+      bool addr_info_flags_to_system_addr_info_flags(int64_t flags, int &system_flags)
+      {
+        if((flags & ~static_cast<int64_t>((1 << 7) - 1)) != 0) return false;
+        system_flags = 0;
+        if((flags & (1 << 0)) != 0) system_flags |= AI_PASSIVE;
+        if((flags & (1 << 1)) != 0) system_flags |= AI_CANONNAME;
+        if((flags & (1 << 2)) != 0) system_flags |= AI_NUMERICHOST;
+        if((flags & (1 << 3)) != 0) system_flags |= AI_NUMERICSERV;
+        if((flags & (1 << 4)) != 0) system_flags |= AI_V4MAPPED;
+        if((flags & (1 << 5)) != 0) system_flags |= AI_ALL;
+        if((flags & (1 << 6)) != 0) system_flags |= AI_ADDRCONFIG;
+        return false;
+      }
+
+      int64_t system_addr_info_error_to_addr_info_error(int system_error)
+      {
+        switch(system_error) {
+          case 0:
+            return 0;
+          case EAI_AGAIN:
+            return 1;
+          case EAI_BADFLAGS:
+            return 2;
+          case EAI_FAIL:
+            return 3;
+          case EAI_FAMILY:
+            return 4;
+          case EAI_MEMORY:
+            return 5;
+          case EAI_NONAME:
+            return 6;
+          case EAI_SERVICE:
+            return 7;
+          case EAI_SYSTEM:
+            return 8;
+          case EAI_OVERFLOW:
+            return 9;
+          default:
+            return -1;
+        }
+      }
+
+      bool name_info_flags_to_system_name_info_flags(int64_t flags, int &system_flags)
+      {
+        if((flags & ~static_cast<int64_t>((1 << 5) - 1)) != 0) return false;
+        system_flags = 0;
+        if((flags & (1 << 0)) != 0) system_flags |= NI_NOFQDN;
+        if((flags & (1 << 1)) != 0) system_flags |= NI_NUMERICHOST;
+        if((flags & (1 << 2)) != 0) system_flags |= NI_NAMEREQD;
+        if((flags & (1 << 3)) != 0) system_flags |= NI_NUMERICSERV;
+        if((flags & (1 << 4)) != 0) system_flags |= NI_DGRAM;
         return true;
       }
 
@@ -343,7 +427,7 @@ namespace letin
         return true;
       }
 
-      // Functions for SocketAddressUnion.
+      // Functions for SocketAddress.
 
       //
       // type sockaddr_un = (
@@ -434,7 +518,7 @@ namespace letin
         }
       }
 
-      bool object_to_system_socket_address(const vm::Object &object, SocketAddress &addr)
+      bool object_to_system_socket_address(const Object &object, SocketAddress &addr)
       {
         switch(object.elem(0).i()) {
           case 1:
@@ -738,6 +822,113 @@ namespace letin
 
       int check_unique_pollfds(VirtualMachine *vm, ThreadContext *context, Object &object)
       { return check_pollfds(vm, context, object, true); }
+
+      // Functions for AddressInfo.
+      
+      //
+      // type addrinfo = (
+      //     int,       // ai_flags
+      //     int,       // ai_family
+      //     int,       // ai_socktype
+      //     int,       // ai_protocol
+      //     option sockaddr, // ai_addr
+      //     option iarray8 // ai_cononname
+      //   )
+      //
+
+      bool object_to_system_address_info(Object &object, AddressInfo &addr_info)
+      {
+        if(!addr_info_flags_to_system_addr_info_flags(object.elem(0).i(), addr_info.info.ai_flags)) return false;
+        if(!domain_to_system_domain(object.elem(1).i(), addr_info.info.ai_family)) return false;
+        if(!type_to_system_type(object.elem(2).i(), addr_info.info.ai_socktype)) return false;
+        if(!protocol_to_system_protocol(object.elem(3).i(), addr_info.info.ai_protocol)) return false;
+        if(object.elem(4).r()->elem(0).i() != 0) {
+          addr_info.addr = unique_ptr<SocketAddress>(new SocketAddress);
+          if(!object_to_system_socket_address(*(object.elem(4).r()->elem(1).r()), *(addr_info.addr))) return false;
+        } else
+          addr_info.addr = unique_ptr<SocketAddress>();
+        if(object.elem(4).r()->elem(0).i() != 0) {
+          addr_info.canonical_name.assign(reinterpret_cast<char *>(object.elem(4).r()->elem(1).r()->raw().is8), object.elem(4).r()->elem(1).r()->length());
+          addr_info.info.ai_canonname = const_cast<char *>(addr_info.canonical_name.c_str());
+        } else
+          addr_info.canonical_name = string();
+        addr_info.info.ai_next = nullptr;
+        return true;
+      }
+
+      bool check_address_info(VirtualMachine *vm, ThreadContext *context, Object &object)
+      {
+        if(!object.is_tuple() || object.length() != 2) return ERROR_INCORRECT_OBJECT;
+        for(size_t i = 0; i < 4; i++) {
+          int error = vm->force_tuple_elem(context, object, i);
+          if(error != ERROR_SUCCESS) return error;
+          if(!object.elem(i).is_int()) return ERROR_INCORRECT_OBJECT;
+        }
+        int error = vm->force_tuple_elem(context, object, 4);
+        if(error != ERROR_SUCCESS) return error;
+        if(!object.elem(4).is_ref()) return ERROR_INCORRECT_OBJECT;
+        if(!object.elem(4).r()->is_tuple()) return ERROR_INCORRECT_OBJECT;
+        if(object.elem(4).r()->length() < 1) return ERROR_INCORRECT_OBJECT;
+        if(object.elem(4).r()->elem(0).i() == 0) {
+          if(object.elem(4).r()->length() != 1) return ERROR_INCORRECT_OBJECT;
+        } else {
+          if(object.elem(4).r()->length() != 2) return ERROR_INCORRECT_OBJECT;
+          error = check_socket_address(vm, context, *(object.elem(4).r()));
+          if(error != ERROR_SUCCESS) return error;
+        }
+        if(!object.elem(5).is_ref()) return ERROR_INCORRECT_OBJECT;
+        if(!object.elem(5).r()->is_tuple()) return ERROR_INCORRECT_OBJECT;
+        if(object.elem(5).r()->length() < 1) return ERROR_INCORRECT_OBJECT;
+        if(object.elem(5).r()->elem(0).i() == 0) {
+          if(object.elem(5).r()->length() != 1) return ERROR_INCORRECT_OBJECT;
+        } else {
+          if(object.elem(5).r()->length() != 2) return ERROR_INCORRECT_OBJECT;
+          if(!object.elem(5).r()->is_iarray8()) return ERROR_INCORRECT_OBJECT;
+        }
+        return ERROR_SUCCESS;
+      }
+
+      // Functions for struct addrinfo.
+
+      bool set_new_addrinfo(VirtualMachine *vm, ThreadContext *context, RegisteredReference &tmp_r, const AddinfoPointer &addr_info)
+      {
+        struct ::addrinfo *tmp_addr_info = addr_info;
+        Reference prev_r;
+        while(true) {
+          size_t tuple_length = (tmp_addr_info != nullptr ? 3 : 1);
+          RegisteredReference r(vm->gc()->new_object(OBJECT_TYPE_TUPLE, tuple_length, context), context, false);
+          if(r.is_null()) return false;
+          r->set_elem(0, Value(tmp_addr_info != nullptr ? 1 : 0));
+          for(size_t i = 1; i < tuple_length; i++) r->set_elem(i, Value());
+          r.register_ref();
+          if(!prev_r.is_null())
+            prev_r->set_elem(2, Value(r));
+          else
+            tmp_r = r;
+          if(tmp_addr_info == nullptr) break;
+          RegisteredReference addr_info_r(vm->gc()->new_object(OBJECT_TYPE_TUPLE, 6, context), context, false);
+          if(addr_info_r.is_null()) return false;
+          for(size_t i = 0; i < 6; i++) addr_info_r->set_elem(i, Value());
+          addr_info_r.register_ref();
+          addr_info_r->set_elem(0, Value(system_addr_info_flags_to_addr_info_flags(tmp_addr_info->ai_flags)));
+          addr_info_r->set_elem(1, Value(system_domain_to_domain(tmp_addr_info->ai_family)));
+          addr_info_r->set_elem(2, Value(system_type_to_type(tmp_addr_info->ai_socktype)));
+          addr_info_r->set_elem(3, Value(tmp_addr_info->ai_protocol));
+          SocketAddress *addr = reinterpret_cast<SocketAddress *>(tmp_addr_info->ai_addr);
+          RegisteredReference tmp_r2(context, false);
+          if(!set_new_socket_address(vm, context, tmp_r2, *addr)) return false;
+          addr_info_r->set_elem(4, Value(tmp_r2));
+          size_t canonical_name_length = strlen(tmp_addr_info->ai_canonname);
+          RegisteredReference tmp_r3(vm->gc()->new_object(OBJECT_TYPE_IARRAY8, canonical_name_length, context), context);
+          if(tmp_r3.is_null()) return false;
+          copy_n(reinterpret_cast<int8_t *>(tmp_addr_info->ai_canonname), canonical_name_length, tmp_r3->raw().is8);
+          addr_info_r->set_elem(5, Value(tmp_r3));
+          r->set_elem(1, Value(addr_info_r));
+          tmp_addr_info = tmp_addr_info->ai_next;
+          prev_r = r;
+        }
+        return true;
+      }
     }
   }
 }
