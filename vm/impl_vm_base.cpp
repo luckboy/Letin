@@ -184,7 +184,7 @@ namespace letin
           return false;
         }
 
-        _M_eval_strategy->set_fun_count(_M_env.fun_count());
+        _M_eval_strategy->set_fun_infos_and_fun_count(_M_env.fun_infos(), _M_env.fun_count());
         {
           lock_guard<GarbageCollector> guard(*_M_gc);
           _M_env.set_memo_caches(_M_eval_strategy->memo_caches());

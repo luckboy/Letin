@@ -36,8 +36,8 @@ namespace letin
       bool MemoizationLazyEvaluationStrategy::post_leave_from_fun_for_force(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
       { return _M_memo_eval_strategy.post_leave_from_fun_for_force(vm, context, i, value_type); }
 
-      void MemoizationLazyEvaluationStrategy::set_fun_count(size_t fun_count)
-      { _M_memo_eval_strategy.set_fun_count(fun_count); }
+      void MemoizationLazyEvaluationStrategy::set_fun_infos_and_fun_count(const FunctionInfo *fun_infos, size_t fun_count)
+      { _M_memo_eval_strategy.set_fun_infos_and_fun_count(fun_infos, fun_count); }
 
       list<MemoizationCache *> MemoizationLazyEvaluationStrategy::memo_caches()
       { return _M_memo_eval_strategy.memo_caches(); }

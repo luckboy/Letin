@@ -49,7 +49,7 @@ namespace letin
 
         bool must_post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, std::size_t i, int value_type);
 
-        void set_fun_count(std::size_t fun_count);
+        void set_fun_infos_and_fun_count(const FunctionInfo *fun_infos, std::size_t fun_count);
 
         std::list<MemoizationCache *> memo_caches();
       };

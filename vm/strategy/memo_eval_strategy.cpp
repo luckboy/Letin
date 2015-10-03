@@ -135,7 +135,7 @@ namespace letin
       bool MemoizationEvaluationStrategy::must_post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
       { return true; }
 
-      void MemoizationEvaluationStrategy::set_fun_count(size_t fun_count)
+      void MemoizationEvaluationStrategy::set_fun_infos_and_fun_count(const FunctionInfo *fun_infos, size_t fun_count)
       { _M_cache = unique_ptr<MemoizationCache>(_M_cache_factory->new_memoization_cache(fun_count)); }
 
       list<MemoizationCache *> MemoizationEvaluationStrategy::memo_caches()
