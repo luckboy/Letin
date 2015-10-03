@@ -20,10 +20,18 @@ namespace letin
     {
       class FunctionEvaluationStrategy : public EvaluationStrategy
       {
+        struct FunctionPair
+        {
+          std::size_t eval_strategy_fun_index;
+          unsigned eval_strategy;
+        };
+
         EagerEvaluationStrategy _M_eager_eval_strategy;
+        LazyEvaluationStrategy _M_lazy_eval_strategy;
         MemoizationLazyEvaluationStrategy _M_memo_lazy_eval_strategy;
         unsigned _M_default_fun_eval_strategy;
         EvaluationStrategy *_M_eval_strategies[MAX_EVAL_STRATEGY << 1];
+        std::unique_ptr<FunctionPair []> _M_fun_pairs;
       public:
         FunctionEvaluationStrategy(MemoizationCacheFactory *cache_factory, unsigned default_fun_eval_strategy = 0);
 
