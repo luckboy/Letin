@@ -114,6 +114,7 @@ namespace letin
         }
         errors.resize(max_system_error - min_system_error + 1);
         error_offset = min_system_error;
+        fill(errors.begin(), errors.end(), -1);
         for(int i = 0; i < static_cast<int>(system_errors.size()); i++) {
           errors[system_errors[i] - min_system_error] = i;
         }

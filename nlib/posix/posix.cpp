@@ -118,6 +118,7 @@ namespace letin
         }
         signals.resize(max_system_signal - min_system_signal + 1);
         signal_offset = min_system_signal;
+        fill(signals.begin(), signals.end(), 0);
         for(int i = 0; i < static_cast<int>(system_signals.size()); i++) {
           if(system_signals[i] != 0) signals[system_signals[i] - min_system_signal] = i;
         }
@@ -179,18 +180,6 @@ namespace letin
           -1
 #endif
         };
-        int min_system_termios_cc_index = numeric_limits<int>::max();
-        int max_system_termios_cc_index = numeric_limits<int>::min();
-        for(auto system_cc_index : system_termios_cc_indexes) {
-          min_system_termios_cc_index = min(min_system_termios_cc_index, system_cc_index);
-          max_system_termios_cc_index = max(max_system_termios_cc_index, system_cc_index);
-        }
-        termios_cc_indexes.resize(max_system_termios_cc_index - min_system_termios_cc_index + 1);
-        termios_cc_index_offset = min_system_termios_cc_index;
-        for(int i = 0; i < static_cast<int>(system_termios_cc_indexes.size()); i++) {
-          if(system_termios_cc_indexes[i] != -1)
-            termios_cc_indexes[system_termios_cc_indexes[i] - min_system_termios_cc_index] = i;
-        }
         system_speeds = {
           { 0,          B0 },
           { 50,         B50 },
