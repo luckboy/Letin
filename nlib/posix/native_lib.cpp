@@ -6,12 +6,32 @@
  *   the full licensing terms.                                              *
  ****************************************************************************/
 #include <sys/types.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
+#if defined(__unix__)
+#include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/times.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
+#include <grp.h>
+#include <poll.h>
+#include <termios.h>
+#include <unistd.h>
+#elif defined(_WIN32) || defined(_WIN64)
+#if defined(__MINGW32__) || defined(__MINGW64__)
+#include <sys/time.h>
+#include <pthread_time.h>
+#include <unistd.h>
+#endif
+#include <io.h>
+#include <process.h>
+#include <sstream>
+#include <utime.h>
+#include <windows.h>
+#include <winsock2.h>
+#else
+#error "Unsupported operating system."
+#endif
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
@@ -21,14 +41,10 @@
 #include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
-#include <grp.h>
 #include <limits>
 #include <mutex>
-#include <poll.h>
 #include <string>
-#include <termios.h>
 #include <time.h>
-#include <unistd.h>
 #include <letin/native.hpp>
 #include "posix.hpp"
 
@@ -40,11 +56,64 @@ using namespace letin::nlib::posix;
 
 extern char **environ;
 
+#if defined(__unix__)
 static mutex getgroups_fun_mutex;
+#endif
 
 static vector<NativeFunction> native_funs;
 
 static MutexForkHandler fork_handler;
+
+#if defined(_WIN32) || defined(_WIN64)
+static mutex readdir_fun_mutex;
+
+static void add_arg_to_cmd_line(string &cmd_line, const char *arg)
+{
+  for(size_t i = 0; arg[i] != 0; i++) {
+    switch(arg[i]) {
+      case '"':
+        cmd_line += "\\\"";
+        break;
+      case '\\':
+      {
+        size_t backslash_count = 0;
+        for(; arg[i] != '\\'; i++) backslash_count++;
+        if(arg[i] == '"') {
+          for(size_t j = 0; j < backslash_count; j++) cmd_line += "\\\\";
+        } else {
+          for(size_t j = 0; j < backslash_count; j++) cmd_line += "\\";
+        }
+        i--;
+        break;
+      }
+      default:
+        cmd_line += arg[i];
+        break;
+    }
+  }
+}
+
+static void add_file_name_and_argv_to_cmd_line(string &cmd_line, const char *file_name, char **argv)
+{ 
+  add_arg_to_cmd_line(cmd_line, file_name);
+  for(size_t i = 0; argv[i] != nullptr; i++) add_arg_to_cmd_line(cmd_line, argv[i]);
+}
+
+static char *env_to_env_block(char **env)
+{
+  size_t length = 0;
+  for(size_t i = 0; env[i] != nullptr; i++) length += strlen(env[i]) + 1;
+  length++;
+  char *env_block = new char[length];
+  char *ptr = env_block;
+  for(size_t i = 0; env[i] != nullptr; i++) {
+    strcpy(ptr, env[i]);
+    ptr += strlen(env[i]) + 1;
+  }
+  *ptr = 0;
+  return env_block;
+}
+#endif
 
 extern "C" {
   bool letin_initialize()
@@ -62,7 +131,7 @@ extern "C" {
           "posix.environ", // () -> rarray
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             size_t n = 0;
             for(n = 0; environ[n] != nullptr; n++);
             RegisteredReference env_r(vm->gc()->new_object(OBJECT_TYPE_RARRAY, n, context), context, false);
@@ -89,7 +158,7 @@ extern "C" {
           "posix.errno", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
             int tmp_errno = system_error_to_error(letin_errno());
             return return_value(vm, context, vut(vint(tmp_errno), v(io_v)));
@@ -99,7 +168,7 @@ extern "C" {
           "posix.set_errno", // (new_errno: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
             int new_errno;
             if(!convert_args(args, toerrno(new_errno)))
@@ -117,7 +186,7 @@ extern "C" {
           "posix.read", // (fd: int, count: int, io: uio) -> (option (int, iarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
             int fd;
             size_t count;
@@ -126,7 +195,13 @@ extern "C" {
             RegisteredReference buf_r(vm->gc()->new_object(OBJECT_TYPE_IARRAY8, count, context), context);
             if(buf_r.is_null()) return error_return_value(ERROR_OUT_OF_MEMORY);
             fill_n(buf_r->raw().is8, buf_r->length(), 0);
+#if defined(__unix__)
             ::ssize_t result = ::read(fd, buf_r->raw().is8, count);
+#elif defined(_WIN32) || defined(_WIN64)
+            ::ssize_t result = ::_read(fd, buf_r->raw().is8, count);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(result), vref(buf_r))), v(io_v)));
@@ -136,13 +211,19 @@ extern "C" {
           "posix.write", // (fd: int, buf: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, ciarray8, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
             int fd;
             Reference buf_r;
             if(!convert_args(args, tofd(fd), tobufref(buf_r)))
               return return_value(vm, context, vut(vt(vint(-1)), v(io_v)));
+#if defined(__unix__)
             ::ssize_t result = ::write(fd, buf_r->raw().is8, buf_r->length());
+#elif defined(_WIN32) || defined(_WIN64)
+            ::ssize_t result = ::_write(fd, buf_r->raw().is8, buf_r->length());
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(result), v(io_v)));
@@ -152,7 +233,7 @@ extern "C" {
           "posix.uread", // (fd: int, buf: uiarray8, offset: int, count: int, io: uio) -> ((int, uiarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuiarray8, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &buf_v = args[1], io_v = args[4];
             int fd;
             Reference buf_r;
@@ -161,7 +242,13 @@ extern "C" {
               return return_value(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
             if(offset >= buf_r->length() || offset + count >= buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)), EINVAL);
+#if defined(__unix__)
             ::ssize_t result = ::read(fd, buf_r->raw().is8 + offset, count);
+#elif defined(_WIN32) || defined(_WIN64)
+            ::ssize_t result = ::_read(fd, buf_r->raw().is8 + offset, count);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
             return return_value(vm, context, vut(vut(vint(result), v(buf_v)), v(io_v)));
@@ -171,7 +258,7 @@ extern "C" {
           "posix.uwrite", // (fd: int, buf: uiarray8, offset: int, count: int, io: uio) -> ((int, uiarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuiarray8, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &buf_v = args[1], io_v = args[4];
             int fd;
             Reference buf_r;
@@ -180,7 +267,13 @@ extern "C" {
               return return_value(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
             if(offset >= buf_r->length() || offset + count >= buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)), EINVAL);
+#if defined(__unix__)
             ::ssize_t result = ::write(fd, buf_r->raw().is8 + offset, count);
+#elif defined(_WIN32) || defined(_WIN64)
+            ::ssize_t result = ::_write(fd, buf_r->raw().is8 + offset, count);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
             return return_value(vm, context, vut(vut(vint(result), v(buf_v)), v(io_v)));
@@ -190,9 +283,10 @@ extern "C" {
           "posix.lseek", // (fd: int, offset: int, whence: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[3];
             int fd, whence;
+#if defined(__unix__)
 #if defined(HAVE_OFF64_T) && defined(HAVE_LSEEK64)
             off64_t offset;
             if(!convert_args(args, tofd(fd), tooff64(offset), towhence(whence)))
@@ -204,6 +298,14 @@ extern "C" {
               return return_value(vm, context, vut(vint(-1), v(io_v)));
             off_t result = ::lseek(fd, offset, whence);
 #endif
+#elif defined(_WIN32) || defined(_WIN64)
+            int64_t offset;
+            if(!convert_args(args, tofd(fd), toint(offset), towhence(whence)))
+              return return_value(vm, context, vut(vint(-1), v(io_v)));
+            int64_t result = ::_lseeki64(fd, offset, whence);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(result), v(io_v)));
@@ -213,17 +315,23 @@ extern "C" {
           "posix.open", // (path_name: iarray8, flags: int, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[3];
             string path_name;
             int flags;
             mode_t mode;
             if(!convert_args(args, topath(path_name), toflags(flags), tomode(mode)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
 #ifdef HAVE_OPEN64
             int fd = ::open64(path_name.c_str(), flags, mode);
 #else
             int fd = ::open(path_name.c_str(), flags, mode);
+#endif
+#elif defined(_WIN32) || defined(_WIN64)
+            int fd = ::_open(path_name.c_str(), flags, mode);
+#else
+#error "Unsupported operating system."
 #endif
             if(fd == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
@@ -234,12 +342,18 @@ extern "C" {
           "posix.close", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::close(fd);
+#elif defined(_WIN32) || defined(_WIN64)
+            int result = ::_close(fd);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -249,25 +363,37 @@ extern "C" {
           "posix.pipe", // (io: uio) -> (option (int, int), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
+#if defined(__unix__)
             int fds[2];
             int result = ::pipe(fds);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(fds[0]), vint(fds[1]))), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.dup", // (old_fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             int old_fd;
             if(!convert_args(args, tofd(old_fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::dup(old_fd);
+#elif defined(_WIN32) || defined(_WIN64)
+            int result = ::_dup(old_fd);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(result), v(io_v)));
@@ -277,12 +403,18 @@ extern "C" {
           "posix.dup2", // (old_fd: int, int new_fd, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
             int old_fd, new_fd;
             if(!convert_args(args, tofd(old_fd), tofd(new_fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::dup2(old_fd, new_fd);
+#elif defined(_WIN32) || defined(_WIN64)
+            int result = ::_dup2(old_fd, new_fd);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(result), v(io_v)));
@@ -292,7 +424,7 @@ extern "C" {
           "posix.FD_SETSIZE", // () -> int
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             return return_value(vm, context, vint(FD_SETSIZE));
           }
         },
@@ -300,8 +432,9 @@ extern "C" {
           "posix.select", // (nfds: int, rfds: iarray8, wfds: iarray8, efds: iarray8, timeout: option tuple, io: uio) -> (option (int, iarray8, iarray8, iarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, ciarray8, ciarray8, ciarray8, coption(ctimeval), cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value io_v = args[5];
+#if defined(__unix__)
             bool is_timeout;
             int nfds;
             ::fd_set rfds, wfds, efds;
@@ -312,14 +445,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(result), vfd_set(rfds), vfd_set(rfds), vfd_set(rfds))), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.uselect", // (nfds: int, rfds: uiarray8, wfds: uiarray8, efds: uiarray8, timeout: option tuple, io: uio) -> ((int, uiarray8, uiarray8, uiarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuiarray8, cuiarray8, cuiarray8, coption(ctimeval), cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &rfds_v = args[1], wfds_v = args[2], efds_v = args[3], io_v = args[5];
+#if defined(__unix__)
             bool is_timeout;
             int nfds;
             ::fd_set rfds, wfds, efds;
@@ -333,14 +472,20 @@ extern "C" {
             system_fd_set_to_object(wfds, *(wfds_v.r().ptr()));
             system_fd_set_to_object(efds, *(efds_v.r().ptr()));
             return return_value(vm, context, vut(vut(vint(result), v(rfds_v), v(wfds_v), v(efds_v)), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vt(vint(-1), v(rfds_v), v(wfds_v), v(efds_v)), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.poll", // (fds: rarray, timeout: int, io: uio) -> (option (int, rarray), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cpollfds, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             Array<struct ::pollfd> fds;
             int timeout;
             if(!convert_args(args, topollfds(fds), toarg(timeout)))
@@ -349,14 +494,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(result), vpollfds(fds))), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.upoll", // (fds: urarray, timeout: int, io: uio) -> ((int, urarray), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cupollfds, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &fds_v = args[0], io_v = args[2];
+#if defined(__unix__)
             Array<struct ::pollfd> fds;
             int timeout;
             if(!convert_args(args, topollfds(fds), toarg(timeout)))
@@ -366,14 +517,20 @@ extern "C" {
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(fds_v)), v(io_v)));
             system_pollfds_to_object(fds, *(fds_v.r().ptr()));
             return return_value(vm, context, vut(vut(vint(result), v(fds_v)), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vut(vint(-1), v(fds_v)), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.fcntl_dupfd", // (fd: int, min_fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             int fd, min_fd;
             if(!convert_args(args, tofd(fd), tofd(min_fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -381,14 +538,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(result), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.fcntl_getfd", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -396,14 +559,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(result), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.fcntl_setfd", // (fd: int, bit: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             int fd, bit;
             if(!convert_args(args, tofd(fd), toarg(bit)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -411,14 +580,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.fcntl_getfl", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -427,14 +602,20 @@ extern "C" {
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             int flags = system_flags_to_flags(system_flags);
             return return_value(vm, context, vut(vint(flags), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.fcntl_setfl", // (fd: int, flags: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             int fd, flags;
             if(!convert_args(args, tofd(fd), toflags(flags)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -442,14 +623,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.fcntl_getlk", // (fd: int, io: uio) -> ((int, tuple) | (int), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vnone, v(io_v)));
@@ -467,14 +654,20 @@ extern "C" {
 #else
             return return_value(vm, context, vut(vsome(vflock(lock)), v(io_v)));
 #endif
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.fcntl_setlk", // (fd: int, lock: tuple, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cflock, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             int fd;
 #if defined(HAVE_STRUCT_FLOCK64) && defined(F_SETLK64)
             struct ::flock64 lock;
@@ -490,14 +683,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.fcntl_setlkw", // (fd: int, lock: tuple, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cflock, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             int fd;
 #if defined(HAVE_STRUCT_FLOCK64) && defined(F_SETLKW64)
             struct ::flock64 lock;
@@ -513,6 +712,11 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
 
@@ -524,11 +728,12 @@ extern "C" {
           "posix.stat", // (path_name: iarray8, io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             string path_name;
             if(!convert_args(args, topath(path_name)))
               return return_value(vm, context, vut(vnone, v(io_v)));
+#if defined(__unix__)
 #if defined(HAVE_STRUCT_STAT64) && defined(HAVE_STAT64)
             struct ::stat64 stat_buf;
             int result = ::stat64(path_name.c_str(), &stat_buf);
@@ -536,12 +741,24 @@ extern "C" {
             struct ::stat stat_buf;
             int result = ::stat(path_name.c_str(), &stat_buf);
 #endif
+#elif defined(_WIN32) || defined(_WIN64)
+            struct ::_stat64 stat_buf;
+            int result = ::_stat64(path_name.c_str(), &stat_buf);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
+#if defined(__unix__)
 #if defined(HAVE_STRUCT_STAT64) && defined(HAVE_STAT64)
             return return_value(vm, context, vut(vsome(vstat64(stat_buf)), v(io_v)));
 #else
             return return_value(vm, context, vut(vsome(vstat(stat_buf)), v(io_v)));
+#endif
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value(vm, context, vut(vsome(v_stat64(stat_buf)), v(io_v)));
+#else
+#error "Unsupported operating system."
 #endif
           }
         },
@@ -549,8 +766,9 @@ extern "C" {
           "posix.lstat", // (path_name: iarray8, io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             string path_name;
             if(!convert_args(args, topath(path_name)))
               return return_value(vm, context, vut(vnone, v(io_v)));
@@ -568,17 +786,23 @@ extern "C" {
 #else
             return return_value(vm, context, vut(vsome(vstat(stat_buf)), v(io_v)));
 #endif
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.fstat", // (fd: int, io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vnone, v(io_v)));
+#if defined(__unix__)
 #if defined(HAVE_STRUCT_STAT64) && defined(HAVE_FSTAT64)
             struct ::stat64 stat_buf;
             int result = ::fstat64(fd, &stat_buf);
@@ -586,12 +810,24 @@ extern "C" {
             struct ::stat stat_buf;
             int result = ::fstat(fd, &stat_buf);
 #endif
+#elif defined(_WIN32) || defined(_WIN64)
+            struct ::_stat64 stat_buf;
+            int result = ::_fstat64(fd, &stat_buf);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
+#if defined(__unix__)
 #if defined(HAVE_STRUCT_STAT64) && defined(HAVE_FSTAT64)
             return return_value(vm, context, vut(vsome(vstat64(stat_buf)), v(io_v)));
 #else
             return return_value(vm, context, vut(vsome(vstat(stat_buf)), v(io_v)));
+#endif
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value(vm, context, vut(vsome(v_stat64(stat_buf)), v(io_v)));
+#else
+#error "Unsupported operating system."
 #endif
           }
         },
@@ -599,13 +835,19 @@ extern "C" {
           "posix.access", // (path_name: iarray8, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
             string path_name;
             int mode;
             if(!convert_args(args, topath(path_name), toamode(mode)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::access(path_name.c_str(), mode);
+#elif defined(_WIN32) || defined(_WIN64)
+            int result = ::_access(path_name.c_str(), mode);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -615,11 +857,17 @@ extern "C" {
           "posix.getcwd", // (io: uio) -> (option iarray8, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
             unique_ptr<char []> buf(new char[PATH_MAX + 1]);
             fill_n(buf.get(), PATH_MAX + 1, 0);
+#if defined(__unix__)
             char *result = ::getcwd(buf.get(), PATH_MAX + 1);
+#elif defined(_WIN32) || defined(_WIN64)
+            char *result = ::_getcwd(buf.get(), PATH_MAX + 1);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == nullptr)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             system_path_name_to_path_name(buf.get());
@@ -630,12 +878,18 @@ extern "C" {
           "posix.chdir", // (dir_name: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             string dir_name;
             if(!convert_args(args, topath(dir_name)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::chdir(dir_name.c_str());
+#elif defined(_WIN32) || defined(_WIN64)
+            int result = ::_chdir(dir_name.c_str());
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -645,8 +899,9 @@ extern "C" {
           "posix.fchdir", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -654,19 +909,30 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.mkdir", // (dir_name: iarray8, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
             string dir_name;
             ::mode_t mode;
             if(!convert_args(args, topath(dir_name), tomode(mode)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::mkdir(dir_name.c_str(), mode);
+#elif defined(_WIN32) || defined(_WIN64)
+            int result = ::_mkdir(dir_name.c_str());
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -676,12 +942,18 @@ extern "C" {
           "posix.rmdir", // (dir_name: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             string dir_name;
             if(!convert_args(args, topath(dir_name)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::rmdir(dir_name.c_str());
+#elif defined(_WIN32) || defined(_WIN64)
+            int result = ::_rmdir(dir_name.c_str());
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -691,8 +963,9 @@ extern "C" {
           "posix.link", // (old_file_name: iarray8, new_file_name: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, ciarray8, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             string old_file_name, new_file_name;
             if(!convert_args(args, topath(old_file_name), topath(new_file_name)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -700,18 +973,29 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.unlink", // (file_name: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, ciarray8, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             string file_name;
             if(!convert_args(args, topath(file_name)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::unlink(file_name.c_str());
+#elif defined(_WIN32) || defined(_WIN64)
+            int result = ::_unlink(file_name.c_str());
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -721,7 +1005,7 @@ extern "C" {
           "posix.rename", // (old_path_name: iarray8, new_path_name: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, ciarray8, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
             string old_path_name, new_path_name;
             if(!convert_args(args, topath(old_path_name), topath(new_path_name)))
@@ -736,8 +1020,9 @@ extern "C" {
           "posix.symlink", // (old_path_name: iarray8, new_path_name: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, ciarray8, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             string old_file_name, new_file_name;
             if(!convert_args(args, topath(old_file_name), topath(new_file_name)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -745,14 +1030,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.readlink", // (path_name: iarray8, io: uio) -> (option iarray8, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             string path_name;
             unique_ptr<char []> buf(new char[PATH_MAX + 1]);
             fill_n(buf.get(), PATH_MAX + 1, 0);
@@ -763,19 +1054,30 @@ extern "C" {
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             system_path_name_to_path_name(buf.get());
             return return_value(vm, context, vut(vsome(vcstr(buf.get())), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.chmod", // (path_name: iarray8, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
             string path_name;
             ::mode_t mode;
             if(!convert_args(args, topath(path_name), tomode(mode)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::chmod(path_name.c_str(), mode);
+#elif defined(_WIN32) || defined(_WIN64)
+            int result = ::_chmod(path_name.c_str(), mode);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -785,8 +1087,9 @@ extern "C" {
           "posix.fchmod", // (fd: int, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             int fd;
             ::mode_t mode;
             if(!convert_args(args, tofd(fd), tomode(mode)))
@@ -795,14 +1098,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.chown", // (path_name: iarray8, owner: int, group: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[3];
+#if defined(__unix__)
             string path_name;
             ::uid_t owner;
             ::gid_t group;
@@ -812,14 +1121,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.lchown", // (path_name: iarray8, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[3];
+#if defined(__unix__)
             string path_name;
             ::uid_t owner;
             ::gid_t group;
@@ -829,14 +1144,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.fchown", // (fd: int, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[3];
+#if defined(__unix__)
             int fd;
             ::uid_t owner;
             ::gid_t group;
@@ -846,14 +1167,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.mknod", // (path_name: iarray8, mode: int, dev: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[3];
+#if defined(__unix__)
             string path_name;
             ::mode_t mode;
             ::dev_t dev;
@@ -865,19 +1192,33 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.utimes", // (path_name: iarray8, times: (tuple, tuple), io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, ct(ctimeval, ctimeval), cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
             string path_name;
             struct ::timeval times[2];
             if(!convert_args(args, topath(path_name), tot(totimeval(times[0]), totimeval(times[1]))))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::utimes(path_name.c_str(), times);
+#elif defined(_WIN32) || defined(_WIN64)
+            struct ::utimbuf tmp_times;
+            tmp_times.actime = times[0].tv_sec;
+            tmp_times.modtime = times[1].tv_sec;
+            int result = ::utime(path_name.c_str(), &tmp_times);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -887,12 +1228,18 @@ extern "C" {
           "posix.umask", // (mask: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             ::mode_t mask;
             if(!convert_args(args, tomode(mask)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             ::mode_t new_mask = ::umask(mask);
+#elif defined(_WIN32) || defined(_WIN64)
+            ::mode_t new_mask = ::_umask(mask);
+#else
+#error "Unsupported operating system."
+#endif
             return return_value(vm, context, vut(vint(static_cast<int>(new_mask)), v(io_v)));
           }
         },
@@ -905,9 +1252,15 @@ extern "C" {
           "posix.getpid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
-            ::pid_t pid = ::getpid();
+#if defined(__unix__)
+            Pid pid = ::getpid();
+#elif defined(_WIN32) || defined(_WIN64)
+            Pid pid = ::GetCurrentProcessId();
+#else
+#error "Unsupported operating system."
+#endif
             return return_value(vm, context, vut(vint(pid), v(io_v)));
           }
         },
@@ -915,19 +1268,26 @@ extern "C" {
           "posix.getppid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
-            ::pid_t pid = ::getppid();
+#if defined(__unix__)
+            Pid pid = ::getppid();
             return return_value(vm, context, vut(vint(pid), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.fork", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
-            ::pid_t pid;
+#if defined(__unix__)
+            Pid pid;
             {
               ForkAround fork_around;
               pid = ::fork();
@@ -935,39 +1295,74 @@ extern "C" {
             if(pid == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(pid), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.waitpid", // (pid: int, options: int, io: uio) -> (option (int, (int, int)), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
-            ::pid_t pid;
-            int status;
+            Pid pid;
             int options;
+#if defined(__unix__)
+            int status;
             if(!convert_args(args, towpid(pid), towoptions(options)))
               return return_value(vm, context, vut(vnone, v(io_v)));
-            ::pid_t result = ::waitpid(pid, &status, options);
+            Pid result = ::waitpid(pid, &status, options);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             if(result != 0) 
               return return_value(vm, context, vut(vsome(vt(vint(result), vwstatus(status))), v(io_v)));
             else
               return return_value(vm, context, vut(vsome(vt(vint(result), vt(vint(0), vint(0)))), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            if(!convert_args(args, towpid(pid), towoptions(options)))
+              return return_value(vm, context, vut(vnone, v(io_v)));
+            ::HANDLE handle = ::OpenProcess(SYNCHRONIZE, FALSE, pid);
+            if(handle == nullptr)
+              return return_value_with_errno_for_windows(vm, context, vut(vnone, v(io_v)), true);
+            if((options & 1) == 0) {
+              ::DWORD wait_result = ::WaitForSingleObject(handle, INFINITY);
+              if(wait_result == WAIT_FAILED)
+                return return_value_with_errno_for_windows(vm, context, vut(vnone, v(io_v)), true);
+            }
+            ::DWORD exit_status;
+            ::BOOL result = ::GetExitCodeProcess(handle, &exit_status);
+            if(result == FALSE)
+              return return_value_with_errno_for_windows(vm, context, vut(vnone, v(io_v)));
+            ::CloseHandle(handle);
+            if(exit_status != STILL_ACTIVE)
+              return return_value(vm, context, vut(vsome(vt(vint(pid), vt(vint(1), vint(exit_status)))), v(io_v)));
+            else
+              return return_value(vm, context, vut(vsome(vt(vint(pid), vt(vint(0), vint(0)))), v(io_v)));
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.execve", // (file_name: iarray8, argv: rarray, env: rarray, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cargv, cargv, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[3];
             string file_name;
             Argv argv, env;
             if(!convert_args(args, topath(file_name), toargv(argv), toargv(env)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             ::execve(file_name.c_str(), argv.ptr(), env.ptr());
+#elif defined(_WIN32) || defined(_WIN64)
+            ::_execve(file_name.c_str(), argv.ptr(), env.ptr());
+#else
+#error "Unsupported operating system."
+#endif
             return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
           }
         },
@@ -975,26 +1370,48 @@ extern "C" {
           "posix.fork_execve", // (file_name: iarray8, argv: rarray, env: rarray, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cargv, cargv, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[3];
             string file_name;
             Argv argv, env;
             if(!convert_args(args, topath(file_name), toargv(argv), toargv(env)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
-            ::pid_t pid = ::fork();
+#if defined(__unix__)
+            Pid pid = ::fork();
             if(pid == 0) {
               ::execve(file_name.c_str(), argv.ptr(), env.ptr());
               ::_exit(-1);
             } else if(pid == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(pid), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            string cmd_line;
+            add_file_name_and_argv_to_cmd_line(cmd_line, file_name.c_str(), argv.ptr());
+            unique_ptr<char []> env_block(env_to_env_block(env.ptr()));
+            STARTUPINFO startup_info;
+            fill_n(reinterpret_cast<uint8_t *>(&startup_info), sizeof(STARTUPINFO), 0);
+            startup_info.cb = sizeof(STARTUPINFO);
+            startup_info.dwFlags = STARTF_USESTDHANDLES;
+            startup_info.hStdInput = ::GetStdHandle(STD_INPUT_HANDLE);
+            startup_info.hStdOutput = ::GetStdHandle(STD_OUTPUT_HANDLE);
+            startup_info.hStdError = ::GetStdHandle(STD_ERROR_HANDLE);
+            PROCESS_INFORMATION process_info;
+            BOOL result = ::CreateProcess(file_name.c_str(), const_cast<char *>(cmd_line.c_str()), nullptr, nullptr, TRUE, 0, env_block.get(), nullptr, &startup_info, &process_info);
+            if(result == FALSE)
+              return return_value_with_errno_for_windows(vm, context, vut(vnone, v(io_v)));
+            ::CloseHandle(process_info.hThread);
+            ::CloseHandle(process_info.hProcess);
+            return return_value(vm, context, vut(vint(process_info.dwProcessId), v(io_v)));
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.exit", // (status: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             int status;
             if(!convert_args(args, toarg(status)))
@@ -1006,8 +1423,9 @@ extern "C" {
           "posix.kill", // (pid: int, sig: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             ::pid_t pid;
             int sig;
             if(!convert_args(args, topid(pid), tosig(sig)))
@@ -1016,14 +1434,31 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            ::DWORD pid;
+            int sig;
+            if(!convert_args(args, topid(pid), toksig(sig)))
+              return return_value(vm, context, vut(vint(-1), v(io_v)));
+            ::HANDLE handle = ::OpenProcess(PROCESS_TERMINATE, FALSE, pid);
+            if(handle == nullptr)
+              return return_value_with_errno_for_windows(vm, context, vut(vint(-1), v(io_v)), true);
+            int result = ::TerminateProcess(handle, 0);
+            if(result == -1)
+              return return_value_with_errno_for_windows(vm, context, vut(vint(-1), v(io_v)), true);
+            ::CloseHandle(handle);
+            return return_value(vm, context, vut(vint(0), v(io_v)));
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.getpgid", // (pid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             ::pid_t pid;
             if(!convert_args(args, topid(pid)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1031,14 +1466,20 @@ extern "C" {
             if(pgid == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(pgid), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.setpgid", // (pid: int, pgid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             ::pid_t pid, pgid;
             if(!convert_args(args, topid(pid), topid(pgid)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1046,14 +1487,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.getsid", // (pid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             ::pid_t pid;
             if(!convert_args(args, topid(pid)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1061,44 +1508,70 @@ extern "C" {
             if(sid == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(sid), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.setsid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
+#if defined(__unix__)
             ::pid_t sid = ::setsid();
             if(sid == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(sid), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.pause", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
+#if defined(__unix__)
             int result = ::pause();
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.usleep", // (useconds: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__) || ((defined(_WIN32) || defined(_WIN64)) && (defined(__MINGW32__) || defined(__MINGW64__)))
             ::useconds_t useconds;
             if(!convert_args(args, touseconds(useconds)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
             int result = ::usleep(useconds);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            DWORD useconds;
+            if(!convert_args(args, touseconds(useconds)))
+              return return_value(vm, context, vut(vint(-1), v(io_v)));
+            ::Sleep(useconds / 1000);
+#else
+#error "Unsupported operating system."
+#endif
             return return_value(vm, context, vut(vint(0), v(io_v)));
           }
         },
@@ -1106,8 +1579,9 @@ extern "C" {
           "posix.nanosleep", // (req: tuple, io: uio) -> ((int, option tuple), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ctimespec, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__) || ((defined(_WIN32) || defined(_WIN64)) && (defined(__MINGW32__) || defined(__MINGW64__)))
             struct ::timespec req, rem;
             if(!convert_args(args, totimespec(req)))
               return return_value(vm, context, vut(vt(vint(-1), vnone), v(io_v)));
@@ -1119,6 +1593,15 @@ extern "C" {
                 return return_value_with_errno(vm, context, vut(vt(vint(-1), vnone), v(io_v)));
             }
             return return_value(vm, context, vut(vt(vint(0), vnone), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            ::DWORD req_dword;
+            if(!convert_args(args, totimespecdw(req_dword)))
+              return return_value(vm, context, vut(vt(vint(-1), vnone), v(io_v)));
+            ::Sleep(req_dword);
+            return return_value(vm, context, vut(vt(vint(0), vnone), v(io_v)));
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
@@ -1131,21 +1614,28 @@ extern "C" {
           "posix.times", // (io: uio) -> (option (int, tuple), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
+#if defined(__unix__)
             struct ::tms buf;
             ::clock_t result = ::times(&buf);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(result), vtms(buf))), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.nice", // (inc: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             int inc;
             if(!convert_args(args, toarg(inc)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1153,14 +1643,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.getpriority", // (which: int, who: int, io: uio) -> (option int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             int which, who;
             errno = 0;
             if(!convert_args(args, towhich(which), toarg(who)))
@@ -1169,14 +1665,20 @@ extern "C" {
             if(result == -1 && errno != 0)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vint(result)), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+              return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.setpriority", // (which: int, who: int, prio: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[3];
+#if defined(__unix__)
             int which, who, prio;
             if(!convert_args(args, towhich(which), toarg(who), toarg(prio)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1184,6 +1686,11 @@ extern "C" {
             if(result == -1 && errno != 0)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
 
@@ -1195,18 +1702,25 @@ extern "C" {
           "posix.getuid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
+#if defined(__unix__)
             ::uid_t uid = ::getuid();
             return return_value(vm, context, vut(vint(static_cast<int64_t>(uid)), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.setuid", // (uid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             ::uid_t uid;
             if(!convert_args(args, touid(uid)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1214,24 +1728,36 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.getgid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
+#if defined(__unix__)
             ::gid_t gid = ::getgid();
             return return_value(vm, context, vut(vint(static_cast<int64_t>(gid)), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.setgid", // (gid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             ::gid_t gid;
             if(!convert_args(args, touid(gid)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1239,24 +1765,36 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.geteuid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
+#if defined(__unix__)
             ::uid_t uid = ::geteuid();
             return return_value(vm, context, vut(vint(static_cast<int>(uid)), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.seteuid", // (uid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             ::uid_t uid;
             if(!convert_args(args, touid(uid)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1264,24 +1802,36 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.getegid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
+#if defined(__unix__)
             ::gid_t gid = ::getegid();
             return return_value(vm, context, vut(vint(static_cast<int>(gid)), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.setegid", // (gid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             ::gid_t gid;
             if(!convert_args(args, touid(gid)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1289,14 +1839,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.getgroups", // (io: uio) -> (option iarray32, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
+#if defined(__unix__)
             {
               lock_guard<mutex> guard(getgroups_fun_mutex);
               int group_count = ::getgroups(0, nullptr);
@@ -1311,14 +1867,20 @@ extern "C" {
               for(int i = 0; i < group_count; i++) groups_r->set_elem(i, static_cast<int64_t>(groups.get()[i]));
               return return_value(vm, context, vut(vsome(vref(groups_r)), v(io_v)));
             }
+#elif defined(_WIN32) || defined(_WIN64)
+              return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.setgroups", // (groups: iarray32, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray32, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             Array<::gid_t> groups;
             if(!convert_args(args, togids(groups)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1326,6 +1888,11 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
 
@@ -1337,13 +1904,32 @@ extern "C" {
           "posix.gettimeofday", // (io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
+#if defined(__unix__) || ((defined(_WIN32) || defined(_WIN64)) && (defined(__MINGW32__) || defined(__MINGW64__)))
             struct ::timeval tv;
             int result = ::gettimeofday(&tv, nullptr);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vtimeval(tv)), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            ::SYSTEMTIME system_time;
+            ::GetSystemTime(&system_time);
+            struct tm time;
+            time.tm_year = system_time.wYear - 1900;
+            time.tm_mon = system_time.wMonth - 1;
+            time.tm_wday = system_time.wDayOfWeek;
+            time.tm_mday = system_time.wDay;
+            time.tm_hour = system_time.wHour;
+            time.tm_min = system_time.wMinute;
+            time.tm_sec = system_time.wSecond;
+            time.tm_isdst = -1;
+            time_t result = mktime(&time);
+            if(result == -1)
+              return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
+            long useconds = static_cast<long>(system_time.wMilliseconds) * 1000;
+            return return_value(vm, context, vut(vsome(vt(vint(result), vint(useconds))), v(io_v)));
+#endif
           }
         },
 
@@ -1355,8 +1941,9 @@ extern "C" {
           "posix.tcgetattr", // (fd: int, io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             int fd;
             struct ::termios termios;
             if(!convert_args(args, tofd(fd)))
@@ -1365,14 +1952,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vtermios(termios)), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.tcsetattr", // (fd: int, optional_actions: int, termios: tuple, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, ctermios, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[3];
+#if defined(__unix__)
             int fd, optional_actions;
             struct ::termios termios;
             if(!convert_args(args, tofd(fd), tooactions(optional_actions), totermios(termios)))
@@ -1381,14 +1974,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(1), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.tcsendbreak", // (fd: int, duration: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             int fd, duration;
             if(!convert_args(args, tofd(fd), toarg(duration)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1396,14 +1995,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.tcdrain", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1411,14 +2016,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.tcflush", // (fd: int, queue_selector: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             int fd, queue_selector;
             if(!convert_args(args, tofd(fd), toqselector(queue_selector)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1426,14 +2037,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.tcflow", // (fd: int, action: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             int fd, action;
             if(!convert_args(args, tofd(fd), totaction(action)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1441,14 +2058,20 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.tcgetpgrp", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
@@ -1456,14 +2079,20 @@ extern "C" {
             if(pgrp == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(pgrp), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.tcsetpgrp", // (fd: int, pgrp: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
+#if defined(__unix__)
             int fd;
             ::pid_t pgrp;
             if(!convert_args(args, tofd(fd), topid(pgrp)))
@@ -1472,18 +2101,29 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.isatty", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::isatty(fd);
+#elif defined(_WIN32) || defined(_WIN64)
+            int result = ::_isatty(fd);
+#else
+#error "Unsupported operating system."
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(result), v(io_v)));
@@ -1493,8 +2133,9 @@ extern "C" {
           "posix.ttyname", // (fd: int, io: uio) -> (option iarray8, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
+#if defined(__unix__)
             int fd;
             unique_ptr<char []> buf(new char[TTY_NAME_MAX + 1]);
             fill_n(buf.get(), TTY_NAME_MAX + 1, 0);
@@ -1504,6 +2145,11 @@ extern "C" {
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vcstr(buf.get())), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
 
@@ -1515,24 +2161,41 @@ extern "C" {
           "posix.sync", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
+#if defined(__unix__)
             ::sync();
             return return_value(vm, context, vut(vint(0), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            return return_value_with_errno(vm, context, vut(vint(0), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.fsync", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::fsync(fd);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            ::HANDLE handle = reinterpret_cast<::HANDLE>(::_get_osfhandle(fd));
+            if(handle == INVALID_HANDLE_VALUE)
+              return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
+            ::BOOL result = ::FlushFileBuffers(handle);
+            if(result == FALSE)
+              return return_value_with_errno_for_windows(vm, context, vut(vint(-1), v(io_v)));
+#else
+#error "Unsupported operating system."
+#endif
             return return_value(vm, context, vut(vint(0), v(io_v)));
           }
         },
@@ -1540,14 +2203,25 @@ extern "C" {
           "posix.fdatasync", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result = ::fdatasync(fd);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            ::HANDLE handle = reinterpret_cast<::HANDLE>(::_get_osfhandle(fd));
+            if(handle == INVALID_HANDLE_VALUE)
+              return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
+            ::BOOL result = ::FlushFileBuffers(handle);
+            if(result == FALSE)
+              return return_value_with_errno_for_windows(vm, context, vut(vint(-1), v(io_v)));
+#else
+#error "Unsupported operating system."
+#endif
             return return_value(vm, context, vut(vint(0), v(io_v)));
           }
         },
@@ -1555,13 +2229,85 @@ extern "C" {
           "posix.uname", // (io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
+#if defined(__unix__)
             struct ::utsname buf;
             int result = ::uname(&buf);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vutsname(buf)), v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            unique_ptr<char []> buf(new char[256]);
+            int result = ::gethostname(buf.get(), 255);
+            if(result == -1)
+              return return_value_with_errno_for_winsock2(vm, context, vut(vnone, v(io_v)));
+            buf[255] = 0;
+            ::SYSTEM_INFO system_info;
+            ::GetSystemInfo(&system_info);
+            ::OSVERSIONINFO os_version_info;
+            os_version_info.dwOSVersionInfoSize = sizeof(::OSVERSIONINFO);
+            ::BOOL result2 = ::GetVersionEx(&os_version_info);
+            if(result2 == FALSE)
+              return return_value_with_errno_for_windows(vm, context, vut(vnone, v(io_v)));
+            string sysname("Windows");
+            string nodename(buf.get());
+            string machine;
+            switch(system_info.wProcessorArchitecture) {
+              case PROCESSOR_ARCHITECTURE_INTEL:
+                switch(system_info.dwProcessorType) {
+                  case PROCESSOR_INTEL_486:
+                    machine = "i486";
+                    break;
+                  case PROCESSOR_INTEL_PENTIUM:
+                    machine = "i586";
+                    break;
+                  default:
+                    machine = "i386";
+                    break;
+                }
+                break;
+              case PROCESSOR_ARCHITECTURE_MIPS:
+                machine = "mips";
+                break;
+              case PROCESSOR_ARCHITECTURE_ALPHA:
+                machine = "alpha";
+                break;
+              case PROCESSOR_ARCHITECTURE_PPC:
+                machine = "ppc";
+                break;
+              case PROCESSOR_ARCHITECTURE_SHX:
+                machine = "shx";
+                break;
+              case PROCESSOR_ARCHITECTURE_ARM:
+                machine = "arm";
+                break;
+              case PROCESSOR_ARCHITECTURE_IA64:
+                machine = "ia64";
+                break;
+              case PROCESSOR_ARCHITECTURE_ALPHA64:
+                machine = "alpha";
+                break;
+              case PROCESSOR_ARCHITECTURE_AMD64:
+                machine = "x86_64";
+                break;
+              case PROCESSOR_ARCHITECTURE_IA32_ON_WIN64:
+                machine = "i386";
+                break;
+              default:
+                machine = "unknown";
+                break;
+            }
+            ostringstream release_oss;
+            release_oss << os_version_info.dwMajorVersion << "." << os_version_info.dwMinorVersion;
+            string release(release_oss.str());
+            ostringstream version_oss;
+            version_oss << os_version_info.dwBuildNumber;
+            string version(version_oss.str());
+            return return_value_with_errno(vm, context, vut(vt(vstr(sysname), vstr(nodename), vstr(machine), vstr(release), vstr(version)), v(io_v)), ENOSYS);
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
 
@@ -1573,7 +2319,7 @@ extern "C" {
           "posix.opendir", // (dir_name: iarray8, io: uio) -> (uoption unative, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             string dir_name;
             if(!convert_args(args, topath(dir_name)))
@@ -1588,7 +2334,7 @@ extern "C" {
           "posix.closedir", // (dir: unative, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cdir, cio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &dir_v = args[0], &io_v = args[1];
             ::DIR *dir;
             if(!convert_args(args, todir(dir)))
@@ -1606,12 +2352,13 @@ extern "C" {
           "posix.readdir", // (dir: unative, io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cdir, cio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             ::DIR *dir;
             unique_ptr<struct ::dirent> dir_entry;
             if(!convert_args(args, todir(dir)))
               return return_value(vm, context, vut(vnone, v(io_v)));
+#if defined(__unix__)
             struct ::dirent *result = nullptr;
             int tmp_errno = ::readdir_r(dir, dir_entry.get(), &result);
             if(tmp_errno != 0)
@@ -1620,13 +2367,30 @@ extern "C" {
               return return_value(vm, context, vut(vsome(vdirent(*dir_entry)), v(io_v)));
             else
               return return_value(vm, context, vut(vnone, v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            {
+              lock_guard<mutex> guard(readdir_fun_mutex);
+              errno = 0;
+              struct ::dirent *result = ::readdir(dir);
+              if(result != nullptr) {
+                return return_value(vm, context, vut(vsome(vdirent(*result)), v(io_v)));
+              } else {
+                if(errno == 0)
+                  return return_value(vm, context, vut(vnone, v(io_v)));
+                else
+                  return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
+              }
+            }
+#else
+#error "Unsupported operating system."
+#endif
           }
         },
         {
           "posix.rewinddir", // (dir: unative, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cdir, cio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             ::DIR *dir;
             if(!convert_args(args, todir(dir)))
@@ -1639,7 +2403,7 @@ extern "C" {
           "posix.seekdir", // (dir: unative, loc: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cdir, cint, cio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
             ::DIR *dir;
             long loc;
@@ -1653,7 +2417,7 @@ extern "C" {
           "posix.telldir", // (dir: unative, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cdir, cio);
-            if(error != ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             ::DIR *dir;
             if(!convert_args(args, todir(dir)))
@@ -1663,7 +2427,13 @@ extern "C" {
           }
         }
       };
+#if defined(__unix__)
       fork_handler.mutexes() = { &getgroups_fun_mutex };
+#elif defined(_WIN32) || defined(_WIN64)
+      fork_handler.mutexes() = { &readdir_fun_mutex };
+#else
+#error "Unsupported operating system."
+#endif
       return true;
     } catch(...) {
       return false;

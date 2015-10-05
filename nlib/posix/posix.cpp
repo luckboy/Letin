@@ -6,22 +6,33 @@
  *   the full licensing terms.                                              *
  ****************************************************************************/
 #include <sys/types.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
+#if defined(__unix__)
 #include <sys/time.h>
+#include <sys/resource.h>
 #include <sys/times.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
+#include <poll.h>
+#include <termios.h>
+#include <unistd.h>
+#elif defined(_WIN32) || defined(_WIN64)
+#if defined(__MINGW32__) || defined(__MINGW64__)
+#include <sys/time.h>
+#endif
+#include <io.h>
+#include <windows.h>
+#else
+#error "Unsupported operating system."
+#endif
 #include <algorithm>
 #include <cerrno>
 #include <dirent.h>
 #include <fcntl.h>
 #include <map>
-#include <poll.h>
+#include <mutex>
 #include <signal.h>
-#include <termios.h>
 #include <time.h>
-#include <unistd.h>
 #include <utility>
 #include <vector>
 #include "posix.hpp"
@@ -36,6 +47,7 @@ namespace letin
     namespace posix
     {
       static long static_system_clk_tck;
+#if defined(__unix__)
       static vector<int> system_signals;
       static vector<int> signals;
       static size_t signal_offset;
@@ -44,6 +56,7 @@ namespace letin
       static size_t termios_cc_index_offset;
       static map<int64_t, ::speed_t> system_speeds;
       static map<::speed_t, int64_t> speeds;
+#endif
 
       static NativeObjectTypeIdentity dir_type_ident;
 
@@ -57,47 +70,134 @@ namespace letin
       { return *reinterpret_cast<::DIR * const *>(ptr1) == *reinterpret_cast<::DIR * const *>(ptr2); }
 
       static NativeObjectFunctions dir_funs(finalize_dir, hash_dir, equal_dirs);
-      
+
       void initialize_consts()
       {
+#if defined(__unix__)
         static_system_clk_tck = ::sysconf(_SC_CLK_TCK);
+#elif defined(_WIN32) || defined(_WIN64)
+        static_system_clk_tck = CLK_TCK;
+#else
+#error "Unsupported operating system."
+#endif
+#if defined(__unix__)
         system_signals = {
+#ifdef SIGHUP
           SIGHUP,
+#else
+          0,
+#endif
           SIGINT,
+#ifdef SIGQUIT
           SIGQUIT,
+#else
+          0,
+#endif
           SIGILL,
+#ifdef SIGTRAP
           SIGTRAP,
+#else
+          0,
+#endif
           SIGABRT,
+#ifdef SIGBUS
           SIGBUS,
+#else
+          0,
+#endif
           SIGFPE,
+#ifdef SIGKILL
           SIGKILL,
+#else
+          0,
+#endif
+#ifdef SIGUSR1
           SIGUSR1,
+#else
+          0,
+#endif
           SIGSEGV,
+#ifdef SIGUSR2
           SIGUSR2,
+#else
+          0,
+#endif
+#ifdef SIGPIPE
           SIGPIPE,
+#else
+          0,
+#endif
+#ifdef SIGALRM
           SIGALRM,
+#else
+          0,
+#endif
           SIGTERM,
 #ifdef SIGSTKFLT
           SIGSTKFLT,
 #else
           0,
 #endif
+#ifdef SIGCHLD
           SIGCHLD,
+#else
+          0,
+#endif
+#ifdef SIGCONT
           SIGCONT,
+#else
+          0,
+#endif
+#ifdef SIGSTOP
           SIGSTOP,
+#else
+          0,
+#endif
+#ifdef SIGTSTP
           SIGTSTP,
+#else
+          0,
+#endif
+#ifdef SIGTTIN
           SIGTTIN,
+#else
+          0,
+#endif
+#ifdef SIGTTOU
           SIGTTOU,
+#else
+          0,
+#endif
+#ifdef SIGURG
           SIGURG,
+#else
+          0,
+#endif
+#ifdef SIGXCPU
           SIGXCPU,
+#else
+          0,
+#endif
+#ifdef SIGVTALRM
           SIGVTALRM,
+#else
+          0,
+#endif
+#ifdef SIGPROF
           SIGPROF,
+#else
+          0,
+#endif
 #ifdef SIGWINCH
           SIGWINCH,
 #else
           0,
 #endif
+#ifdef SIGPOLL
           SIGPOLL,
+#else
+          0,
+#endif
 #ifdef SIGIO
           SIGIO,
 #else
@@ -108,7 +208,11 @@ namespace letin
 #else
           0,
 #endif
+#ifdef SIGSYS
           SIGSYS
+#else
+          0,
+#endif
         };
         int min_system_signal = numeric_limits<int>::max();
         int max_system_signal = numeric_limits<int>::min();
@@ -259,6 +363,7 @@ namespace letin
         for(auto pair : system_speeds) {
           if(pair.first != -1) speeds.insert(make_pair(pair.second, pair.first));
         }
+#endif
       }
 
       long int system_clk_tck() { return static_system_clk_tck; }
@@ -313,13 +418,23 @@ namespace letin
         }
         if((system_flags & O_CREAT) != 0) flags |= 00004;
         if((system_flags & O_EXCL) != 0) flags |= 00010;
+#ifdef O_NOCTTY
         if((system_flags & O_NOCTTY) != 0) flags |= 00020;
+#endif
         if((system_flags & O_TRUNC) != 0) flags |= 00040;
         if((system_flags & O_APPEND) != 0) flags |= 00100;
+#ifdef O_DSYNC
         if((system_flags & O_DSYNC) != 0) flags |= 00200;
+#endif
+#ifdef O_NONBLOCK
         if((system_flags & O_NONBLOCK) != 0) flags |= 00400;
+#endif
+#ifdef O_RSYNC
         if((system_flags & O_RSYNC) != 0) flags |= 01000;
+#endif
+#ifdef O_SYNC
         if((system_flags & O_SYNC) != 0) flags |= 02000;
+#endif
         return system_flags;
       }
 
@@ -346,13 +461,48 @@ namespace letin
         }
         if((flags & 00004) != 0) system_flags |= O_CREAT;
         if((flags & 00010) != 0) system_flags |= O_EXCL;
+#ifdef O_NOCTTY
         if((flags & 00020) != 0) system_flags |= O_NOCTTY;
+#else
+        if((flags & 00020) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
         if((flags & 00040) != 0) system_flags |= O_TRUNC;
         if((flags & 00100) != 0) system_flags |= O_APPEND;
+#ifdef O_DSYNC
         if((flags & 00200) != 0) system_flags |= O_DSYNC;
+#else
+        if((flags & 00200) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
+#ifdef O_NONBLOCK
         if((flags & 00400) != 0) system_flags |= O_NONBLOCK;
+#else
+        if((flags & 00400) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
+#ifdef O_RSYNC
         if((flags & 01000) != 0) system_flags |= O_RSYNC;
+#else
+        if((flags & 01000) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
+#ifdef O_SYNC
         if((flags & 02000) != 0) system_flags |= O_SYNC;
+#else
+        if((flags & 02000) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
         return true;
       }
 
@@ -406,11 +556,21 @@ namespace letin
         return true;
       }
 
-      void system_path_name_to_path_name(char *path_name) {}
+      void system_path_name_to_path_name(char *path_name)
+      {
+#if defined(_WIN32) || defined(_WIN64)
+        for(size_t i = 0; path_name[i] != 0; i++) {
+          if(path_name[i] == '\\') path_name[i] = '/';
+        }
+#endif
+      }
 
       bool object_to_system_path_name(const Object &object, string &path_name)
       {
         path_name.assign(reinterpret_cast<const char *>(object.raw().is8), object.length());
+#if defined(_WIN32) || defined(_WIN64)
+        replace(path_name.begin(), path_name.end(), '/', '\\'); 
+#endif
         return true;
       }
 
@@ -428,10 +588,14 @@ namespace letin
           if((mode & 1) != 0) system_mode |= X_OK;
           if((mode & 2) != 0) system_mode |= W_OK;
           if((mode & 4) != 0) system_mode |= R_OK;
+#if defined(_WIN32) || defined(_WIN64)
+          system_mode &= ~X_OK;
+#endif
           return true;
         }
       }
 
+#if defined(__unix__)
       bool nfds_to_system_nfds(int64_t nfds, int &system_nfds)
       {
         if((nfds < 0) || (nfds > FD_SETSIZE)) {
@@ -441,17 +605,30 @@ namespace letin
         system_nfds = nfds;
         return true;
       }
+#endif
+
 
       bool wait_options_to_system_wait_options(int64_t options, int &system_options)
       {
+#if defined(__unix__)
         if((options & ~static_cast<int64_t>(3)) != 0) {
-          letin_errno() = EBADF;
+          letin_errno() = EINVAL;
           return false;
         }
         system_options = 0;
         if((options & 1) != 0) system_options |= WNOHANG;
         if((options & 2) != 0) system_options |= WUNTRACED;
         return true;
+#elif defined(_WIN32) || defined(_WIN64)
+        if((options & ~static_cast<int64_t>(1)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+        system_options = options;
+        return true;
+#else
+#error "Unsupported operating system."
+#endif
       }
 
       bool object_to_system_argv(const Object &object, Argv &argv)
@@ -475,6 +652,7 @@ namespace letin
         return ERROR_SUCCESS;
       }
 
+#if defined(__unix__)
       int64_t system_signal_to_signal(int system_signal)
       {
         if(system_signal == 0) {
@@ -503,7 +681,19 @@ namespace letin
           return true;
         }
       }
+#endif
 
+      bool kill_signal_to_system_kill_signal(int64_t signal, int &system_signal)
+      {
+        if(signal != 0 && signal != 9){
+          letin_errno() = EINVAL;
+          return false;
+        }
+        system_signal = signal;
+        return true;
+      }
+
+#if defined(__unix__)
       bool which_to_system_which(int64_t which, int &system_which)
       {
         switch(which) {
@@ -961,9 +1151,11 @@ namespace letin
         }
         return object;
       }
+#endif
 
       int64_t system_mode_to_mode(::mode_t system_mode)
       {
+#if defined(__unix__)
 #if S_IXOTH == 00001 && S_IWOTH == 00002 && S_IROTH == 00004 && \
     S_IXGRP == 00010 && S_IWGRP == 00020 && S_IRGRP == 00040 && \
     S_IXUSR == 00100 && S_IWUSR == 00200 && S_IRUSR == 00400 && \
@@ -985,6 +1177,19 @@ namespace letin
         if((mode & S_ISUID) != 0) mode |= 04000;
         return mode;
 #endif
+#elif defined(_WIN32) || defined(_WIN64)
+#if _S_IXUSR == 00100 && _S_IWUSR == 00200 && _S_IRUSR == 00400
+        return system_mode & 00700;
+#else
+        mode_t mode;
+        if((mode & _S_IXUSR) != 0) mode |= 00100;
+        if((mode & _S_IWUSR) != 0) mode |= 00200;
+        if((mode & _S_IRUSR) != 0) mode |= 00400;
+        return mode;
+#endif
+#else
+#error "Unsupported operating system."
+#endif
       }
 
       bool mode_to_system_mode(int64_t mode, ::mode_t &system_mode)
@@ -993,6 +1198,7 @@ namespace letin
           letin_errno() = EINVAL;
           return false;
         }
+#if defined(__unix__)
 #if S_IXOTH == 00001 && S_IWOTH == 00002 && S_IROTH == 00004 && \
     S_IXGRP == 00010 && S_IWGRP == 00020 && S_IRGRP == 00040 && \
     S_IXUSR == 00100 && S_IWUSR == 00200 && S_IRUSR == 00400 && \
@@ -1013,12 +1219,25 @@ namespace letin
         if((mode & 02000) != 0) system_mode |= S_ISGID;
         if((mode & 04000) != 0) system_mode |= S_ISUID;
 #endif
+#elif defined(_WIN32) || defined(_WIN64)
+#if _S_IXUSR == 00100 && _S_IWUSR == 00200 && _S_IRUSR == 00400
+        system_mode = mode;
+#else
+        int system_mode = 0;
+        if((mode & 00100) != 0) system_mode |= _S_IXUSR;
+        if((mode & 00200) != 0) system_mode |= _S_IWUSR;
+        if((mode & 00400) != 0) system_mode |= _S_IRUSR;
+#endif
+#else
+#error "Unsupported operating system."
+#endif
         return true;
       }
 
       int64_t system_stat_mode_to_stat_mode(::mode_t system_mode)
       {
         int mode = system_mode_to_mode(system_mode);
+#if defined(__unix__)
         if(S_ISBLK(system_mode) != 0) return mode | 0010000;
         if(S_ISCHR(system_mode) != 0) return mode | 0020000;
         if(S_ISFIFO(system_mode) != 0) return mode | 0030000;
@@ -1031,12 +1250,22 @@ namespace letin
 #ifdef S_ISWHT
         if(S_ISWHT(system_mode) != 0) return mode | 0100000;
 #endif
+#elif defined(_WIN32) || defined(_WIN64)
+        if(_S_ISBLK(system_mode) != 0) return mode | 0010000;
+        if(_S_ISCHR(system_mode) != 0) return mode | 0020000;
+        if(_S_ISFIFO(system_mode) != 0) return mode | 0030000;
+        if(_S_ISREG(system_mode) != 0) return mode | 0040000;
+        if(_S_ISDIR(system_mode) != 0) return mode | 0050000;
+#else
+#error "Unsupported operating system."
+#endif
         return mode | 0110000;
       }
 
       bool stat_mode_to_system_stat_mode(int64_t mode, ::mode_t &system_mode)
       {
         if(!mode_to_system_mode(mode & 07777, system_mode)) return false;
+#if defined(__unix__)
         switch(mode & ~static_cast<int64_t>(07777)) {
           case 0010000:
             system_mode |= S_IFBLK;
@@ -1070,6 +1299,30 @@ namespace letin
             letin_errno() = EINVAL;
             return false;
         }
+#elif defined(_WIN32) || defined(_WIN64)
+        switch(mode & ~static_cast<int64_t>(07777)) {
+          case 0010000:
+            system_mode |= _S_IFBLK;
+            return true;
+          case 0020000:
+            system_mode |= _S_IFCHR;
+            return true;
+          case 0030000:
+            system_mode |= _S_IFIFO;
+            return true;
+          case 0040000:
+            system_mode |= _S_IFREG;
+            return true;
+          case 0050000:
+            system_mode |= _S_IFDIR;
+            return true;
+          default:
+            letin_errno() = EINVAL;
+            return false;
+        }
+#else
+#error "Unsupported operating system."
+#endif
       }
 
       bool size_to_system_size(int64_t size, size_t &system_size)
@@ -1101,6 +1354,7 @@ namespace letin
       }
 #endif
 
+#if defined(__unix__)
       bool uid_to_system_uid(int64_t uid, ::uid_t &system_uid)
       {
         if((uid < static_cast<int64_t>(numeric_limits<::uid_t>::min())) ||
@@ -1131,8 +1385,9 @@ namespace letin
         }
         return true;
       }
+#endif
 
-      bool dev_to_system_dev(int64_t dev, ::uid_t &system_dev)
+      bool dev_to_system_dev(int64_t dev, ::dev_t &system_dev)
       {
         if((dev < static_cast<int64_t>(numeric_limits<::dev_t>::min())) ||
             (dev > static_cast<int64_t>(numeric_limits<::dev_t>::max()))) {
@@ -1143,10 +1398,10 @@ namespace letin
         return true;
       }
 
-      bool pid_to_system_pid(int64_t pid, ::pid_t &system_pid)
+      bool pid_to_system_pid(int64_t pid, Pid &system_pid)
       {
-        if((pid < static_cast<int64_t>(numeric_limits<::pid_t>::min())) ||
-            (pid > static_cast<int64_t>(numeric_limits<::pid_t>::max()))) {
+        if((pid < static_cast<int64_t>(numeric_limits<Pid>::min())) ||
+            (pid > static_cast<int64_t>(numeric_limits<Pid>::max()))) {
           letin_errno() = ESRCH;
           return true;
         }
@@ -1154,7 +1409,7 @@ namespace letin
         return true;
       }
 
-      bool wait_pid_to_system_wait_pid(int64_t pid, ::pid_t &system_pid)
+      bool wait_pid_to_system_wait_pid(int64_t pid, Pid &system_pid)
       {
         if(!pid_to_system_pid(pid, system_pid)) {
           letin_errno() = ECHILD;
@@ -1163,16 +1418,17 @@ namespace letin
         return true;
       }
 
-      bool useconds_to_system_useconds(int64_t useconds, ::useconds_t &system_useconds)
+      bool useconds_to_system_useconds(int64_t useconds, Useconds &system_useconds)
       {
-        if((useconds < 0) || (useconds > numeric_limits<::useconds_t>::max())) {
-          letin_errno() = ESRCH;
+        if((useconds < 0) || (useconds > numeric_limits<Useconds>::max())) {
+          letin_errno() = EINVAL;
           return true;
         }
         system_useconds = useconds;
         return true;        
       }
 
+#if defined(__unix__)
       int64_t system_speed_to_speed(::speed_t system_speed)
       {
         auto iter = speeds.find(system_speed);
@@ -1194,9 +1450,11 @@ namespace letin
         system_speed = iter->second;
         return true;
       }
+#endif
 
       // Functions for fd_set.
 
+#if defined(__unix__)
       Object *new_fd_set(VirtualMachine *vm, ThreadContext *context, const ::fd_set &fds)
       {
         Object *object = vm->gc()->new_object(OBJECT_TYPE_IARRAY8, (FD_SETSIZE + 7) >> 3, context);
@@ -1227,6 +1485,7 @@ namespace letin
         }
         return true;
       }
+#endif
 
       // Functions for struct timeval.
 
@@ -1236,7 +1495,8 @@ namespace letin
       //     int        // tv_usec
       //   )
       //
-      
+
+#if defined(__unix__) || ((defined(_WIN32) || defined(_WIN64)) && (defined(__MINGW32__) || defined(__MINGW64__)))
       Object *new_timeval(VirtualMachine *vm, ThreadContext *context, const struct ::timeval &time_value)
       {
         Object *object = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 2, context);
@@ -1245,16 +1505,17 @@ namespace letin
         object->set_elem(1, Value(static_cast<int64_t>(time_value.tv_usec)));
         return object;
       }
+#endif
 
       bool object_to_system_timeval(const Object &object, struct ::timeval &time_value)
       {
-        if((object.elem(0).i() > static_cast<int64_t>(numeric_limits<time_t>::min())) ||
-          (object.elem(0).i() < static_cast<int64_t>(numeric_limits<time_t>::max()))) {
+        if((object.elem(0).i() < static_cast<int64_t>(numeric_limits<time_t>::min())) ||
+            (object.elem(0).i() > static_cast<int64_t>(numeric_limits<time_t>::max()))) {
           letin_errno() = EINVAL;
           return false;
         }
-        if((object.elem(1).i() > static_cast<int64_t>(numeric_limits<suseconds_t>::min())) || 
-            (object.elem(1).i() < static_cast<int64_t>(numeric_limits<suseconds_t>::max()))) {
+        if((object.elem(1).i() < static_cast<int64_t>(numeric_limits<long>::min())) || 
+            (object.elem(1).i() > static_cast<int64_t>(numeric_limits<long>::max()))) {
           letin_errno() = EINVAL;
           return false;
         }
@@ -1284,6 +1545,7 @@ namespace letin
       //   )
       //
 
+#if defined(__unix__)
       bool set_new_pollfds(VirtualMachine *vm, ThreadContext *context, RegisteredReference &tmp_r, const Array<struct ::pollfd> &fds)
       {
         tmp_r = vm->gc()->new_object(OBJECT_TYPE_RARRAY, fds.length(), context);
@@ -1321,6 +1583,7 @@ namespace letin
         }
         return true;
       }
+#endif
 
       static int check_pollfds(VirtualMachine *vm, ThreadContext *context, Object &object, bool is_unique)
       {
@@ -1356,6 +1619,7 @@ namespace letin
       //   )
       //
 
+#if defined(__unix__)
       Object *new_flock_option(VirtualMachine *vm, ThreadContext *context, const struct ::flock &lock)
       {
         Object *object = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 5, context);
@@ -1380,6 +1644,7 @@ namespace letin
         if(!pid_to_system_pid(object.elem(4).i(), lock.l_pid)) return false;
         return true;
       }
+#endif
 
       int check_flock(VirtualMachine *vm, ThreadContext *context, Object &object)
       {
@@ -1392,7 +1657,7 @@ namespace letin
         return ERROR_SUCCESS;
       }
 
-#ifdef HAVE_STRUCT_FLOCK64
+#if defined(__unix__) && defined(HAVE_STRUCT_FLOCK64)
       Object *new_flock64(VirtualMachine *vm, ThreadContext *context, const struct ::flock64 &lock)
       {
         Object *object = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 5, context);
@@ -1464,7 +1729,7 @@ namespace letin
         object->set_elem(11, Value(static_cast<int64_t>(status.st_mtim.tv_nsec)));
 #else
         object->set_elem(10, Value(static_cast<int64_t>(status.st_mtime)));
-        object->set_elem(11, Value(static_cast<int64_t>(0)));
+        object->set_elem(11, Value(0));
 #endif
 #ifdef HAVE_STRUCT_STAT_CTIM
         object->set_elem(12, Value(static_cast<int64_t>(status.st_ctim.tv_sec)));
@@ -1473,11 +1738,18 @@ namespace letin
         object->set_elem(12, Value(static_cast<int64_t>(status.st_ctime)));
         object->set_elem(13, Value(0));
 #endif
+#if defined(_WIN32) || defined(_WIN64)
+        object->set_elem(14, Value(0));
+        object->set_elem(15, Value(0));
+#else
         object->set_elem(14, Value(static_cast<int64_t>(status.st_blksize)));
         object->set_elem(15, Value(static_cast<int64_t>(status.st_blocks)));
+#endif
         return object;
       }
 
+#if defined(__unix__)
+#ifdef HAVE_STRUCT_STAT64
       Object *new_stat64(VirtualMachine *vm, ThreadContext *context, const struct ::stat64 &status)
       {
         Object *object = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 16, context);
@@ -1502,7 +1774,7 @@ namespace letin
         object->set_elem(11, Value(static_cast<int64_t>(status.st_mtim.tv_nsec)));
 #else
         object->set_elem(10, Value(static_cast<int64_t>(status.st_mtime)));
-        object->set_elem(11, Value(static_cast<int64_t>(0)));
+        object->set_elem(11, Value(0));
 #endif
 #ifdef HAVE_STRUCT_STAT64_CTIM
         object->set_elem(12, Value(static_cast<int64_t>(status.st_ctim.tv_sec)));
@@ -1515,6 +1787,33 @@ namespace letin
         object->set_elem(15, Value(static_cast<int64_t>(status.st_blocks)));
         return object;
       }
+#endif
+#elif defined(_WIN32) || defined(_WIN64)
+      Object *new__stat64(VirtualMachine *vm, ThreadContext *context, const struct ::_stat64 &status)
+      {
+        Object *object = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 16, context);
+        if(object == nullptr) return nullptr;
+        object->set_elem(0, Value(static_cast<int64_t>(status.st_dev)));
+        object->set_elem(1, Value(static_cast<int64_t>(status.st_ino)));
+        object->set_elem(2, system_stat_mode_to_stat_mode(status.st_mode));
+        object->set_elem(3, Value(static_cast<int64_t>(status.st_nlink)));
+        object->set_elem(4, Value(static_cast<int64_t>(status.st_uid)));
+        object->set_elem(5, Value(static_cast<int64_t>(status.st_gid)));
+        object->set_elem(6, Value(static_cast<int64_t>(status.st_rdev)));
+        object->set_elem(7, Value(static_cast<int64_t>(status.st_size)));
+        object->set_elem(8, Value(static_cast<int64_t>(status.st_atime)));
+        object->set_elem(9, Value(0));
+        object->set_elem(10, Value(static_cast<int64_t>(status.st_mtime)));
+        object->set_elem(11, Value(0));
+        object->set_elem(12, Value(static_cast<int64_t>(status.st_ctime)));
+        object->set_elem(13, Value(0));
+        object->set_elem(14, Value(0));
+        object->set_elem(15, Value(0));
+        return object;
+      }
+#else
+#error "Unsupported operating system."
+#endif
 
       // Functions for struct timespec.
 
@@ -1525,6 +1824,7 @@ namespace letin
       //   )
       //
 
+#if defined(__unix__) || ((defined(_WIN32) || defined(_WIN64)) && (defined(__MINGW32__) || defined(__MINGW64__)))
       Object *new_timespec(VirtualMachine *vm, ThreadContext *context, const struct ::timespec &time_value)
       {
         Object *object = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 2, context);
@@ -1536,13 +1836,13 @@ namespace letin
 
       bool object_to_system_timespec(const Object &object, struct ::timespec &time_value)
       {
-        if((object.elem(0).i() > static_cast<int64_t>(numeric_limits<time_t>::min())) ||
-          (object.elem(0).i() < static_cast<int64_t>(numeric_limits<time_t>::max()))) {
+        if((object.elem(0).i() < static_cast<int64_t>(numeric_limits<time_t>::min())) ||
+          (object.elem(0).i() > static_cast<int64_t>(numeric_limits<time_t>::max()))) {
           letin_errno() = EINVAL;
           return false;
         }
-        if((object.elem(1).i() > static_cast<int64_t>(numeric_limits<long>::min())) || 
-            (object.elem(1).i() < static_cast<int64_t>(numeric_limits<long>::max()))) {
+        if((object.elem(1).i() < static_cast<int64_t>(numeric_limits<long>::min())) || 
+            (object.elem(1).i() > static_cast<int64_t>(numeric_limits<long>::max()))) {
           letin_errno() = EINVAL;
           return false;
         }
@@ -1550,8 +1850,9 @@ namespace letin
         time_value.tv_nsec = object.elem(1).i();
         return true;
       }
+#endif
 
-      int check_timespec(VirtualMachine *vm, ThreadContext *context, Object &object)
+      bool check_timespec(VirtualMachine *vm, ThreadContext *context, Object &object)
       {
         if(!object.is_tuple() || object.length() != 2) return ERROR_INCORRECT_OBJECT;
         for(size_t i = 0; i < 2; i++) {
@@ -1576,6 +1877,7 @@ namespace letin
       //   )
       //
 
+#if defined(__unix__)
       bool set_new_termios(VirtualMachine *vm, ThreadContext *context, RegisteredReference &tmp_r, const struct ::termios &termios)
       {
         tmp_r = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 7, context);
@@ -1618,6 +1920,7 @@ namespace letin
         cfsetispeed(&termios, output_speed);
         return true;
       }
+#endif
 
       bool check_termios(VirtualMachine *vm, ThreadContext *context, Object &object)
       {
@@ -1630,7 +1933,7 @@ namespace letin
         int error = vm->force_tuple_elem(context, object, 4);
         if(error != ERROR_SUCCESS) return error;
         if(!object.elem(4).is_ref()) return ERROR_INCORRECT_OBJECT;
-        if(!object.elem(4).r()->is_iarray32() || object.elem(4).r()->length() != system_termios_cc_indexes.size())
+        if(!object.elem(4).r()->is_iarray32() || object.elem(4).r()->length() != 20)
           return ERROR_INCORRECT_OBJECT;
         for(size_t i = 5; i < 6; i++) {
           int error = vm->force_tuple_elem(context, object, i);
@@ -1652,6 +1955,7 @@ namespace letin
       //   )
       //
 
+#if defined(__unix__)
       bool set_new_utsname(VirtualMachine *vm, ThreadContext *context, RegisteredReference &tmp_r, const struct ::utsname &os_info)
       {
         tmp_r = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 5, context);
@@ -1674,6 +1978,7 @@ namespace letin
         tmp_r.register_ref();
         return true;
       }
+#endif
 
       // Functions for DIR *.
 
@@ -1724,6 +2029,78 @@ namespace letin
         tmp_r.register_ref();
         return true;
       }
+
+#if defined(_WIN32) || defined(_WIN64)
+#if !defined(__MINGW32__) && !defined(__MINGW64__)
+      bool object_to_system_timespec_dword(const Object &object, ::DWORD &dword)
+      {
+        if((object.elem(0).i() < static_cast<int64_t>(numeric_limits<::DWORD>::min() / 1000)) ||
+            (object.elem(0).i() > static_cast<int64_t>(numeric_limits<::DWORD>::max() / 1000))) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+        if((object.elem(1).i() < 0) || (object.elem(1).i() > static_cast<int64_t>(999999999))) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+        dword = object.elem(0).i() * 1000 + object.elem(1).i() / 1000000;
+        return true;
+      }
+#endif
+
+      int system_error_for_windows(bool is_process_fun)
+      {
+        switch(::GetLastError()) {
+          case ERROR_ACCESS_DENIED:
+            return is_process_fun ? EPERM : EACCES;
+          case ERROR_BAD_FORMAT:
+            return ENOEXEC;
+          case ERROR_FILE_NOT_FOUND:
+            return ENOENT;
+          case ERROR_IO_DEVICE:
+            return EIO;
+          case ERROR_CHILD_NOT_COMPLETE:
+            return ECHILD;
+          case ERROR_INVALID_HANDLE:
+            return is_process_fun ? EINVAL : EBADF;
+          case ERROR_INVALID_PARAMETER:
+            return is_process_fun ? ESRCH : EINVAL;
+          case ERROR_PATH_NOT_FOUND:
+            return ENOENT;
+          case ERROR_WAIT_NO_CHILDREN:
+            return ECHILD;
+          default:
+            return EINVAL;
+        }
+      }
+
+      int system_error_for_winsock2()
+      {
+        int error = ::WSAGetLastError();
+        switch(error) {
+          case WSAEACCES:
+            return EACCES;
+          case WSAEBADF:
+            return EBADF;
+          case WSAEFAULT:
+            return EFAULT;
+          case WSAEINTR:
+            return EINTR;
+          case WSAEINVAL:
+            return EINVAL;
+          case WSAEMFILE:
+            return EMFILE;
+          case WSAENAMETOOLONG:
+            return ENAMETOOLONG;
+          case WSAEOPNOTSUPP:
+            return ENOTSUP;
+          case WSAEWOULDBLOCK:
+            return EAGAIN;
+          default:
+            return error + (1 << 29);
+        }
+      }
+#endif
     }
   }
 }

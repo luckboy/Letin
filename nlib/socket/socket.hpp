@@ -9,6 +9,7 @@
 #define _SOCKET_HPP
 
 #include <sys/types.h>
+#if defined(__unix__)
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -16,6 +17,12 @@
 #include <netdb.h>
 #include <poll.h>
 #include <unistd.h>
+#elif defined(_WIN32) || defined(_WIN64)
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#error "Unsupported operating system."
+#endif
 #include <letin/native.hpp>
 
 namespace letin
@@ -24,6 +31,26 @@ namespace letin
   {
     namespace socket
     {
+#if defined(__unix__)
+      typedef ::in_port_t InPort;
+      typedef ::in_addr_t InAddr;
+      typedef ::socklen_t Socklen;
+      typedef std::size_t SocketSize;
+      typedef ::ssize_t SocketSsize;
+      typedef void *Pointer;
+      typedef const void *ConstPointer;
+#elif defined(_WIN32) || defined(_WIN64)
+      typedef unsigned short InPort;
+      typedef ::u_long InAddr;
+      typedef int Socklen;
+      typedef int SocketSize;
+      typedef int SocketSsize;
+      typedef char *Pointer;
+      typedef const char *ConstPointer;
+#else
+#error "Unsupported operating system."
+#endif
+
       template<typename _T>
       class Array
       {
@@ -50,13 +77,15 @@ namespace letin
       union SocketAddress
       {
         struct ::sockaddr addr;
+#if defined(__unix__)
         struct ::sockaddr_un unix_addr;
+#endif
         struct ::sockaddr_in inet_addr;
 #ifdef HAVE_STRUCT_SOCKADDR_IN6
         struct ::sockaddr_in6 inet6_addr;
 #endif
 
-        ::socklen_t length() const;
+        Socklen length() const;
       };
 
       struct OptionValue
@@ -75,17 +104,17 @@ namespace letin
           struct ::timeval time_value;
         } u;
 
-        ::socklen_t length() const;
+        Socklen length() const;
       };
 
       struct AddressInfo
       {
-        struct ::addrinfo info;
+        struct addrinfo info;
         std::unique_ptr<SocketAddress> addr;
         std::string canonical_name;
       };
 
-      typedef struct ::addrinfo *AddinfoPointer;
+      typedef struct addrinfo *AddinfoPointer;
 
       void initialize_consts();
 
@@ -111,8 +140,8 @@ namespace letin
       bool sd_to_system_sd(std::int64_t sd, int &system_sd);
       LETIN_NATIVE_INT_CONVERTER(tosd, sd_to_system_sd, int);
 
-      bool length_to_system_length(std::int64_t length, std::size_t &system_length);
-      LETIN_NATIVE_INT_CONVERTER(tolen, length_to_system_length, size_t);
+      bool length_to_system_length(std::int64_t length, SocketSize &system_length);
+      LETIN_NATIVE_INT_CONVERTER(tolen, length_to_system_length, SocketSize);
 
       bool arg_to_system_arg(std::int64_t arg, int &system_arg);
       LETIN_NATIVE_INT_CONVERTER(toarg, arg_to_system_arg, int);
@@ -129,9 +158,11 @@ namespace letin
       bool nfds_to_system_nfds(std::int64_t nfds, int &system_nfds);
       LETIN_NATIVE_INT_CONVERTER(tonfds, nfds_to_system_nfds, int);
 
+#if defined(__unix__)
       std::int64_t system_poll_events_to_poll_events(short system_events);
 
       bool poll_events_to_system_poll_events(std::int64_t events, short &system_events);
+#endif
 
       std::int64_t system_addr_info_flags_to_addr_info_flags(int system_flags);
 
@@ -145,11 +176,17 @@ namespace letin
       bool size_to_system_size(std::int64_t size, std::size_t &system_size);
       LETIN_NATIVE_INT_CONVERTER(tosize, size_to_system_size, std::size_t);
 
-      bool in_port_to_system_in_port(std::int64_t port, ::in_port_t &system_port);
+      bool in_port_to_system_in_port(std::int64_t port, InPort &system_port);
 
-      bool in_addr_to_system_in_addr(std::int64_t addr, ::in_addr_t &system_addr);
+      bool in_addr_to_system_in_addr(std::int64_t addr, InAddr &system_addr);
 
+#if defined(__unix__)
       bool uint32_to_system_uint32(std::int64_t i, std::uint32_t &system_i);
+#elif defined(_WIN32) || defined(_WIN64)
+      bool ulong_to_system_ulong(std::int64_t i, ::ULONG &system_i);
+#else
+#error "Unsupported operating system."
+#endif
 
       // Functions for SocketAddress.
 
@@ -196,8 +233,9 @@ namespace letin
       bool object_to_system_fd_set(const vm::Object &object, ::fd_set &fds);
       LETIN_NATIVE_OBJECT_CONVERTER(tofd_set, object_to_system_fd_set, ::fd_set);
 
-      // Functions for struct pollfd [].
+      // Functions for Pollfd [].
 
+#if defined(__unix__)
       bool set_new_pollfds(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &tmp_r, const Array<struct ::pollfd> &fds);
       LETIN_NATIVE_REF_SETTER(vpollfds, set_new_pollfds, Array<struct ::pollfd>);
 
@@ -205,13 +243,14 @@ namespace letin
 
       bool object_to_system_pollfds(vm::Object &object, Array<struct ::pollfd> &fds);
       LETIN_NATIVE_OBJECT_CONVERTER(topollfds, object_to_system_pollfds, Array<struct ::pollfd>);
+#endif
 
       int check_pollfds(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
       LETIN_NATIVE_OBJECT_CHECKER(cpollfds, check_pollfds);
 
       int check_unique_pollfds(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
       LETIN_NATIVE_UNIQUE_OBJECT_CHECKER(cupollfds, check_unique_pollfds);
-      
+
       // Functions for AddressInfo.
 
       bool object_to_system_address_info(vm::Object &object, AddressInfo &addr_info);
@@ -224,6 +263,30 @@ namespace letin
 
       bool set_new_addrinfo(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &tmp_r, const AddinfoPointer &addr_info);
       LETIN_NATIVE_REF_SETTER(vaddrinfo, set_new_addrinfo, AddinfoPointer);
+
+      // Functions for Windows.
+
+#if defined(_WIN32) || defined(_WIN64)
+      int system_error_for_winsock2();
+
+      template<typename _T>
+      static inline vm::ReturnValue return_value_with_errno_for_winsock2(vm::VirtualMachine *vm, vm::ThreadContext *context, _T setter)
+      { return native::return_value_with_errno(vm, context, setter, system_error_for_winsock2()); }
+#endif
+
+      // A return value function for socket.
+
+#if defined(__unix__)
+      template<typename _T>
+      static inline vm::ReturnValue return_value_with_errno_for_socket(vm::VirtualMachine *vm, vm::ThreadContext *context, _T setter)
+      { return native::return_value_with_errno(vm, context, setter); }
+#elif defined(_WIN32) || defined(_WIN64)
+      template<typename _T>
+      static inline vm::ReturnValue return_value_with_errno_for_socket(vm::VirtualMachine *vm, vm::ThreadContext *context, _T setter)
+      { return return_value_with_errno_for_winsock2(vm, context, setter); }
+#else
+#error "Unsupported operating system."
+#endif
     }
   }
 }

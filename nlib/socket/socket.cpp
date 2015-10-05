@@ -6,16 +6,22 @@
  *   the full licensing terms.                                              *
  ****************************************************************************/
 #include <sys/types.h>
+#if defined(__unix__)
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/un.h>
-#include <algorithm>
-#include <cerrno>
-#include <limits>
 #include <netdb.h>
 #include <poll.h>
 #include <unistd.h>
+#elif defined(_WIN32) || defined(_WIN64)
+#include <winsock2.h>
+#else
+#error "Unsupported operating system."
+#endif
+#include <algorithm>
+#include <cerrno>
+#include <limits>
 #include <vector>
 #include "socket.hpp"
 
@@ -55,8 +61,10 @@ namespace letin
       ::socklen_t SocketAddress::length() const
       {
         switch(addr.sa_family) {
+#if defined(__unix__)
           case AF_UNIX:
             return sizeof(struct ::sockaddr_un);
+#endif
           case AF_INET:
             return sizeof(struct ::sockaddr_in);
 #if defined(HAVE_STRUCT_SOCKADDR_IN6) && defined(AF_INET6)
@@ -101,9 +109,11 @@ namespace letin
       bool domain_to_system_domain(int64_t domain, int &system_domain)
       {
         switch(domain) {
+#if defined(__unix__)
           case 1:
             system_domain = AF_UNIX;
             return true;
+#endif
           case 2:
             system_domain = AF_INET;
             return true;
@@ -113,7 +123,13 @@ namespace letin
             return true;
 #endif
           default:
+#if defined(__unix__)
             letin_errno() = EAFNOSUPPORT;
+#elif defined(_WIN32) || defined(_WIN64)
+            letin_errno() = (1 << 29) + WSAEAFNOSUPPORT;
+#else
+#error "Unsupported operating system."
+#endif
             return false;
         }
       }
@@ -153,7 +169,13 @@ namespace letin
       bool protocol_to_system_protocol(int64_t protocol, int &system_protocol)
       {
         if((protocol < numeric_limits<int>::min()) || (protocol < (numeric_limits<int>::max()))) {
+#if defined(__unix__)
           letin_errno() = EPROTONOSUPPORT;
+#elif defined(_WIN32) || defined(_WIN64)
+          letin_errno() = (1 << 29) + WSAEPROTONOSUPPORT;
+#else
+#error "Unsupported operating system."
+#endif
           return false;
         }
         system_protocol = protocol;
@@ -162,6 +184,7 @@ namespace letin
 
       bool how_to_system_how(int64_t how, int &system_how)
       {
+#if defined(__unix__)
         switch(how) {
           case 0:
             system_how = SHUT_RD;
@@ -176,6 +199,24 @@ namespace letin
             letin_errno() = EINVAL;
             return false;
         }
+#elif defined(_WIN32) || defined(_WIN64)
+        switch(how) {
+          case 0:
+            system_how = SD_RECEIVE;
+            return true;
+          case 1:
+            system_how = SD_SEND;
+            return true;
+          case 2:
+            system_how = SD_BOTH;
+            return true;
+          default:
+            letin_errno() = EINVAL;
+            return false;
+        }
+#else
+#error "Unsupported operating system."
+#endif
       }
 
       bool flags_to_system_flags(int64_t flags, int &system_flags)
@@ -184,13 +225,41 @@ namespace letin
           letin_errno() = EINVAL;
           return false;
         }
+#ifdef MSG_CTRUNC
         if((flags & (1 << 0)) != 0) system_flags |= MSG_CTRUNC;
+#else
+        if((flags & (1 << 0)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
         if((flags & (1 << 1)) != 0) system_flags |= MSG_DONTROUTE;
+#ifdef MSG_EOR
         if((flags & (1 << 2)) != 0) system_flags |= MSG_EOR;
+#else
+        if((flags & (1 << 2)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
         if((flags & (1 << 3)) != 0) system_flags |= MSG_OOB;
         if((flags & (1 << 4)) != 0) system_flags |= MSG_PEEK;
+#ifdef MSG_WAITALL
         if((flags & (1 << 5)) != 0) system_flags |= MSG_WAITALL;
+#else
+        if((flags & (1 << 5)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
+#ifdef MSG_TRUNC
         if((flags & (1 << 6)) != 0) system_flags |= MSG_TRUNC;
+#else
+        if((flags & (1 << 6)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
         return true;
       }
 
@@ -204,9 +273,9 @@ namespace letin
         return true;
       }
 
-      bool length_to_system_length(int64_t length, size_t &system_length)
+      bool length_to_system_length(int64_t length, SocketSize &system_length)
       {
-        if((length < 0) || (length < numeric_limits<::ssize_t>::max())) {
+        if((length < 0) || (length < numeric_limits<SocketSsize>::max())) {
           letin_errno() = EINVAL;
           return false;
         }
@@ -226,7 +295,7 @@ namespace letin
 
       bool ref_to_system_buffer_ref(Reference buffer_r, Reference &system_buffer_r)
       {
-        if(buffer_r->length() > static_cast<size_t>(numeric_limits<::ssize_t>::max())) {
+        if(buffer_r->length() > static_cast<size_t>(numeric_limits<SocketSsize>::max())) {
           letin_errno() = EINVAL;
           return false;
         }
@@ -234,7 +303,7 @@ namespace letin
         return true;
       }
 
-      bool level_to_system_level(int64_t level, int system_level)
+      bool level_to_system_level(int64_t level, int &system_level)
       {
         switch(level) {
           case 0:
@@ -284,6 +353,7 @@ namespace letin
         return true;
       }
 
+#if defined(__unix__)
       int64_t system_poll_events_to_poll_events(short system_events)
       {
         int events = 0;
@@ -319,17 +389,26 @@ namespace letin
         if((events & (1 << 9)) != 0) return POLLNVAL;
         return true;
       }
+#endif
 
-     int64_t system_addr_info_flags_to_addr_info_flags(int system_flags)
+      int64_t system_addr_info_flags_to_addr_info_flags(int system_flags)
       {
         int64_t flags = 0;
         if((system_flags & AI_PASSIVE) != 0) flags |= 1 << 0;
         if((system_flags & AI_CANONNAME) != 0) flags |= 1 << 1;
         if((system_flags & AI_NUMERICHOST) != 0) flags |= 1 << 2;
+#ifdef AI_NUMERICSERV
         if((system_flags & AI_NUMERICSERV) != 0) flags |= 1 << 3;
+#endif
+#ifdef AI_V4MAPPED
         if((system_flags & AI_V4MAPPED) != 0) flags |= 1 << 4;
+#endif
+#ifdef AI_ALL
         if((system_flags & AI_ALL) != 0) flags |= 1 << 5;
+#endif
+#ifdef AI_ADDRCONFIG
         if((system_flags & AI_ADDRCONFIG) != 0) flags |= 1 << 6;
+#endif
         return flags;
       }
 
@@ -340,10 +419,26 @@ namespace letin
         if((flags & (1 << 0)) != 0) system_flags |= AI_PASSIVE;
         if((flags & (1 << 1)) != 0) system_flags |= AI_CANONNAME;
         if((flags & (1 << 2)) != 0) system_flags |= AI_NUMERICHOST;
+#ifdef AI_NUMERICSERV
         if((flags & (1 << 3)) != 0) system_flags |= AI_NUMERICSERV;
+#else
+        if((flags & (1 << 3)) != 0) return false;
+#endif
+#ifdef AI_V4MAPPED
         if((flags & (1 << 4)) != 0) system_flags |= AI_V4MAPPED;
+#else
+        if((flags & (1 << 4)) != 0) return false;
+#endif
+#ifdef AI_ALL
         if((flags & (1 << 5)) != 0) system_flags |= AI_ALL;
+#else
+        if((flags & (1 << 5)) != 0) return false;
+#endif
+#ifdef AI_ADDRCONFIG
         if((flags & (1 << 6)) != 0) system_flags |= AI_ADDRCONFIG;
+#else
+        if((flags & (1 << 6)) != 0) return false;
+#endif
         return false;
       }
 
@@ -366,10 +461,14 @@ namespace letin
             return 6;
           case EAI_SERVICE:
             return 7;
+#ifdef EAI_SYSTEM
           case EAI_SYSTEM:
             return 8;
+#endif
+#ifdef EAI_OVERFLOW
           case EAI_OVERFLOW:
             return 9;
+#endif
           default:
             return -1;
         }
@@ -397,9 +496,9 @@ namespace letin
         return true;
       }
 
-      bool in_port_to_system_in_port(int64_t port, ::in_port_t &system_port)
+      bool in_port_to_system_in_port(int64_t port, InPort &system_port)
       {
-        if((port < 0) || (port > static_cast<int64_t>(numeric_limits<::in_port_t>::max()))) {
+        if((port < 0) || (port > static_cast<int64_t>(numeric_limits<InPort>::max()))) {
           letin_errno() = EINVAL;
           return true;
         }
@@ -407,9 +506,9 @@ namespace letin
         return true;
       }
 
-      bool in_addr_to_system_in_addr(int64_t addr, ::in_addr_t &system_addr)
+      bool in_addr_to_system_in_addr(int64_t addr, InAddr &system_addr)
       {
-        if((addr < 0) || (addr > static_cast<int64_t>(numeric_limits<::in_addr_t>::max()))) {
+        if((addr < 0) || (addr > static_cast<int64_t>(numeric_limits<InAddr>::max()))) {
           letin_errno() = EINVAL;
           return true;
         }
@@ -417,6 +516,7 @@ namespace letin
         return true;
       }
 
+#if defined(__unix__)
       bool uint32_to_system_uint32(int64_t i, uint32_t &system_i)
       {
         if((i < 0) || (i > static_cast<int64_t>(numeric_limits<uint32_t>::max()))) {
@@ -426,6 +526,19 @@ namespace letin
         system_i = i;
         return true;
       }
+#elif defined(_WIN32) || defined(_WIN64)
+      bool ulong_to_system_ulong(int64_t i, ::ULONG &system_i)
+      {
+        if((i < 0) || (i > static_cast<int64_t>(numeric_limits<::ULONG>::max()))) {
+          letin_errno() = EINVAL;
+          return true;
+        }
+        system_i = i;
+        return true;
+      }
+#else
+#error "Unsupported operating system."
+#endif
 
       // Functions for SocketAddress.
 
@@ -458,6 +571,7 @@ namespace letin
       bool set_new_socket_address(VirtualMachine *vm, ThreadContext *context, RegisteredReference &tmp_r, const SocketAddress &addr)
       {
         switch(addr.addr.sa_family) {
+#if defined(__unix__)
           case AF_UNIX:
           {
             const ::sockaddr_un &unix_addr = addr.unix_addr;
@@ -470,6 +584,7 @@ namespace letin
             tmp_r.register_ref();
             return true;
           }
+#endif
           case AF_INET:
           {
             const ::sockaddr_in &inet_addr = addr.inet_addr;
@@ -521,6 +636,7 @@ namespace letin
       bool object_to_system_socket_address(const Object &object, SocketAddress &addr)
       {
         switch(object.elem(0).i()) {
+#if defined(__unix__)
           case 1:
           {
             if(object.length() + 1 >= sizeof(addr.unix_addr.sun_path)) {
@@ -533,6 +649,7 @@ namespace letin
             unix_addr.sun_path[object.length() + 1] = 0;
             return true;
           }
+#endif
           case 2:
           {
             ::sockaddr_in &inet_addr = addr.inet_addr;
@@ -550,7 +667,13 @@ namespace letin
             inet6_addr.sin6_family = AF_INET6;
             if(!in_port_to_system_in_port(object.elem(1).i(), inet6_addr.sin6_port)) return false;
             inet6_addr.sin6_port = htons(inet6_addr.sin6_port);
+#if defined(__unix__)
             if(!uint32_to_system_uint32(object.elem(2).i(), inet6_addr.sin6_flowinfo)) return false;
+#elif defined(_WIN32) || defined(_WIN64)
+            if(!ulong_to_system_ulong(object.elem(2).i(), inet6_addr.sin6_flowinfo)) return false;
+#else
+#error "Unsupported operating system."
+#endif
             inet6_addr.sin6_flowinfo = htons(inet6_addr.sin6_flowinfo);
             inet6_addr.sin6_addr.s6_addr16[0] = (object.elem(3).i() >> 48) & 0xffff;
             inet6_addr.sin6_addr.s6_addr16[1] = (object.elem(3).i() >> 32) & 0xffff;
@@ -560,13 +683,25 @@ namespace letin
             inet6_addr.sin6_addr.s6_addr16[5] = (object.elem(4).i() >> 32) & 0xffff;
             inet6_addr.sin6_addr.s6_addr16[6] = (object.elem(4).i() >> 16) & 0xffff;
             inet6_addr.sin6_addr.s6_addr16[7] = (object.elem(4).i() >> 0) & 0xffff;
+#if defined(__unix__)
             if(!uint32_to_system_uint32(object.elem(5).i(), inet6_addr.sin6_scope_id)) return false;
+#elif defined(_WIN32) || defined(_WIN64)
+            if(!ulong_to_system_ulong(object.elem(5).i(), inet6_addr.sin6_scope_id)) return false;
+#else
+#error "Unsupported operating system."
+#endif
             inet6_addr.sin6_scope_id = htons(inet6_addr.sin6_scope_id);
             return true;
           }
 #endif
           default:
+#if defined(__unix__)
             letin_errno() = EAFNOSUPPORT;
+#elif defined(_WIN32) || defined(_WIN64)
+            letin_errno() = (1 << 29) + WSAEAFNOSUPPORT;
+#else
+#error "Unsupported operating system."
+#endif
             return false;
         }
       }
@@ -647,8 +782,8 @@ namespace letin
           letin_errno() = EINVAL;
           return false;
         }
-        if((object.elem(1).i() > static_cast<int64_t>(numeric_limits<suseconds_t>::min())) || 
-            (object.elem(1).i() < static_cast<int64_t>(numeric_limits<suseconds_t>::max()))) {
+        if((object.elem(1).i() > static_cast<int64_t>(numeric_limits<long>::min())) || 
+            (object.elem(1).i() < static_cast<int64_t>(numeric_limits<long>::max()))) {
           letin_errno() = EINVAL;
           return false;
         }
@@ -763,6 +898,7 @@ namespace letin
       //   )
       //
 
+#if defined(__unix__)
       bool set_new_pollfds(VirtualMachine *vm, ThreadContext *context, RegisteredReference &tmp_r, const Array<struct ::pollfd> &fds)
       {
         tmp_r = vm->gc()->new_object(OBJECT_TYPE_RARRAY, fds.length(), context);
@@ -800,6 +936,7 @@ namespace letin
         }
         return true;
       }
+#endif
 
       static int check_pollfds(VirtualMachine *vm, ThreadContext *context, Object &object, bool is_unique)
       {
@@ -929,6 +1066,37 @@ namespace letin
         }
         return true;
       }
+
+      // Functions for Windows.
+
+#if defined(_WIN32) || defined(_WIN64)
+      int system_error_for_winsock2()
+      {
+        int error = ::WSAGetLastError();
+        switch(error) {
+          case WSAEACCES:
+            return EACCES;
+          case WSAEBADF:
+            return EBADF;
+          case WSAEFAULT:
+            return EFAULT;
+          case WSAEINTR:
+            return EINTR;
+          case WSAEINVAL:
+            return EINVAL;
+          case WSAEMFILE:
+            return EMFILE;
+          case WSAENAMETOOLONG:
+            return ENAMETOOLONG;
+          case WSAEOPNOTSUPP:
+            return ENOTSUP;
+          case WSAEWOULDBLOCK:
+            return EAGAIN;
+          default:
+            return error + (1 << 29);
+        }
+      }
+#endif
     }
   }
 }
