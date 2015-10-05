@@ -58,7 +58,7 @@ namespace letin
         };
       }
 
-      ::socklen_t SocketAddress::length() const
+      Socklen SocketAddress::length() const
       {
         switch(addr.sa_family) {
 #if defined(__unix__)
@@ -76,7 +76,7 @@ namespace letin
         }
       }
 
-      ::socklen_t OptionValue::length() const
+      Socklen OptionValue::length() const
       {
         switch(type) {
           case TYPE_INT:
@@ -488,9 +488,10 @@ namespace letin
 
       bool size_to_system_size(int64_t size, size_t &system_size)
       {
-        if((size < 0) || (size > static_cast<int64_t>(numeric_limits<size_t>::max()))) {
+        if(sizeof(int64_t) > sizeof(size_t) &&
+            ((size < 0) || (size > static_cast<int64_t>(numeric_limits<size_t>::max())))) {
           letin_errno() = EINVAL;
-          return true;
+          return false;
         }
         system_size = size;
         return true;
@@ -498,9 +499,10 @@ namespace letin
 
       bool in_port_to_system_in_port(int64_t port, InPort &system_port)
       {
-        if((port < 0) || (port > static_cast<int64_t>(numeric_limits<InPort>::max()))) {
+        if(sizeof(int64_t) > sizeof(InPort) &&
+            ((port < 0) || (port > static_cast<int64_t>(numeric_limits<InPort>::max())))) {
           letin_errno() = EINVAL;
-          return true;
+          return false;
         }
         system_port = port;
         return true;
@@ -508,9 +510,10 @@ namespace letin
 
       bool in_addr_to_system_in_addr(int64_t addr, InAddr &system_addr)
       {
-        if((addr < 0) || (addr > static_cast<int64_t>(numeric_limits<InAddr>::max()))) {
+        if(sizeof(int64_t) > sizeof(InAddr) &&
+            ((addr < 0) || (addr > static_cast<int64_t>(numeric_limits<InAddr>::max())))) {
           letin_errno() = EINVAL;
-          return true;
+          return false;
         }
         system_addr = addr;
         return true;
@@ -521,7 +524,7 @@ namespace letin
       {
         if((i < 0) || (i > static_cast<int64_t>(numeric_limits<uint32_t>::max()))) {
           letin_errno() = EINVAL;
-          return true;
+          return false;
         }
         system_i = i;
         return true;
@@ -529,9 +532,10 @@ namespace letin
 #elif defined(_WIN32) || defined(_WIN64)
       bool ulong_to_system_ulong(int64_t i, ::ULONG &system_i)
       {
-        if((i < 0) || (i > static_cast<int64_t>(numeric_limits<::ULONG>::max()))) {
+        if(sizeof(int64_t) > sizeof(InAddr) &&
+            ((i < 0) || (i > static_cast<int64_t>(numeric_limits<::ULONG>::max())))) {
           letin_errno() = EINVAL;
-          return true;
+          return false;
         }
         system_i = i;
         return true;

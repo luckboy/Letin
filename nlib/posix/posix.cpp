@@ -518,7 +518,7 @@ namespace letin
 
       bool count_to_system_count(int64_t count, size_t &system_count)
       {
-        if((count < 0) || (count < numeric_limits<::ssize_t>::max())) {
+        if((count < 0) || (count > numeric_limits<::ssize_t>::max())) {
           letin_errno() = EINVAL;
           return false;
         }
@@ -1327,9 +1327,10 @@ namespace letin
 
       bool size_to_system_size(int64_t size, size_t &system_size)
       {
-        if((size < 0) || (size > static_cast<int64_t>(numeric_limits<size_t>::max()))) {
+        if(sizeof(int64_t) > sizeof(size_t) &&
+            ((size < 0) || (size > static_cast<int64_t>(numeric_limits<size_t>::max())))) {
           letin_errno() = EINVAL;
-          return true;
+          return false;
         }
         system_size = size;
         return true;
@@ -1337,10 +1338,11 @@ namespace letin
 
       bool off_to_system_off(int64_t offset, ::off_t &system_offset)
       {
-        if((offset < static_cast<int64_t>(numeric_limits<::off_t>::min())) ||
-            (offset > static_cast<int64_t>(numeric_limits<::off_t>::max()))) {
+        if(sizeof(int64_t) > sizeof(::off_t) &&
+            ((offset < static_cast<int64_t>(numeric_limits<::off_t>::min())) ||
+             (offset > static_cast<int64_t>(numeric_limits<::off_t>::max())))) {
           letin_errno() = EINVAL;
-          return true;
+          return false;
         }
         system_offset = offset;
         return true;
@@ -1357,10 +1359,11 @@ namespace letin
 #if defined(__unix__)
       bool uid_to_system_uid(int64_t uid, ::uid_t &system_uid)
       {
-        if((uid < static_cast<int64_t>(numeric_limits<::uid_t>::min())) ||
-            (uid > static_cast<int64_t>(numeric_limits<::uid_t>::max()))) {
+        if(sizeof(int64_t) > sizeof(::uid_t) &&
+            ((uid < static_cast<int64_t>(numeric_limits<::uid_t>::min())) ||
+             (uid > static_cast<int64_t>(numeric_limits<::uid_t>::max())))) {
           letin_errno() = EINVAL;
-          return true;
+          return false;
         }
         system_uid = uid;
         return true;
@@ -1368,10 +1371,11 @@ namespace letin
 
       bool gid_to_system_gid(int64_t gid, ::gid_t &system_gid)
       {
-        if((gid < static_cast<int64_t>(numeric_limits<::gid_t>::min())) ||
-            (gid > static_cast<int64_t>(numeric_limits<::gid_t>::max()))) {
+        if(sizeof(int64_t) > sizeof(::gid_t) &&
+            ((gid < static_cast<int64_t>(numeric_limits<::gid_t>::min())) ||
+             (gid > static_cast<int64_t>(numeric_limits<::gid_t>::max())))) {
           letin_errno() = EINVAL;
-          return true;
+          return false;
         }
         system_gid = gid;
         return true;
@@ -1389,10 +1393,11 @@ namespace letin
 
       bool dev_to_system_dev(int64_t dev, ::dev_t &system_dev)
       {
-        if((dev < static_cast<int64_t>(numeric_limits<::dev_t>::min())) ||
-            (dev > static_cast<int64_t>(numeric_limits<::dev_t>::max()))) {
+        if(sizeof(int64_t) > sizeof(::dev_t) &&
+            ((dev < static_cast<int64_t>(numeric_limits<::dev_t>::min())) ||
+             (dev > static_cast<int64_t>(numeric_limits<::dev_t>::max())))) {
           letin_errno() = EINVAL;
-          return true;
+          return false;
         }
         system_dev = dev;
         return true;
@@ -1400,10 +1405,11 @@ namespace letin
 
       bool pid_to_system_pid(int64_t pid, Pid &system_pid)
       {
-        if((pid < static_cast<int64_t>(numeric_limits<Pid>::min())) ||
-            (pid > static_cast<int64_t>(numeric_limits<Pid>::max()))) {
+        if(sizeof(int64_t) > sizeof(Pid) &&
+            ((pid < static_cast<int64_t>(numeric_limits<Pid>::min())) ||
+             (pid > static_cast<int64_t>(numeric_limits<Pid>::max())))) {
           letin_errno() = ESRCH;
-          return true;
+          return false;
         }
         system_pid = pid;
         return true;
@@ -1420,9 +1426,10 @@ namespace letin
 
       bool useconds_to_system_useconds(int64_t useconds, Useconds &system_useconds)
       {
-        if((useconds < 0) || (useconds > numeric_limits<Useconds>::max())) {
+        if(sizeof(int64_t) > sizeof(Useconds) &&
+            ((useconds < 0) || (useconds > numeric_limits<Useconds>::max()))) {
           letin_errno() = EINVAL;
-          return true;
+          return false;
         }
         system_useconds = useconds;
         return true;        
