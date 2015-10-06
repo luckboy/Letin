@@ -2411,6 +2411,32 @@ extern "C" {
             long loc = tell_dir(dir);
             return return_value(vm, context, vut(vint(loc), v(io_v)));
           }
+        },
+        
+        //
+        // A host name function.
+        //
+
+        {
+          "posix.gethostname", // (io: uio) -> (option iarray8, uio)
+          [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+            int error = check_args(vm, context, args, cio);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            Value &io_v = args[0];
+#if defined(__unix__)
+            size_t len = HOST_NAME_MAX + 1;
+#elif defined(_WIN32) || defined(_WIN64)
+            int len = 256;
+#else
+#error "Unsupported operating system."
+#endif
+            unique_ptr<char []> buf(new char[len]);
+            int result = ::gethostname(buf.get(), len);
+            if(result == -1) 
+              return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
+            buf[len - 1] = 0;
+            return return_value(vm, context, vut(vsome(vcstr(buf.get())), v(io_v)));
+          }
         }
       };
 #if defined(__unix__)
