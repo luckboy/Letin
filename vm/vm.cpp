@@ -19,7 +19,12 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#if defined(_WIN32) || defined(_WIN64)
+#include <process.h>
+#include <winsock2.h>
+#else
 #include <unistd.h>
+#endif
 #include <letin/const.hpp>
 #include <letin/vm.hpp>
 #include "alloc/new_alloc.hpp"
@@ -393,7 +398,11 @@ namespace letin
 
     ForkAround::ForkAround()
     {
+#if defined(_WIN32) || defined(_WIN64)
+      _M_pid = _getpid();
+#else
       _M_pid = getpid();
+#endif
       {
         unique_lock<mutex> lock(fork_handler_list_map_mutex);
         lock.release();
@@ -405,7 +414,11 @@ namespace letin
 
     ForkAround::~ForkAround()
     {
+#if defined(_WIN32) || defined(_WIN64)
+      bool is_child = (_M_pid != _getpid());
+#else
       bool is_child = (_M_pid != getpid());
+#endif
       {
         unique_lock<mutex> lock(fork_handler_list_map_mutex, adopt_lock);
         for(auto iter = fork_handler_list_map.begin(); iter != fork_handler_list_map.end(); iter++) {
@@ -1452,6 +1465,10 @@ namespace letin
 
     void initialize_vm()
     {
+#if defined(_WIN32) || defined(_WIN64)
+      WSADATA data;
+      ::WSAStartup(MAKEWORD(2, 2), &data);
+#endif
       initialize_thread_stop_cont();
       add_fork_handler(FORK_HANDLER_PRIO_INTERNAL, &internal_fork_handler);
     }
@@ -1460,6 +1477,9 @@ namespace letin
     {
       delete_fork_handler(FORK_HANDLER_PRIO_INTERNAL, &internal_fork_handler);
       finalize_thread_stop_cont();
+#if defined(_WIN32) || defined(_WIN64)
+      ::WSACleanup();
+#endif
     }
 
     void set_temporary_root_object(ThreadContext *context, Reference ref)
