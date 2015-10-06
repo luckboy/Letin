@@ -58,18 +58,18 @@ namespace letin
       static map<::speed_t, int64_t> speeds;
 #endif
 
-      static NativeObjectTypeIdentity dir_type_ident;
+      static NativeObjectTypeIdentity directory_type_ident;
 
-      static void finalize_dir(const void *ptr)
-      { ::closedir(*reinterpret_cast<::DIR * const *>(ptr)); }
+      static void finalize_directory(const void *ptr)
+      { close_dir(*reinterpret_cast<Directory * const *>(ptr)); }
 
-      static uint64_t hash_dir(const void *ptr)
-      { return reinterpret_cast<uint64_t>(*reinterpret_cast<::DIR * const *>(ptr)); }
+      static uint64_t hash_directory(const void *ptr)
+      { return reinterpret_cast<uint64_t>(*reinterpret_cast<Directory * const *>(ptr)); }
 
-      static bool equal_dirs(const void *ptr1, const void *ptr2)
-      { return *reinterpret_cast<::DIR * const *>(ptr1) == *reinterpret_cast<::DIR * const *>(ptr2); }
+      static bool equal_directories(const void *ptr1, const void *ptr2)
+      { return *reinterpret_cast<Directory * const *>(ptr1) == *reinterpret_cast<Directory * const *>(ptr2); }
 
-      static NativeObjectFunctions dir_funs(finalize_dir, hash_dir, equal_dirs);
+      static NativeObjectFunctions directory_funs(finalize_directory, hash_directory, equal_directories);
 
       void initialize_consts()
       {
@@ -1987,22 +1987,22 @@ namespace letin
       }
 #endif
 
-      // Functions for DIR *.
+      // Functions for Directory *.
 
-      Object *new_dir(VirtualMachine *vm, ThreadContext *context, ::DIR *dir)
+      Object *new_directory(VirtualMachine *vm, ThreadContext *context, Directory *dir)
       {
         Object *object = vm->gc()->new_object(OBJECT_TYPE_NATIVE_OBJECT | OBJECT_TYPE_UNIQUE, sizeof(::DIR *), context);
         if(object == nullptr) return nullptr;
-        object->raw().ntvo.type = NativeObjectType(&dir_type_ident);
-        object->raw().ntvo.clazz = NativeObjectClass(&dir_funs);
-        ::DIR **dir_ptr = reinterpret_cast<::DIR **>(object->raw().ntvo.bs);
+        object->raw().ntvo.type = NativeObjectType(&directory_type_ident);
+        object->raw().ntvo.clazz = NativeObjectClass(&directory_funs);
+        Directory **dir_ptr = reinterpret_cast<Directory **>(object->raw().ntvo.bs);
         *dir_ptr = dir;
         return object;
       }
 
-      bool object_to_system_dir(const Object &object, ::DIR *&dir)
+      bool object_to_system_directory(const Object &object, Directory *&dir)
       {
-        ::DIR * const *dir_ptr = reinterpret_cast<::DIR * const *>(object.raw().ntvo.bs);
+        Directory * const *dir_ptr = reinterpret_cast<Directory * const *>(object.raw().ntvo.bs);
         if(*dir_ptr == nullptr) {
           letin_errno() = EBADF;
           return false;
@@ -2011,13 +2011,14 @@ namespace letin
         return true;
       }
 
-      int check_dir(VirtualMachine *vm, vm::ThreadContext *context, Object &object)
+      int check_directory(VirtualMachine *vm, vm::ThreadContext *context, Object &object)
       {
-        if(!object.is_native(NativeObjectType(&dir_type_ident))) return ERROR_INCORRECT_OBJECT;
+        if(!object.is_native(NativeObjectType(&directory_type_ident)))
+          return ERROR_INCORRECT_OBJECT;
         return ERROR_SUCCESS;
       }
 
-      // Functions for struct dirent.
+      // Functions for DirectoryEntry *.
 
       //
       // type dirent = (
@@ -2026,12 +2027,12 @@ namespace letin
       //   )
       //
 
-      bool set_new_dirent(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &tmp_r, const struct ::dirent &dir_entry)
+      bool set_new_directory_entry(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &tmp_r, DirectoryEntry *dir_entry)
       {
         tmp_r = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 2, context);
         if(tmp_r.is_null()) return false;
-        tmp_r->set_elem(0, Value(static_cast<int64_t>(dir_entry.d_ino)));
-        RegisteredReference name_r(vm->gc()->new_string(dir_entry.d_name, context), context);
+        tmp_r->set_elem(0, Value(static_cast<int64_t>(dir_entry_inode(dir_entry))));
+        RegisteredReference name_r(vm->gc()->new_string(dir_entry_name(dir_entry), context), context);
         tmp_r->set_elem(1, Value(name_r));
         tmp_r.register_ref();
         return true;

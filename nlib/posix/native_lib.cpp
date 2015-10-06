@@ -54,6 +54,12 @@ using namespace letin::vm;
 using namespace letin::native;
 using namespace letin::nlib::posix;
 
+struct DirectoryEntryDelete
+{
+  void operator()(void *ptr)
+  { delete_directory_entry(reinterpret_cast<DirectoryEntry *>(ptr)); }
+};
+
 extern char **environ;
 
 #if defined(__unix__)
@@ -2324,7 +2330,7 @@ extern "C" {
             string dir_name;
             if(!convert_args(args, topath(dir_name)))
               return return_value(vm, context, vut(vunone, v(io_v)));
-            ::DIR *dir = ::opendir(dir_name.c_str());
+            Directory *dir = open_dir(dir_name.c_str());
             if(dir == nullptr)
               return return_value_with_errno(vm, context, vut(vunone, v(io_v)));
             return return_value(vm, context, vut(vusome(vdir(dir)), v(io_v)));
@@ -2336,13 +2342,13 @@ extern "C" {
             int error = check_args(vm, context, args, cdir, cio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &dir_v = args[0], &io_v = args[1];
-            ::DIR *dir;
+            Directory *dir;
             if(!convert_args(args, todir(dir)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
-            ::DIR **dir_ptr = reinterpret_cast<::DIR **>(dir_v.r()->raw().ntvo.bs);
+            Directory **dir_ptr = reinterpret_cast<Directory **>(dir_v.r()->raw().ntvo.bs);
             *dir_ptr = nullptr;
             atomic_thread_fence(memory_order_release);
-            int result = ::closedir(dir);
+            int result = close_dir(dir);
             if(result == -1) 
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -2354,36 +2360,18 @@ extern "C" {
             int error = check_args(vm, context, args, cdir, cio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
-            ::DIR *dir;
-            unique_ptr<struct ::dirent> dir_entry;
+            Directory *dir;
+            unique_ptr<DirectoryEntry, DirectoryEntryDelete> dir_entry(new_directory_entry());
             if(!convert_args(args, todir(dir)))
               return return_value(vm, context, vut(vnone, v(io_v)));
-#if defined(__unix__)
-            struct ::dirent *result = nullptr;
-            int tmp_errno = ::readdir_r(dir, dir_entry.get(), &result);
+            DirectoryEntry *result = nullptr;
+            int tmp_errno = read_dir(dir, dir_entry.get(), result);
             if(tmp_errno != 0)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)), tmp_errno);
             if(result != nullptr)
-              return return_value(vm, context, vut(vsome(vdirent(*dir_entry)), v(io_v)));
+              return return_value(vm, context, vut(vsome(vdirentry(dir_entry.get())), v(io_v)));
             else
               return return_value(vm, context, vut(vnone, v(io_v)));
-#elif defined(_WIN32) || defined(_WIN64)
-            {
-              lock_guard<mutex> guard(readdir_fun_mutex);
-              errno = 0;
-              struct ::dirent *result = ::readdir(dir);
-              if(result != nullptr) {
-                return return_value(vm, context, vut(vsome(vdirent(*result)), v(io_v)));
-              } else {
-                if(errno == 0)
-                  return return_value(vm, context, vut(vnone, v(io_v)));
-                else
-                  return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
-              }
-            }
-#else
-#error "Unsupported operating system."
-#endif
           }
         },
         {
@@ -2392,10 +2380,10 @@ extern "C" {
             int error = check_args(vm, context, args, cdir, cio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
-            ::DIR *dir;
+            Directory *dir;
             if(!convert_args(args, todir(dir)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
-            ::rewinddir(dir);
+            rewind_dir(dir);
             return return_value(vm, context, vut(vint(0), v(io_v)));
           }
         },
@@ -2405,11 +2393,11 @@ extern "C" {
             int error = check_args(vm, context, args, cdir, cint, cio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[2];
-            ::DIR *dir;
+            Directory *dir;
             long loc;
             if(!convert_args(args, todir(dir), tolarg(loc)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
-            ::seekdir(dir, loc);
+            seek_dir(dir, loc);
             return return_value(vm, context, vut(vint(0), v(io_v)));
           }
         },
@@ -2419,10 +2407,10 @@ extern "C" {
             int error = check_args(vm, context, args, cdir, cio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
-            ::DIR *dir;
+            Directory *dir;
             if(!convert_args(args, todir(dir)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
-            long loc = ::telldir(dir);
+            long loc = tell_dir(dir);
             return return_value(vm, context, vut(vint(loc), v(io_v)));
           }
         }
@@ -2430,7 +2418,7 @@ extern "C" {
 #if defined(__unix__)
       fork_handler.mutexes() = { &getgroups_fun_mutex };
 #elif defined(_WIN32) || defined(_WIN64)
-      fork_handler.mutexes() = { &readdir_fun_mutex };
+      fork_handler.mutexes().clear();
 #else
 #error "Unsupported operating system."
 #endif
