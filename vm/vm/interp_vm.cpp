@@ -2213,6 +2213,24 @@ namespace letin
               }
             } while(must_repeat);
           }
+          case OP_IFORCE:
+          {
+            int64_t i;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(i);
+          }
+          case OP_FFORCE:
+          {
+            double f;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(f);
+          }
+          case OP_RFORCE:
+          {
+            Reference r;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            return Value(r);
+          }
           default:
           {
             context.set_error(ERROR_INCORRECT_INSTR);
