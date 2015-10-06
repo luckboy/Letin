@@ -65,13 +65,10 @@ extern char **environ;
 #if defined(__unix__)
 static mutex getgroups_fun_mutex;
 #endif
-
 static vector<NativeFunction> native_funs;
-
 static MutexForkHandler fork_handler;
 
 #if defined(_WIN32) || defined(_WIN64)
-static mutex readdir_fun_mutex;
 
 static void add_arg_to_cmd_line(string &cmd_line, const char *arg)
 {
@@ -119,6 +116,7 @@ static char *env_to_env_block(char **env)
   *ptr = 0;
   return env_block;
 }
+
 #endif
 
 extern "C" {
