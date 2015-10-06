@@ -27,13 +27,13 @@ using namespace letin::vm;
 using namespace letin::native;
 using namespace letin::nlib::socket;
 
-static vector<NativeFunction> native_funs;
-
 struct AddrinfoDelete
 {
   void operator()(struct ::addrinfo *addr_info) const
   { ::freeaddrinfo(addr_info); }
 };
+
+static vector<NativeFunction> native_funs;
 
 extern "C" {
   bool letin_initialize()
