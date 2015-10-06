@@ -110,7 +110,7 @@ namespace letin
       {
         struct stat status;
         if(_stat(dir_name, &status) == -1) return nullptr;
-        if(_S_ISDIR(status.st_mode) != 0) {
+        if(_S_ISDIR(status.st_mode) == 0) {
           errno = ENOTDIR;
           return nullptr;
         }
