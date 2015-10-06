@@ -186,7 +186,11 @@ namespace letin
         { "fceil",      { OP_FCEIL,     VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
         { "ffloor",     { OP_FFLOOR,    VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
         { "fround",     { OP_FROUND,    VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
-        { "ftrunc",     { OP_FTRUNC,    VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } }
+        { "ftrunc",     { OP_FTRUNC,    VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "try",        { OP_TRY,       VALUE_TYPE_INT,         VALUE_TYPE_INT } },
+        { "iforce",     { OP_IFORCE,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
+        { "fforce",     { OP_FFORCE,    VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
+        { "rforce",     { OP_RFORCE,    VALUE_TYPE_REF,         VALUE_TYPE_ERROR } }
       };
 
       //
@@ -784,6 +788,30 @@ namespace letin
         return true;
       }
 
+      static bool generate_throw(UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, list<Error> &errors)
+      {
+        if(instr.op() != nullptr) {
+          errors.push_back(Error(instr.pos(), "instruction can't have operation"));
+          return false;
+        }
+        uint32_t arg_type;
+        if(instr.arg1() != nullptr) {
+          if(!arg_to_format_arg(ungen_prog, *(instr.arg1()), ungen_fun.instrs[ip].arg1, arg_type, VALUE_TYPE_INT, ip + ungen_fun.addr, true, instr.pos(), errors))
+            return false;
+        } else {
+          errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+          return false;
+        }
+        if(instr.arg2() != nullptr) {
+          errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+          return false;
+        }
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_THROW, 0, arg_type, ARG_TYPE_IMM));
+        ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
+        ungen_fun.instrs[ip].arg2.i = 0;
+        return true;
+      }
+
       static bool generate_instr(UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, list<Error> &errors)
       {
         if(instr.instr() == "let") {
@@ -802,6 +830,8 @@ namespace letin
           return generate_instr_without_op(ungen_prog, ungen_fun, ip, instr, INSTR_RETRY, errors);
         } else if(instr.instr() == "lettuple") {
           return generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_LETTUPLE, errors);
+        } else if(instr.instr() == "throw") {
+          return generate_throw(ungen_prog, ungen_fun, ip, instr, errors);
         } else {
           errors.push_back(Error(instr.pos(), "unknown instruction"));
           return false;
