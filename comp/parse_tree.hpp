@@ -57,7 +57,8 @@ namespace letin
         {
           TYPE_INT,
           TYPE_FLOAT,
-          TYPE_FUN_INDEX
+          TYPE_FUN_INDEX,
+          TYPE_NATIVE_FUN_INDEX
         };
       private:
         Type _M_type;
@@ -76,7 +77,8 @@ namespace letin
 
         ArgumentValue(const NumberValue &value);
 
-        ArgumentValue(const std::string &fun) : _M_type(TYPE_FUN_INDEX), _M_fun(fun) {}
+        ArgumentValue(const std::string &fun, bool is_native_fun = false) :
+          _M_type(is_native_fun ? TYPE_NATIVE_FUN_INDEX : TYPE_FUN_INDEX), _M_fun(fun) {}
 
         ArgumentValue(const ArgumentValue &value) : _M_type(value._M_type) { copy_union(value); }
 
@@ -117,7 +119,8 @@ namespace letin
           TYPE_INT,
           TYPE_FLOAT,
           TYPE_REF,
-          TYPE_FUN_INDEX
+          TYPE_FUN_INDEX,
+          TYPE_NATIVE_FUN_INDEX
         };
       private:
         Type _M_type;
@@ -141,8 +144,8 @@ namespace letin
 
         Value(const NumberValue &value, const Position &pos);
 
-        Value(const std::string &fun, const Position &pos) :
-          _M_type(TYPE_FUN_INDEX), _M_fun(fun), _M_pos(pos) {}
+        Value(const std::string &fun, const Position &pos, bool is_native_fun_index = false) :
+          _M_type(is_native_fun_index ? TYPE_NATIVE_FUN_INDEX : TYPE_FUN_INDEX), _M_fun(fun), _M_pos(pos) {}
 
         Value(Object *object, const Position &pos) :
           _M_type(TYPE_REF), _M_object(object), _M_pos(pos) {}

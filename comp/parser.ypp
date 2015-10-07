@@ -122,6 +122,7 @@
 %destructor { delete $$; }      <values>
 %destructor { delete $$; }      <fun_lines>
 
+%left                   AMPHASH
 %right                  '?'
 %left                   ':'
 %left                   BARBAR
@@ -200,12 +201,13 @@ arg:            arg_value %dprec 1              { $$ = new Argument(*$1, P(@1));
 
 arg_value:      expr                            { $$ = new ArgumentValue(*$1); }
 |               '&' ident                       { $$ = new ArgumentValue(*$2); }
+|               AMPHASH ident                   { $$ = new ArgumentValue(*$2, true); }
 ;
 
 var_def:        ident '=' onl value             {
   $$ = new std::shared_ptr<Definition>(new VariableDefinition(*$1, *$4, P(@1)));
 }
-|               PUBLIC onl ident '=' onl value   {
+|               PUBLIC onl ident '=' onl value  {
   $$ = new std::shared_ptr<Definition>(new VariableDefinition(PUBLIC, *$3, *$6, P(@1)));
 }
 ;
@@ -213,6 +215,7 @@ var_def:        ident '=' onl value             {
 value:          expr %dprec 2                   { $$ = new Value(*$1, P(@1)); }
 |               object %dprec 1                 { $$ = new Value(new Object(*$1), P(@1)); }
 |               '&' ident                       { $$ = new Value(*$2, P(@1)); }
+|               AMPHASH ident                   { $$ = new Value(*$2, P(@2), true); }
 ;
 
 object:         STRING                          { $$ = new Object(*$1, P(@1)); }

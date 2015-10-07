@@ -242,6 +242,7 @@ namespace letin
         list<Symbol> symbols;
         unordered_map<string, uint32_t> extern_fun_symbol_indexes;
         unordered_map<string, uint32_t> extern_var_symbol_indexes;
+        unordered_map<string, uint32_t> extern_native_fun_symbol_indexes;
       };
 
       struct UngeneratedFunction
@@ -262,10 +263,10 @@ namespace letin
         return true;
       }
 
-      static bool check_object_elems(const Object *object, Value::Type type1, Value::Type type2, list<Error> &errors)
+      static bool check_object_elems(const Object *object, Value::Type type1, Value::Type type2, Value::Type type3, list<Error> &errors)
       {
         for(auto &elem : object->elems()) {
-          if(elem.type() != type1 && elem.type() != type2) {
+          if(elem.type() != type1 && elem.type() != type2 && elem.type() != type3) {
             errors.push_back(Error(elem.pos(), "incorrect value"));
             return false;
           }
@@ -283,10 +284,10 @@ namespace letin
           if(!check_object_elems(object, Value::TYPE_INT, errors)) return false;
           ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY16, header_size + object->elems().size() * 2)));
         } else if(object->type() == "iarray32") {
-          if(!check_object_elems(object, Value::TYPE_INT, Value::TYPE_FUN_INDEX, errors)) return false;
+          if(!check_object_elems(object, Value::TYPE_INT, Value::TYPE_FUN_INDEX, Value::TYPE_NATIVE_FUN_INDEX, errors)) return false;
           ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY32, header_size + object->elems().size() * 4)));
         } else if(object->type() == "iarray64") {
-          if(!check_object_elems(object, Value::TYPE_INT, Value::TYPE_FUN_INDEX, errors)) return false;
+          if(!check_object_elems(object, Value::TYPE_INT, Value::TYPE_FUN_INDEX, Value::TYPE_NATIVE_FUN_INDEX, errors)) return false;
           ungen_prog.object_pairs.push_back(make_pair(object, make_pair(OBJECT_TYPE_IARRAY64, header_size + object->elems().size() * 8)));
         } else if(object->type() == "sfarray") {
           if(!check_object_elems(object, Value::TYPE_FLOAT, errors)) return false;
@@ -322,10 +323,12 @@ namespace letin
           return sizeof(format::Relocation);
         if(arg.type() == Argument::TYPE_IMM && arg.v().type() == ArgumentValue::TYPE_FUN_INDEX)
           return sizeof(format::Relocation);
+        if(arg.type() == Argument::TYPE_IMM && arg.v().type() == ArgumentValue::TYPE_NATIVE_FUN_INDEX)
+          return sizeof(format::Relocation);
         return 0;
       }
 
-      static void add_symbol_name_from_arg(const UngeneratedProgram &ungen_prog, unordered_set<string> &fun_names, unordered_set<string> &var_names, const Argument &arg)
+      static void add_symbol_name_from_arg(const UngeneratedProgram &ungen_prog, unordered_set<string> &fun_names, unordered_set<string> &var_names, unordered_set<string> &native_fun_names, const Argument &arg)
       {
         if(arg.type() == Argument::TYPE_IDENT) {
           if(ungen_prog.var_pairs.find(arg.ident()) == ungen_prog.var_pairs.end())
@@ -335,6 +338,8 @@ namespace letin
           if(ungen_prog.fun_pairs.find(arg.v().fun()) == ungen_prog.fun_pairs.end())
             fun_names.insert(arg.v().fun());
         }
+        if(arg.type() == Argument::TYPE_IMM && arg.v().type() == ArgumentValue::TYPE_NATIVE_FUN_INDEX)
+          native_fun_names.insert(arg.v().fun());
       }
 
       static size_t prog_size_and_other_sizes(const UngeneratedProgram &ungen_prog, size_t &code_size, size_t &data_size)
@@ -365,7 +370,7 @@ namespace letin
                     reloc_size += reloc_size_from_arg(*(line.instr()->arg1()));
                   if(line.instr()->arg2() != nullptr)
                     reloc_size += reloc_size_from_arg(*(line.instr()->arg2()));
-                } else if(line.instr()->instr() == "jc") {
+                } else if(line.instr()->instr() == "jc" || line.instr()->instr() == "throw") {
                   if(line.instr()->arg1() != nullptr)
                     reloc_size += reloc_size_from_arg(*(line.instr()->arg1()));
                 }
@@ -383,14 +388,15 @@ namespace letin
           }
           size += align(reloc_size, 8);
           unordered_set<string> fun_symbol_names;
-          unordered_set<string> symbol_var_names;
+          unordered_set<string> var_symbol_names;
+          unordered_set<string> native_fun_symbol_names;
           for(auto &symbol : ungen_prog.symbols) {
             switch((symbol.type & ~format::SYMBOL_TYPE_DEFINED)) {
               case format::SYMBOL_TYPE_FUN:
                 fun_symbol_names.insert(symbol.name);
                 break;
               case format::SYMBOL_TYPE_VAR:
-                symbol_var_names.insert(symbol.name);
+                var_symbol_names.insert(symbol.name);
                 break;
             }
           }
@@ -401,12 +407,12 @@ namespace letin
                 if(line.instr()->instr() == "let" || line.instr()->instr() == "arg" ||
                     line.instr()->instr() == "ret" || line.instr()->instr() == "lettuple") {
                   if(line.instr()->arg1() != nullptr)
-                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, symbol_var_names, *(line.instr()->arg1()));
+                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, var_symbol_names, native_fun_symbol_names, *(line.instr()->arg1()));
                   if(line.instr()->arg2() != nullptr)
-                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, symbol_var_names, *(line.instr()->arg2()));
-                } else if(line.instr()->instr() == "jc") {
+                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, var_symbol_names, native_fun_symbol_names, *(line.instr()->arg2()));
+                } else if(line.instr()->instr() == "jc" || line.instr()->instr() == "throw") {
                   if(line.instr()->arg1() != nullptr)
-                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, symbol_var_names, *(line.instr()->arg1()));
+                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, var_symbol_names, native_fun_symbol_names, *(line.instr()->arg1()));
                 }
               }
             }
@@ -424,8 +430,10 @@ namespace letin
           }
           for(auto fun_symbol_name : fun_symbol_names)
             size += align(7 + fun_symbol_name.length(), 8);
-          for(auto var_symbol_name : symbol_var_names)
+          for(auto var_symbol_name : var_symbol_names)
             size += align(7 + var_symbol_name.length(), 8);
+          for(auto native_fun_symbol_name : native_fun_symbol_names)
+            size += align(7 + native_fun_symbol_name.length(), 8);
         }
         return size;
       }
@@ -461,6 +469,20 @@ namespace letin
               }
               break;
             }
+            case format::RELOC_TYPE_ARG1_NATIVE_FUN:
+            case format::RELOC_TYPE_ARG2_NATIVE_FUN:
+            case format::RELOC_TYPE_ELEM_NATIVE_FUN:
+            case format::RELOC_TYPE_VAR_NATIVE_FUN:
+            {
+              auto iter = ungen_prog.extern_native_fun_symbol_indexes.find(symbol_name);
+              if(iter != ungen_prog.extern_native_fun_symbol_indexes.end()) {
+                symbol = iter->second;
+              } else {
+                ungen_prog.extern_native_fun_symbol_indexes.insert(make_pair(symbol_name, symbol));
+                ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_NATIVE_FUN, symbol_name));
+              }
+              break;
+            }
           }
           ungen_prog.relocs.push_back(Relocation(type, addr, symbol));
         } else
@@ -491,7 +513,7 @@ namespace letin
             return false;
           }
         }
-        add_reloc(ungen_prog, reloc_type, addr);
+        if(ungen_prog.is_relocable) add_reloc(ungen_prog, reloc_type, addr);
         index = iter->second.first;
         return true;
       }
@@ -509,8 +531,21 @@ namespace letin
             return false;
           }
         }
-        add_reloc(ungen_prog, reloc_type, addr);
+        if(ungen_prog.is_relocable) add_reloc(ungen_prog, reloc_type, addr);
         index = iter->second.first;
+        return true;
+      }
+
+      static bool get_native_fun_index_and_add_reloc(UngeneratedProgram &ungen_prog, uint32_t &index, const string &ident, uint32_t reloc_type, uint32_t addr, const Position &pos, list<Error> &errors)
+      {
+        if(ungen_prog.is_relocable) {
+          add_reloc(ungen_prog, reloc_type | format::RELOC_TYPE_SYMBOLIC, addr, ident);
+          index = 0;
+          return true;
+        } else {
+          errors.push_back(Error(pos, "unsupported native function symbols for unrelocable program"));
+          return false;
+        }
         return true;
       }
 
@@ -556,6 +591,20 @@ namespace letin
             format_value.i = static_cast<int32_t>(u);
             return true;
           }
+          case Value::TYPE_NATIVE_FUN_INDEX:
+          {
+            format_value.type = VALUE_TYPE_INT;
+            uint32_t u;
+            if(addr != nullptr) {
+              uint32_t reloc_type = (is_var ? format::RELOC_TYPE_VAR_NATIVE_FUN : format::RELOC_TYPE_ELEM_NATIVE_FUN);
+              if(!get_native_fun_index_and_add_reloc(ungen_prog, u, value.fun(), reloc_type, *addr, value.pos(), errors)) return false;
+            } else {
+              errors.push_back(Error(value.pos(), "incorrect value"));
+              return false;
+            }
+            format_value.i = static_cast<int32_t>(u);
+            return true;
+          }            
         }
         return false;
       }
@@ -568,6 +617,7 @@ namespace letin
         }
         uint32_t fun_reloc_type = (is_first ? format::RELOC_TYPE_ARG1_FUN : format::RELOC_TYPE_ARG2_FUN);
         uint32_t var_reloc_type = (is_first ? format::RELOC_TYPE_ARG1_VAR : format::RELOC_TYPE_ARG2_VAR);
+        uint32_t native_fun_reloc_type = (is_first ? format::RELOC_TYPE_ARG1_NATIVE_FUN : format::RELOC_TYPE_ARG2_NATIVE_FUN);
         switch(arg.type()) {
           case Argument::TYPE_IMM:
             switch(value_type) {
@@ -585,6 +635,11 @@ namespace letin
                 } else if(arg.v().type() == ArgumentValue::TYPE_FUN_INDEX) {
                   uint32_t u;
                   if(!get_fun_index_and_add_reloc(ungen_prog, u, arg.v().fun(), fun_reloc_type, ip, arg.pos(), errors))
+                    return false;
+                  format_arg.i = static_cast<int32_t>(u);
+                } else if(arg.v().type() == ArgumentValue::TYPE_NATIVE_FUN_INDEX) {
+                  uint32_t u;
+                  if(!get_native_fun_index_and_add_reloc(ungen_prog, u, arg.v().fun(), native_fun_reloc_type, ip, arg.pos(), errors))
                     return false;
                   format_arg.i = static_cast<int32_t>(u);
                 } else {
@@ -900,11 +955,11 @@ namespace letin
         tmp_ptr += align(sizeof(format::Header), 8);
         copy(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, header->magic);
         if(is_entry) {
-          header->flags = htonl(ungen_prog.is_relocable ? format::HEADER_FLAG_RELOCATABLE : 0);
+          header->flags = htonl(ungen_prog.is_relocable ? (format::HEADER_FLAG_RELOCATABLE): 0);
           if(!get_fun_index(ungen_prog, header->entry, entry_ident, entry_pos, errors)) return nullptr;
           header->entry = htonl(header->entry);
         } else {
-          header->flags = htonl(format::HEADER_FLAG_LIBRARY | (ungen_prog.is_relocable ? format::HEADER_FLAG_RELOCATABLE : 0));
+          header->flags = htonl(format::HEADER_FLAG_LIBRARY | (ungen_prog.is_relocable ? (format::HEADER_FLAG_RELOCATABLE): 0));
           header->entry = 0;
         }
         header->fun_count = htonl(ungen_prog.fun_pairs.size());
@@ -997,7 +1052,7 @@ namespace letin
               break;
             case OBJECT_TYPE_IARRAY32:
               for(auto &elem : object->elems()) {
-                if(elem.type() != Value::TYPE_FUN_INDEX) {
+                if(elem.type() != Value::TYPE_FUN_INDEX && elem.type() != Value::TYPE_NATIVE_FUN_INDEX) {
                   if(elem.i() < INT32_MIN) {
                     errors.push_back(Error(elem.pos(), "too small integer number"));
                     is_success = false;
@@ -1078,6 +1133,7 @@ namespace letin
         }
 
         if(ungen_prog.is_relocable) {
+          bool is_native_fun_symbols = false;
           header->reloc_count = htonl(ungen_prog.relocs.size());
           header->symbol_count = htonl(ungen_prog.symbols.size());
 
@@ -1088,6 +1144,11 @@ namespace letin
           i = 0;
           for(auto &reloc : ungen_prog.relocs) {
             format::Relocation *format_reloc = relocs + i;
+            if(reloc.type == format::RELOC_TYPE_ARG1_NATIVE_FUN ||
+                reloc.type == format::RELOC_TYPE_ARG2_NATIVE_FUN ||
+                reloc.type == format::RELOC_TYPE_ELEM_NATIVE_FUN ||
+                reloc.type == format::RELOC_TYPE_VAR_NATIVE_FUN)
+              is_native_fun_symbols = true;
             format_reloc->type = htonl(reloc.type);
             format_reloc->addr = htonl(reloc.addr);
             format_reloc->symbol = htonl(reloc.symbol);
@@ -1097,6 +1158,8 @@ namespace letin
           i = 0;
           for(auto &symbol : ungen_prog.symbols) {
             format::Symbol *format_symbol = reinterpret_cast<format::Symbol *>(symbols + i);
+            if(symbol.type == format::SYMBOL_TYPE_NATIVE_FUN)
+              is_native_fun_symbols = true;
             format_symbol->index = htonl(symbol.index);
             format_symbol->length = htons(symbol.name.length());
             format_symbol->type = symbol.type;
@@ -1104,6 +1167,9 @@ namespace letin
             i += align(7 + symbol.name.length(), 8);
           }
           tmp_ptr += i;
+
+          if(is_native_fun_symbols)
+            header->flags |= format::HEADER_FLAG_NATIVE_FUN_SYMBOLS;
         }
 
         if(!is_success) return nullptr;
