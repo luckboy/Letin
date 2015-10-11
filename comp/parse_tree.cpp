@@ -56,6 +56,9 @@ namespace letin
           case TYPE_FUN_INDEX:
             new (&_M_fun) string(value._M_fun);
             break;
+          case TYPE_NATIVE_FUN_INDEX:
+            new (&_M_fun) string(value._M_fun);
+            break;
         }
       }
       
@@ -89,6 +92,9 @@ namespace letin
             _M_object = (value._M_object != nullptr ? new Object(*(value._M_object)) : nullptr);
             break;
           case TYPE_FUN_INDEX:
+            new (&_M_fun) string(value._M_fun);
+            break;
+          case TYPE_NATIVE_FUN_INDEX:
             new (&_M_fun) string(value._M_fun);
             break;
         }
