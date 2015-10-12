@@ -46,7 +46,7 @@ namespace letin
 
       struct OperationDescription
       {
-        int32_t op;
+        uint32_t op;
         int arg_value_type1;
         int arg_value_type2;
       };
@@ -193,6 +193,35 @@ namespace letin
         { "rforce",     { OP_RFORCE,    VALUE_TYPE_REF,         VALUE_TYPE_ERROR } }
       };
 
+      struct FunctionInfo
+      {
+        unsigned eval_strategy;
+        unsigned eval_strategy_mask;
+        unsigned eval_strategy_mask2;
+
+        FunctionInfo() : eval_strategy(0), eval_strategy_mask(~0), eval_strategy_mask2(~0) {}
+
+        FunctionInfo(unsigned eval_strategy, unsigned eval_strategy_mask, unsigned eval_strategy_mask2) :
+          eval_strategy(eval_strategy), eval_strategy_mask(eval_strategy_mask), eval_strategy_mask2(eval_strategy_mask2) {}
+
+        FunctionInfo &operator|=(const FunctionInfo &fun_info)
+        {
+         eval_strategy |= fun_info.eval_strategy;
+         eval_strategy_mask &= fun_info.eval_strategy_mask;
+         eval_strategy_mask2 |= fun_info.eval_strategy_mask2;
+         return *this;
+        }
+      };
+
+      static unordered_map<string, FunctionInfo> annotation_fun_infos {
+        { "eager",              { 0U,                   ~EVAL_STRATEGY_LAZY,    0U } },
+        { "lazy",               { EVAL_STRATEGY_LAZY,   ~0U,                    0U } },
+        { "memoized",           { EVAL_STRATEGY_MEMO,   ~0U,                    0U } },
+        { "unmemoized",         { 0U,                   ~EVAL_STRATEGY_MEMO,    0U } },
+        { "onlylazy",           { EVAL_STRATEGY_LAZY,   ~0U,                    EVAL_STRATEGY_LAZY } },
+        { "onlymemoized",       { EVAL_STRATEGY_MEMO,   ~0U,                    EVAL_STRATEGY_MEMO } }
+      };
+
       //
       // Static functions.
       //
@@ -219,7 +248,7 @@ namespace letin
         Relocation(uint32_t type, uint32_t addr, uint32_t symbol = 0) :
           type(type), addr(addr), symbol(symbol) {}
       };
-      
+
       struct Symbol
       {
         uint32_t type;
@@ -243,6 +272,7 @@ namespace letin
         unordered_map<string, uint32_t> extern_fun_symbol_indexes;
         unordered_map<string, uint32_t> extern_var_symbol_indexes;
         unordered_map<string, uint32_t> extern_native_fun_symbol_indexes;
+        list<pair<uint32_t, FunctionInfo>> fun_info_pairs;
       };
 
       struct UngeneratedFunction
@@ -435,6 +465,7 @@ namespace letin
           for(auto native_fun_symbol_name : native_fun_symbol_names)
             size += align(7 + native_fun_symbol_name.length(), 8);
         }
+        size += align(ungen_prog.fun_info_pairs.size() * sizeof(format::FunctionInfo), 8);
         return size;
       }
       
@@ -893,6 +924,31 @@ namespace letin
         }
       }
 
+      static bool annotations_to_fun_info(const list<Annotation> &annotations, FunctionInfo &fun_info, list<Error> &errors)
+      {
+        fun_info = FunctionInfo();
+        bool is_success = true;
+        for(auto annotation : annotations) {
+          auto iter = annotation_fun_infos.find(annotation.name());
+          if(iter == annotation_fun_infos.end()) {
+            fun_info |= iter->second;
+            if((fun_info.eval_strategy & EVAL_STRATEGY_LAZY) != 0 &&
+                (fun_info.eval_strategy_mask & EVAL_STRATEGY_LAZY) == 0) {
+              errors.push_back(Error(annotation.pos(), "function can't be eager and lazy"));
+              is_success = false;
+            } else if((fun_info.eval_strategy & EVAL_STRATEGY_MEMO) != 0 &&
+                (fun_info.eval_strategy_mask & EVAL_STRATEGY_MEMO) == 0) {
+              errors.push_back(Error(annotation.pos(), "function can't be unmemoized and memoized"));
+              is_success = false;
+            }
+          } else {
+            errors.push_back(Error(annotation.pos(), "unknown annotation"));
+            is_success = false;
+          }
+        }
+        return is_success;
+      }
+
       static Program *generate_prog(const ParseTree &tree, list<Error> &errors, bool is_relocable)
       {
         UngeneratedProgram ungen_prog;
@@ -908,8 +964,14 @@ namespace letin
             if(ungen_prog.fun_pairs.find(fun_def->ident()) == ungen_prog.fun_pairs.end()) {
               uint32_t tmp_fun_count = ungen_prog.fun_pairs.size();
               ungen_prog.fun_pairs.insert(make_pair(fun_def->ident(), make_pair(tmp_fun_count, fun_def->fun())));
-              if(ungen_prog.is_relocable && fun_def->modifier() == PUBLIC)
-                ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_FUN | format::SYMBOL_TYPE_DEFINED, fun_def->ident(), tmp_fun_count));
+              FunctionInfo fun_info;
+              if(annotations_to_fun_info(fun_def->annotations(), fun_info, errors)) {
+                if(fun_info.eval_strategy != 0U || fun_info.eval_strategy_mask != ~0U)
+                  ungen_prog.fun_info_pairs.push_back(make_pair(tmp_fun_count, fun_info));
+                if(ungen_prog.is_relocable && fun_def->modifier() == PUBLIC)
+                  ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_FUN | format::SYMBOL_TYPE_DEFINED, fun_def->ident(), tmp_fun_count));
+              } else
+                is_success = false;
             } else {
               errors.push_back(Error(fun_def->pos(), "already defined function " + fun_def->ident()));
               is_success = false;
@@ -1170,6 +1232,25 @@ namespace letin
 
           if(is_native_fun_symbols)
             header->flags |= format::HEADER_FLAG_NATIVE_FUN_SYMBOLS;
+        }
+
+        if(!ungen_prog.fun_info_pairs.empty()) {
+          header->flags |= format::HEADER_FLAG_FUN_INFOS;
+          header->fun_info_count = ungen_prog.fun_info_pairs.size();
+          format::FunctionInfo *fun_infos = reinterpret_cast<format::FunctionInfo *>(tmp_ptr);
+          tmp_ptr += align(ungen_prog.fun_info_pairs.size() * sizeof(format::FunctionInfo), 8);
+
+          i = 0;
+          for(auto pair : ungen_prog.fun_info_pairs) {
+            format::FunctionInfo *format_fun_info = fun_infos + i;
+            format_fun_info->fun_index = htonl(pair.first);
+            format_fun_info->eval_strategy = pair.second.eval_strategy & 0xff;
+            if(pair.second.eval_strategy_mask2 == 0) 
+              format_fun_info->eval_strategy_mask = pair.second.eval_strategy_mask & 0xff;
+            else
+              format_fun_info->eval_strategy_mask = pair.second.eval_strategy_mask2 & 0xff;
+            i++;
+          }
         }
 
         if(!is_success) return nullptr;

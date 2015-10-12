@@ -435,6 +435,19 @@ namespace letin
         const std::list<FunctionLine> &lines() const { return *_M_lines; }
       };
 
+      class Annotation
+      {
+        std::string _M_name;
+        Position _M_pos;
+      public:
+        Annotation(const std::string &name, const Position &pos) :
+          _M_name(name), _M_pos(pos) {}
+
+        const std::string &name() const { return _M_name; }
+
+        const Position &pos() const { return _M_pos; }
+      };
+
       enum Modifier
       {
         PRIVATE,
@@ -443,18 +456,27 @@ namespace letin
 
       class FunctionDefinition : public Definition
       {
+        std::shared_ptr<std::list<Annotation>> _M_annotations;
         Modifier _M_modifier;
         std::string _M_ident;
         Function _M_fun;
         Position _M_pos;
       public:
         FunctionDefinition(const std::string &ident, const Function &fun, const Position &pos) :
-          Definition(pos), _M_modifier(PRIVATE), _M_ident(ident), _M_fun(fun) {}
+          Definition(pos), _M_annotations(new std::list<Annotation>()), _M_modifier(PRIVATE), _M_ident(ident), _M_fun(fun) {}
 
         FunctionDefinition(Modifier modifier, const std::string &ident, const Function &fun, const Position &pos) :
-          Definition(pos), _M_modifier(modifier), _M_ident(ident), _M_fun(fun) {}
+          Definition(pos), _M_annotations(new std::list<Annotation>()), _M_modifier(modifier), _M_ident(ident), _M_fun(fun) {}
+
+        FunctionDefinition(std::shared_ptr<std::list<Annotation>> annotations, const std::string &ident, const Function &fun, const Position &pos) :
+          Definition(pos), _M_annotations(annotations), _M_modifier(PRIVATE), _M_ident(ident), _M_fun(fun) {}
+
+        FunctionDefinition(std::shared_ptr<std::list<Annotation>> annotations, Modifier modifier, const std::string &ident, const Function &fun, const Position &pos) :
+          Definition(pos), _M_annotations(annotations), _M_modifier(modifier), _M_ident(ident), _M_fun(fun) {}
 
         ~FunctionDefinition();
+
+        std::list<Annotation> &annotations() const { return *_M_annotations; }
 
         Modifier modifier() const { return _M_modifier; }
 

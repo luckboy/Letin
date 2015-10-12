@@ -72,9 +72,11 @@
   InstructionPair *instr_pair;
   Instruction *instr;
   FunctionLine *fun_line;
+  Annotation *annotation;
   std::shared_ptr<Definition> *def;
   std::shared_ptr<std::list<Value>> *values;
   std::shared_ptr<std::list<FunctionLine>> *fun_lines;  
+  std::shared_ptr<std::list<Annotation>> *annotations;
 }
 
 %token                  END             0  
@@ -103,9 +105,11 @@
 %type <def>             fun_def
 %type <def>             var_def
 %type <def>             entry_def
+%type <annotation>      annotation
 %type <values>          values
 %type <fun_lines>       fun_lines
 %type <num_value>       expr
+%type <annotations>     annotations
 
 %destructor { delete $$; }      <string>
 %destructor { delete $$; }      <num_value>
@@ -119,8 +123,10 @@
 %destructor { delete $$; }      <instr>
 %destructor { delete $$; }      <fun_line>
 %destructor { delete $$; }      <def>
+%destructor { delete $$; }      <annotation>
 %destructor { delete $$; }      <values>
 %destructor { delete $$; }      <fun_lines>
+%destructor { delete $$; }      <annotations>
 
 %left                   AMPHASH
 %right                  '?'
@@ -159,6 +165,12 @@ fun_def:        ident '(' A ')' '=' onl '{' '\n' fun_lines '\n' '}' {
 }
 |               PUBLIC onl ident '(' A ')' '=' onl '{' '\n' fun_lines '\n' '}' {
   $$ = new std::shared_ptr<Definition>(new FunctionDefinition(PUBLIC, *$3, Function($5, *$11, P(@1)), P(@1)));
+}
+|               annotations onl ident '(' A ')' '=' onl '{' '\n' fun_lines '\n' '}' {
+  $$ = new std::shared_ptr<Definition>(new FunctionDefinition(*$1, *$3, Function($5, *$11, P(@1)), P(@1)));
+}
+|               annotations onl PUBLIC onl ident '(' A ')' '=' onl '{' '\n' fun_lines '\n' '}' {
+  $$ = new std::shared_ptr<Definition>(new FunctionDefinition(*$1, PUBLIC, *$5, Function($7, *$13, P(@1)), P(@1)));
 }
 ;
 
@@ -311,6 +323,15 @@ expr:           '+' expr %prec PLUS             { $$ = $2; }
 
 num_value:      INT                             { $$ = new NumberValue($1); }
 |               FLOAT                           { $$ = new NumberValue($1); }
+;
+
+annotation:     '@' NAME                        { $$ = new Annotation(*$2, P(@1)); }
+;
+
+annotations:    annotations onl annotation      { (*$1)->push_back(*$3); $$ = $1; }
+|               annotation                      {
+  $$ = new std::shared_ptr<std::list<Annotation>>(new std::list<Annotation> { *$1 });
+}
 ;
 
 %%
