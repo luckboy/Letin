@@ -1249,6 +1249,7 @@ namespace letin
               format_fun_info->eval_strategy_mask = pair.second.eval_strategy_mask & 0xff;
             else
               format_fun_info->eval_strategy_mask = pair.second.eval_strategy_mask2 & 0xff;
+            fill_n(format_fun_info->reserved, sizeof(format_fun_info->reserved), 0);
             i++;
           }
         }
