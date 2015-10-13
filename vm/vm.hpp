@@ -183,7 +183,8 @@ namespace letin
         if(_M_regs.abp2 < _M_stack_size) {
           _M_stack[_M_regs.abp2].safely_assign_for_gc(value);
           _M_regs.abp2++;
-          _M_regs.sec++;
+          _M_regs.ac2 = 0;
+          _M_regs.sec = _M_regs.abp2;
           std::atomic_thread_fence(std::memory_order_release);
           return true;
         } else
