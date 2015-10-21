@@ -205,7 +205,7 @@ arg_value:      expr                            { $$ = new ArgumentValue(*$1); }
 var_def:        ident '=' onl value             {
   $$ = new std::shared_ptr<Definition>(new VariableDefinition(*$1, *$4, P(@1)));
 }
-|               PUBLIC onl ident '=' onl value   {
+|               PUBLIC onl ident '=' onl value  {
   $$ = new std::shared_ptr<Definition>(new VariableDefinition(PUBLIC, *$3, *$6, P(@1)));
 }
 ;

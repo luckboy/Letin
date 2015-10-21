@@ -46,7 +46,7 @@ namespace letin
 
       struct OperationDescription
       {
-        int32_t op;
+        uint32_t op;
         int arg_value_type1;
         int arg_value_type2;
       };
@@ -365,14 +365,14 @@ namespace letin
           }
           size += align(reloc_size, 8);
           unordered_set<string> fun_symbol_names;
-          unordered_set<string> symbol_var_names;
+          unordered_set<string> var_symbol_names;
           for(auto &symbol : ungen_prog.symbols) {
             switch((symbol.type & ~format::SYMBOL_TYPE_DEFINED)) {
               case format::SYMBOL_TYPE_FUN:
                 fun_symbol_names.insert(symbol.name);
                 break;
               case format::SYMBOL_TYPE_VAR:
-                symbol_var_names.insert(symbol.name);
+                var_symbol_names.insert(symbol.name);
                 break;
             }
           }
@@ -383,12 +383,12 @@ namespace letin
                 if(line.instr()->instr() == "let" || line.instr()->instr() == "arg" ||
                     line.instr()->instr() == "ret" || line.instr()->instr() == "lettuple") {
                   if(line.instr()->arg1() != nullptr)
-                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, symbol_var_names, *(line.instr()->arg1()));
+                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, var_symbol_names, *(line.instr()->arg1()));
                   if(line.instr()->arg2() != nullptr)
-                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, symbol_var_names, *(line.instr()->arg2()));
+                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, var_symbol_names, *(line.instr()->arg2()));
                 } else if(line.instr()->instr() == "jc") {
                   if(line.instr()->arg1() != nullptr)
-                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, symbol_var_names, *(line.instr()->arg1()));
+                    add_symbol_name_from_arg(ungen_prog, fun_symbol_names, var_symbol_names, *(line.instr()->arg1()));
                 }
               }
             }
@@ -406,7 +406,7 @@ namespace letin
           }
           for(auto fun_symbol_name : fun_symbol_names)
             size += align(7 + fun_symbol_name.length(), 8);
-          for(auto var_symbol_name : symbol_var_names)
+          for(auto var_symbol_name : var_symbol_names)
             size += align(7 + var_symbol_name.length(), 8);
         }
         return size;
@@ -473,7 +473,7 @@ namespace letin
             return false;
           }
         }
-        add_reloc(ungen_prog, reloc_type, addr);
+        if(ungen_prog.is_relocable) add_reloc(ungen_prog, reloc_type, addr);
         index = iter->second.first;
         return true;
       }
@@ -491,7 +491,7 @@ namespace letin
             return false;
           }
         }
-        add_reloc(ungen_prog, reloc_type, addr);
+        if(ungen_prog.is_relocable) add_reloc(ungen_prog, reloc_type, addr);
         index = iter->second.first;
         return true;
       }
