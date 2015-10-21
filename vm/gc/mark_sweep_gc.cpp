@@ -49,8 +49,8 @@ namespace letin
         if(orig_ptr == nullptr) return nullptr;
         Header *header = reinterpret_cast<Header *>(orig_ptr);
         new(header) Header();
+        void *ptr = reinterpret_cast<char *>(orig_ptr) + sizeof(Header);
         atomic_thread_fence(memory_order_release);
-        void *ptr = (reinterpret_cast<char *>(orig_ptr) + sizeof(Header));
         if(context != nullptr) context->regs().tmp_ptr = ptr;
         atomic_thread_fence(memory_order_release);
         {
@@ -66,7 +66,7 @@ namespace letin
         if(orig_ptr == nullptr) return nullptr;
         Header *header = reinterpret_cast<Header *>(orig_ptr);
         new(header) Header();
-        void *ptr = (reinterpret_cast<char *>(orig_ptr) + sizeof(Header));
+        void *ptr = reinterpret_cast<char *>(orig_ptr) + sizeof(Header);
         {
           lock_guard<GarbageCollector> guard(*this);
           add_immortal_header(header);
