@@ -162,7 +162,7 @@ namespace letin
     const std::uint32_t OP_TRY =        0x87;
     const std::uint32_t OP_IFORCE =     0x88;
     const std::uint32_t OP_FFORCE =     0x89;
-    const std::uint32_t OP_RFORCE =     0x90;
+    const std::uint32_t OP_RFORCE =     0x8a;
 
     const std::uint32_t ARG_TYPE_LVAR = 0x0;
     const std::uint32_t ARG_TYPE_ARG =  0x1;
