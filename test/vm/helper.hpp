@@ -85,6 +85,10 @@
 #define RELOC_SA2V(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG2_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
 #define RELOC_SEF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ELEM_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
 #define RELOC_SVF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_VAR_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA1NF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG1_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA2NF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG2_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SENF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ELEM_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SVNF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_VAR_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
 
 #define SYMBOL(type, name, index)                                               \
 {                                                                               \
@@ -93,8 +97,12 @@
 }
 #define SYMBOL_UF(name)         SYMBOL(format::SYMBOL_TYPE_FUN, name, 0)
 #define SYMBOL_UV(name)         SYMBOL(format::SYMBOL_TYPE_VAR, name, 0)
+#define SYMBOL_UNF(name)        SYMBOL(format::SYMBOL_TYPE_NATIVE_FUN, name, 0)
 #define SYMBOL_DF(name, index)  SYMBOL(format::SYMBOL_TYPE_FUN | format::SYMBOL_TYPE_DEFINED, name, index)
 #define SYMBOL_DV(name, index)  SYMBOL(format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED, name, index)
+
+#define FUN_INFO(fun_index, eval_strategy, eval_strategy_mask)                  \
+tmp_prog_helper.add_fun_info(make_fun_info(fun_index, eval_strategy, eval_strategy_mask))
 
 #define PROG(var, entry)                                                        \
 ProgramHelper var(entry);                                                       \
@@ -179,6 +187,7 @@ namespace letin
         std::size_t _M_data_size;
         std::vector<format::Relocation> _M_relocs;
         std::vector<Pair> _M_symbol_pairs;
+        std::vector<format::FunctionInfo> _M_fun_infos;
       public:
         ProgramHelper() : _M_flags(format::HEADER_FLAG_LIBRARY), _M_entry(0), _M_data_size(0) {}
 
@@ -196,10 +205,13 @@ namespace letin
         { _M_object_pairs.push_back(Pair(ptr, size)); _M_data_size = util::align(_M_data_size, 8) + size; }
 
         void add_reloc(const format::Relocation &reloc)
-        { _M_relocs.push_back(reloc); _M_flags |= format::HEADER_FLAG_RELOCATABLE; }
+        { _M_relocs.push_back(reloc); _M_flags |= format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS; }
 
         void add_symbol(void *ptr, std::size_t size)
-        { _M_symbol_pairs.push_back(Pair(ptr, size)); _M_flags |= format::HEADER_FLAG_RELOCATABLE; }
+        { _M_symbol_pairs.push_back(Pair(ptr, size)); _M_flags |= format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS; }
+
+        void add_fun_info(const format::FunctionInfo &fun_info)
+        { _M_fun_infos.push_back(fun_info); _M_flags |= format::HEADER_FLAG_FUN_INFOS; }
 
         std::size_t data_size() const { return _M_data_size; }
 
@@ -219,9 +231,11 @@ namespace letin
       format::Value make_float_value(double f);
 
       format::Value make_ref_value(std::uint32_t addr);
-      
+
       format::Relocation make_reloc(std::uint32_t type, std::uint32_t addr, std::uint32_t symbol);
-      
+
+      format::FunctionInfo make_fun_info(std::uint32_t fun_index, std::uint8_t eval_strategy, std::uint8_t eval_strategy_mask);
+
       struct ProgramDelete
       {
         void operator()(void *ptr) const

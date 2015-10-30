@@ -147,6 +147,7 @@ namespace letin
         header->data_size = htonl(_M_data_size);
         header->reloc_count = htonl(_M_relocs.size());
         header->symbol_count = htonl(_M_symbol_pairs.size());
+        header->fun_info_count = htonl(_M_fun_infos.size());
 
         format::Function *funs = reinterpret_cast<format::Function *>(tmp_ptr);
         tmp_ptr += align(sizeof(format::Function) * _M_funs.size(), 8);
@@ -173,9 +174,13 @@ namespace letin
           copy_n(pair.ptr.get(), pair.size, tmp_ptr);
           tmp_ptr += align(pair.size, 8);
         }
+
+        format::FunctionInfo *fun_infos = reinterpret_cast<format::FunctionInfo *>(tmp_ptr);
+        tmp_ptr += align(sizeof(format::FunctionInfo) * _M_fun_infos.size(), 8);
+        copy(_M_fun_infos.begin(), _M_fun_infos.end(), fun_infos);
         return ptr;
       }
-      
+
       size_t ProgramHelper::size() const
       {
         size_t prog_size = align(sizeof(format::Header), 8) +
@@ -190,6 +195,9 @@ namespace letin
                        accumulate(_M_symbol_pairs.begin(), _M_symbol_pairs.end(), 0, [](size_t x, const Pair & p) {
                          return x + align(p.size, 8);
                        });
+        }
+        if((_M_flags & format::HEADER_FLAG_FUN_INFOS) != 0) {
+          prog_size += align(_M_fun_infos.size() * sizeof(format::FunctionInfo), 8);
         }
         return prog_size;
       }
@@ -261,6 +269,16 @@ namespace letin
         reloc.addr = htonl(addr);
         reloc.symbol = htonl(symbol);
         return reloc;
+      }
+
+      format::FunctionInfo make_fun_info(uint32_t fun_index, uint8_t eval_strategy, uint8_t eval_strategy_mask)
+      {
+        format::FunctionInfo fun_info;
+        fun_info.fun_index = htonl(fun_index);
+        fun_info.eval_strategy = eval_strategy;
+        fun_info.eval_strategy_mask = eval_strategy_mask;
+        fill_n(fun_info.reserved, sizeof(fun_info.reserved), 0);
+        return fun_info;
       }
     }
   }

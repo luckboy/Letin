@@ -1797,6 +1797,89 @@ namespace letin
         CPPUNIT_ASSERT(is_expected_error);        
       }
 
+      void VirtualMachineTests::test_vm_loads_program_with_native_function_symbols()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        LET(RLOAD, GV(0), NA());
+        ARG(ILOAD, IMM(0), NA());
+        ARG(IADD, IMM(1000), IMM(0));
+        ARG(ILOAD, GV(1), NA());
+        ARG(RTNTH, LV(0), IMM(1));
+        RET(RTUPLE, NA(), NA());
+        END_FUN();
+        VAR_R(0);
+        VAR_I(0);
+        OBJECT(TUPLE);
+        I(1); I(0); I(2);
+        END_OBJECT();
+        RELOC_SA1NF(1, 0);
+        RELOC_SA2NF(2, 1);
+        RELOC_SVNF(1, 2);
+        RELOC_SENF(16, 3);
+        SYMBOL_UNF("atof");
+        SYMBOL_UNF("ftoa");
+        SYMBOL_UNF("atoi");
+        SYMBOL_UNF("itoa");
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), _M_vm->env().fun(0).arg_count());
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_IMM, opcode::opcode_to_arg_type1(_M_vm->env().fun(0).instr(1).opcode));
+        CPPUNIT_ASSERT_EQUAL(NATIVE_FUN_ATOF, _M_vm->env().fun(0).instr(1).arg1.i);
+        CPPUNIT_ASSERT_EQUAL(opcode::ARG_TYPE_IMM, opcode::opcode_to_arg_type2(_M_vm->env().fun(0).instr(2).opcode));
+        CPPUNIT_ASSERT_EQUAL(NATIVE_FUN_FTOA, _M_vm->env().fun(0).instr(2).arg2.i);
+        CPPUNIT_ASSERT_EQUAL(VALUE_TYPE_REF, _M_vm->env().var(0).type());
+        CPPUNIT_ASSERT_EQUAL(OBJECT_TYPE_TUPLE, _M_vm->env().var(0).r()->type());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(3), _M_vm->env().var(0).r()->length());
+        CPPUNIT_ASSERT_EQUAL(Value(NATIVE_FUN_ITOA), _M_vm->env().var(0).r()->elem(1));
+        CPPUNIT_ASSERT_EQUAL(Value(NATIVE_FUN_ATOI), _M_vm->env().var(1));
+      }
+
+      void VirtualMachineTests::test_vm_loads_program_with_function_infos()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        RET(ILOAD, IMM(1), NA());
+        END_FUN();
+        FUN(0);
+        RET(ILOAD, IMM(2), NA());
+        END_FUN();
+        FUN(0);
+        RET(ILOAD, IMM(3), NA());
+        END_FUN();
+        FUN(0);
+        RET(ILOAD, IMM(4), NA());
+        END_FUN();
+        FUN(0);
+        RET(ILOAD, IMM(5), NA());
+        END_FUN();
+        FUN(0);
+        RET(ILOAD, IMM(6), NA());
+        END_FUN();
+        FUN_INFO(0, 0, ~(EVAL_STRATEGY_LAZY | EVAL_STRATEGY_MEMO) & 0xff);
+        FUN_INFO(1, EVAL_STRATEGY_LAZY, ~EVAL_STRATEGY_MEMO & 0xff);
+        FUN_INFO(4, EVAL_STRATEGY_MEMO, ~EVAL_STRATEGY_LAZY & 0xff);
+        FUN_INFO(5, EVAL_STRATEGY_MEMO | EVAL_STRATEGY_LAZY, 0xff);
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(0), _M_vm->env().fun_info(0).eval_strategy());
+        CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(~(EVAL_STRATEGY_LAZY | EVAL_STRATEGY_MEMO) & 0xff), _M_vm->env().fun_info(0).eval_strategy_mask());
+        CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(EVAL_STRATEGY_LAZY), _M_vm->env().fun_info(1).eval_strategy());
+        CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(~EVAL_STRATEGY_MEMO & 0xff), _M_vm->env().fun_info(1).eval_strategy_mask());
+        CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(0), _M_vm->env().fun_info(2).eval_strategy());
+        CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(0xff), _M_vm->env().fun_info(2).eval_strategy_mask());
+        CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(0), _M_vm->env().fun_info(3).eval_strategy());
+        CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(0xff), _M_vm->env().fun_info(3).eval_strategy_mask());
+        CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(EVAL_STRATEGY_MEMO), _M_vm->env().fun_info(4).eval_strategy());
+        CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(~EVAL_STRATEGY_LAZY & 0xff), _M_vm->env().fun_info(4).eval_strategy_mask());
+        CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(EVAL_STRATEGY_MEMO | EVAL_STRATEGY_LAZY), _M_vm->env().fun_info(5).eval_strategy());
+        CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(0xff), _M_vm->env().fun_info(5).eval_strategy_mask());
+      }
+
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);
