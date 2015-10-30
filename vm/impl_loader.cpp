@@ -159,10 +159,10 @@ namespace letin
                 (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ELEM_FUN &&
                 (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_VAR_FUN) {
               if((header->flags & format::HEADER_FLAG_NATIVE_FUN_SYMBOLS) != 0) {
-                if((relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ARG1_NATIVE_FUN &&
-                    (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ARG2_NATIVE_FUN &&
-                    (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_ELEM_NATIVE_FUN &&
-                    (relocs[i].type & ~format::RELOC_TYPE_SYMBOLIC) != format::RELOC_TYPE_VAR_NATIVE_FUN)
+                if(relocs[i].type != (format::RELOC_TYPE_ARG1_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC) &&
+                    relocs[i].type != (format::RELOC_TYPE_ARG2_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC) &&
+                    relocs[i].type != (format::RELOC_TYPE_ELEM_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC) &&
+                    relocs[i].type != (format::RELOC_TYPE_VAR_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC))
                   return nullptr;
               } else
                 return nullptr;
@@ -179,8 +179,7 @@ namespace letin
             if((symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_FUN &&
                 (symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_VAR) {
               if((header->flags & format::HEADER_FLAG_NATIVE_FUN_SYMBOLS) != 0) {
-                if((symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_NATIVE_FUN)
-                  return nullptr;
+                if(symbol->type != format::SYMBOL_TYPE_NATIVE_FUN) return nullptr;
               } else
                 return nullptr;
             }
