@@ -136,11 +136,6 @@ namespace letin
                 }
                 case format::SYMBOL_TYPE_NATIVE_FUN:
                 {
-                  string name(symbol->name, symbol->length);
-                  if(_M_env.fun_indexes().find(name) == _M_env.fun_indexes().end()) {
-                    if(errors != nullptr) errors->push_back(LoadingError(i, LOADING_ERROR_NO_NATIVE_FUN_SYM, name));
-                    is_success = false;
-                  }
                   break;
                 }
               }

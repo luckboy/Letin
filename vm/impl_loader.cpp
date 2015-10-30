@@ -207,7 +207,7 @@ namespace letin
         if((header->flags & format::HEADER_FLAG_FUN_INFOS) != 0) {
           tmp_idx = align(tmp_idx, 8);
           fun_infos = reinterpret_cast<format::FunctionInfo *>(tmp_ptr + tmp_idx);
-          fun_info_count = header->fun_info_count;
+          fun_info_count = ntohl(header->fun_info_count);
           tmp_idx += align(sizeof(format::FunctionInfo) * fun_info_count, 8);
           if(tmp_idx > size) return nullptr;
           for(size_t i = 0; i < fun_info_count; i++) {
