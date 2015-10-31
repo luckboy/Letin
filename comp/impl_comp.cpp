@@ -1030,6 +1030,7 @@ namespace letin
         header->data_size = htonl(data_size);
         header->reloc_count = 0;
         header->symbol_count = 0;
+        header->fun_info_count = 0;
         fill_n(header->reserved, sizeof(header->reserved), 0);
 
         format::Function *funs = reinterpret_cast<format::Function *>(tmp_ptr);
