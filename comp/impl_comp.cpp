@@ -261,7 +261,7 @@ namespace letin
       
       struct UngeneratedProgram
       {
-        bool is_relocable;
+        bool is_relocatable;
         unordered_map<string, pair<uint32_t, Function>> fun_pairs;
         unordered_map<string, pair<uint32_t, Value>> var_pairs;
         list<Instruction> instrs;
@@ -388,7 +388,7 @@ namespace letin
         for(auto pair : ungen_prog.object_pairs)
           data_size += align(pair.second.second, 8);
         size += data_size;
-        if(ungen_prog.is_relocable) {
+        if(ungen_prog.is_relocatable) {
           size_t reloc_size = 0;
           for(auto pair : ungen_prog.fun_pairs) {
             const Function &fun = pair.second.second;
@@ -535,7 +535,7 @@ namespace letin
       {
         auto iter = ungen_prog.fun_pairs.find(ident);
         if(iter == ungen_prog.fun_pairs.end()) {
-          if(ungen_prog.is_relocable) {
+          if(ungen_prog.is_relocatable) {
             add_reloc(ungen_prog, reloc_type | format::RELOC_TYPE_SYMBOLIC, addr, ident);
             index = 0;
             return true;
@@ -544,7 +544,7 @@ namespace letin
             return false;
           }
         }
-        if(ungen_prog.is_relocable) add_reloc(ungen_prog, reloc_type, addr);
+        if(ungen_prog.is_relocatable) add_reloc(ungen_prog, reloc_type, addr);
         index = iter->second.first;
         return true;
       }
@@ -553,7 +553,7 @@ namespace letin
       {
         auto iter = ungen_prog.var_pairs.find(ident);
         if(iter == ungen_prog.var_pairs.end()) {
-          if(ungen_prog.is_relocable) {
+          if(ungen_prog.is_relocatable) {
             add_reloc(ungen_prog, reloc_type | format::RELOC_TYPE_SYMBOLIC, addr, ident);
             index = 0;
             return true;
@@ -562,14 +562,14 @@ namespace letin
             return false;
           }
         }
-        if(ungen_prog.is_relocable) add_reloc(ungen_prog, reloc_type, addr);
+        if(ungen_prog.is_relocatable) add_reloc(ungen_prog, reloc_type, addr);
         index = iter->second.first;
         return true;
       }
 
       static bool get_native_fun_index_and_add_reloc(UngeneratedProgram &ungen_prog, uint32_t &index, const string &ident, uint32_t reloc_type, uint32_t addr, const Position &pos, list<Error> &errors)
       {
-        if(ungen_prog.is_relocable) {
+        if(ungen_prog.is_relocatable) {
           add_reloc(ungen_prog, reloc_type | format::RELOC_TYPE_SYMBOLIC, addr, ident);
           index = 0;
           return true;
@@ -957,7 +957,7 @@ namespace letin
         Position entry_pos;
         size_t code_size, data_size;
         bool is_success = true;
-        ungen_prog.is_relocable = is_relocable;
+        ungen_prog.is_relocatable = is_relocable;
         for(auto &def : tree.defs()) {
           FunctionDefinition *fun_def = dynamic_cast<FunctionDefinition *>(def.get());
           if(fun_def != nullptr) {
@@ -968,7 +968,7 @@ namespace letin
               if(annotations_to_fun_info(fun_def->annotations(), fun_info, errors)) {
                 if(fun_info.eval_strategy != 0U || fun_info.eval_strategy_mask != ~0U)
                   ungen_prog.fun_info_pairs.push_back(make_pair(tmp_fun_count, fun_info));
-                if(ungen_prog.is_relocable && fun_def->modifier() == PUBLIC)
+                if(ungen_prog.is_relocatable && fun_def->modifier() == PUBLIC)
                   ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_FUN | format::SYMBOL_TYPE_DEFINED, fun_def->ident(), tmp_fun_count));
               } else
                 is_success = false;
@@ -982,7 +982,7 @@ namespace letin
             if(ungen_prog.var_pairs.find(var_def->ident()) == ungen_prog.var_pairs.end()) {
               uint32_t tmp_var_count = ungen_prog.var_pairs.size();
               ungen_prog.var_pairs.insert(make_pair(var_def->ident(), make_pair(tmp_var_count, var_def->value())));
-              if(ungen_prog.is_relocable && var_def->modifier() == PUBLIC)
+              if(ungen_prog.is_relocatable && var_def->modifier() == PUBLIC)
                 ungen_prog.symbols.push_back(Symbol(format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED, var_def->ident(), tmp_var_count));
             } else {
               errors.push_back(Error(var_def->pos(), "already defined variable " + var_def->ident()));
@@ -1016,12 +1016,14 @@ namespace letin
         format::Header *header = reinterpret_cast<format::Header *>(tmp_ptr);
         tmp_ptr += align(sizeof(format::Header), 8);
         copy(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, header->magic);
+        uint32_t relocatable_flags = format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS;
+        uint32_t fun_info_flags = format::HEADER_FLAG_FUN_INFOS;
         if(is_entry) {
-          header->flags = htonl(ungen_prog.is_relocable ? (format::HEADER_FLAG_RELOCATABLE): 0);
+          header->flags = htonl((ungen_prog.is_relocatable ? relocatable_flags : 0) | fun_info_flags);
           if(!get_fun_index(ungen_prog, header->entry, entry_ident, entry_pos, errors)) return nullptr;
           header->entry = htonl(header->entry);
         } else {
-          header->flags = htonl(format::HEADER_FLAG_LIBRARY | (ungen_prog.is_relocable ? (format::HEADER_FLAG_RELOCATABLE): 0));
+          header->flags = htonl(format::HEADER_FLAG_LIBRARY | (ungen_prog.is_relocatable ? relocatable_flags : 0) | fun_info_flags);
           header->entry = 0;
         }
         header->fun_count = htonl(ungen_prog.fun_pairs.size());
@@ -1195,8 +1197,7 @@ namespace letin
             is_success = false;
         }
 
-        if(ungen_prog.is_relocable) {
-          bool is_native_fun_symbols = false;
+        if(ungen_prog.is_relocatable) {
           header->reloc_count = htonl(ungen_prog.relocs.size());
           header->symbol_count = htonl(ungen_prog.symbols.size());
 
@@ -1207,11 +1208,6 @@ namespace letin
           i = 0;
           for(auto &reloc : ungen_prog.relocs) {
             format::Relocation *format_reloc = relocs + i;
-            if(reloc.type == format::RELOC_TYPE_ARG1_NATIVE_FUN ||
-                reloc.type == format::RELOC_TYPE_ARG2_NATIVE_FUN ||
-                reloc.type == format::RELOC_TYPE_ELEM_NATIVE_FUN ||
-                reloc.type == format::RELOC_TYPE_VAR_NATIVE_FUN)
-              is_native_fun_symbols = true;
             format_reloc->type = htonl(reloc.type);
             format_reloc->addr = htonl(reloc.addr);
             format_reloc->symbol = htonl(reloc.symbol);
@@ -1221,8 +1217,6 @@ namespace letin
           i = 0;
           for(auto &symbol : ungen_prog.symbols) {
             format::Symbol *format_symbol = reinterpret_cast<format::Symbol *>(symbols + i);
-            if(symbol.type == format::SYMBOL_TYPE_NATIVE_FUN)
-              is_native_fun_symbols = true;
             format_symbol->index = htonl(symbol.index);
             format_symbol->length = htons(symbol.name.length());
             format_symbol->type = symbol.type;
@@ -1230,13 +1224,9 @@ namespace letin
             i += align(7 + symbol.name.length(), 8);
           }
           tmp_ptr += i;
-
-          if(is_native_fun_symbols)
-            header->flags |= format::HEADER_FLAG_NATIVE_FUN_SYMBOLS;
         }
 
         if(!ungen_prog.fun_info_pairs.empty()) {
-          header->flags |= format::HEADER_FLAG_FUN_INFOS;
           header->fun_info_count = ungen_prog.fun_info_pairs.size();
           format::FunctionInfo *fun_infos = reinterpret_cast<format::FunctionInfo *>(tmp_ptr);
           tmp_ptr += align(ungen_prog.fun_info_pairs.size() * sizeof(format::FunctionInfo), 8);

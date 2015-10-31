@@ -64,7 +64,7 @@ f(a1) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 48), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -101,7 +101,7 @@ f(a1) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 72), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -139,7 +139,7 @@ f(a1) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 72), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -183,7 +183,7 @@ label1: let iadd a0, 10\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 144), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -248,7 +248,7 @@ h(a2) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 40 + 232 + 40), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(3U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -312,7 +312,7 @@ g3 = 30\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 24 + 48 + 48 + 40), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(2U);
         ASSERT_HEADER_VAR_COUNT(3U);
@@ -362,7 +362,7 @@ g4 = tuple[\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 0 + 64 + 0 + 256), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(0U);
         ASSERT_HEADER_VAR_COUNT(4U);
@@ -447,7 +447,7 @@ g2 = \"some text\n\43and something\"\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 32 + 16 + 32), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(2U);
@@ -653,7 +653,7 @@ f(a0) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 40), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -694,7 +694,7 @@ f(a0) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 72), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -735,7 +735,7 @@ g5 = 0 ? 1 : 0 ? 2 : 3\n\
         CPPUNIT_ASSERT(nullptr != prog.get());
         ASSERT_PROG(static_cast<size_t>(48 + 0 + 80 + 32), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(0U);
         ASSERT_HEADER_VAR_COUNT(5U);
@@ -824,7 +824,7 @@ f(a1) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 40), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -898,7 +898,7 @@ h(a0) = {\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 40 + 112 + 24), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(2U);
         ASSERT_HEADER_FUN_COUNT(3U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -1039,7 +1039,7 @@ f(a5) = {\n\
         CPPUNIT_ASSERT(nullptr != prog.get());
         ASSERT_PROG(static_cast<size_t>(48 + 16 + 144), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(1U);
         ASSERT_HEADER_VAR_COUNT(0U);
@@ -1138,7 +1138,7 @@ b = [&f, &g]\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 24 + 32 + 96 + 24), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(0U);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(2U);
         ASSERT_HEADER_VAR_COUNT(2U);
@@ -1208,7 +1208,7 @@ i = &i\n\
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
         ASSERT_PROG(static_cast<size_t>(48 + 24 + 112 + 96 + 112 + 264 + 64), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE);
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
         ASSERT_HEADER_FUN_COUNT(2U);
         ASSERT_HEADER_VAR_COUNT(7U);
