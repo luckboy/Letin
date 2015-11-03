@@ -1279,6 +1279,255 @@ i = &i\n\
         END_ASSERT_PROG();
       }
 
+      void CompilerTests::test_compiler_compiles_throws()
+      {
+        istringstream iss("\n\
+f(a3) = {\n\
+        let ine a0, 0\n\
+        jc lv0, label1\n\
+        throw a1\n\
+label1: throw a2\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        ASSERT_PROG(static_cast<size_t>(48 + 16 + 48), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(1U);
+        ASSERT_HEADER_VAR_COUNT(0U);
+        ASSERT_HEADER_CODE_SIZE(4U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        ASSERT_FUN(3U, 4U, 48U, 48U + 16U);
+        ASSERT_LET(INE, A(0), NA(), 0);
+        ASSERT_JC(LV(0), 1, 1);
+        ASSERT_THROW(A(1), 2);
+        ASSERT_THROW(A(2), 3);
+        END_ASSERT_FUN();
+        END_ASSERT_PROG();
+      }
+      
+      void CompilerTests::test_compiler_compiles_program_with_native_function_symbols()
+      {
+        istringstream iss("\n\
+f(a0) = {\n\
+        let rload v1\n\
+        arg iload &#put_char\n\
+        arg isub 2000, &#put_string\n\
+        arg iload v2\n\
+        arg rtnth lv0, 1\n\
+        ret rtuple()\n\
+}\n\
+\n\
+v1 = (1, &#get_char, 2.5)\n\
+\n\
+v2 = &#get_string\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        ASSERT_PROG(static_cast<size_t>(48 + 16 + 32 + 72 + 40 + 72 + 80), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(1U);
+        ASSERT_HEADER_VAR_COUNT(2U);
+        ASSERT_HEADER_CODE_SIZE(6U);
+        ASSERT_HEADER_DATA_SIZE(40U);
+        ASSERT_HEADER_RELOC_COUNT(6U);
+        ASSERT_HEADER_SYMBOL_COUNT(4U);
+        ASSERT_FUN(0U, 6U, 48U, 48U + 16U + 32U);
+        ASSERT_LET(RLOAD, GV(0), NA(), 0);
+        ASSERT_ARG(ILOAD, IMM(0), NA(), 1);
+        ASSERT_ARG(ISUB, IMM(2000), IMM(0), 2);
+        ASSERT_ARG(ILOAD, GV(1), NA(), 3);
+        ASSERT_ARG(RTNTH, LV(0), IMM(1), 4);
+        ASSERT_RET(RTUPLE, NA(), NA(), 5);
+        ASSERT_RELOC_A1V(0U, 48U + 16U + 32U + 72U + 40U, 48U + 16U + 32U + 72U + 40U + 72U);
+        ASSERT_RELOC_SA1NF(1U, "put_char", 48U + 16U + 32U + 72U + 40U, 48U + 16U + 32U + 72U + 40U + 72U);
+        ASSERT_RELOC_SA2NF(2U, "put_string", 48U + 16U + 32U + 72U + 40U, 48U + 16U + 32U + 72U + 40U + 72U);
+        ASSERT_RELOC_A1V(3U, 48U + 16U + 32U + 72U + 40U, 48U + 16U + 32U + 72U + 40U + 72U);
+        END_ASSERT_FUN();
+        ASSERT_VAR_O(TUPLE, 3, 48U + 16U, 48U + 16U + 32U + 72U);
+        ASSERT_I(1, 0);
+        ASSERT_I(0, 1);
+        ASSERT_F(2.5, 2);
+        ASSERT_RELOC_SENF(16U, "get_char", 48U + 16U + 32U + 72U + 40U, 48U + 16U + 32U + 72U + 40U + 72U);
+        END_ASSERT_VAR_O();
+        ASSERT_VAR_I(0,  48U + 16U + 16U);
+        ASSERT_RELOC_SVNF(1U, "get_string", 48U + 16U + 32U + 72U + 40U, 48U + 16U + 32U + 72U + 40U + 72U);
+        END_ASSERT_PROG();
+      }
+
+      void CompilerTests::test_compiler_compiles_program_with_function_infos()
+      {
+        istringstream iss("\n\
+@lazy\n\
+f1(a0) = {\n\
+        ret iload 1\n\
+}\n\
+\n\
+@memoized\n\
+f2(a0) = {\n\
+        ret iload 2\n\
+}\n\
+\n\
+@lazy @unmemoized\n\
+f3(a0) = {\n\
+        ret iload 3\n\
+}\n\
+\n\
+@eager @memoized\n\
+f4(a0) = {\n\
+        ret iload 4\n\
+}\n\
+\n\
+@eager @unmemoized\n\
+f5(a0) = {\n\
+        ret iload 5\n\
+}\n\
+@onlylazy\n\
+f6(a0) = {\n\
+        ret iload 6\n\
+}\n\
+\n\
+@onlymemoized\n\
+f7(a0) = {\n\
+        ret iload 7\n\
+}\n\
+\n\
+@onlylazy @onlymemoized\n\
+f8(a0) = {\n\
+        ret iload 8\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        ASSERT_PROG(static_cast<size_t>(48 + 96 + 96 + 96), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(8U);
+        ASSERT_HEADER_VAR_COUNT(0U);
+        ASSERT_HEADER_CODE_SIZE(8U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        ASSERT_HEADER_RELOC_COUNT(0U);
+        ASSERT_HEADER_SYMBOL_COUNT(0U);
+        ASSERT_HEADER_FUN_INFO_COUNT(8U);
+        ASSERT_FUN(0U, 1U, 48U, 48U + 96U);
+        ASSERT_RET(ILOAD, IMM(1), NA(), 0);
+        END_ASSERT_FUN();
+        ASSERT_FUN(0U, 1U, 48U + 12U, 48U + 96U);
+        ASSERT_RET(ILOAD, IMM(2), NA(), 0);
+        END_ASSERT_FUN();
+        ASSERT_FUN(0U, 1U, 48U + 24U, 48U + 96U);
+        ASSERT_RET(ILOAD, IMM(3), NA(), 0);
+        END_ASSERT_FUN();
+        ASSERT_FUN(0U, 1U, 48U + 36U, 48U + 96U);
+        ASSERT_RET(ILOAD, IMM(4), NA(), 0);
+        END_ASSERT_FUN();
+        ASSERT_FUN(0U, 1U, 48U + 48U, 48U + 96U);
+        ASSERT_RET(ILOAD, IMM(5), NA(), 0);
+        END_ASSERT_FUN();
+        ASSERT_FUN(0U, 1U, 48U + 60U, 48U + 96U);
+        ASSERT_RET(ILOAD, IMM(6), NA(), 0);
+        END_ASSERT_FUN();
+        ASSERT_FUN(0U, 1U, 48U + 72U, 48U + 96U);
+        ASSERT_RET(ILOAD, IMM(7), NA(), 0);
+        END_ASSERT_FUN();
+        ASSERT_FUN(0U, 1U, 48U + 84U, 48U + 96U);
+        ASSERT_RET(ILOAD, IMM(8), NA(), 0);
+        END_ASSERT_FUN();
+        ASSERT_FUN_INFO(0, EVAL_STRATEGY_LAZY, 0xff, 48U + 96U + 96U);
+        ASSERT_FUN_INFO(1, EVAL_STRATEGY_MEMO, 0xff, 48U + 96U + 96U + 12U);
+        ASSERT_FUN_INFO(2, EVAL_STRATEGY_LAZY, ~EVAL_STRATEGY_MEMO & 0xff, 48U + 96U + 96U + 24U);
+        ASSERT_FUN_INFO(3, EVAL_STRATEGY_MEMO, ~EVAL_STRATEGY_LAZY & 0xff, 48U + 96U + 96U + 36U);
+        ASSERT_FUN_INFO(4, 0, ~(EVAL_STRATEGY_LAZY | EVAL_STRATEGY_MEMO) & 0xff, 48U + 96U + 96U + 48U);
+        ASSERT_FUN_INFO(5, EVAL_STRATEGY_LAZY, EVAL_STRATEGY_LAZY, 48U + 96U + 96U + 60U);
+        ASSERT_FUN_INFO(6, EVAL_STRATEGY_MEMO, EVAL_STRATEGY_MEMO, 48U + 96U + 96U + 72U);
+        ASSERT_FUN_INFO(7, EVAL_STRATEGY_LAZY | EVAL_STRATEGY_MEMO, EVAL_STRATEGY_LAZY | EVAL_STRATEGY_MEMO, 48U + 96U + 96U + 84U);
+        END_ASSERT_PROG();
+      }
+
+      void CompilerTests::test_compiler_complains_on_contraditory_annotations()
+      {
+        istringstream iss("\n\
+@onlylazy @eager f1(a0) = {\n\
+        ret iload 1\n\
+}\n\
+\n\
+@onlymemoized @unmemoized f2(a0) = {\n\
+        ret iload 1\n\
+}\n\
+\n\
+@lazy f3(a0) = {\n\
+        ret iload 1\n\
+}\n\
+\n\
+@lazy @eager\n\
+f4(a0) = {\n\
+        ret iload 1\n\
+}\n\
+\n\
+@onlymemoized @onlylazy\n\
+@eager @unmemoized\n\
+@unmemoized\n\
+f5(a0) = {\n\
+        ret iload 1\n\
+}\n\
+\n\
+@memoized @unmemoized\n\
+f6(a0) = {\n\
+        ret iload 1\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr == prog.get());
+        vector<Error> error_vector;
+        for(auto error : errors) error_vector.push_back(error);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(7), errors.size());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
+        CPPUNIT_ASSERT(2 == error_vector[0].pos().line());
+        CPPUNIT_ASSERT(11 == error_vector[0].pos().column());
+        CPPUNIT_ASSERT(string("function can't be eager and lazy") == error_vector[0].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[1].pos().source().file_name());
+        CPPUNIT_ASSERT(6 == error_vector[1].pos().line());
+        CPPUNIT_ASSERT(15 == error_vector[1].pos().column());
+        CPPUNIT_ASSERT(string("function can't be unmemoized and memoized") == error_vector[1].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[2].pos().source().file_name());
+        CPPUNIT_ASSERT(14 == error_vector[2].pos().line());
+        CPPUNIT_ASSERT(7 == error_vector[2].pos().column());
+        CPPUNIT_ASSERT(string("function can't be eager and lazy") == error_vector[2].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[3].pos().source().file_name());
+        CPPUNIT_ASSERT(20 == error_vector[3].pos().line());
+        CPPUNIT_ASSERT(1 == error_vector[3].pos().column());
+        CPPUNIT_ASSERT(string("function can't be eager and lazy") == error_vector[3].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[4].pos().source().file_name());
+        CPPUNIT_ASSERT(20 == error_vector[4].pos().line());
+        CPPUNIT_ASSERT(8 == error_vector[4].pos().column());
+        CPPUNIT_ASSERT(string("function can't be unmemoized and memoized") == error_vector[4].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[5].pos().source().file_name());
+        CPPUNIT_ASSERT(21 == error_vector[5].pos().line());
+        CPPUNIT_ASSERT(1 == error_vector[5].pos().column());
+        CPPUNIT_ASSERT(string("function can't be unmemoized and memoized") == error_vector[5].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[6].pos().source().file_name());
+        CPPUNIT_ASSERT(26 == error_vector[6].pos().line());
+        CPPUNIT_ASSERT(11 == error_vector[6].pos().column());
+        CPPUNIT_ASSERT(string("function can't be unmemoized and memoized") == error_vector[6].msg());
+      }
+
       DEF_IMPL_COMP_TESTS(ImplCompiler);
     }
   }

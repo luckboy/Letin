@@ -147,6 +147,12 @@ namespace letin
                     case format::RELOC_TYPE_ARG2_VAR:
                       has_correct_type = (symbol->type == format::SYMBOL_TYPE_VAR);
                       break;
+                    case format::RELOC_TYPE_ARG1_NATIVE_FUN:
+                    case format::RELOC_TYPE_ARG2_NATIVE_FUN:
+                    case format::RELOC_TYPE_ELEM_NATIVE_FUN:
+                    case format::RELOC_TYPE_VAR_NATIVE_FUN:
+                      has_correct_type = (symbol->type == format::SYMBOL_TYPE_NATIVE_FUN);
+                      break;
                   }
                   return (has_correct_type && symbol_name.length() == length && equal(symbol_name.begin(), symbol_name.end(), symbol->name));
                 }
@@ -166,6 +172,13 @@ namespace letin
         if(type != symbol.type) return false;
         if(name.length() != ntohs(symbol.length)) return false;
         return equal(name.begin(), name.end(), symbol.name);
+      }
+
+      bool is_fun_info(uint32_t fun_index, uint8_t eval_strategy, uint8_t eval_strategy_mask, const format::FunctionInfo &fun_info)
+      {
+        if(fun_index != ntohl(fun_info.fun_index)) return false;
+        if(eval_strategy != fun_info.eval_strategy) return false;
+        return eval_strategy_mask == fun_info.eval_strategy_mask;
       }
     }
   }

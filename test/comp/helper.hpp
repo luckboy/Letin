@@ -45,6 +45,7 @@ CPPUNIT_ASSERT(is_instr(instr, op, arg1, arg2, local_var_count, tmp_instrs[j]))
 #define ASSERT_RETRY(j)                 ASSERT_INSTR(opcode::INSTR_RETRY, 0, Argument(0), Argument(0), 2, j)
 #define ASSERT_LETTUPLE(local_var_count, op, arg1, arg2, j)                     \
 ASSERT_INSTR(opcode::INSTR_LETTUPLE, opcode::OP_##op, arg1, arg2, local_var_count, j)
+#define ASSERT_THROW(arg, j)            ASSERT_INSTR(opcode::INSTR_THROW, 0, arg, Argument(0), 2, j)
 
 #define ASSERT_FUN(arg_count, instr_count, fun_offset, code_offset)             \
 {                                                                               \
@@ -139,6 +140,14 @@ ASSERT_RELOC(format::RELOC_TYPE_ARG2_VAR | format::RELOC_TYPE_SYMBOLIC, addr, sy
 ASSERT_RELOC(format::RELOC_TYPE_ELEM_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol_name, reloc_offset, symbol_offset)
 #define ASSERT_RELOC_SVF(addr, symbol_name, reloc_offset, symbol_offset)        \
 ASSERT_RELOC(format::RELOC_TYPE_VAR_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol_name, reloc_offset, symbol_offset)
+#define ASSERT_RELOC_SA1NF(addr, symbol_name, reloc_offset, symbol_offset)       \
+ASSERT_RELOC(format::RELOC_TYPE_ARG1_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol_name, reloc_offset, symbol_offset)
+#define ASSERT_RELOC_SA2NF(addr, symbol_name, reloc_offset, symbol_offset)       \
+ASSERT_RELOC(format::RELOC_TYPE_ARG2_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol_name, reloc_offset, symbol_offset)
+#define ASSERT_RELOC_SENF(addr, symbol_name, reloc_offset, symbol_offset)        \
+ASSERT_RELOC(format::RELOC_TYPE_ELEM_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol_name, reloc_offset, symbol_offset)
+#define ASSERT_RELOC_SVNF(addr, symbol_name, reloc_offset, symbol_offset)        \
+ASSERT_RELOC(format::RELOC_TYPE_VAR_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol_name, reloc_offset, symbol_offset)
 
 #define ASSERT_SYMBOL(type, name, index, offset)                                \
 {                                                                               \
@@ -150,6 +159,14 @@ ASSERT_RELOC(format::RELOC_TYPE_VAR_FUN | format::RELOC_TYPE_SYMBOLIC, addr, sym
 #define ASSERT_SYMBOL_DF(name, index, offset) ASSERT_SYMBOL(format::SYMBOL_TYPE_FUN | format::SYMBOL_TYPE_DEFINED, name, index, offset)
 #define ASSERT_SYMBOL_DV(name, index, offset) ASSERT_SYMBOL(format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED, name, index, offset)
 
+#define ASSERT_FUN_INFO(fun_index, eval_strategy, eval_strategy_mask, fun_info_offset) \
+{                                                                               \
+  const format::FunctionInfo *tmp_fun_info =                                    \
+    reinterpret_cast<const format::FunctionInfo *>(tmp_ptr + fun_info_offset);  \
+  CPPUNIT_ASSERT(is_fun_info(fun_index, eval_strategy, eval_strategy_mask,      \
+                             *tmp_fun_info));                                   \
+}
+
 #define ASSERT_HEADER_MAGIC()           CPPUNIT_ASSERT(equal(format::HEADER_MAGIC, format::HEADER_MAGIC + 8, tmp_header->magic))
 #define ASSERT_HEADER_FIELD(i, field)   CPPUNIT_ASSERT_EQUAL(static_cast<uint32_t>(i), static_cast<uint32_t>(ntohl(tmp_header->field)))
 #define ASSERT_HEADER_FLAGS(i)          ASSERT_HEADER_FIELD(i, flags)
@@ -160,6 +177,7 @@ ASSERT_RELOC(format::RELOC_TYPE_VAR_FUN | format::RELOC_TYPE_SYMBOLIC, addr, sym
 #define ASSERT_HEADER_DATA_SIZE(i)      ASSERT_HEADER_FIELD(i, data_size)
 #define ASSERT_HEADER_RELOC_COUNT(i)    ASSERT_HEADER_FIELD(i, reloc_count)
 #define ASSERT_HEADER_SYMBOL_COUNT(i)   ASSERT_HEADER_FIELD(i, symbol_count)
+#define ASSERT_HEADER_FUN_INFO_COUNT(i) ASSERT_HEADER_FIELD(i, fun_info_count)
 
 #define ASSERT_PROG(prog_size, prog)                                            \
 {                                                                               \
@@ -216,6 +234,8 @@ namespace letin
       bool is_reloc(std::uint32_t type, std::uint32_t addr, const std::string &symbol_name, const format::Header &header, const format::Relocation *relocs, const uint8_t *symbols);
 
       bool is_symbol(std::uint32_t index, std::uint8_t type, const std::string &name, const format::Symbol &symbol);
+
+      bool is_fun_info(std::uint32_t fun_index, std::uint8_t eval_strategy, std::uint8_t eval_strategy_mask, const format::FunctionInfo &fun_info);
     }
   }
 }
