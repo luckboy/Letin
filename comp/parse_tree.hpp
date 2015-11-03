@@ -108,7 +108,8 @@ namespace letin
 
         double f() const { return _M_type == TYPE_FLOAT ? _M_f : 0.0; }
 
-        std::string fun() const { return _M_type == TYPE_FUN_INDEX ? _M_fun : std::string(); }
+        std::string fun() const
+        { return (_M_type == TYPE_FUN_INDEX || _M_type == TYPE_NATIVE_FUN_INDEX) ? _M_fun : std::string(); }
       };
 
       class Value
@@ -175,7 +176,8 @@ namespace letin
 
         double f() const { return _M_type == TYPE_FLOAT ? _M_f : 0.0; }
 
-        std::string fun() const { return _M_type == TYPE_FUN_INDEX ? _M_fun : std::string(); }
+        std::string fun() const
+        { return (_M_type == TYPE_FUN_INDEX || _M_type == TYPE_NATIVE_FUN_INDEX) ? _M_fun : std::string(); }
         
         const Object *object() const { return _M_object; }
         

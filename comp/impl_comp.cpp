@@ -199,7 +199,7 @@ namespace letin
         unsigned eval_strategy_mask;
         unsigned eval_strategy_mask2;
 
-        FunctionInfo() : eval_strategy(0), eval_strategy_mask(~0), eval_strategy_mask2(~0) {}
+        FunctionInfo() : eval_strategy(0), eval_strategy_mask(~0), eval_strategy_mask2(0) {}
 
         FunctionInfo(unsigned eval_strategy, unsigned eval_strategy_mask, unsigned eval_strategy_mask2) :
           eval_strategy(eval_strategy), eval_strategy_mask(eval_strategy_mask), eval_strategy_mask2(eval_strategy_mask2) {}
@@ -408,12 +408,13 @@ namespace letin
             }
           }
           for(auto pair : ungen_prog.var_pairs) {
-            if(pair.second.second.type() == Value::TYPE_FUN_INDEX)
+            if(pair.second.second.type() == Value::TYPE_FUN_INDEX || pair.second.second.type() == Value::TYPE_NATIVE_FUN_INDEX)
               reloc_size += sizeof(format::Relocation);
           }
           for(auto pair : ungen_prog.object_pairs) {
             for(auto elem : pair.first->elems()) {
-              if(elem.type() == Value::TYPE_FUN_INDEX) reloc_size += sizeof(format::Relocation);
+              if(elem.type() == Value::TYPE_FUN_INDEX || elem.type() == Value::TYPE_NATIVE_FUN_INDEX)
+                reloc_size += sizeof(format::Relocation);
             }
           }
           size += align(reloc_size, 8);
@@ -448,15 +449,16 @@ namespace letin
             }
           }
           for(auto pair : ungen_prog.var_pairs) {
-            if(pair.second.second.type() == Value::TYPE_FUN_INDEX)
+            if(pair.second.second.type() == Value::TYPE_FUN_INDEX || pair.second.second.type() == Value::TYPE_NATIVE_FUN_INDEX)
               if(ungen_prog.fun_pairs.find(pair.second.second.fun()) == ungen_prog.fun_pairs.end())
                 fun_symbol_names.insert(pair.second.second.fun());
           }
           for(auto pair : ungen_prog.object_pairs) {
-            for(auto elem : pair.first->elems())
-              if(elem.type() == Value::TYPE_FUN_INDEX)
+            for(auto elem : pair.first->elems()) {
+              if(elem.type() == Value::TYPE_FUN_INDEX || elem.type() == Value::TYPE_NATIVE_FUN_INDEX)
                 if(ungen_prog.fun_pairs.find(elem.fun()) == ungen_prog.fun_pairs.end())
                   fun_symbol_names.insert(elem.fun());
+            }
           }
           for(auto fun_symbol_name : fun_symbol_names)
             size += align(7 + fun_symbol_name.length(), 8);
@@ -930,13 +932,17 @@ namespace letin
         bool is_success = true;
         for(auto annotation : annotations) {
           auto iter = annotation_fun_infos.find(annotation.name());
-          if(iter == annotation_fun_infos.end()) {
+          if(iter != annotation_fun_infos.end()) {
             fun_info |= iter->second;
-            if((fun_info.eval_strategy & EVAL_STRATEGY_LAZY) != 0 &&
+            if((iter->second.eval_strategy == EVAL_STRATEGY_LAZY ||
+                iter->second.eval_strategy_mask == ~EVAL_STRATEGY_LAZY) &&
+                (fun_info.eval_strategy & EVAL_STRATEGY_LAZY) != 0 &&
                 (fun_info.eval_strategy_mask & EVAL_STRATEGY_LAZY) == 0) {
               errors.push_back(Error(annotation.pos(), "function can't be eager and lazy"));
               is_success = false;
-            } else if((fun_info.eval_strategy & EVAL_STRATEGY_MEMO) != 0 &&
+            } else if((iter->second.eval_strategy == EVAL_STRATEGY_MEMO ||
+                iter->second.eval_strategy_mask == ~EVAL_STRATEGY_MEMO) &&
+                (fun_info.eval_strategy & EVAL_STRATEGY_MEMO) != 0 &&
                 (fun_info.eval_strategy_mask & EVAL_STRATEGY_MEMO) == 0) {
               errors.push_back(Error(annotation.pos(), "function can't be unmemoized and memoized"));
               is_success = false;
@@ -1227,7 +1233,7 @@ namespace letin
         }
 
         if(!ungen_prog.fun_info_pairs.empty()) {
-          header->fun_info_count = ungen_prog.fun_info_pairs.size();
+          header->fun_info_count = htonl(ungen_prog.fun_info_pairs.size());
           format::FunctionInfo *fun_infos = reinterpret_cast<format::FunctionInfo *>(tmp_ptr);
           tmp_ptr += align(ungen_prog.fun_info_pairs.size() * sizeof(format::FunctionInfo), 8);
 
