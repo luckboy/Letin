@@ -1279,6 +1279,28 @@ i = &i\n\
         END_ASSERT_PROG();
       }
 
+      void CompilerTests::test_compiler_compiles_empty_source()
+      {
+        istringstream iss("\n");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        ASSERT_PROG(static_cast<size_t>(48), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(0U);
+        ASSERT_HEADER_VAR_COUNT(0U);
+        ASSERT_HEADER_CODE_SIZE(0U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        ASSERT_HEADER_RELOC_COUNT(0U);
+        ASSERT_HEADER_SYMBOL_COUNT(0U);
+        ASSERT_HEADER_FUN_INFO_COUNT(0U);
+        END_ASSERT_PROG();
+      }
+
       void CompilerTests::test_compiler_compiles_throws()
       {
         istringstream iss("\n\
@@ -1526,27 +1548,6 @@ f6(a0) = {\n\
         CPPUNIT_ASSERT(26 == error_vector[6].pos().line());
         CPPUNIT_ASSERT(11 == error_vector[6].pos().column());
         CPPUNIT_ASSERT(string("function can't be unmemoized and memoized") == error_vector[6].msg());
-      }
-
-      void CompilerTests::test_compiler_compiles_empty_source()
-      {
-        istringstream iss("\n");
-        vector<Source> sources;
-        sources.push_back(Source("test.letins", iss));
-        list<Error> errors;
-        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
-        CPPUNIT_ASSERT(nullptr != prog.get());
-        ASSERT_PROG(static_cast<size_t>(48), (*(prog.get())));
-        ASSERT_HEADER_MAGIC();
-        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE);
-        ASSERT_HEADER_ENTRY(0U);
-        ASSERT_HEADER_FUN_COUNT(0U);
-        ASSERT_HEADER_VAR_COUNT(0U);
-        ASSERT_HEADER_CODE_SIZE(0U);
-        ASSERT_HEADER_DATA_SIZE(0U);
-        ASSERT_HEADER_RELOC_COUNT(0U);
-        ASSERT_HEADER_SYMBOL_COUNT(0U);
-        END_ASSERT_PROG();
       }
 
       DEF_IMPL_COMP_TESTS(ImplCompiler);

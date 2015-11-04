@@ -69,6 +69,7 @@ namespace letin
         CPPUNIT_TEST(test_compiler_compiles_unrelocatable_program);
         CPPUNIT_TEST(test_compiler_compiles_relocatable_program);
         CPPUNIT_TEST(test_compiler_compiles_empty_source);
+        CPPUNIT_TEST(test_compiler_compiles_throws);
         CPPUNIT_TEST(test_compiler_compiles_program_with_native_function_symbols);
         CPPUNIT_TEST(test_compiler_compiles_program_with_function_infos);
         CPPUNIT_TEST(test_compiler_complains_on_contraditory_annotations);
