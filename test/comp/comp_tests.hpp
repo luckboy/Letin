@@ -68,6 +68,7 @@ namespace letin
         CPPUNIT_TEST(test_compiler_complains_on_number_of_local_variables);
         CPPUNIT_TEST(test_compiler_compiles_unrelocatable_program);
         CPPUNIT_TEST(test_compiler_compiles_relocatable_program);
+        CPPUNIT_TEST(test_compiler_compiles_empty_source);
         CPPUNIT_TEST(test_compiler_compiles_program_with_native_function_symbols);
         CPPUNIT_TEST(test_compiler_compiles_program_with_function_infos);
         CPPUNIT_TEST(test_compiler_complains_on_contraditory_annotations);
@@ -112,6 +113,7 @@ namespace letin
         void test_compiler_complains_on_number_of_local_variables();
         void test_compiler_compiles_unrelocatable_program();
         void test_compiler_compiles_relocatable_program();
+        void test_compiler_compiles_empty_source();
         void test_compiler_compiles_throws();
         void test_compiler_compiles_program_with_native_function_symbols();
         void test_compiler_compiles_program_with_function_infos();

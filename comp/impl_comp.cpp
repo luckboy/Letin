@@ -1039,7 +1039,7 @@ namespace letin
         header->reloc_count = 0;
         header->symbol_count = 0;
         header->fun_info_count = 0;
-        fill_n(header->reserved, sizeof(header->reserved), 0);
+        fill_n(header->reserved, sizeof(header->reserved) / 4, 0);
 
         format::Function *funs = reinterpret_cast<format::Function *>(tmp_ptr);
         tmp_ptr += align(ungen_prog.fun_pairs.size() * sizeof(format::Function), 8);
