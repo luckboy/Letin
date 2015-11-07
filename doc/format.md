@@ -210,7 +210,8 @@ of the type number and the SYMBOLIC type flag number. The SYMBOLIC type flag has
 ## Symbol table
 
 The symbol table contains symbol descriptions. These symbol descriptions also are aligned 8
-bytes. The structure of symbol description is presented in the following table:
+bytes. If flags of program file have the RELOCATABLE flag, this table is occurs. The structure
+of symbol description is presented in the following table:
 
 | Name   | Type           | Description                       |
 |:------ |:-------------- |:--------------------------------- |
