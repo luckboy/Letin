@@ -174,11 +174,11 @@ variable in the expressions of the above table is an index of the object element
 ## Relocation table
 
 The relocation table contains relocation descriptions which are used to a program relocation.
-This table occurs if program flags have the RELOCATABLE flag. A relocation of program is a
-process that changes a function indexes and/or a variable indexes. A relocation description
-specifies how an instruction argument or an object element or a variable value will be modified
-during a relocation. The structure of relocation description is presented in the following
-table:
+This table occurs if flags of program file have the RELOCATABLE flag. A relocation of program
+is a process that changes a function indexes and/or a variable indexes. A relocation
+description specifies how an instruction argument or an object element or a variable value will
+be modified during a relocation. The structure of relocation description is presented in the
+following table:
 
 | Name   | Type   | Description                                               |
 |:------ |:------ |:--------------------------------------------------------- |
@@ -191,7 +191,7 @@ will be modified during a relocation. The relocation types are presented in the 
 table:
 
 | Name     | Number | Description                                                   |
-|:-------- |:------ |:------------------------------------------------------------- |  
+|:-------- |:------ |:------------------------------------------------------------- |
 | ARG1_FUN | 0      | Relocation of first instruction argument for function index.  |
 | ARG2_FUN | 1      | Relocation of second instruction argument for function index. |
 | ARG1_VAR | 2      | Relocation of first instruction argument for variable index.  |
@@ -227,7 +227,7 @@ The symbol types are presented in the following table:
 | FUN  | 0      | Function symbol. |
 | VAR  | 1      | Variable symbol. |
 
-Symbols can be undefined or defined. Defined symbols have defined function indexes or defined
-variable indexes. If a symbol is defined, the type number of the symbol is a bitwise 
-alternative of the type number and the DEFINED type flag number. The DEFINED type flag has
-value 16.
+Symbols can be undefined or defined. Defined symbols have indexes of defined functions or
+indexes of defined variables. If a symbol is defined, the type number of the symbol is a
+bitwise alternative of the type number and the DEFINED type flag number. The DEFINED type flag
+has value 16.

@@ -201,7 +201,7 @@ The instructions of the Letin virtual machine is presented in the following tabl
 | in                            | 0x01 | Makes allocated local variable available. |
 | ret &lt;op&gt;                | 0x02 | Returns from function.                    |
 | jc &lt;arg1&gt;, &lt;arg2&gt; | 0x03 | Jumps if first argument isn't zero.       |
-| jump &lt;arg1&gt;             | 0x04 | Jumps.                                    |
+| jump &lt;arg&gt;              | 0x04 | Jumps.                                    |
 | arg &lt;op&gt;                | 0x05 | Allocates argument in stack.              |
 | retry                         | 0x06 | Again invokes current function.           |
 | lettuple(n) &lt;op&gt;        | 0x07 | Allocates local variables from tuple.     |
@@ -293,8 +293,8 @@ object type. The operations of the Letin virtual machine are presented in the fo
 | ige(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x12 | i, i       | Gives 1 if arg1 is greater than or equal to arg2, otherwise 0.                            |
 | igt(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x13 | i, i       | Gives 1 if arg1 is greater than arg2, otherwise 0.                                        |
 | ile(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x14 | i, i       | Gives 1 if arg1 is less than or equal to arg2, otherwise 0.                               |
-| fload(&lt;arg&gt;)                     | 0x15 | f          | Gives floating-point number.                                                              |
-| fload2(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x16 | i, i       | Gives floating-point number from (arg1 << 32) &#124; arg2.                                |
+| fload(&lt;arg&gt;)                     | 0x15 | f          | Loads floating-point number.                                                              |
+| fload2(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x16 | i, i       | Loads floating-point number from (arg1 << 32) &#124; arg2.                                |
 | fneg(&lt;arg&gt;)                      | 0x17 | f          | Negates floating-point number.                                                            |
 | fadd(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x18 | f, f       | Adds two floating-point numbers.                                                          |
 | fsub(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x19 | f, f       | Subtracts two floating-point numbers.                                                     |

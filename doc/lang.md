@@ -142,7 +142,7 @@ function also has to have a specified number of arguments. The number of argumen
 specified by a number of an function argument identifier. Functions also have identifiers. The
 syntax of function definition is:
 
-    <fun_def> ::= [".public"] [<nl>] <ident> "(" <a> ")" "=" [<nl>] "{" <nl> <fun_lines> <nl>
+    <fun_def> ::= [".public" [<nl>]] <ident> "(" <a> ")" "=" [<nl>] "{" <nl> <fun_lines> <nl>
                   "}"
     <fun_lines> ::= <fun_lines> <nl> <fun_line>
                   | <fun_line>
