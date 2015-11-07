@@ -218,6 +218,7 @@ namespace letin
         { "lazy",               { EVAL_STRATEGY_LAZY,   ~0U,                    0U } },
         { "memoized",           { EVAL_STRATEGY_MEMO,   ~0U,                    0U } },
         { "unmemoized",         { 0U,                   ~EVAL_STRATEGY_MEMO,    0U } },
+        { "onlyeager",          { 0U,                   ~0U,                    256U } },
         { "onlylazy",           { EVAL_STRATEGY_LAZY,   ~0U,                    EVAL_STRATEGY_LAZY } },
         { "onlymemoized",       { EVAL_STRATEGY_MEMO,   ~0U,                    EVAL_STRATEGY_MEMO } }
       };
@@ -935,9 +936,10 @@ namespace letin
           if(iter != annotation_fun_infos.end()) {
             fun_info |= iter->second;
             if((iter->second.eval_strategy == EVAL_STRATEGY_LAZY ||
-                iter->second.eval_strategy_mask == ~EVAL_STRATEGY_LAZY) &&
+                iter->second.eval_strategy_mask == ~EVAL_STRATEGY_LAZY ||
+                iter->second.eval_strategy_mask2 == 256U) &&
                 (fun_info.eval_strategy & EVAL_STRATEGY_LAZY) != 0 &&
-                (fun_info.eval_strategy_mask & EVAL_STRATEGY_LAZY) == 0) {
+                ((fun_info.eval_strategy_mask & EVAL_STRATEGY_LAZY) == 0 || (fun_info.eval_strategy_mask2 & 256U) != 0)) {
               errors.push_back(Error(annotation.pos(), "function can't be eager and lazy"));
               is_success = false;
             } else if((iter->second.eval_strategy == EVAL_STRATEGY_MEMO ||

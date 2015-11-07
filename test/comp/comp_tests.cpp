@@ -1428,55 +1428,63 @@ f7(a0) = {\n\
 f8(a0) = {\n\
         ret iload 8\n\
 }\n\
+@onlyeager @onlymemoized\n\
+f9(a0) = {\n\
+        ret iload 9\n\
+}\n\
 ");
         vector<Source> sources;
         sources.push_back(Source("test.letins", iss));
         list<Error> errors;
         unique_ptr<Program> prog(_M_comp->compile(sources, errors));
         CPPUNIT_ASSERT(nullptr != prog.get());
-        ASSERT_PROG(static_cast<size_t>(48 + 96 + 96 + 96), (*(prog.get())));
+        ASSERT_PROG(static_cast<size_t>(48 + 112 + 112 + 112), (*(prog.get())));
         ASSERT_HEADER_MAGIC();
         ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
         ASSERT_HEADER_ENTRY(0U);
-        ASSERT_HEADER_FUN_COUNT(8U);
+        ASSERT_HEADER_FUN_COUNT(9U);
         ASSERT_HEADER_VAR_COUNT(0U);
-        ASSERT_HEADER_CODE_SIZE(8U);
+        ASSERT_HEADER_CODE_SIZE(9U);
         ASSERT_HEADER_DATA_SIZE(0U);
         ASSERT_HEADER_RELOC_COUNT(0U);
         ASSERT_HEADER_SYMBOL_COUNT(0U);
-        ASSERT_HEADER_FUN_INFO_COUNT(8U);
-        ASSERT_FUN(0U, 1U, 48U, 48U + 96U);
+        ASSERT_HEADER_FUN_INFO_COUNT(9U);
+        ASSERT_FUN(0U, 1U, 48U, 48U + 112U);
         ASSERT_RET(ILOAD, IMM(1), NA(), 0);
         END_ASSERT_FUN();
-        ASSERT_FUN(0U, 1U, 48U + 12U, 48U + 96U);
+        ASSERT_FUN(0U, 1U, 48U + 12U, 48U + 112U);
         ASSERT_RET(ILOAD, IMM(2), NA(), 0);
         END_ASSERT_FUN();
-        ASSERT_FUN(0U, 1U, 48U + 24U, 48U + 96U);
+        ASSERT_FUN(0U, 1U, 48U + 24U, 48U + 112U);
         ASSERT_RET(ILOAD, IMM(3), NA(), 0);
         END_ASSERT_FUN();
-        ASSERT_FUN(0U, 1U, 48U + 36U, 48U + 96U);
+        ASSERT_FUN(0U, 1U, 48U + 36U, 48U + 112U);
         ASSERT_RET(ILOAD, IMM(4), NA(), 0);
         END_ASSERT_FUN();
-        ASSERT_FUN(0U, 1U, 48U + 48U, 48U + 96U);
+        ASSERT_FUN(0U, 1U, 48U + 48U, 48U + 112U);
         ASSERT_RET(ILOAD, IMM(5), NA(), 0);
         END_ASSERT_FUN();
-        ASSERT_FUN(0U, 1U, 48U + 60U, 48U + 96U);
+        ASSERT_FUN(0U, 1U, 48U + 60U, 48U + 112U);
         ASSERT_RET(ILOAD, IMM(6), NA(), 0);
         END_ASSERT_FUN();
-        ASSERT_FUN(0U, 1U, 48U + 72U, 48U + 96U);
+        ASSERT_FUN(0U, 1U, 48U + 72U, 48U + 112U);
         ASSERT_RET(ILOAD, IMM(7), NA(), 0);
         END_ASSERT_FUN();
-        ASSERT_FUN(0U, 1U, 48U + 84U, 48U + 96U);
+        ASSERT_FUN(0U, 1U, 48U + 84U, 48U + 112U);
         ASSERT_RET(ILOAD, IMM(8), NA(), 0);
         END_ASSERT_FUN();
-        ASSERT_FUN_INFO(0, EVAL_STRATEGY_LAZY, 0xff, 48U + 96U + 96U);
-        ASSERT_FUN_INFO(1, EVAL_STRATEGY_MEMO, 0xff, 48U + 96U + 96U + 12U);
-        ASSERT_FUN_INFO(2, EVAL_STRATEGY_LAZY, ~EVAL_STRATEGY_MEMO & 0xff, 48U + 96U + 96U + 24U);
-        ASSERT_FUN_INFO(3, EVAL_STRATEGY_MEMO, ~EVAL_STRATEGY_LAZY & 0xff, 48U + 96U + 96U + 36U);
-        ASSERT_FUN_INFO(4, 0, ~(EVAL_STRATEGY_LAZY | EVAL_STRATEGY_MEMO) & 0xff, 48U + 96U + 96U + 48U);
-        ASSERT_FUN_INFO(5, EVAL_STRATEGY_LAZY, EVAL_STRATEGY_LAZY, 48U + 96U + 96U + 60U);
-        ASSERT_FUN_INFO(6, EVAL_STRATEGY_MEMO, EVAL_STRATEGY_MEMO, 48U + 96U + 96U + 72U);
-        ASSERT_FUN_INFO(7, EVAL_STRATEGY_LAZY | EVAL_STRATEGY_MEMO, EVAL_STRATEGY_LAZY | EVAL_STRATEGY_MEMO, 48U + 96U + 96U + 84U);
+        ASSERT_FUN(0U, 1U, 48U + 96U, 48U + 112U);
+        ASSERT_RET(ILOAD, IMM(9), NA(), 0);
+        END_ASSERT_FUN();
+        ASSERT_FUN_INFO(0, EVAL_STRATEGY_LAZY, 0xff, 48U + 112U + 112U);
+        ASSERT_FUN_INFO(1, EVAL_STRATEGY_MEMO, 0xff, 48U + 112U + 112U + 12U);
+        ASSERT_FUN_INFO(2, EVAL_STRATEGY_LAZY, ~EVAL_STRATEGY_MEMO & 0xff, 48U + 112U + 112U + 24U);
+        ASSERT_FUN_INFO(3, EVAL_STRATEGY_MEMO, ~EVAL_STRATEGY_LAZY & 0xff, 48U + 112U + 112U + 36U);
+        ASSERT_FUN_INFO(4, 0, ~(EVAL_STRATEGY_LAZY | EVAL_STRATEGY_MEMO) & 0xff, 48U + 112U + 112U + 48U);
+        ASSERT_FUN_INFO(5, EVAL_STRATEGY_LAZY, EVAL_STRATEGY_LAZY, 48U + 112U + 112U + 60U);
+        ASSERT_FUN_INFO(6, EVAL_STRATEGY_MEMO, EVAL_STRATEGY_MEMO, 48U + 112U + 112U + 72U);
+        ASSERT_FUN_INFO(7, EVAL_STRATEGY_LAZY | EVAL_STRATEGY_MEMO, EVAL_STRATEGY_LAZY | EVAL_STRATEGY_MEMO, 48U + 112U + 112U + 84U);
+        ASSERT_FUN_INFO(8, EVAL_STRATEGY_MEMO, EVAL_STRATEGY_MEMO, 48U + 112U + 112U + 96U);
         END_ASSERT_PROG();
       }
 
@@ -1511,6 +1519,15 @@ f5(a0) = {\n\
 f6(a0) = {\n\
         ret iload 1\n\
 }\n\
+@onlyeager @onlylazy\n\
+f7(a0) = {\n\
+        ret iload 1\n\
+}\n\
+\n\
+@lazy @onlyeager\n\
+f8(a0) = {\n\
+        ret iload 1\n\
+}\n\
 ");
         vector<Source> sources;
         sources.push_back(Source("test.letins", iss));
@@ -1519,7 +1536,7 @@ f6(a0) = {\n\
         CPPUNIT_ASSERT(nullptr == prog.get());
         vector<Error> error_vector;
         for(auto error : errors) error_vector.push_back(error);
-        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(7), errors.size());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(9), errors.size());
         CPPUNIT_ASSERT(string("test.letins") == error_vector[0].pos().source().file_name());
         CPPUNIT_ASSERT(2 == error_vector[0].pos().line());
         CPPUNIT_ASSERT(11 == error_vector[0].pos().column());
@@ -1548,6 +1565,14 @@ f6(a0) = {\n\
         CPPUNIT_ASSERT(26 == error_vector[6].pos().line());
         CPPUNIT_ASSERT(11 == error_vector[6].pos().column());
         CPPUNIT_ASSERT(string("function can't be unmemoized and memoized") == error_vector[6].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[7].pos().source().file_name());
+        CPPUNIT_ASSERT(30 == error_vector[7].pos().line());
+        CPPUNIT_ASSERT(12 == error_vector[7].pos().column());
+        CPPUNIT_ASSERT(string("function can't be eager and lazy") == error_vector[7].msg());
+        CPPUNIT_ASSERT(string("test.letins") == error_vector[8].pos().source().file_name());
+        CPPUNIT_ASSERT(35 == error_vector[8].pos().line());
+        CPPUNIT_ASSERT(7 == error_vector[8].pos().column());
+        CPPUNIT_ASSERT(string("function can't be eager and lazy") == error_vector[8].msg());
       }
 
       DEF_IMPL_COMP_TESTS(ImplCompiler);
