@@ -64,27 +64,29 @@ An error of this value can be one of the following errors:
 | NO_NATIVE_FUN       | 18     | No native function.            |
 | UNIQUE_OBJECT       | 19     | Unique object.                 |
 | AGAIN_USED_UNIQUE   | 20     | Again used unique object.      |
+| USER_EXCEPTION      | 21     | User exception.                |
 
 The values of the first kind will be called the values and the values of the second kind will
 be called the return values.
 
 ### Objects
 
-Objects can be considered as arrays of elements except the IO object. An object has one of
-types which are presented in the following table:
+Objects can be considered as arrays of elements except the IO object and native objects. An
+object has one of types which are presented in the following table:
 
-| Name     | Number | Description                                               |
-|:-------- |:------ |:--------------------------------------------------------- |
-| IARRAY8  | 0      | Type of array of 8-bit integer numbers.                   |
-| IARRAY16 | 1      | Type of array of 16-bit integer numbers.                  |
-| IARRAY32 | 2      | Type of array of 32-bit integer numbers.                  |
-| IARRAY64 | 3      | Type of array of 64-bit integer numbers.                  |
-| SFARRAY  | 4      | Type of array of single-precision floating-point numbers. |
-| DFARRAY  | 5      | Type of array of double-precision floating-point numbers. |
-| RARRAY   | 6      | Type of array of references.                              |
-| TUPLE    | 7      | Type of tuple.                                            | 
-| IO       | 8      | Type of IO object.                                        |
-| ERROR    | -1     | Type of error object.                                     |
+| Name          | Number | Description                                               |
+|:------------- |:------ |:--------------------------------------------------------- |
+| IARRAY8       | 0      | Type of array of 8-bit integer numbers.                   |
+| IARRAY16      | 1      | Type of array of 16-bit integer numbers.                  |
+| IARRAY32      | 2      | Type of array of 32-bit integer numbers.                  |
+| IARRAY64      | 3      | Type of array of 64-bit integer numbers.                  |
+| SFARRAY       | 4      | Type of array of single-precision floating-point numbers. |
+| DFARRAY       | 5      | Type of array of double-precision floating-point numbers. |
+| RARRAY        | 6      | Type of array of references.                              |
+| TUPLE         | 7      | Type of tuple.                                            | 
+| IO            | 8      | Type of IO object.                                        |
+| NATIVE_OBJECT | 10     | Type of native object.                                    |
+| ERROR         | -1     | Type of error object.                                     |
 
 An object of tuple is an array of values of any type. The IO object represents the world and
 is used by impure native functions.
@@ -167,6 +169,32 @@ arguments or local variables or tuples. Reference arrays just can have reference
 objects. If a program uses canceled reference, this program terminates with the error of
 canceled reference.
 
+### Exceptions
+
+Any function can throw an exception. An exception can be system exception or user exception.
+The user exception is thrown by the throw instruction. The user exception just has exception
+data that is referred by reference that is an argument of the throw instruction.
+
+Exceptions can be caught by uses of the try operation that invokes a function. If this function
+throws an exception, the try operation invokes a function of exception handling. The first
+function and the second function are eagerly evaluated. The try operation takes two operation
+argument which is indexes of functions. Also, the try operation takes allocated arguments which
+are: first argument of function, second argument of function, the IO object. The arguments of
+the first function are:
+
+* first allocated argument of the try operation
+* IO object
+
+The arguments of the function of exception handling are:
+
+* error number
+* exception data
+* second allocated argument of the try operation
+* IO object
+
+The try operation and the first function and the function of exception handling return a tuple
+with any value and the IO object.
+
 ## Instructions
 
 An instruction can have arguments or an operation with or without arguments. An operation
@@ -195,16 +223,17 @@ following table:
 
 The instructions of the Letin virtual machine is presented in the following table:
 
-| Instruction                   | Code | Description                               |
-|:----------------------------- |:---- |:----------------------------------------- |
-| let &lt;op&gt;                | 0x00 | Allocates local variable in stack.        |
-| in                            | 0x01 | Makes allocated local variable available. |
-| ret &lt;op&gt;                | 0x02 | Returns from function.                    |
-| jc &lt;arg1&gt;, &lt;arg2&gt; | 0x03 | Jumps if first argument isn't zero.       |
-| jump &lt;arg1&gt;             | 0x04 | Jumps.                                    |
-| arg &lt;op&gt;                | 0x05 | Allocates argument in stack.              |
-| retry                         | 0x06 | Again invokes current function.           |
-| lettuple(n) &lt;op&gt;        | 0x07 | Allocates local variables from tuple.     |
+| Instruction                   | Code | Description                                        |
+|:----------------------------- |:---- |:-------------------------------------------------- |
+| let &lt;op&gt;                | 0x00 | Allocates local variable in stack.                 |
+| in                            | 0x01 | Makes allocated local variable available.          |
+| ret &lt;op&gt;                | 0x02 | Returns from function.                             |
+| jc &lt;arg1&gt;, &lt;arg2&gt; | 0x03 | Jumps if first argument isn't zero.                |
+| jump &lt;arg&gt;              | 0x04 | Jumps.                                             |
+| arg &lt;op&gt;                | 0x05 | Allocates argument in stack.                       |
+| retry                         | 0x06 | Again invokes current function.                    |
+| lettuple(n) &lt;op&gt;        | 0x07 | Allocates local variables from tuple.              |
+| throw &lt;arg&gt;             | 0x08 | Throws user exception with first argument as data. |
 
 The jump instruction jumps to an address that is sum of the next instruction address and the
 argument value. The argument value is an integer number. The jump address for the jc
@@ -293,8 +322,8 @@ object type. The operations of the Letin virtual machine are presented in the fo
 | ige(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x12 | i, i       | Gives 1 if arg1 is greater than or equal to arg2, otherwise 0.                            |
 | igt(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x13 | i, i       | Gives 1 if arg1 is greater than arg2, otherwise 0.                                        |
 | ile(&lt;arg1&gt;, &lt;arg2&gt;)        | 0x14 | i, i       | Gives 1 if arg1 is less than or equal to arg2, otherwise 0.                               |
-| fload(&lt;arg&gt;)                     | 0x15 | f          | Gives floating-point number.                                                              |
-| fload2(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x16 | i, i       | Gives floating-point number from (arg1 << 32) &#124; arg2.                                |
+| fload(&lt;arg&gt;)                     | 0x15 | f          | Loads floating-point number.                                                              |
+| fload2(&lt;arg1&gt;, &lt;arg2&gt;)     | 0x16 | i, i       | Loads floating-point number from (arg1 << 32) &#124; arg2.                                |
 | fneg(&lt;arg&gt;)                      | 0x17 | f          | Negates floating-point number.                                                            |
 | fadd(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x18 | f, f       | Adds two floating-point numbers.                                                          |
 | fsub(&lt;arg1&gt;, &lt;arg2&gt;)       | 0x19 | f, f       | Subtracts two floating-point numbers.                                                     |
@@ -393,3 +422,21 @@ object type. The operations of the Letin virtual machine are presented in the fo
 | rudfatodfa(&lt;arg&gt;)                | 0x76 | udfa       | Copies unique array of double-precision floating-point numbers to shared array.           |
 | ruratora(&lt;arg&gt;)                  | 0x77 | ura        | Copies unique array of references to shared array.                                        |
 | ruttot(&lt;arg&gt;)                    | 0x78 | ut         | Copies unique tuple to shared tuple.                                                      |
+| fpow(&lt;arg1&gt;,&lt;arg2&gt;)        | 0x79 | f, f       | Calculates first argument to power of second argument.                                    |
+| fsqrt(&lt;arg&gt;)                     | 0x7a | f          | Calculates square root of number.                                                         |
+| fexp(&lt;arg&gt;)                      | 0x7b | f          | Calculates Euler's number to power.                                                       |
+| flog(&lt;arg&gt;)                      | 0x7c | f          | Calculates natural logarithm.                                                             |
+| fcos(&lt;arg&gt;)                      | 0x7d | f          | Calculates cosine.                                                                        |
+| fsin(&lt;arg&gt;)                      | 0x7e | f          | Calculates sine.                                                                          |
+| ftan(&lt;arg&gt;)                      | 0x7f | f          | Calculates tangent.                                                                       |
+| facos(&lt;arg&gt;)                     | 0x80 | f          | Calculates arc cosine.                                                                    |
+| fasin(&lt;arg&gt;)                     | 0x81 | f          | Calculates arc sine.                                                                      |
+| fatan(&lt;arg&gt;)                     | 0x82 | f          | Calculates arc tangent.                                                                   |
+| fceil(&lt;arg&gt;)                     | 0x83 | f          | Calculates value of ceiling function.                                                     |
+| ffloor(&lt;arg&gt;)                    | 0x84 | f          | Calculates value of floor function.                                                       |
+| fround(&lt;arg&gt;)                    | 0x85 | f          | Rounds number to closest integer number.                                                  |
+| ftrunc(&lt;arg&gt;)                    | 0x86 | f          | Truncates digits after decimal point.                                                     |
+| try(&lt;arg1&gt;,&lt;arg2&gt;)         | 0x87 | i, i       | Invokes arg1 function. If this function throws exception, arg2 function is invoked.       |
+| iforce(&lt;arg&gt;)                    | 0x88 | i          | Eagerly evaluates and loads integer number.                                               |
+| fforce(&lt;arg&gt;)                    | 0x89 | f          | Eagerly evaluates and loads floating-point number.                                        |
+| rforce(&lt;arg&gt;)                    | 0x8a | r          | Eagerly evaluates and loads reference.                                                    |

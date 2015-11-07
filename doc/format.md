@@ -48,24 +48,26 @@ bytes. These blocks in the order are presented in the following list:
 * data
 * relocation table
 * symbol table
+* table of function information
 
 ### Header
 
 The first block is the header that contains the signature of the Letin file format and other
 information about a program. The header structure is presented in the following table:
 
-| Name         | Type        | Description                |
-|:------------ |:----------- |:-------------------------- |
-| magic        | uint8\[8\]  | File signature.            |
-| flags        | uint32      | Flags of program file.     |
-| entry        | uint32      | Index of start function.   |
-| fun_count    | uint32      | Number of functions.       |
-| var_count    | uint32      | Number of variables.       |
-| code_size    | uitn32      | Code size in instructions. | 
-| data_size    | uint32      | Data size in bytes.        |
-| reloc_count  | uint32      | Number of relocations.     |
-| symbol_count | uint32      | Number of symbols.         |
-| reserved     | uint32\[2\] | Reserved.                  |
+| Name           | Type        | Description                                       |
+|:-------------- |:----------- |:------------------------------------------------- |
+| magic          | uint8\[8\]  | File signature.                                   |
+| flags          | uint32      | Flags of program file.                            |
+| entry          | uint32      | Index of start function.                          |
+| fun_count      | uint32      | Number of functions.                              |
+| var_count      | uint32      | Number of variables.                              |
+| code_size      | uitn32      | Code size in instructions.                        |
+| data_size      | uint32      | Data size in bytes.                               |
+| reloc_count    | uint32      | Number of relocations.                            |
+| symbol_count   | uint32      | Number of symbols.                                |
+| fun_info_count | uint32      | Number of table elements of function information. |
+| reserved       | uint32\[1\] | Reserved.                                         |
 
 The Letin virtual always checks the file signature before a loading of program. The elements of
 this signature are presented in the following table:
@@ -83,10 +85,12 @@ this signature are presented in the following table:
 
 The flags of program file can have the flags which are presented in the following table:
 
-| Name        | Bit   | Description                  |
-|:----------- |:----- |:---------------------------- |
-| LIBRARY     | 0     | File program is library.     |
-| RELOCATABLE | 1     | File program is relocatable. |
+| Name               | Bit   | Description                                   |
+|:------------------ |:----- |:--------------------------------------------- |
+| LIBRARY            | 0     | File program is library.                      |
+| RELOCATABLE        | 1     | File program is relocatable.                  |
+| NATIVE_FUN_SYMBOLS | 2     | File program has symbols of native functions. |
+| FUN_INFOS          | 3     | File program has information of functions.    |
 
 ### Function table
 
@@ -174,11 +178,11 @@ variable in the expressions of the above table is an index of the object element
 ## Relocation table
 
 The relocation table contains relocation descriptions which are used to a program relocation.
-This table occurs if program flags have the RELOCATABLE flag. A relocation of program is a
-process that changes a function indexes and/or a variable indexes. A relocation description
-specifies how an instruction argument or an object element or a variable value will be modified
-during a relocation. The structure of relocation description is presented in the following
-table:
+This table occurs if flags of program file have the RELOCATABLE flag. A relocation of program
+is a process that changes a function indexes and/or a variable indexes. A relocation
+description specifies how an instruction argument or an object element or a variable value will
+be modified during a relocation. The structure of relocation description is presented in the
+following table:
 
 | Name   | Type   | Description                                               |
 |:------ |:------ |:--------------------------------------------------------- |
@@ -190,17 +194,24 @@ The field of relocation type specifies whether an instruction argument or an obj
 will be modified during a relocation. The relocation types are presented in the following
 table:
 
-| Name     | Number | Description                                                   |
-|:-------- |:------ |:------------------------------------------------------------- |  
-| ARG1_FUN | 0      | Relocation of first instruction argument for function index.  |
-| ARG2_FUN | 1      | Relocation of second instruction argument for function index. |
-| ARG1_VAR | 2      | Relocation of first instruction argument for variable index.  |
-| ARG2_VAR | 3      | Relocation of second instruction argument for variable index. |
-| ELEM_FUN | 4      | Relocation of object element for function index.              |
-| VAR_FUN  | 5      | Relocation of variable value for function index.              |
+| Name            | Number | Description                                                             |
+|:--------------- |:------ |:----------------------------------------------------------------------- |
+| ARG1_FUN        | 0      | Relocation of first instruction argument for function index.            |
+| ARG2_FUN        | 1      | Relocation of second instruction argument for function index.           |
+| ARG1_VAR        | 2      | Relocation of first instruction argument for variable index.            |
+| ARG2_VAR        | 3      | Relocation of second instruction argument for variable index.           |
+| ELEM_FUN        | 4      | Relocation of object element for function index.                        |
+| VAR_FUN         | 5      | Relocation of variable value for function index.                        |
+| ARG1_NATIVE_FUN | 6      | Relocation of first instruction argument for index of native function.  |
+| ARG2_NATIVE_FUN | 7      | Relocation of second instruction argument for index of native function. |
+| ELEM_NATIVE_FUN | 8      | Relocation of object element for index of native function.              |
+| VAR_NATIVE_FUN  | 9      | Relocation of variable value for index of native function.              |
 
 A relocation for a function index modifies a value that has the function index. A relocation
-for a variable index modifies a value that has the variable index. 
+for a variable index modifies a value that has the variable index. A relocation for an index of
+native function modifies a value that has the index of native function. The relocation for the
+index of native function can occur in the relocation table if flags of program file have the
+NATIVE_FUN_SYMBOLS flag.
 
 A symbolic relocation has a symbol index that refers to the symbol. This symbol has the
 function index or the variable index that replaces the instruction argument or the element
@@ -222,12 +233,44 @@ bytes. The structure of symbol description is presented in the following table:
 The field of symbol type specifies whether a symbol is a function symbol or a variable symbol.
 The symbol types are presented in the following table:
 
-| Name | Number | Description      |
-|:---- |:------ |:---------------- |
-| FUN  | 0      | Function symbol. |
-| VAR  | 1      | Variable symbol. |
+| Name       | Number | Description                |
+|:---------- |:------ |:-------------------------- |
+| FUN        | 0      | Function symbol.           |
+| VAR        | 1      | Variable symbol.           |
+| NATIVE_FUN | 2      | Symbol of native function. |
 
-Symbols can be undefined or defined. Defined symbols have defined function indexes or defined
-variable indexes. If a symbol is defined, the type number of the symbol is a bitwise 
-alternative of the type number and the DEFINED type flag number. The DEFINED type flag has
-value 16.
+Symbols can be undefined or defined. Defined symbols have indexes of defined functions or
+indexes of defined variables. If a symbol is defined, the type number of the symbol is a
+bitwise alternative of the type number and the DEFINED type flag number. The DEFINED type flag
+has value 16. Symbol of native function mustn't be defined.
+
+## Table of function information
+
+The table of function information contains descriptions of function information. If program
+flags have the FUN_INFOS flag, this table occurs. The structure of description of function
+information is presented in the following table:
+
+| Name               | Type   | Description                              |
+|:------------------ |:------ |:---------------------------------------- |
+| fun_index          | uint32 | Function index.                          |
+| eval_strategy      | uint8  | Features of evaluation strategy.         |
+| eval_strategy_mask | uint8  | Mask of features of evaluation strategy. |
+| reserved\[6\]      | uint8  | Reserved.                                |
+
+The eval_strategy field and the eval_strategy_mask specify an evaluation strategy of a
+function. The evaluation strategy of a function can be specified by features of evaluation
+strategy. The features of evaluation strategy are presented in the following table:
+
+| Name | Bit | Description      |
+|:---- |:--- |:---------------- |
+| LAZY | 0   | Lazy.            |
+| MEMO | 1   | Memoization.     |
+
+The features of the evaluation strategy of a function is calculated by the following
+expression:
+
+    (default_eval_strategy | fun_info.eval_strategy) & fun_info.eval_strategy_mask
+
+The default_eval_strategy in the above expression is a variable of features of the default
+evaluation strategy. The fun_info in the above expression is a variable of structure of
+function information.

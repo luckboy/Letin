@@ -142,8 +142,8 @@ function also has to have a specified number of arguments. The number of argumen
 specified by a number of an function argument identifier. Functions also have identifiers. The
 syntax of function definition is:
 
-    <fun_def> ::= [".public"] [<nl>] <ident> "(" <a> ")" "=" [<nl>] "{" <nl> <fun_lines> <nl>
-                  "}"
+    <fun_def> ::= [<annotations> [<nl>]] [".public" [<nl>]] <ident> "(" <a> ")" "=" [<nl>] "{"
+                  <nl> <fun_lines> <nl> "}"
     <fun_lines> ::= <fun_lines> <nl> <fun_line>
                   | <fun_line>
     <fun_line> ::= <ident> ":" <instr>
@@ -161,7 +161,7 @@ The example function definition is:
 Functions can be public or private. Public functions are visible for other programs and other
 libraries if the program or the library with the public functions is compiled as relocatable.
 Private functions aren't visible. Functions implicitly are private. If a function is defined
-with the .public modifier, a function is public. 
+with the .public modifier, a function is public. Functions also can have annotations.
 
 ### Instructions
 
@@ -197,9 +197,11 @@ An instruction argument can be used in an instruction or an operation. A number 
 instruction argument can be written by use of an expression. The syntax of instruction argument
 is:
 
-    <arg> ::= <number_arg> | <fun_index_arg> | <a_arg> | <lv_arg> | <ident_arg>
+    <arg> ::= <number_arg> | <fun_index_arg> | <fun_index_arg> | <a_arg> | <lv_arg> |
+              <ident_arg>
     <number_arg> ::= <expr>
     <fun_index_arg> ::= "&" <ident>
+    <native_fun_index_arg> ::= "&#" <ident>
     <a_arg> ::= <a>
     <lv_arg> ::= <lv>
     <ident_arg> ::= <ident>
@@ -208,16 +210,44 @@ An instruction argument can have one of four types. The relationship between the
 instruction argument and the types of instruction arguments is presented in the following
 table:
 
-| Syntax rule   | Argument type | Description                        |
-|:------------- |:------------- |:---------------------------------- |
-| number_arg    | IMM           | Number as immediate value.         |
-| fun_index_arg | IMM           | Function index as immediate value. |
-| a_arg         | ARG           | Function argument.                 |
-| lv_arg        | LVAR          | Local variable.                    |
-| ident_arg     | GVAR          | Global variable.                   |
+| Syntax rule          | Argument type | Description                                  |
+|:-------------------- |:------------- |:-------------------------------------------- |
+| number_arg           | IMM           | Number as immediate value.                   |
+| fun_index_arg        | IMM           | Function index as immediate value.           |
+| native_fun_index_arg | IMM           | Index of native function as immediate value. |
+| a_arg                | ARG           | Function argument.                           |
+| lv_arg               | LVAR          | Local variable.                              |
+| ident_arg            | GVAR          | Global variable.                             |
 
 The ident_arg syntax rule also applies to the last argument of the jump instruction or the
 jc instruction.
+
+### Annotations
+
+Annotations specify an additional information about a functions. Each function can have many
+annotations. An annotation just have name. The syntax of annotations is:
+
+    <annotations> := <annotations> <nl> <annotation>
+                   | <annotation>
+    <annotation> := "@" <name>
+
+Annotations can specify whether a function can be lazily evaluated. The annotations are
+presented in the following table:
+
+| Name         | Evaluation strategy                        | Description                                            |
+|:------------ |:------------------------------------------ |:------------------------------------------------------ |
+| eager        | default_eval_strategy & ~LAZY              | Evaluation strategy of function is eager.              |
+| lazy         | default_eval_strategy &#124; LAZY          | Evaluation strategy of function is lazy.               |
+| memoized     | default_eval_strategy & ~MEMO              | Evaluation strategy of function with memoization.      |
+| unmemoized   | default_eval_strategy &#124; MEMO          | Evaluation strategy of function without memoization.   |
+| onlyeager    | 0                                          | Evaluation strategy of function is only eager.         |
+| onlylazy     | (default_eval_strategy &#124; LAZY) & LAZY | Evaluation strategy of function is only lazy.          |
+| onlymemoized | (default_eval_strategy &#124; MEMO) & MEMO | Evaluation strategy of function with only memoization. |
+
+The default_eval_strategy in the above table is a variable of features of the default
+evaluation strategy. If the annotations with the only prefix are occurs together, features of
+evaluation strategy of a function are all features of evaluation strategy of these
+annotations.
 
 ## Global variables
 
@@ -236,12 +266,13 @@ The example definitions of global variables are:
 
 ### Values
 
-A value can be an integer number or a floating-point number or a function index or a reference
-to an object. A reference of the value refers to an object of the value. The syntax of value
-is:
+A value can be an integer number or a floating-point number or a function index or an index of
+native function or a reference to an object. A reference of the value refers to an object of
+the value. The syntax of value is:
 
     <value> ::= <expr>
               | "&" <ident>
+              | "#&" <ident>
               | <object>
 
 Also, a value can be written by use of a expression for numbers.
