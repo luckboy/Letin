@@ -23,6 +23,10 @@ namespace letin
 
       void finalize_thread_stop_cont();
 
+      void start_thread_stop_cont();
+
+      void stop_thread_stop_cont();
+
       ThreadStopCont *new_thread_stop_cont();
 
       void delete_thread_stop_cont(ThreadStopCont *stop_cont);

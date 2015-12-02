@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <letin/format.hpp>
 #include "impl_vm_base.hpp"
+#include "thread_stop_cont.hpp"
 #include "util.hpp"
 #include "vm.hpp"
 
@@ -297,12 +298,15 @@ namespace letin
         context->set_native_fun_handler(_M_native_fun_handler);
         context->start([this, i, fun, args, &thread]() {
           Thread thread2(thread);
+          priv::start_thread_stop_cont();
+          _M_gc->add_thread_context(thread2.context());
           try {
             fun(start_in_thread(i, args, *(thread2.context()))); 
           } catch(...) {
             fun(ReturnValue(0, 0.0, Reference(), ERROR_EXCEPTION));
           }
-          thread2.context()->set_gc(nullptr);
+          _M_gc->delete_thread_context(thread2.context());
+          priv::stop_thread_stop_cont();
         });
         return thread;
       }

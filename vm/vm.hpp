@@ -137,12 +137,7 @@ namespace letin
 
       GarbageCollector *gc() { return _M_gc; }
 
-      void set_gc(GarbageCollector *gc)
-      {
-        if(_M_gc != nullptr) _M_gc->delete_thread_context(this);
-        _M_gc = gc;
-        if(_M_gc != nullptr) _M_gc->add_thread_context(this);
-      }
+      void set_gc(GarbageCollector *gc) { _M_gc = gc; }
 
       NativeFunctionHandler *native_fun_handler() { return _M_native_fun_handler; }
 
