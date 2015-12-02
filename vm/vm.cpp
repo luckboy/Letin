@@ -1809,8 +1809,6 @@ namespace letin
       //
 
       Semaphore lazy_value_mutex_sem;
-      mutex thread_count_mutex;
-      int thread_count = 0;
 
       //
       // Private functions.

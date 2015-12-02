@@ -324,10 +324,6 @@ namespace letin
         context->start([this, i, fun, args, &thread, is_force]() {
           Thread thread2(thread);
           ReturnValue value;
-          {
-            lock_guard<mutex> guard(thread_count_mutex);
-            thread_count++;
-          }
           lazy_value_mutex_sem.op(1);
           try {
             value = start_in_thread(i, args, *(thread2.context()), is_force);
@@ -335,10 +331,6 @@ namespace letin
             value = ReturnValue(0, 0.0, Reference(), ERROR_EXCEPTION);
           }
           lazy_value_mutex_sem.op(-1);
-          {
-            lock_guard<mutex> guard(thread_count_mutex);
-            thread_count--;
-          }
           try { fun(value); } catch(...) {}
           thread2.context()->set_gc(nullptr);
         });
