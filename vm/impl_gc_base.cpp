@@ -46,12 +46,12 @@ namespace letin
 
       void ImplGarbageCollectorBase::ImplForkHandler::pre_fork()
       {
+        _M_gc->_M_gc_thread_mutex.lock();
         {
           unique_lock<mutex> lock(_M_gc->_M_interval_mutex);
           _M_gc->_M_is_locked_gc_thread = true;
           _M_gc->_M_interval_cv.notify_one();
         }
-        _M_gc->_M_gc_thread_mutex.lock();
         _M_gc->_M_other_thread_mutex.lock();
         _M_gc->_M_interval_mutex.lock();
         _M_gc->_M_gc_mutex.lock();
@@ -112,17 +112,17 @@ namespace letin
             unique_lock<mutex> other_thread_lock(_M_other_thread_mutex);
             while(true) {
               // Sleeps.
-              {
-                auto rel_time = chrono::milliseconds(_M_interval_usecs);
+              auto rel_time = chrono::milliseconds(_M_interval_usecs);
+              auto abs_time1 = chrono::high_resolution_clock::now();
+              do {
                 unique_lock<mutex> interval_lock(_M_interval_mutex);
                 do {
                   if(_M_is_locked_gc_thread) {
-                    auto abs_time1 = chrono::high_resolution_clock::now();
-                    other_thread_lock.unlock();
                     interval_lock.unlock();
+                    other_thread_lock.unlock();
                     { lock_guard<mutex> guard(_M_gc_thread_mutex); }
-                    interval_lock.lock();
                     other_thread_lock.lock();
+                    interval_lock.lock();
                     auto abs_time2 = chrono::high_resolution_clock::now();
                     auto time_diff = abs_time2 - abs_time1;
                     if(time_diff >= chrono::microseconds(1)) {
@@ -132,10 +132,11 @@ namespace letin
                       else
                         break;
                     }
+                    abs_time1 = abs_time2;
                   }
                   if(!_M_is_started) return;
                 } while(_M_interval_cv.wait_for(interval_lock, rel_time) != cv_status::timeout);
-              }
+              } while(_M_is_locked_gc_thread);
               // Collects.
               collect();
             }
