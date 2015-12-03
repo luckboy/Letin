@@ -32,35 +32,35 @@ namespace letin
       bool FunctionEvaluationStrategy::pre_enter_to_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type, bool &is_fun_result)
       {
         size_t j = _M_fun_pairs.get()[i].eval_strategy_fun_index;
-        unsigned k = _M_fun_pairs.get()[i].eval_strategy_fun_index;
+        unsigned k = fun_eval_strategy(context->fun_info(i), _M_default_fun_eval_strategy);
         return _M_eval_strategies[k]->pre_enter_to_fun(vm, context, j, value_type, is_fun_result);
       }
 
       bool FunctionEvaluationStrategy::post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
       {
         size_t j = _M_fun_pairs.get()[i].eval_strategy_fun_index;
-        unsigned k = _M_fun_pairs.get()[i].eval_strategy_fun_index;
+        unsigned k = fun_eval_strategy(context->fun_info(i), _M_default_fun_eval_strategy);
         return _M_eval_strategies[k]->post_leave_from_fun(vm, context, j, value_type);
       }
 
       bool FunctionEvaluationStrategy::must_pre_enter_to_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
       {
         size_t j = _M_fun_pairs.get()[i].eval_strategy_fun_index;
-        unsigned k = _M_fun_pairs.get()[i].eval_strategy_fun_index;
+        unsigned k = fun_eval_strategy(context->fun_info(i), _M_default_fun_eval_strategy);
         return _M_eval_strategies[k]->must_pre_enter_to_fun(vm, context, j, value_type);
       }
 
       bool FunctionEvaluationStrategy::must_post_leave_from_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
       {
         size_t j = _M_fun_pairs.get()[i].eval_strategy_fun_index;
-        unsigned k = _M_fun_pairs.get()[i].eval_strategy_fun_index;
+        unsigned k = fun_eval_strategy(context->fun_info(i), _M_default_fun_eval_strategy);
         return _M_eval_strategies[k]->must_post_leave_from_fun(vm, context, j, value_type);
       }
 
       bool FunctionEvaluationStrategy::pre_enter_to_fun_for_force(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type, bool &is_fun_result)
       {
         size_t j = _M_fun_pairs.get()[i].eval_strategy_fun_index;
-        unsigned k = _M_fun_pairs.get()[i].eval_strategy_fun_index;
+        unsigned k = fun_eval_strategy(context->fun_info(i), _M_default_fun_eval_strategy);
         return _M_eval_strategies[k]->pre_enter_to_fun_for_force(vm, context, j, value_type, is_fun_result);
       }
 
