@@ -60,19 +60,13 @@ namespace letin
         if(!is_memoizable_fun_result(fun_result)) return true;
         switch(value_type) {
           case VALUE_TYPE_INT:
-            if(_M_fun_results.get()[i].is.ref().has_nil()) {
-              if(!_M_fun_results.get()[i].is.set_bucket_count(_M_bucket_count, context)) return false;
-            }
+            if(!_M_fun_results.get()[i].is.set_bucket_count_for_nil_ref(_M_bucket_count, context)) return false;
             return _M_fun_results.get()[i].is.add(args, fun_result.raw().i, context);
           case VALUE_TYPE_FLOAT:
-            if(_M_fun_results.get()[i].fs.ref().has_nil()) {
-              if(!_M_fun_results.get()[i].fs.set_bucket_count(_M_bucket_count, context)) return false;
-            }
+            if(!_M_fun_results.get()[i].fs.set_bucket_count_for_nil_ref(_M_bucket_count, context)) return false;
             return _M_fun_results.get()[i].fs.add(args, fun_result.raw().f, context);
           case VALUE_TYPE_REF:
-            if(_M_fun_results.get()[i].rs.ref().has_nil()) {
-              if(!_M_fun_results.get()[i].rs.set_bucket_count(_M_bucket_count, context)) return false;
-            }
+            if(!_M_fun_results.get()[i].rs.set_bucket_count_for_nil_ref(_M_bucket_count, context)) return false;
             return _M_fun_results.get()[i].rs.add(args, fun_result.raw().r, context);
           default:
             return true;

@@ -153,6 +153,25 @@ namespace letin
           }
           return entry_r;
         }
+
+        bool safely_set_bucket_count(std::size_t bucket_count, ThreadContext &context)
+        {
+          if(bucket_count != 0) {
+            std::size_t raw_size = offsetof(HashTableRaw, buckets) + sizeof(HashTableBucket) * bucket_count;
+            Reference r(context.gc()->new_object(OBJECT_TYPE_HASH_TABLE, raw_size, &context));
+            if(r.is_null()) return false;
+            raw(r).bucket_count = bucket_count;
+            raw(r).entry_count = 0;
+            for(std::size_t i = 0; i < raw(r).bucket_count; i++) {
+              raw(r).buckets[i].first_entry_r = Reference();
+              raw(r).buckets[i].last_entry_r = Reference();
+            }
+            _M_r.safely_assign_for_gc(r);
+            context.safely_set_gc_tmp_ptr_for_gc(nullptr);
+          } else
+            _M_r.safely_assign_for_gc(Reference());
+          return true;
+        }
       public:
         _V operator[](const _K &key)
         {
@@ -237,32 +256,36 @@ namespace letin
           return true;
         }
 
-        Reference ref() const { return _M_r; }
+        Reference ref()
+        {
+          std::lock_guard<std::mutex> mutex_guard(_M_mutex);
+          return _M_r;
+        }
 
-        std::size_t bucket_count() const
-        { return !_M_r.has_nil() ? raw().bucket_count : 0; }
+        std::size_t bucket_count()
+        {
+          std::lock_guard<std::mutex> mutex_guard(_M_mutex);
+          return !_M_r.has_nil() ? raw().bucket_count : 0;
+        }
 
         bool set_bucket_count(std::size_t bucket_count, ThreadContext &context)
         {
-          if(bucket_count != 0) {
-            std::size_t raw_size = offsetof(HashTableRaw, buckets) + sizeof(HashTableBucket) * bucket_count;
-            Reference r(context.gc()->new_object(OBJECT_TYPE_HASH_TABLE, raw_size, &context));
-            if(r.is_null()) return false;
-            raw(r).bucket_count = bucket_count;
-            raw(r).entry_count = 0;
-            for(std::size_t i = 0; i < raw(r).bucket_count; i++) {
-              raw(r).buckets[i].first_entry_r = Reference();
-              raw(r).buckets[i].last_entry_r = Reference();
-            }
-            _M_r.safely_assign_for_gc(r);
-            context.safely_set_gc_tmp_ptr_for_gc(nullptr);
-          } else
-            _M_r.safely_assign_for_gc(Reference());
+          std::lock_guard<std::mutex> mutex_guard(_M_mutex);
+          return safely_set_bucket_count(bucket_count, context);
+        }
+
+        bool set_bucket_count_for_nil_ref(std::size_t bucket_count, ThreadContext &context)
+        {
+          std::lock_guard<std::mutex> mutex_guard(_M_mutex);
+          if(_M_r.has_nil()) return safely_set_bucket_count(bucket_count, context);
           return true;
         }
 
-        std::size_t size() const
-        { return !_M_r.has_nil() ? raw().entry_count : 0; }
+        std::size_t size()
+        {
+          std::lock_guard<std::mutex> mutex_guard(_M_mutex);
+          return !_M_r.has_nil() ? raw().entry_count : 0;
+        }
 
         void lock() { _M_mutex.lock(); }
 
