@@ -80,14 +80,6 @@ namespace letin
 
       void initialize_thread_stop_cont()
       {
-        sigset_t sigmask;
-        sigemptyset(&sigmask);
-        sigaddset(&sigmask, SIGUSR1);
-        sigprocmask(SIG_UNBLOCK, &sigmask, nullptr);
-        sigemptyset(&sigmask);
-        sigaddset(&sigmask, SIGUSR2);
-        sigprocmask(SIG_BLOCK, &sigmask, nullptr);
-
         struct sigaction usr1_sigaction;
         usr1_sigaction.sa_handler = usr1_handler;
         sigemptyset(&(usr1_sigaction.sa_mask));
@@ -102,6 +94,19 @@ namespace letin
       }
 
       void finalize_thread_stop_cont() {}
+
+      void start_thread_stop_cont()
+      {
+        sigset_t sigmask;
+        sigemptyset(&sigmask);
+        sigaddset(&sigmask, SIGUSR1);
+        ::pthread_sigmask(SIG_UNBLOCK, &sigmask, nullptr);
+        sigemptyset(&sigmask);
+        sigaddset(&sigmask, SIGUSR2);
+        ::pthread_sigmask(SIG_BLOCK, &sigmask, nullptr);
+      }
+
+      void stop_thread_stop_cont() {}
 
       ThreadStopCont *new_thread_stop_cont() { return new ThreadStopCont(); }
 
@@ -142,6 +147,10 @@ namespace letin
       void initialize_thread_stop_cont() {}
 
       void finalize_thread_stop_cont() {}
+
+      void start_thread_stop_cont() {}
+
+      void stop_thread_stop_cont() {}
 
       ThreadStopCont *new_thread_stop_cont() { return nullptr; }
 
