@@ -324,7 +324,7 @@ namespace letin
         context->set_native_fun_handler(_M_native_fun_handler);
         context->start([this, i, fun, args, &thread, is_force]() {
           Thread thread2(thread);
-          priv::start_thread_stop_cont();
+          start_thread_stop_cont();
           _M_gc->add_thread_context(thread2.context());
           ReturnValue value;
           lazy_value_mutex_sem.op(1);
@@ -336,7 +336,7 @@ namespace letin
           lazy_value_mutex_sem.op(-1);
           try { fun(value); } catch(...) {}
           _M_gc->delete_thread_context(thread2.context());
-          priv::stop_thread_stop_cont();
+          stop_thread_stop_cont();
         });
         return thread;
       }
