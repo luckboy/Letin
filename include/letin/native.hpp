@@ -75,7 +75,7 @@ static inline LETINT_NATIVE_OBJECT_CONVERTER_TYPE(fun_name, type) name(type &x) 
 static LETINT_NATIVE_OBJECT_CONVERTER_TYPE(fun_name, type) name(type &x)
 
 //
-// Macro definitions for a settings.
+// Macro definitions for a setting.
 //
 
 #define LETINT_NATIVE_REF_SETTER_TYPE(fun_name, type)                           \
@@ -478,7 +478,7 @@ namespace letin
       }
 
       //
-      // Private types and private functions for a settings.
+      // Private types and private functions for a setting.
       //
 
       typedef std::function<bool (vm::VirtualMachine *, vm::ThreadContext *, vm::Value&, vm::RegisteredReference &)> SetterFunction;

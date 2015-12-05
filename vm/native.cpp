@@ -140,7 +140,7 @@ namespace letin
       }
 
       //
-      // Private types and private functions for a settings.
+      // Private types and private functions for a setting.
       //
 
       int set_elem(VirtualMachine *vm, ThreadContext *context, Value& value, RegisteredReference &r, SetterFunction fun, size_t i)
