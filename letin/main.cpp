@@ -54,7 +54,7 @@ int main(int argc, char **argv)
           cout << "  -h                    display this text" << endl;
           cout << "  -l <library>          add the library" << endl;
           cout << "  -L <directory>        add the directory to library directories" << endl;
-          break;
+          return 0;
         case 'l':
           lib_names.push_back(string(optarg));
           break;
