@@ -28,7 +28,7 @@ struct GarbageCollectionFinalization
   ~GarbageCollectionFinalization() { finalize_gc(); }
 };
 
-static bool find_lib(const string &lib_name, vector<string> lib_dirs, string &file_name)
+static bool find_lib(const string &lib_name, const vector<string> &lib_dirs, string &file_name)
 {
   for(size_t i = 0; i < lib_dirs.size() + 1; i++) {
     struct stat stat_buf;
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
       } else {
         if(value.r()->type() == (OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) && value.r()->length() == 2 &&
             value.r()->elem(0).type() == VALUE_TYPE_INT &&
-        value.r()->elem(1).type() == VALUE_TYPE_REF && value.r()->elem(1).r()->type() == (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) {
+            value.r()->elem(1).type() == VALUE_TYPE_REF && value.r()->elem(1).r()->type() == (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) {
           status = value.r()->elem(0).i();
         } else {
           if(value.error() == ERROR_SUCCESS)
