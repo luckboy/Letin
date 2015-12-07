@@ -189,7 +189,7 @@ int main(int argc, char **argv)
     list<string> lib_names;
     vector<string> native_lib_dirs;
     list<string> native_lib_names;
-    string eval_strategy_string;
+    string eval_strategy_string("fun");
     bool is_default_native_fun_handler = true;
     int c;
     opterr = 0;
@@ -286,7 +286,9 @@ int main(int argc, char **argv)
     unique_ptr<Allocator> alloc(new_allocator());
     unique_ptr<GarbageCollector> gc(new_garbage_collector(alloc.get()));
     unique_ptr<NativeFunctionHandler> native_fun_handler(new MultiNativeFunctionHandler(native_fun_handlers));
-    unique_ptr<EvaluationStrategy> eval_strategy(new_evaluation_strategy());
+    unique_ptr<MemoizationCacheFactory> memo_cache_factory;
+    unique_ptr<EvaluationStrategy> eval_strategy(parse_eval_strategy_string(eval_strategy_string, memo_cache_factory));
+    if(eval_strategy.get() == nullptr) return 1;
     unique_ptr<VirtualMachine> vm(new_virtual_machine(loader.get(), gc.get(), native_fun_handler.get(), eval_strategy.get()));
     list<LoadingError> errors;
     if(!vm->load(file_names, &errors)) {

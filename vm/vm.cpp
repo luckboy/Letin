@@ -1660,7 +1660,7 @@ namespace letin
         case OBJECT_TYPE_NATIVE_OBJECT:
           return os << "native object";
         default:
-          if((object.type() & OBJECT_TYPE_INTERNAL) != 0)
+          if((object.type() & OBJECT_TYPE_INTERNAL) != 0 && object.type() != OBJECT_TYPE_ERROR)
             return os << "internal object";
           else
             return os << "error";
