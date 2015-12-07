@@ -262,6 +262,8 @@ namespace letin
           return _M_r;
         }
 
+        Reference unsafe_ref() const { return _M_r; }
+
         std::size_t bucket_count()
         {
           std::lock_guard<std::mutex> mutex_guard(_M_mutex);

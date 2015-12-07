@@ -75,13 +75,13 @@ namespace letin
 
       void HashTableMemoizationCache::traverse_root_objects(function<void (Object *)> fun)
       {
-        for(size_t i = 0; _M_fun_count; i++) {
-          if(!_M_fun_results.get()[i].is.ref().has_nil())
-            fun(_M_fun_results.get()[i].is.ref().ptr());
-          if(!_M_fun_results.get()[i].fs.ref().has_nil())
-            fun(_M_fun_results.get()[i].fs.ref().ptr());
-          if(!_M_fun_results.get()[i].rs.ref().has_nil())
-            fun(_M_fun_results.get()[i].rs.ref().ptr());
+        for(size_t i = 0; i < _M_fun_count; i++) {
+          if(!_M_fun_results.get()[i].is.unsafe_ref().has_nil())
+            fun(_M_fun_results.get()[i].is.unsafe_ref().ptr());
+          if(!_M_fun_results.get()[i].fs.unsafe_ref().has_nil())
+            fun(_M_fun_results.get()[i].fs.unsafe_ref().ptr());
+          if(!_M_fun_results.get()[i].rs.unsafe_ref().has_nil())
+            fun(_M_fun_results.get()[i].rs.unsafe_ref().ptr());
         }
       }
 

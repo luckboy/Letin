@@ -83,7 +83,7 @@ namespace letin
 
         FunctionInfo *fun_infos();
 
-        const std::list<MemoizationCache *> memo_caches() const;
+        const std::list<MemoizationCache *> &memo_caches() const;
 
         void set_fun(std::size_t i, const Function &fun);
 

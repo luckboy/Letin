@@ -62,7 +62,7 @@ namespace letin
       FunctionInfo *ImplEnvironment::fun_infos()
       { return _M_fun_infos.get(); }
 
-      const list<MemoizationCache *> ImplEnvironment::memo_caches() const
+      const list<MemoizationCache *> &ImplEnvironment::memo_caches() const
       { return _M_memo_caches; }
 
       void ImplEnvironment::set_fun(size_t i, const Function &fun) { _M_funs[i] = fun; }

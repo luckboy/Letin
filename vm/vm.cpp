@@ -1188,7 +1188,8 @@ namespace letin
 
     ThreadContext::ThreadContext(const VirtualMachineContext &context, size_t stack_size) :
       _M_funs(context.funs()), _M_fun_count(context.fun_count()),
-      _M_global_vars(context.vars()), _M_global_var_count(context.var_count())
+      _M_global_vars(context.vars()), _M_global_var_count(context.var_count()),
+      _M_fun_infos(context.fun_infos())
     {
       _M_gc = nullptr;
       _M_native_fun_handler = nullptr;

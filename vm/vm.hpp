@@ -184,7 +184,6 @@ namespace letin
       const Value *_M_global_vars;
       std::size_t _M_global_var_count;
       const FunctionInfo *_M_fun_infos;
-      std::size_t _M_fun_info_count;
       RegisteredReference *_M_first_registered_r;
       RegisteredReference *_M_last_registered_r;
     public:
@@ -463,7 +462,7 @@ namespace letin
 
       virtual FunctionInfo *fun_infos() = 0;
 
-      virtual const std::list<MemoizationCache *> memo_caches() const = 0;
+      virtual const std::list<MemoizationCache *> &memo_caches() const = 0;
 
       void traverse_root_objects(std::function<void (Object *)> fun);
     };
