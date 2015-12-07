@@ -35,17 +35,6 @@ struct VirtualMachineFinalization
   ~VirtualMachineFinalization() { finalize_vm(); }
 };
 
-class NativeFunctionHandlerVectorFinalization
-{
-  vector<NativeFunctionHandler *> &_M_native_fun_handlers;
-public:
-  NativeFunctionHandlerVectorFinalization(vector<NativeFunctionHandler *> &native_fun_handlers) :
-    _M_native_fun_handlers(native_fun_handlers) {}
-
-  ~NativeFunctionHandlerVectorFinalization()
-  { for(auto &native_fun_handler : _M_native_fun_handlers) delete native_fun_handler; }
-};
-
 static bool find_lib(const string &lib_name, const vector<string> &lib_dirs, string &file_name)
 {
   for(size_t i = 0; i < lib_dirs.size() + 1; i++) {
@@ -292,7 +281,6 @@ int main(int argc, char **argv)
     VirtualMachineFinalization final;
     unique_ptr<NativeFunctionHandlerLoader> native_fun_handler_loader;
     vector<NativeFunctionHandler *> native_fun_handlers;
-    NativeFunctionHandlerVectorFinalization nfh_vector_final(native_fun_handlers);
     if(!load_native_fun_handlers(native_fun_handler_loader.get(), native_lib_file_names, native_fun_handlers, is_default_native_fun_handler)) return 1;
     unique_ptr<Loader> loader(new_loader());
     unique_ptr<Allocator> alloc(new_allocator());
