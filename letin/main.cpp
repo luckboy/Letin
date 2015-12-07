@@ -116,7 +116,10 @@ static bool load_native_fun_handlers(NativeFunctionHandlerLoader *native_fun_han
       return false;
     }
   }
-  if(is_default_native_fun_handler) native_fun_handlers.push_back(new DefaultNativeFunctionHandler());
+  if(is_default_native_fun_handler)
+    native_fun_handlers.push_back(new DefaultNativeFunctionHandler());
+  else
+    native_fun_handlers.push_back(new EmptyNativeFunctionHandler());
   for(auto native_lib_fun : native_lib_funs) native_fun_handlers.push_back(native_lib_fun());
   return true;                      
 }

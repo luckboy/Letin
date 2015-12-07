@@ -844,7 +844,7 @@ namespace letin
     // A MultiNativeFunctionHandler class.
     //
 
-    MultiNativeFunctionHandler::MultiNativeFunctionHandler(const std::vector<NativeFunctionHandler *> &handlers)
+    MultiNativeFunctionHandler::MultiNativeFunctionHandler(const vector<NativeFunctionHandler *> &handlers)
     {
       _M_handler_pair_count = 0;
       for(auto handler : handlers) {
@@ -900,6 +900,24 @@ namespace letin
       } else
         return 0;
     }
+
+    //
+    // An EmptyNativeFunctionHandler class.
+    //
+
+    EmptyNativeFunctionHandler::~EmptyNativeFunctionHandler() {}
+
+    ReturnValue EmptyNativeFunctionHandler::invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args)
+    { return ReturnValue(0, 0.0, Reference(), ERROR_NO_NATIVE_FUN); }
+
+    const char *EmptyNativeFunctionHandler::native_fun_name(int nfi) const
+    { return nullptr; }
+
+    int EmptyNativeFunctionHandler::min_native_fun_index() const
+    { return 0; }
+
+    int EmptyNativeFunctionHandler::max_native_fun_index() const
+    { return 1; }
 
     //
     // An EvaluationStrategy class.

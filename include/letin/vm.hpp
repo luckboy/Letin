@@ -910,6 +910,22 @@ namespace letin
       int max_native_fun_index() const;
     };
 
+    class EmptyNativeFunctionHandler : public NativeFunctionHandler
+    {
+    public:
+      EmptyNativeFunctionHandler() {}
+
+      ~EmptyNativeFunctionHandler();
+
+      ReturnValue invoke(VirtualMachine *vm, ThreadContext *context, int nfi, ArgumentList &args);
+
+      const char *native_fun_name(int nfi) const;
+
+      int min_native_fun_index() const;
+
+      int max_native_fun_index() const;
+    };
+
     class EvaluationStrategy
     {
     protected:
