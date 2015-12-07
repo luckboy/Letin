@@ -849,13 +849,13 @@ namespace letin
       _M_handler_pair_count = 0;
       for(auto handler : handlers) {
         int native_fun_count = handler->max_native_fun_index() - handler->min_native_fun_index() + 1;
-        _M_handler_pair_count += static_cast<size_t>((native_fun_count + 1023) >> 1);
+        _M_handler_pair_count += static_cast<size_t>((native_fun_count + 1023) >> 10);
       }
       _M_handler_pairs = unique_ptr<HandlerPair []>(new HandlerPair[_M_handler_pair_count]);
       size_t i = 0;
       for(auto handler : handlers) {
         int native_fun_count = handler->max_native_fun_index() - handler->min_native_fun_index() + 1;
-        size_t n = static_cast<size_t>((native_fun_count + 1023) >> 1);
+        size_t n = static_cast<size_t>((native_fun_count + 1023) >> 10);
         for(size_t j = 0; j < n; j++) {
           _M_handler_pairs[i + j].handler = unique_ptr<NativeFunctionHandler>(handler);
           _M_handler_pairs[i + j].nfi_offset = (static_cast<int>(i) << 10) - handler->min_native_fun_index();
