@@ -997,11 +997,23 @@ namespace letin
 
     GarbageCollector *new_garbage_collector(Allocator *alloc);
 
+    MemoizationCacheFactory *new_memoization_cache_factory(std::size_t bucket_count);
+
     EvaluationStrategy *new_evaluation_strategy();
 
     VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy);
 
     NativeFunctionHandlerLoader *new_native_function_handler_loader();
+
+    EvaluationStrategy *new_eager_evaluation_strategy();
+
+    EvaluationStrategy *new_lazy_evaluation_strategy();
+
+    EvaluationStrategy *new_memoization_evaluation_strategy(MemoizationCacheFactory *memo_cache_factory);
+
+    EvaluationStrategy *new_memoization_lazy_evaluation_strategy(MemoizationCacheFactory *memo_cache_factory);
+
+    EvaluationStrategy *new_function_evaluation_strategy(MemoizationCacheFactory *memo_cache_factory, unsigned default_fun_eval_strategy = 0);
 
     void initialize_vm();
 

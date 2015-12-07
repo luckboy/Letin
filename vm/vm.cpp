@@ -28,8 +28,13 @@
 #include <letin/const.hpp>
 #include <letin/vm.hpp>
 #include "alloc/new_alloc.hpp"
+#include "cache/ht_memo_cache.hpp"
 #include "gc/mark_sweep_gc.hpp"
 #include "strategy/eager_eval_strategy.hpp"
+#include "strategy/fun_eval_strategy.hpp"
+#include "strategy/lazy_eval_strategy.hpp"
+#include "strategy/memo_eval_strategy.hpp"
+#include "strategy/memo_lazy_eval_strategy.hpp"
 #include "vm/interp_vm.hpp"
 #include "hash_table.hpp"
 #include "impl_loader.hpp"
@@ -1454,6 +1459,9 @@ namespace letin
     GarbageCollector *new_garbage_collector(Allocator *alloc)
     { return new impl::MarkSweepGarbageCollector(alloc); }
 
+    MemoizationCacheFactory *new_memoization_cache_factory(size_t bucket_count)
+    { return new impl::HashTableMemoizationCacheFactory(bucket_count); }
+
     EvaluationStrategy *new_evaluation_strategy()
     { return new impl::EagerEvaluationStrategy(); }
 
@@ -1462,6 +1470,21 @@ namespace letin
 
     NativeFunctionHandlerLoader *new_native_function_handler_loader()
     { return new impl::ImplNativeFunctionHandlerLoader(); }
+
+    EvaluationStrategy *new_eager_evaluation_strategy()
+    { return new impl::EagerEvaluationStrategy(); }
+
+    EvaluationStrategy *new_lazy_evaluation_strategy()
+    { return new impl::LazyEvaluationStrategy(); }
+
+    EvaluationStrategy *new_memoization_evaluation_strategy(MemoizationCacheFactory *memo_cache_factory)
+    { return new impl::MemoizationEvaluationStrategy(memo_cache_factory); }
+
+    EvaluationStrategy *new_memoization_lazy_evaluation_strategy(MemoizationCacheFactory *memo_cache_factory)
+    { return new impl::MemoizationLazyEvaluationStrategy(memo_cache_factory); }
+
+    EvaluationStrategy *new_function_evaluation_strategy(MemoizationCacheFactory *memo_cache_factory, unsigned default_fun_eval_strategy)
+    { return new impl::FunctionEvaluationStrategy(memo_cache_factory, default_fun_eval_strategy); }
 
     void initialize_vm()
     {
