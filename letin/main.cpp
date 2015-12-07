@@ -73,7 +73,7 @@ static bool find_native_lib(const string &native_lib_name, const vector<string> 
 static void add_dirs_from_env_var(const char *var_name, vector<string> &dirs)
 {
   char *var_value = getenv(var_name);
-  if(var_name == nullptr) return;
+  if(var_value == nullptr) return;
   char *ptr = var_value;
   char *end = var_value + strlen(var_value);
   while(ptr != end) {
