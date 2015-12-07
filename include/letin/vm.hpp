@@ -211,9 +211,17 @@ namespace letin
 
     class Object
     {
-      ObjectRaw _M_raw;
+      union
+      {
+        struct
+        {
+          int _M_type;
+          std::size_t _M_length;
+        };
+        ObjectRaw _M_raw;
+      };
     public:
-      Object() { _M_raw.type = OBJECT_TYPE_ERROR; _M_raw.length = 0; }
+      constexpr Object() : _M_type(OBJECT_TYPE_ERROR), _M_length(0) {}
 
       Object(int type, std::size_t length = 0) { _M_raw.type = type; _M_raw.length = length; }
 

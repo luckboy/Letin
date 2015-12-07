@@ -25,7 +25,7 @@ namespace letin
           Header *list_next;
           Header *stack_prev;
 
-          Header() : list_next(nullptr), stack_prev(nullptr) {}
+          constexpr Header() : list_next(nullptr), stack_prev(nullptr) {}
 
           bool is_marked() const { return stack_prev != nullptr; }
         };
