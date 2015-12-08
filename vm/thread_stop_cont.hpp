@@ -5,8 +5,8 @@
  *   License v3 or later. See the LICENSE file and the GPL file for         *
  *   the full licensing terms.                                              *
  ****************************************************************************/
-#ifndef _THREAD_HPP
-#define _THREAD_HPP
+#ifndef _THREAD_STOP_CONT_HPP
+#define _THREAD_STOP_CONT_HPP
 
 #include <functional>
 #include <thread>
