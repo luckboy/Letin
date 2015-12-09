@@ -1880,6 +1880,69 @@ namespace letin
         CPPUNIT_ASSERT_EQUAL(static_cast<unsigned>(0xff), _M_vm->env().fun_info(5).eval_strategy_mask());
       }
 
+      void VirtualMachineTests::test_vm_evaluates_lettuple_with_rcall_operation_for_lazy_evaluation()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        LET(RCALL, IMM(1), NA());
+        IN();
+        ARG(RLOAD, LV(0), NA());
+        LETTUPLE(RCALL, 2, IMM(2), NA());
+        IN();
+        RET(IADD, LV(1), LV(2));
+        END_FUN();
+        FUN(0);
+        RET(RUTFILLI, IMM(2), IMM(10));
+        END_FUN();
+        FUN(1);
+        ARG(ILOAD, IMM(20), NA());
+        RET(RUTSNTH, A(0), IMM(1));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (30 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);        
+        CPPUNIT_ASSERT(is_expected);        
+      }
+
+      void VirtualMachineTests::test_vm_evaluates_nested_invocations_with_value_type_changes_for_lazy_evaluation()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        RET(ICALL, IMM(1), NA());
+        END_FUN();
+        FUN(0);
+        RET(FCALL, IMM(2), NA());
+        END_FUN();
+        FUN(0);
+        RET(ICALL, IMM(3), NA());
+        END_FUN();
+        FUN(0);
+        RET(ILOAD, IMM(10), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (0 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);        
+        CPPUNIT_ASSERT(is_expected);        
+      }
+
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);
