@@ -1895,7 +1895,9 @@ namespace letin
         RET(RUTFILLI, IMM(2), IMM(10));
         END_FUN();
         FUN(1);
-        ARG(ILOAD, IMM(20), NA());
+        LET(ILOAD, IMM(20), NA());
+        IN();
+        ARG(IADD, LV(0), IMM(50));
         RET(RUTSNTH, A(0), IMM(1));
         END_FUN();
         END_PROG();
@@ -1906,7 +1908,7 @@ namespace letin
         bool is_expected = false;
         Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {
           is_success = (ERROR_SUCCESS == value.error());
-          is_expected = (30 == value.i());
+          is_expected = (80 == value.i());
         });
         thread.system_thread().join();
         CPPUNIT_ASSERT(is_success);        
