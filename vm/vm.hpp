@@ -131,7 +131,7 @@ namespace letin
       std::size_t fp;
       std::uint32_t ip;
       ReturnValue rv;
-      std::size_t ai;
+      std::uint64_t ai;
       void *gc_tmp_ptr;
       Reference tmp_r;
       bool after_leaving_flags[2];
@@ -393,7 +393,7 @@ namespace letin
         if(_M_regs.abp2 > 0 && _M_stack[_M_regs.abp2 - 1].type() == VALUE_TYPE_INT) {
           _M_regs.sec--;
           _M_regs.abp2--;
-          _M_regs.ai = _M_stack[_M_regs.abp2].raw().i;
+          _M_regs.ai = static_cast<uint64_t>(_M_stack[_M_regs.abp2].raw().i);
           return true;
         } else
           return false;
@@ -408,6 +408,29 @@ namespace letin
           _M_regs.sec--;
           _M_regs.abp2--;
           std::atomic_thread_fence(std::memory_order_release);
+          return true;
+        } else
+          return false;
+      }
+
+      bool push_tmp_value(const Value &value)
+      { return push_local_var(value); }
+
+      bool pop_tmp_value()
+      {
+        if(_M_regs.abp2 > 0) {
+          _M_regs.sec--;
+          _M_regs.abp2--;
+          std::atomic_thread_fence(std::memory_order_release);
+          return true;
+        } else
+          return false;
+      }
+
+      bool get_tmp_value(Value &value)
+      {
+        if(_M_regs.abp2 > 0) {
+          value.safely_assign_for_gc(_M_stack[_M_regs.abp2 - 1]);
           return true;
         } else
           return false;

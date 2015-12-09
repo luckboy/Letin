@@ -423,6 +423,33 @@ namespace letin
         return true;
       }
 
+      static inline bool push_tmp_value(ThreadContext &context, const Value &value)
+      {
+        if(!context.push_tmp_value(value)) {
+          context.set_error(ERROR_STACK_OVERFLOW);
+          return false;
+        }
+        return true;
+      }
+
+      static inline bool pop_tmp_value(ThreadContext &context)
+      {
+        if(!context.pop_tmp_value()) {
+          context.set_error(ERROR_EMPTY_STACK);
+          return false;
+        }
+        return true;
+      }
+
+      static inline bool get_tmp_value(ThreadContext &context, Value &value)
+      {
+        if(!context.get_tmp_value(value)) {
+          context.set_error(ERROR_STACK_OVERFLOW);
+          return false;
+        }
+        return true;
+      }
+
       static inline bool check_fun(ThreadContext &context, size_t i)
       {
         if(i >= context.fun_count()) {
@@ -569,7 +596,7 @@ namespace letin
       inline bool InterpreterVirtualMachine::get_int(ThreadContext &context, int64_t &i, Value &value)
       {
         if(value.type() != VALUE_TYPE_INT) {
-          if(value.is_lazy()) {
+          if(value.is_lazy() && value.raw().r->raw().lzv.value_type == VALUE_TYPE_INT) {
             return force_int(context, i, value);
           } else {
             context.set_error(ERROR_INCORRECT_VALUE);
@@ -613,7 +640,7 @@ namespace letin
       inline bool InterpreterVirtualMachine::get_float(ThreadContext &context, double &f, Value &value)
       {
         if(value.type() != VALUE_TYPE_FLOAT) {
-          if(value.is_lazy()) {
+          if(value.is_lazy() && value.raw().r->raw().lzv.value_type == VALUE_TYPE_FLOAT) {
             return force_float(context, f, value);
           } else {
             context.set_error(ERROR_INCORRECT_VALUE);
@@ -657,8 +684,7 @@ namespace letin
       inline bool InterpreterVirtualMachine::get_ref(ThreadContext &context, Reference &r, Value &value)
       {
         if(value.type() != VALUE_TYPE_REF) {
-          if(value.is_lazy()) {
-            value.lazily_cancel_ref();
+          if(value.is_lazy() && value.raw().r->raw().lzv.value_type == VALUE_TYPE_REF) {
             return force_ref(context, r, value);
           } else {
             if(value.type() == VALUE_TYPE_CANCELED_REF)
@@ -774,22 +800,32 @@ namespace letin
             break;
           case INSTR_LETTUPLE:
           {
-            Value value = interpret_op(context, instr);
-            context.pop_args();
+            Value value;
+            if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
+            if(!context.regs().after_leaving_flags[1] || context.regs().ai != static_cast<uint64_t>(-1)) {
+              value = interpret_op(context, instr);
+              context.pop_args();
+              context.regs().ai = static_cast<uint64_t>(-1);
+              if(!push_tmp_value(context, value)) value = Value();
+            } else {
+              if(!get_tmp_value(context, value)) value = Value();
+            }
             if(!value.is_error()) {
               Reference r;
               if(get_ref(context, r, value)) {
-                if((r->type() & ~OBJECT_TYPE_UNIQUE) == OBJECT_TYPE_TUPLE) {
-                  uint32_t local_var_count = opcode_to_local_var_count(instr.opcode);
-                  if(r->length() == local_var_count) {
-                    for(size_t i = 0; i < local_var_count; i++) {
-                      Value elem_value(r->raw().tuple_elem_types()[i], r->raw().tes[i]);
-                      if(!context.push_local_var(elem_value)) context.set_error(ERROR_STACK_OVERFLOW);
-                    }
+                if(pop_tmp_value(context)) { 
+                  if((r->type() & ~OBJECT_TYPE_UNIQUE) == OBJECT_TYPE_TUPLE) {
+                    uint32_t local_var_count = opcode_to_local_var_count(instr.opcode);
+                    if(r->length() == local_var_count) {
+                      for(size_t i = 0; i < local_var_count; i++) {
+                        Value elem_value(r->raw().tuple_elem_types()[i], r->raw().tes[i]);
+                        if(!context.push_local_var(elem_value)) context.set_error(ERROR_STACK_OVERFLOW);
+                      }
+                    } else
+                      context.set_error(ERROR_INCORRECT_OBJECT);
                   } else
                     context.set_error(ERROR_INCORRECT_OBJECT);
-                } else
-                  context.set_error(ERROR_INCORRECT_OBJECT);
+                }
               }
             }
             context.regs().rv.raw().r = Reference();
@@ -2291,6 +2327,8 @@ namespace letin
       bool InterpreterVirtualMachine::force_value(ThreadContext &context, Value &value, bool is_try)
       {
         while(value.is_lazy()) {
+          Value tmp_value;
+          bool tmp_must_be_shared;
           Object &object = *(value.raw().r);
           unique_lock<LazyValueMutex> lock;
           if(!context.regs().after_leaving_flags[1])
@@ -2335,22 +2373,51 @@ namespace letin
                   context.set_error(ERROR_INCORRECT_VALUE);
                   return false;
               }
-            } else
-              object.raw().lzv.value = Value::lazy_value_ref(context.regs().rv.raw().r, context.regs().rv.raw().i != 0);
+            } else {
+              if(object.raw().lzv.value_type == context.regs().rv.raw().r->raw().lzv.value_type) {
+                object.raw().lzv.value = Value::lazy_value_ref(context.regs().rv.raw().r, context.regs().rv.raw().i != 0);
+              } else {
+                switch(object.raw().lzv.value_type) {
+                  case VALUE_TYPE_INT:
+                    object.raw().lzv.value = Value(0);
+                    break;
+                  case VALUE_TYPE_FLOAT:
+                    object.raw().lzv.value = Value(0.0);
+                    break;
+                  case VALUE_TYPE_REF:
+                    object.raw().lzv.value = Value(Reference());
+                    break;
+                  case VALUE_TYPE_CANCELED_REF:
+                    context.set_error(ERROR_AGAIN_USED_UNIQUE);
+                    return false;
+                  default:
+                    context.set_error(ERROR_INCORRECT_VALUE);
+                    return false;
+                }
+              }
+            }
           }
+          tmp_value = object.raw().lzv.value;
+          tmp_must_be_shared = object.raw().lzv.must_be_shared;
+          if(object.raw().lzv.value_type == VALUE_TYPE_REF && object.raw().lzv.value.is_unique())
+            object.raw().lzv.value.cancel_ref();
           object.raw().lzv.mutex.unlock();
-          if(context.regs().rv.raw().r->is_unique()) {
+          if(object.raw().lzv.value_type == VALUE_TYPE_REF && tmp_value.type() == VALUE_TYPE_CANCELED_REF) {
+            context.set_error(ERROR_AGAIN_USED_UNIQUE);
+            return false;
+          }
+          if(tmp_value.is_unique()) {
             if(value.is_lazily_canceled()) {
               context.set_error(ERROR_AGAIN_USED_UNIQUE);
               return false;
             }
-            if(object.raw().lzv.must_be_shared) {
+            if(tmp_must_be_shared) {
               context.set_error(ERROR_UNIQUE_OBJECT);
               return false;
             }
           }
           context.regs().tmp_r.safely_assign_for_gc(value.r());
-          value.safely_assign_for_gc(object.raw().lzv.value);
+          value.safely_assign_for_gc(tmp_value);
           context.regs().tmp_r.safely_assign_for_gc(Reference());
         }
         return true;
@@ -2372,21 +2439,21 @@ namespace letin
       bool InterpreterVirtualMachine::force_int(ThreadContext &context, int64_t &i, Value &value)
       {
         if(!force_value(context, value)) return false;
-        i = value.raw().i;
+        i = value.i();
         return true;
       }
 
       bool InterpreterVirtualMachine::force_float(ThreadContext &context, double &f, Value &value)
       {
         if(!force_value(context, value)) return false;
-        f = value.raw().f;
+        f = value.f();
         return true;
       }
 
       bool InterpreterVirtualMachine::force_ref(ThreadContext &context, Reference &r, Value &value)
       {
         if(!force_value(context, value)) return false;
-        r = value.raw().r;
+        r = value.r();
         return true;
       }
 
@@ -2396,8 +2463,8 @@ namespace letin
       bool InterpreterVirtualMachine::force_pushed_args_for_lazy_eval(ThreadContext &context)
       {
         if(!context.regs().after_leaving_flags[1]) context.regs().ai = 0;
-        for(size_t &i = context.regs().ai; i < context.regs().ac2; i++) {
-          if(!force_value(context, context.pushed_arg(i))) return false;
+        for(uint64_t &i = context.regs().ai; i < context.regs().ac2; i++) {
+          if(!force_value(context, context.pushed_arg(static_cast<size_t>(i)))) return false;
         }
         return true;
       }
