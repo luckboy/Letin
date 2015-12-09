@@ -1251,7 +1251,7 @@ namespace letin
           _M_stack[fbp + 1].type() == VALUE_TYPE_PAIR &&
           _M_stack[fbp + 2].type() == VALUE_TYPE_INT) {
         _M_regs.abp2 = _M_regs.abp;
-        _M_regs.ac2 = 0;
+        _M_regs.ac2 = _M_regs.ac;
         _M_regs.abp = _M_stack[fbp + 0].raw().p.first;
         _M_regs.ac = _M_stack[fbp + 0].raw().p.second;
         _M_regs.lvc = _M_stack[fbp + 1].raw().p.first;

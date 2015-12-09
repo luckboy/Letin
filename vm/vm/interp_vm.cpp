@@ -423,6 +423,15 @@ namespace letin
         return true;
       }
 
+      static inline bool get_locked_lazy_value_ref(ThreadContext &context, Reference &r)
+      {
+        if(!context.get_locked_lazy_value_ref(r)) {
+          context.set_error(ERROR_EMPTY_STACK);
+          return false;
+        }
+        return true;
+      }
+
       static inline bool push_tmp_value(ThreadContext &context, const Value &value)
       {
         if(!context.push_tmp_value(value)) {
@@ -444,7 +453,7 @@ namespace letin
       static inline bool get_tmp_value(ThreadContext &context, Value &value)
       {
         if(!context.get_tmp_value(value)) {
-          context.set_error(ERROR_STACK_OVERFLOW);
+          context.set_error(ERROR_EMPTY_STACK);
           return false;
         }
         return true;
@@ -587,6 +596,7 @@ namespace letin
              if(is_force) fully_force_rv(context);
           }
         }
+        context.pop_args();
         return context.regs().rv;
       }
 
@@ -737,6 +747,12 @@ namespace letin
         const Instruction &instr = fun.raw().instrs[context.regs().ip];
         context.regs().ip++;
         if(context.regs().after_leaving_flags[1]) {
+          if(context.regs().rv.raw().error == ERROR_SUCCESS) {
+            Reference locked_lazy_value_r;
+            if(!get_locked_lazy_value_ref(context, locked_lazy_value_r)) return false;
+            if(!_M_eval_strategy->post_leave_from_fun_for_force(this, &context, locked_lazy_value_r->raw().lzv.fun, locked_lazy_value_r->raw().lzv.value_type))
+              return false;
+          }
           if(opcode_to_instr(instr.opcode) == INSTR_ARG) context.regs().arg_instr_flag = true;
           if(!restore_and_pop_regs_for_force(context)) return false;
           if(opcode_to_instr(instr.opcode) == INSTR_ARG) context.regs().arg_instr_flag = false;
@@ -1486,6 +1502,7 @@ namespace letin
             context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             if(!_M_eval_strategy->post_leave_from_fun(this, &context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
+            context.pop_args();
             return _M_return_value_to_int_value(context.regs().rv);
           }
           case OP_FCALL:
@@ -1499,6 +1516,7 @@ namespace letin
             context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             if(!_M_eval_strategy->post_leave_from_fun(this, &context, static_cast<uint32_t>(i), VALUE_TYPE_FLOAT)) return Value();
+            context.pop_args();
             return _M_return_value_to_float_value(context.regs().rv);
           }
           case OP_RCALL:
@@ -1512,6 +1530,7 @@ namespace letin
             context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             if(!_M_eval_strategy->post_leave_from_fun(this, &context, static_cast<uint32_t>(i), VALUE_TYPE_REF)) return Value();
+            context.pop_args();
             return _M_return_value_to_ref_value(context.regs().rv);
           }
           case OP_ITOF:
@@ -2350,11 +2369,11 @@ namespace letin
                 if(context.regs().rv.raw().error == ERROR_SUCCESS) lock.release();
                 return false;
               }
+              if(!_M_eval_strategy->post_leave_from_fun_for_force(this, &context, object.raw().lzv.fun, object.raw().lzv.value_type))
+                return false;
               if(!restore_and_pop_regs_for_force(context)) return false;
             }
             context.regs().after_leaving_flags[1] = false;
-            if(!_M_eval_strategy->post_leave_from_fun_for_force(this, &context, object.raw().lzv.fun, object.raw().lzv.value_type))
-              return false;
             if(!context.regs().rv.raw().r->is_lazy()) {
               switch(object.raw().lzv.value_type) {
                 case VALUE_TYPE_INT:

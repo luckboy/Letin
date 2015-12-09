@@ -413,6 +413,15 @@ namespace letin
           return false;
       }
 
+      bool get_locked_lazy_value_ref(Reference &r)
+      {
+        if(_M_regs.abp2 > 0 && _M_stack[_M_regs.abp2 - 1].type() == VALUE_TYPE_LOCKED_LAZY_VALUE_REF) {
+          r.safely_assign_for_gc(_M_stack[_M_regs.abp2 - 1].raw().r);
+          return true;
+        } else
+          return false;
+      }
+
       bool push_tmp_value(const Value &value)
       { return push_local_var(value); }
 
