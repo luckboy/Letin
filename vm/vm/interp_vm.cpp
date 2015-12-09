@@ -822,7 +822,9 @@ namespace letin
               value = interpret_op(context, instr);
               context.pop_args();
               context.regs().ai = static_cast<uint64_t>(-1);
-              if(!push_tmp_value(context, value)) value = Value();
+              if(!value.is_error()) {
+                if(!push_tmp_value(context, value)) value = Value();
+              }
             } else {
               if(!get_tmp_value(context, value)) value = Value();
             }
