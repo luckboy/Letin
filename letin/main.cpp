@@ -138,7 +138,7 @@ EvaluationStrategy *parse_eval_strategy_string(const string &str, unique_ptr<Mem
       memo_cache_factory = unique_ptr<MemoizationCacheFactory>(new_memoization_cache_factory(bucket_count));
       return new_memoization_evaluation_strategy(memo_cache_factory.get());
     };
-  } else if(equal(name_begin, name_end, "lazymemo")) {
+  } else if(equal(name_begin, name_end, "memolazy")) {
     fun = [&memo_cache_factory, &bucket_count]() {
       memo_cache_factory = unique_ptr<MemoizationCacheFactory>(new_memoization_cache_factory(bucket_count));
       return new_memoization_lazy_evaluation_strategy(memo_cache_factory.get());
