@@ -929,7 +929,7 @@ namespace letin
     { return pre_enter_to_fun(vm, context, i, value_type, is_fun_result); }
 
     bool EvaluationStrategy::post_leave_from_fun_for_force(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type)
-    { return must_post_leave_from_fun(vm, context, i, value_type); }
+    { return post_leave_from_fun(vm, context, i, value_type); }
 
     void EvaluationStrategy::set_fun_infos_and_fun_count(const FunctionInfo *fun_infos, size_t fun_count) {}
 
