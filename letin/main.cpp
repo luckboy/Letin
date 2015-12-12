@@ -50,9 +50,9 @@ static bool find_native_lib(const string &native_lib_name, const vector<string> 
   for(size_t i = 0; i < native_lib_dirs.size(); i++) {
     struct stat stat_buf;
 #if defined(_WIN32) || defined(_WIN64)    
-    file_name = native_lib_dirs[i] + PATH_SEP + unix_path_to_path(string(native_lib_name) + ".dll");
+    file_name = native_lib_dirs[i] + PATH_SEP + unix_path_to_path("lib" + string(native_lib_name) + ".dll");
 #else
-    file_name = native_lib_dirs[i] + PATH_SEP + unix_path_to_path(string(native_lib_name) + ".so");
+    file_name = native_lib_dirs[i] + PATH_SEP + unix_path_to_path("lib" + string(native_lib_name) + ".so");
 #endif
     if(stat(file_name.c_str(), &stat_buf) != -1) return true;
   }
@@ -104,6 +104,7 @@ static bool load_native_fun_handlers(NativeFunctionHandlerLoader *native_fun_han
       cerr << "error: can't load native library " + file_name << endl;
       return false;
     }
+    native_lib_funs.push_back(fun);
   }
   if(is_default_native_fun_handler)
     native_fun_handlers.push_back(new DefaultNativeFunctionHandler());
@@ -269,7 +270,7 @@ int main(int argc, char **argv)
     }
     file_names.push_back(argv[optind]);
     vector<string> native_lib_file_names;
-    for(auto native_lib_name : native_lib_dirs) {
+    for(auto native_lib_name : native_lib_names) {
       string native_lib_file_name;
       if(!find_native_lib(native_lib_name, native_lib_dirs, native_lib_file_name)) {
         cerr << "error: not found native library " + native_lib_name << endl;
@@ -279,7 +280,7 @@ int main(int argc, char **argv)
     }
     initialize_vm();
     VirtualMachineFinalization final;
-    unique_ptr<NativeFunctionHandlerLoader> native_fun_handler_loader;
+    unique_ptr<NativeFunctionHandlerLoader> native_fun_handler_loader(new_native_function_handler_loader());
     vector<NativeFunctionHandler *> native_fun_handlers;
     if(!load_native_fun_handlers(native_fun_handler_loader.get(), native_lib_file_names, native_fun_handlers, is_default_native_fun_handler)) return 1;
     unique_ptr<Loader> loader(new_loader());

@@ -31,7 +31,8 @@ namespace letin
         VirtualMachine(loader, gc, native_fun_handler, eval_strategy)
       {
         for(int nfi = _M_native_fun_handler->min_native_fun_index(); nfi <= _M_native_fun_handler->max_native_fun_index(); nfi++) {
-          _M_env.add_native_fun_index(string(_M_native_fun_handler->native_fun_name(nfi)), nfi);
+          if(_M_native_fun_handler->native_fun_name(nfi) != nullptr)
+            _M_env.add_native_fun_index(string(_M_native_fun_handler->native_fun_name(nfi)), nfi);
         }
         _M_gc->add_vm_context(&_M_env);
       }
@@ -66,7 +67,7 @@ namespace letin
           var_count += prog->var_count();
         }
         if(!is_success) {
-          _M_env.reset();
+          _M_env.reset_without_native_fun_indexes();
           return false;
         }
 
@@ -108,7 +109,7 @@ namespace letin
             var_offset += prog->var_count();
           }
           if(!is_success) {
-            _M_env.reset();
+            _M_env.reset_without_native_fun_indexes();
             return false;
           }
 
@@ -143,7 +144,7 @@ namespace letin
             }
           }
           if(!is_success) {
-            _M_env.reset();
+            _M_env.reset_without_native_fun_indexes();
             return false;
           }
 
@@ -159,7 +160,7 @@ namespace letin
             var_offset += prog->var_count();
           }
           if(!is_success) {
-            _M_env.reset();
+            _M_env.reset_without_native_fun_indexes();
             return false;
           }
         }
@@ -176,7 +177,7 @@ namespace letin
           var_offset += prog->var_count();
         }
         if(!is_success) {
-          _M_env.reset();
+          _M_env.reset_without_native_fun_indexes();
           return false;
         }
 

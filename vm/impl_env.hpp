@@ -122,6 +122,8 @@ namespace letin
         }
 
         void reset();
+
+        void reset_without_native_fun_indexes();
       };
     }
   }

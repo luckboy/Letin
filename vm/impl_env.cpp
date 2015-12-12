@@ -73,6 +73,12 @@ namespace letin
 
       void ImplEnvironment::reset()
       {
+        reset_without_native_fun_indexes();
+        _M_native_fun_indexes = unordered_map<string, int>();
+      }
+
+      void ImplEnvironment::reset_without_native_fun_indexes()
+      {
         _M_funs = unique_ptr<Function []>(nullptr);
         _M_fun_count = 0;
         _M_vars = unique_ptr<Value []>(nullptr);
@@ -80,7 +86,6 @@ namespace letin
         _M_fun_infos = unique_ptr<FunctionInfo []>(nullptr);
         _M_fun_indexes = unordered_map<string, size_t>();
         _M_var_indexes = unordered_map<string, size_t>();
-        _M_native_fun_indexes = unordered_map<string, int>();
         _M_memo_caches = list<MemoizationCache *>();
         _M_data_list_to_free = list<unique_ptr<char []>>();
       }

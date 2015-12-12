@@ -569,7 +569,7 @@ namespace letin
           ValueSetter(const vm::Value &value) : _M_value(value) {}
 
           int set(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
-          { value = vm::Value(_M_value); return ERROR_SUCCESS; }
+          { value = (_M_value.type() == VALUE_TYPE_CANCELED_REF ? vm::Value(_M_value.raw().r) : vm::Value(_M_value)); return ERROR_SUCCESS; }
         };
       }
 
