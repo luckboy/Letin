@@ -1,0 +1,14 @@
+.entry main
+
+main(a2) = {
+	arg iload 1
+	arg rload s
+	arg rload a1
+	lettuple(lv2) rncall &#posix.write
+	let rutfilli 2, 0
+	in
+	arg rload lv1
+	ret rutsnth lv2, 1
+}
+
+s = "Hello world!!!\n"
