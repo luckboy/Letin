@@ -12,10 +12,7 @@
 #else
 #error "Unsupported operating system."
 #endif
-#include <new>
 #include "dyn_lib.hpp"
-
-using namespace std;
 
 namespace letin
 {
