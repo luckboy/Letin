@@ -44,7 +44,7 @@ namespace letin
       bool close_dir(Directory *dir)
       { return closedir(reinterpret_cast<::DIR *>(dir)) != -1; }
 
-      bool read_dir(Directory *dir, DirectoryEntry *entry, Directory *&result)
+      bool read_dir(Directory *dir, DirectoryEntry *entry, DirectoryEntry *&result)
       {
         int error = ::readdir_r(reinterpret_cast<::DIR *>(dir), reinterpret_cast<struct ::dirent *>(entry), reinterpret_cast<::dirent **>(&result));
         if(error != 0) {

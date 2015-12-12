@@ -218,8 +218,8 @@ namespace letin
         int max_system_error = numeric_limits<int>::min();
         for(auto system_error : system_errors) {
           if(system_error < (1 << 29)) {
-            min_system_error = max(min_system_error, system_error);
-            max_system_error = min(max_system_error, system_error);
+            min_system_error = min(min_system_error, system_error);
+            max_system_error = max(max_system_error, system_error);
           }
         }
         errors.resize(max_system_error - min_system_error + 1);
@@ -233,8 +233,8 @@ namespace letin
         int max_winsock2_system_error = numeric_limits<int>::min();
         for(auto system_error : system_errors) {
           if(system_error >= (1 << 29) && system_error < (1 << 30)) {
-            min_winsock2_system_error = max(min_winsock2_system_error, system_error);
-            max_winsock2_system_error = min(max_winsock2_system_error, system_error);
+            min_winsock2_system_error = min(min_winsock2_system_error, system_error);
+            max_winsock2_system_error = max(max_winsock2_system_error, system_error);
           }
         }
         winsock2_errors.resize(max_winsock2_system_error - min_winsock2_system_error + 1);
@@ -247,8 +247,8 @@ namespace letin
         int max_other_system_error = numeric_limits<int>::min();
         for(auto system_error : system_errors) {
           if(system_error >= (1 << 30)) {
-            min_other_system_error = max(min_other_system_error, system_error);
-            max_other_system_error = min(max_other_system_error, system_error);
+            min_other_system_error = min(min_other_system_error, system_error);
+            max_other_system_error = max(max_other_system_error, system_error);
           }
         }
         other_errors.resize(max_other_system_error - min_other_system_error + 1);

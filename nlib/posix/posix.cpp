@@ -1870,6 +1870,30 @@ namespace letin
         return ERROR_SUCCESS;
       }
 
+      // Fucntions for struct tms.
+
+      //
+      // type tms = (
+      //     int,       // tms_utime
+      //     int,       // tms_stime
+      //     int,       // tms_cutime
+      //     int        // tms_cutime
+      //   )
+      //
+
+#if defined(__unix__)
+      Object *new_tms(VirtualMachine *vm, ThreadContext *context, const struct ::tms &times)
+      {
+        Object *object = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 4, context);
+        if(object == nullptr) return nullptr;
+        object->set_elem(0, times.tms_utime);
+        object->set_elem(1, times.tms_stime);
+        object->set_elem(2, times.tms_cutime);
+        object->set_elem(3, times.tms_cstime);
+        return object;
+      }
+#endif
+
       // Functions for struct termios.
       
       //
