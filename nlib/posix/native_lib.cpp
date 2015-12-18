@@ -244,7 +244,7 @@ extern "C" {
             size_t offset, count;
             if(!convert_args(args, tofd(fd), toref(buf_r), tosize(offset), tocount(count)))
               return return_value(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
-            if(offset >= buf_r->length() || offset + count >= buf_r->length())
+            if(offset >= buf_r->length() || offset + count > buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)), EINVAL);
 #if defined(__unix__)
             ::ssize_t result = ::read(fd, buf_r->raw().is8 + offset, count);
@@ -269,7 +269,7 @@ extern "C" {
             size_t offset, count;
             if(!convert_args(args, tofd(fd), toref(buf_r), tosize(offset), tocount(count)))
               return return_value(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
-            if(offset >= buf_r->length() || offset + count >= buf_r->length())
+            if(offset >= buf_r->length() || offset + count > buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)), EINVAL);
 #if defined(__unix__)
             ::ssize_t result = ::write(fd, buf_r->raw().is8 + offset, count);
@@ -2164,7 +2164,7 @@ extern "C" {
         {
           "posix.sync", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-            int error = check_args(vm, context, args, cio);
+            int error = check_args(vm, context, args, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
 #if defined(__unix__)
@@ -2180,7 +2180,7 @@ extern "C" {
         {
           "posix.fsync", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-            int error = check_args(vm, context, args, cint, cio);
+            int error = check_args(vm, context, args, cint, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             int fd;
@@ -2206,7 +2206,7 @@ extern "C" {
         {
           "posix.fdatasync", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-            int error = check_args(vm, context, args, cint, cio);
+            int error = check_args(vm, context, args, cint, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             int fd;
@@ -2232,7 +2232,7 @@ extern "C" {
         {
           "posix.uname", // (io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-            int error = check_args(vm, context, args, cio);
+            int error = check_args(vm, context, args, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
 #if defined(__unix__)
@@ -2322,7 +2322,7 @@ extern "C" {
         {
           "posix.opendir", // (dir_name: iarray8, io: uio) -> (uoption unative, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-            int error = check_args(vm, context, args, ciarray8, cio);
+            int error = check_args(vm, context, args, ciarray8, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[1];
             string dir_name;
@@ -2337,7 +2337,7 @@ extern "C" {
         {
           "posix.closedir", // (dir: unative, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-            int error = check_args(vm, context, args, cdir, cio);
+            int error = check_args(vm, context, args, cdir, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &dir_v = args[0], &io_v = args[1];
             Directory *dir;
@@ -2353,63 +2353,62 @@ extern "C" {
           }
         },
         {
-          "posix.readdir", // (dir: unative, io: uio) -> (option tuple, uio)
+          "posix.readdir", // (dir: unative, io: uio) -> ((option tuple, unative), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-            int error = check_args(vm, context, args, cdir, cio);
+            int error = check_args(vm, context, args, cdir, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
-            Value &io_v = args[1];
+            Value &dir_v = args[0], &io_v = args[1];
             Directory *dir;
             unique_ptr<DirectoryEntry, DirectoryEntryDelete> dir_entry(new_directory_entry());
             if(!convert_args(args, todir(dir)))
-              return return_value(vm, context, vut(vnone, v(io_v)));
+              return return_value(vm, context, vut(vut(vnone, v(dir_v)), v(io_v)));
             DirectoryEntry *result = nullptr;
-            int tmp_errno = read_dir(dir, dir_entry.get(), result);
-            if(tmp_errno != 0)
-              return return_value_with_errno(vm, context, vut(vnone, v(io_v)), tmp_errno);
+            if(!read_dir(dir, dir_entry.get(), result))
+              return return_value_with_errno(vm, context, vut(vut(vnone, v(dir_v)), v(io_v)));
             if(result != nullptr)
-              return return_value(vm, context, vut(vsome(vdirentry(dir_entry.get())), v(io_v)));
+              return return_value(vm, context, vut(vut(vsome(vdirentry(dir_entry.get())), v(dir_v)), v(io_v)));
             else
-              return return_value(vm, context, vut(vnone, v(io_v)));
+              return return_value(vm, context, vut(vut(vnone, v(dir_v)), v(io_v)));
           }
         },
         {
-          "posix.rewinddir", // (dir: unative, io: uio) -> (int, uio)
+          "posix.rewinddir", // (dir: unative, io: uio) -> ((int, unative), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-            int error = check_args(vm, context, args, cdir, cio);
+            int error = check_args(vm, context, args, cdir, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
-            Value &io_v = args[1];
+            Value &dir_v = args[0], &io_v = args[1];
             Directory *dir;
             if(!convert_args(args, todir(dir)))
-              return return_value(vm, context, vut(vint(-1), v(io_v)));
+              return return_value(vm, context, vut(vut(vint(-1), v(dir_v)), v(io_v)));
             rewind_dir(dir);
-            return return_value(vm, context, vut(vint(0), v(io_v)));
+            return return_value(vm, context, vut(vut(vint(0), v(dir_v)), v(io_v)));
           }
         },
         {
-          "posix.seekdir", // (dir: unative, loc: int, io: uio) -> (int, uio)
+          "posix.seekdir", // (dir: unative, loc: int, io: uio) -> ((int, unative), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-            int error = check_args(vm, context, args, cdir, cint, cio);
+            int error = check_args(vm, context, args, cdir, cint, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
-            Value &io_v = args[2];
+            Value &dir_v = args[0], &io_v = args[2];
             Directory *dir;
             long loc;
             if(!convert_args(args, todir(dir), tolarg(loc)))
-              return return_value(vm, context, vut(vint(-1), v(io_v)));
+              return return_value(vm, context, vut(vut(vint(-1), v(dir_v)), v(io_v)));
             seek_dir(dir, loc);
-            return return_value(vm, context, vut(vint(0), v(io_v)));
+            return return_value(vm, context, vut(vut(vint(0), v(dir_v)), v(io_v)));
           }
         },
         {
-          "posix.telldir", // (dir: unative, io: uio) -> (int, uio)
+          "posix.telldir", // (dir: unative, io: uio) -> ((int, unative), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-            int error = check_args(vm, context, args, cdir, cio);
+            int error = check_args(vm, context, args, cdir, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
-            Value &io_v = args[1];
+            Value &dir_v = args[0], &io_v = args[1];
             Directory *dir;
             if(!convert_args(args, todir(dir)))
-              return return_value(vm, context, vut(vint(-1), v(io_v)));
+              return return_value(vm, context, vut(vut(vint(-1), v(dir_v)), v(io_v)));
             long loc = tell_dir(dir);
-            return return_value(vm, context, vut(vint(loc), v(io_v)));
+            return return_value(vm, context, vut(vut(vint(loc), v(dir_v)), v(io_v)));
           }
         },
         
@@ -2420,7 +2419,7 @@ extern "C" {
         {
           "posix.gethostname", // (io: uio) -> (option iarray8, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-            int error = check_args(vm, context, args, cio);
+            int error = check_args(vm, context, args, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
 #if defined(__unix__)

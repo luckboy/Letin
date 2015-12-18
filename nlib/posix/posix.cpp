@@ -27,7 +27,6 @@
 #endif
 #include <algorithm>
 #include <cerrno>
-#include <dirent.h>
 #include <fcntl.h>
 #include <map>
 #include <mutex>
@@ -1859,7 +1858,7 @@ namespace letin
       }
 #endif
 
-      bool check_timespec(VirtualMachine *vm, ThreadContext *context, Object &object)
+      int check_timespec(VirtualMachine *vm, ThreadContext *context, Object &object)
       {
         if(!object.is_tuple() || object.length() != 2) return ERROR_INCORRECT_OBJECT;
         for(size_t i = 0; i < 2; i++) {
@@ -1953,7 +1952,7 @@ namespace letin
       }
 #endif
 
-      bool check_termios(VirtualMachine *vm, ThreadContext *context, Object &object)
+      int check_termios(VirtualMachine *vm, ThreadContext *context, Object &object)
       {
         if(!object.is_tuple() || object.length() != 7) return ERROR_INCORRECT_OBJECT;
         for(size_t i = 0; i < 4; i++) {
@@ -2015,7 +2014,7 @@ namespace letin
 
       Object *new_directory(VirtualMachine *vm, ThreadContext *context, Directory *dir)
       {
-        Object *object = vm->gc()->new_object(OBJECT_TYPE_NATIVE_OBJECT | OBJECT_TYPE_UNIQUE, sizeof(::DIR *), context);
+        Object *object = vm->gc()->new_object(OBJECT_TYPE_NATIVE_OBJECT | OBJECT_TYPE_UNIQUE, sizeof(Directory *), context);
         if(object == nullptr) return nullptr;
         object->raw().ntvo.type = NativeObjectType(&directory_type_ident);
         object->raw().ntvo.clazz = NativeObjectClass(&directory_funs);

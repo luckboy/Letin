@@ -502,6 +502,14 @@ namespace letin
           { value = vm::Value(_M_i); return ERROR_SUCCESS; }
         };
 
+        struct ZeroIntSetter
+        {
+          ZeroIntSetter() {}
+
+          int set(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
+          { value = vm::Value(0); return ERROR_SUCCESS; }
+        };
+
         class FloatSetter
         {
           const double &_M_f;
@@ -780,12 +788,12 @@ namespace letin
 
       inline priv::CStringSetter vcstr(const char *string, std::size_t length) { return priv::CStringSetter(string, length); }
 
-      const priv::TupleSetter<0, priv::IntSetter> vnone = priv::TupleSetter<0, priv::IntSetter>(priv::IntSetter(0));
+      const priv::TupleSetter<0, priv::ZeroIntSetter> vnone = priv::TupleSetter<0, priv::ZeroIntSetter>(priv::ZeroIntSetter());
 
       template<typename _T>
       inline priv::TupleSetter<0, priv::IntSetter, _T> vsome(_T setter) { return vt(vint(1), setter); }
 
-      const priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::IntSetter> vunone = priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::IntSetter>(priv::IntSetter(0));
+      const priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::ZeroIntSetter> vunone = priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::ZeroIntSetter>(priv::ZeroIntSetter());
 
       template<typename _T>
       inline priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::IntSetter, _T> vusome(_T setter) { return vut(vint(1), setter); }

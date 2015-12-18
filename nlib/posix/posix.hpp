@@ -350,7 +350,7 @@ namespace letin
       LETIN_NATIVE_OBJECT_CONVERTER(totimespec, object_to_system_timespec, struct ::timespec);
 #endif
 
-      bool check_timespec(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
+      int check_timespec(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
       LETIN_NATIVE_OBJECT_CHECKER(ctimespec, check_timespec);
 
       // Functions for struct tms.
@@ -370,7 +370,7 @@ namespace letin
       LETIN_NATIVE_OBJECT_CONVERTER(totermios, object_to_system_termios, struct ::termios);
 #endif
 
-      bool check_termios(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
+      int check_termios(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
       LETIN_NATIVE_OBJECT_CHECKER(ctermios, check_termios);
 
       // Functions for struct utsname.
@@ -383,7 +383,7 @@ namespace letin
       // Functions for DIR *.
 
       vm::Object *new_directory(vm::VirtualMachine *vm, vm::ThreadContext *context, Directory *dir);
-      inline LETINT_NATIVE_OBJECT_SETTER_TYPE(new_directory, Directory *) vdir(Directory *dir)
+      inline LETINT_NATIVE_OBJECT_SETTER_TYPE(new_directory, Directory *) vdir(Directory * const &dir)
       { return LETINT_NATIVE_OBJECT_SETTER_TYPE(new_directory, Directory *)(new_directory, dir); }
 
       bool object_to_system_directory(const vm::Object &object, Directory *&dir);
@@ -395,7 +395,7 @@ namespace letin
       // Functions for DirectoryEntry *.
 
       bool set_new_directory_entry(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &tmp_r, DirectoryEntry *dir_entry);
-      inline LETINT_NATIVE_REF_SETTER_TYPE(set_new_directory_entry, DirectoryEntry *) vdirentry(DirectoryEntry *dir_entry)
+      inline LETINT_NATIVE_REF_SETTER_TYPE(set_new_directory_entry, DirectoryEntry *) vdirentry(DirectoryEntry * const &dir_entry)
       { return LETINT_NATIVE_REF_SETTER_TYPE(set_new_directory_entry, DirectoryEntry *)(set_new_directory_entry, dir_entry); }
 
       // Functions for Windows.

@@ -512,7 +512,7 @@ namespace letin
 
     int VirtualMachine::force_tuple_elem(ThreadContext *context, Object &object, size_t i)
     {
-      if((object.type() & ~OBJECT_TYPE_UNIQUE) == OBJECT_TYPE_TUPLE) return ERROR_INCORRECT_OBJECT;
+      if((object.type() & ~OBJECT_TYPE_UNIQUE) != OBJECT_TYPE_TUPLE) return ERROR_INCORRECT_OBJECT;
       if(object.elem(i).is_lazy()) {
         RegisteredReference tmp_r(object.elem(i).raw().r, context);
         Value tmp_value = object.elem(i);
@@ -524,7 +524,7 @@ namespace letin
 
     int VirtualMachine::fully_force_tuple_elem(ThreadContext *context, Object &object, size_t i)
     {
-      if((object.type() & ~OBJECT_TYPE_UNIQUE) == OBJECT_TYPE_TUPLE) return ERROR_INCORRECT_OBJECT;
+      if((object.type() & ~OBJECT_TYPE_UNIQUE) != OBJECT_TYPE_TUPLE) return ERROR_INCORRECT_OBJECT;
       if(object.elem(i).is_lazy()) {
         RegisteredReference tmp_r(object.elem(i).raw().r, context);
         Value tmp_value = object.elem(i);

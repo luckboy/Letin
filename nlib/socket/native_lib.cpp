@@ -208,7 +208,7 @@ extern "C" {
             SocketSize len;
             if(!convert_args(args, tosd(sd), toref(buf_r), tosize(offset), tolen(len), toflags(flags)))
               return return_value(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
-            if(offset >= buf_r->length() || offset + len >= buf_r->length())
+            if(offset >= buf_r->length() || offset + len > buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)), EINVAL);
             SocketSsize result = ::recv(sd, reinterpret_cast<Pointer>(buf_r->raw().is8 + offset), len, flags);
             if(result == -1)
@@ -228,7 +228,7 @@ extern "C" {
             SocketSize len;
             if(!convert_args(args, tosd(sd), toref(buf_r), tosize(offset), tolen(len), toflags(flags)))
               return return_value(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
-            if(offset >= buf_r->length() || offset + len >= buf_r->length())
+            if(offset >= buf_r->length() || offset + len > buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)), EINVAL);
             SocketSsize result = ::send(sd, reinterpret_cast<Pointer>(buf_r->raw().is8 + offset), len, flags);
             if(result == -1)
@@ -288,7 +288,7 @@ extern "C" {
             ::socklen_t addr_len;
             if(!convert_args(args, tosd(sd), toref(buf_r), tosize(offset), tolen(len), toflags(flags)))
               return return_value(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
-            if(offset >= buf_r->length() || offset + len >= buf_r->length())
+            if(offset >= buf_r->length() || offset + len > buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v), vnone), v(io_v)), EINVAL);
             SocketSsize result = ::recvfrom(sd, reinterpret_cast<Pointer>(buf_r->raw().is8 + offset), len, flags, &(addr.addr), &(addr_len));
             if(result == -1)
@@ -309,7 +309,7 @@ extern "C" {
             SocketAddress addr;
             if(!convert_args(args, tosd(sd), toref(buf_r), tosize(offset), tolen(len), toflags(flags), tosockaddr(addr)))
               return return_value(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
-            if(offset >= buf_r->length() || offset + len >= buf_r->length())
+            if(offset >= buf_r->length() || offset + len > buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)), EINVAL);
             SocketSsize result = ::sendto(sd, reinterpret_cast<Pointer>(buf_r->raw().is8 + offset), len, flags, &(addr.addr), addr.length());
             if(result == -1)
