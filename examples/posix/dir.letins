@@ -1,0 +1,65 @@
+.entry main
+
+readDirAndPrint(a2) = {
+	arg rload a0
+	arg rload a1
+	lettuple(lv2) rncall &#posix.readdir	// lv0, lv1
+	in
+	lettuple(lv2) rload lv0			// lv2, lv3
+	in
+	let rtnth lv2, 0			// lv4
+	in
+	let ieq lv4, 0				// lv5
+	in
+	jc lv5, label
+	let rtnth lv2, 1			// lv6
+	in
+	let rtnth lv6, 1			// lv7
+	in
+	arg iload '\n'
+	let riarray8()				// lv8
+	in
+	arg iload 1
+	arg riacat8 lv7, lv8
+	arg rload lv1
+	lettuple(lv2) rncall &#posix.write	// lv9, lv10
+	in
+	arg rload lv3
+	arg rload lv10
+	retry
+label:	let rutfilli 2, 0			// lv6
+	in
+	arg rload lv3
+	let rutsnth lv6, 0			// lv7
+	in
+	arg rload lv1
+	ret rutsnth lv7, 1
+}
+
+main(a2) = {
+	arg rranth a0, 0
+	arg rload a1
+	lettuple(lv2) rncall &#posix.opendir	// lv0, lv1
+	in
+	lettuple(lv2) rutnth lv0, 0		// lv2, lv3
+	in
+	let ieq lv2, 0				// lv4
+	in
+	jc lv4, label
+	lettuple(lv2) rutnth lv3, 1		// lv5, lv6
+	in
+	arg rload lv5
+	arg rload lv1
+	lettuple(lv2) rcall &readDirAndPrint	// lv7, lv8
+	in
+	arg rload lv7
+	arg rload lv8
+	let rncall &#posix.closedir		// lv9
+	in
+	arg iload 0
+	ret rutsnth lv9, 0
+label:	let rutfilli 2, 1			// lv5
+	in
+	arg rload lv1
+	ret rutsnth lv5, 1
+}

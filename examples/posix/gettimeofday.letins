@@ -1,0 +1,50 @@
+.entry main
+
+tvSec = "tv_sec:\t\t"
+nlTvUsec = "\ntv_usec:\t"
+
+timevalToString(a1) = {
+	arg rtnth a0, 0
+	let rncall &#itoa			// lv0
+	in
+	let riacat8 tvSec, lv0			// lv1
+	in
+	arg rtnth a0, 1
+	let rncall &#itoa			// lv2
+	in
+	let riacat8 lv1, nlTvUsec		// lv3
+	in
+	let riacat8 lv3, lv2			// lv4
+	in
+	arg iload '\n'
+	let riarray8()				// lv5
+	in
+	ret riacat8 lv4, lv5			// lv6
+}
+
+main(a2) = {
+	arg rload a1
+	lettuple(lv2) rncall &#posix.gettimeofday // lv0, lv1
+	in
+	let rtnth lv0, 0			// lv2
+	in
+	let ieq lv2, 0				// lv3
+	in
+	jc lv3, label
+	let rtnth lv0, 1			// lv4
+	in
+	arg rload lv4
+	let rcall &timevalToString		// lv5
+	in
+	arg iload 1
+	arg rload lv5
+	arg rload lv1
+	let rncall &#posix.write		// lv6
+	in
+	arg iload 0
+	ret rutsnth lv6, 0
+label:	let rutfilli 2, 1			// lv4
+	in
+	arg rload lv1
+	ret rutsnth lv4, 1
+}

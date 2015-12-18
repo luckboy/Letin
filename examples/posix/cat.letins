@@ -1,0 +1,98 @@
+.entry main
+
+readAndWrite(a4) = {
+	arg iload a0
+	arg rload a1
+	arg iload 0
+	arg iload a2
+	arg rload a3
+	lettuple(lv2) rncall &#posix.uread	// lv0, lv1
+	in
+	lettuple(lv2) rload lv0			// lv2, lv3
+	in
+	let ieq lv2, 0				// lv4
+	in
+	jc lv4, label1
+	let ieq lv2, -1				// lv5
+	in
+	jc lv5, label2
+	arg iload 1
+	arg rload lv3
+	arg iload 0
+	arg iload lv2
+	arg rload lv1
+	lettuple(lv2) rncall &#posix.uwrite	// lv6, lv7
+	in
+	lettuple(lv2) rutnth lv6, 1		// lv8
+	in
+	arg iload a0
+	arg rload lv8
+	arg iload a2
+	arg rload lv7
+	retry
+label1:	let rutfilli 2, 0			// lv5
+	in
+	arg rload lv1
+	ret rutsnth lv5, 1
+label2:	let rutfilli 2, 1			// lv6
+	in
+	arg rload lv1
+	ret rutsnth lv6, 1
+}
+
+catFiles(a4) = {
+	let rralen a0				// lv0
+	in
+	let ige a1, lv0				// lv1
+	in
+	jc lv1, label1
+	arg rranth a0, a1
+	arg iload 0
+	arg iload 0777
+	arg rload a3
+	lettuple(lv2) rncall &#posix.open	// lv2, lv3
+	in
+	let ieq lv2, -1				// lv4
+	in
+	jc lv4, label2
+	arg iload lv2
+	arg ruiafill8 4096, 0
+	arg iload 4096
+	arg rload lv3
+	lettuple(lv2) rcall &readAndWrite	// lv5, lv6
+	in
+	arg iload lv2
+	arg rload lv6
+	lettuple(lv2) rncall &#posix.close	// lv7, lv8
+	in
+	arg rload a0
+	arg iadd a1, 1
+	arg iload a2
+	arg rload lv8
+	retry
+label1:	let rutfilli 2, a2			// lv2
+	in
+	arg rload a3
+	ret rutsnth lv2, 1
+label2: arg rload a0
+	arg iadd a1, 1
+	arg ior a2, 1
+	arg rload lv3
+	retry
+}
+
+main(a2) = {
+	let rralen a0
+	in
+	jc lv0, label
+	arg iload 0
+	arg ruiafill8 4096, 0
+	arg iload 4096
+	arg rload a1
+	ret rcall &readAndWrite
+label:	arg rload a0
+	arg iload 0
+	arg iload 0
+	arg rload a1
+	ret rcall &catFiles
+}

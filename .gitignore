@@ -1,5 +1,6 @@
 /build
 /build_*
 /examples/*.letin
+/examples/*/*.letin
 /.kdev4
 *~

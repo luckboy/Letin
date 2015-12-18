@@ -1,0 +1,191 @@
+.entry main
+
+stDev = "st_dev:\t\t"
+nlStIno = "\nst_ino:\t\t"
+nlStMode = "\nst_mode:\t"
+nlStNlink = "\nst_nlink:\t"
+nlStUid = "\nst_uid:\t\t"
+nlStGid = "\nst_gid:\t\t"
+nlStRdev = "\nst_rdev:\t"
+nlStSize = "\nst_size:\t"
+nlStAtime = "\nst_atime:\t"
+nlStAtimNsec = "\nst_atim_nsec:\t"
+nlStMtime = "\nst_mtime:\t"
+nlStMtimNsec = "\nst_mtim_nsec:\t"
+nlStCtime = "\nst_ctime:\t"
+nlStCtimNsec = "\nst_ctim_nsec:\t"
+nlStBlksize = "\nst_blksize:\t"
+nlStBlocks = "\nst_blocks:\t"
+
+concatThreeStrings(a3) = {
+	let riacat8 a0, a1
+	in
+	ret riacat8 lv0, a2
+}
+
+modeToString(a1) = {
+	let ishr a0, 3
+	let ishr a0, 6
+	let ishr a0, 9
+	let ishr a0, 12
+	let ishr a0, 18
+	in
+	let iand a0, 7
+	let iand lv0, 7
+	let iand lv1, 7
+	let iand lv2, 7
+	let iand lv3, 7
+	let iand lv4, 7
+	in
+	arg iload '0'
+	arg iadd lv10, '0'
+	arg iadd lv9, '0'
+	arg iadd lv8, '0'
+	arg iadd lv7, '0'
+	arg iadd lv6, '0'
+	arg iadd lv5, '0'
+	ret riarray8()
+}
+
+statToString(a1) = {
+	arg rtnth a0, 0				// st_dev
+	let rncall &#itoa			// lv0
+	in
+	let riacat8 stDev, lv0			// lv1
+	arg rtnth a0, 1				// st_ino
+	let rncall &#itoa			// lv2
+	in
+	arg rload lv1
+	arg rload nlStIno
+	arg rload lv2
+	let rcall &concatThreeStrings		// lv3
+	arg rtnth a0, 2				// st_mode
+	let rcall &modeToString			// lv4
+	in
+	arg rload lv3
+	arg rload nlStMode
+	arg rload lv4
+	let rcall &concatThreeStrings		// lv5
+	arg rtnth a0, 3				// st_nlink
+	let rncall &#itoa			// lv6
+	in
+	arg rload lv5
+	arg rload nlStNlink
+	arg rload lv6
+	let rcall &concatThreeStrings		// lv7
+	arg rtnth a0, 4				// st_uid
+	let rncall &#itoa			// lv8
+	in
+	arg rload lv7
+	arg rload nlStUid
+	arg rload lv8
+	let rcall &concatThreeStrings		// lv9
+	arg rtnth a0, 5				// st_gid
+	let rncall &#itoa			// lv10
+	in
+	arg rload lv9
+	arg rload nlStGid
+	arg rload lv10
+	let rcall &concatThreeStrings		// lv11
+	arg rtnth a0, 6				// st_rdev
+	let rncall &#itoa			// lv12
+	in
+	arg rload lv11
+	arg rload nlStRdev
+	arg rload lv12
+	let rcall &concatThreeStrings		// lv13
+	arg rtnth a0, 7				// st_size
+	let rncall &#itoa			// lv14
+	in
+	arg rload lv13
+	arg rload nlStSize
+	arg rload lv14
+	let rcall &concatThreeStrings		// lv15
+	arg rtnth a0, 8				// st_atime
+	let rncall &#itoa			// lv16
+	in
+	arg rload lv15
+	arg rload nlStAtime
+	arg rload lv16
+	let rcall &concatThreeStrings		// lv17
+	arg rtnth a0, 9				// st_atim_nsec
+	let rncall &#itoa			// lv18
+	in
+	arg rload lv17
+	arg rload nlStAtimNsec
+	arg rload lv18
+	let rcall &concatThreeStrings		// lv19
+	arg rtnth a0, 10			// st_mtime
+	let rncall &#itoa			// lv20
+	in
+	arg rload lv19
+	arg rload nlStMtime
+	arg rload lv20
+	let rcall &concatThreeStrings		// lv21
+	arg rtnth a0, 11			// st_mtim_nsec
+	let rncall &#itoa			// lv22
+	in
+	arg rload lv21
+	arg rload nlStMtimNsec
+	arg rload lv22
+	let rcall &concatThreeStrings		// lv23
+	arg rtnth a0, 12			// st_ctime
+	let rncall &#itoa			// lv24
+	in
+	arg rload lv23
+	arg rload nlStCtime
+	arg rload lv24
+	let rcall &concatThreeStrings		// lv25
+	arg rtnth a0, 13			// st_ctim_nsec
+	let rncall &#itoa			// lv26
+	in
+	arg rload lv25
+	arg rload nlStCtimNsec
+	arg rload lv26
+	let rcall &concatThreeStrings		// lv27
+	arg rtnth a0, 14			// st_blksize
+	let rncall &#itoa			// lv28
+	in
+	arg rload lv27
+	arg rload nlStBlksize
+	arg rload lv28
+	let rcall &concatThreeStrings		// lv29
+	arg rtnth a0, 15			// st_blocks
+	let rncall &#itoa			// lv30
+	in
+	arg rload lv29
+	arg rload nlStBlocks
+	arg rload lv30
+	let rcall &concatThreeStrings		// lv31
+	in
+	arg iload '\n'
+	let riarray8()				// lv32
+	in
+	ret riacat8 lv31, lv32
+}
+
+main(a2) = {
+	arg rranth a0, 0
+	arg rload a1
+	lettuple(lv2) rncall &#posix.stat	// lv0, lv1
+	in
+	let rtnth lv0, 0			// lv2
+	in
+	let ieq lv2, 0				// lv3
+	in
+	jc lv3, label1
+	arg rtnth lv0, 1
+	let rcall &statToString			// lv4
+	in
+	arg iload 1
+	arg rload lv4
+	arg rload lv1
+	let rncall &#posix.write		// lv5
+	in
+	arg iload 0
+	ret rutsnth lv5, 0
+label1:	let rutfilli 2, 1			// lv4
+	in
+	arg rload lv1
+	ret rutsnth lv4, 1
+}

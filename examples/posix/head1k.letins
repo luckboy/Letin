@@ -1,0 +1,31 @@
+.entry main
+
+main(a2) = {
+	let ruiafill8 1024, 0
+	in
+	arg iload 0
+	arg rload lv0
+	arg iload 0
+	arg iload 1024
+	arg rload a1
+	lettuple(lv2) rncall &#posix.uread
+	in
+	lettuple(lv2) rload lv1
+	in
+	let ige lv3, 1024
+	in
+	jc lv5, label
+	arg iload 1
+	arg rload lv4
+	arg iload 0
+	arg iload lv3
+	arg rload lv2
+	let rncall &#posix.uwrite
+	in
+	arg iload 0
+	ret rutsnth lv6, 0
+label:	let rutfilli 2, 1
+	in
+	arg rload lv2
+	ret rutsnth lv6, 1
+}
