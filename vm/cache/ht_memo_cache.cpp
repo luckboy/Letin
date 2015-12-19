@@ -101,9 +101,9 @@ namespace letin
         size_t i = _M_fun_count; 
         while(i > 0) {
           i--;
-          _M_fun_results.get()[i].rs.lock();
-          _M_fun_results.get()[i].fs.lock();
-          _M_fun_results.get()[i].is.lock();
+          _M_fun_results.get()[i].rs.unlock();
+          _M_fun_results.get()[i].fs.unlock();
+          _M_fun_results.get()[i].is.unlock();
         }
       }
 
