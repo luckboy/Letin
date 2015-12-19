@@ -730,7 +730,16 @@ namespace letin
 
       std::vector<std::mutex *> &mutexes() { return _M_mutexes; }
     };
-    
+
+    class InterruptibleFunctionAround
+    {
+      ThreadContext *_M_context;
+    public:
+      InterruptibleFunctionAround(ThreadContext *context);
+
+      ~InterruptibleFunctionAround();
+    };
+
     class VirtualMachine
     {
     protected:

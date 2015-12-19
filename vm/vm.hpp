@@ -186,6 +186,8 @@ namespace letin
       const FunctionInfo *_M_fun_infos;
       RegisteredReference *_M_first_registered_r;
       RegisteredReference *_M_last_registered_r;
+      std::mutex _M_interruptible_fun_mutex;
+      bool _M_interruptible_fun_flag;
     public:
       ThreadContext(const VirtualMachineContext &vm_context, std::size_t stack_size = 32 * 1024);
 
@@ -469,6 +471,10 @@ namespace letin
 
       RegisteredReference *next_registered_ref(const RegisteredReference &r)
       { return r._M_next; }
+
+      std::mutex &interruptible_fun_mutex() { return _M_interruptible_fun_mutex; }
+
+      bool &interruptible_fun_flag() { return _M_interruptible_fun_flag; }
     };
 
     class VirtualMachineContext

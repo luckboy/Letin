@@ -451,6 +451,23 @@ namespace letin
     { for(auto iter = _M_mutexes.rbegin(); iter != _M_mutexes.rend(); iter++) (*iter)->unlock(); }
 
     //
+    // An InterruptibleFunctionAround class.
+    //
+
+    InterruptibleFunctionAround::InterruptibleFunctionAround(ThreadContext *context) :
+      _M_context(context)
+    {
+      lock_guard<mutex> guard(_M_context->interruptible_fun_mutex());
+      _M_context->interruptible_fun_flag() = true;
+    }
+
+    InterruptibleFunctionAround::~InterruptibleFunctionAround()
+    {
+      lock_guard<mutex> guard(_M_context->interruptible_fun_mutex());
+      _M_context->interruptible_fun_flag() = false;
+    }
+
+    //
     // A VirtualMachine class.
     //
 

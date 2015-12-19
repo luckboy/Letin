@@ -30,16 +30,22 @@ namespace letin
 
       void ImplGarbageCollectorBase::Threads::lock()
       {
+        for(auto context : contexts) context->interruptible_fun_mutex().lock();
         stop_threads(_M_stop_cont, [this](function<void (thread &)> fun) {
-          for(auto context : contexts) fun(context->system_thread());
+          for(auto context : contexts) {
+            if(!context->interruptible_fun_flag()) fun(context->system_thread());
+          }
         });
       }
 
       void ImplGarbageCollectorBase::Threads::unlock()
       {
         continue_threads(_M_stop_cont, [this](function<void (thread &)> fun) {
-          for(auto context : contexts) fun(context->system_thread());
+          for(auto context : contexts) {
+            if(!context->interruptible_fun_flag()) fun(context->system_thread());
+          }
         });
+        for(auto context : contexts) context->interruptible_fun_mutex().unlock();
       }
 
       ImplGarbageCollectorBase::ImplForkHandler::~ImplForkHandler() {}
@@ -55,10 +61,16 @@ namespace letin
         _M_gc->_M_other_thread_mutex.lock();
         _M_gc->_M_interval_mutex.lock();
         _M_gc->_M_gc_mutex.lock();
+        for(auto context : _M_gc->_M_threads.contexts) {
+          context->interruptible_fun_mutex().lock();
+        }
       }
 
       void ImplGarbageCollectorBase::ImplForkHandler::post_fork(bool is_child)
       {
+        for(auto context : _M_gc->_M_threads.contexts) {
+          context->interruptible_fun_mutex().unlock();
+        }
         _M_gc->_M_is_locked_gc_thread = false;
         bool is_started = _M_gc->_M_is_started;
         if(is_child) _M_gc->_M_is_started = false;

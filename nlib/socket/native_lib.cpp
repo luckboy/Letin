@@ -107,7 +107,15 @@ extern "C" {
             SocketAddress addr;
             if(!convert_args(args, tosd(sd), tosockaddr(addr)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::connect(sd, &(addr.addr), addr.length());
+            }
+#else
             int result = ::connect(sd, &(addr.addr), addr.length());
+#endif
             if(result == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -155,7 +163,15 @@ extern "C" {
             Socklen addr_len;
             if(!convert_args(args, tosd(sd), tosockaddr(addr)))
               return return_value(vm, context, vut(vnone, v(io_v)));
+#if defined(__unix__)
+            int accepted_sd;
+            {
+              InterruptibleFunctionAround around(context);
+              accepted_sd = ::accept(sd, &(addr.addr), &addr_len);
+            }
+#else
             int accepted_sd = ::accept(sd, &(addr.addr), &addr_len);
+#endif
             if(accepted_sd == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(accepted_sd), vsockaddr(addr))), v(io_v)));
@@ -174,7 +190,15 @@ extern "C" {
             RegisteredReference buf_r(vm->gc()->new_object(OBJECT_TYPE_IARRAY8, len, context), context);
             if(buf_r.is_null()) return error_return_value(ERROR_OUT_OF_MEMORY);
             fill_n(buf_r->raw().is8, buf_r->length(), 0);
+#if defined(__unix__)
+            SocketSsize result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::recv(sd, reinterpret_cast<Pointer>(buf_r->raw().is8), len, flags);
+            }
+#else
             SocketSsize result = ::recv(sd, reinterpret_cast<Pointer>(buf_r->raw().is8), len, flags);
+#endif
             if(result == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(result), vref(buf_r))), v(io_v)));
@@ -190,7 +214,15 @@ extern "C" {
             Reference buf_r;
             if(!convert_args(args, tosd(sd), tobufref(buf_r), toflags(flags)))
               return return_value(vm, context, vut(vt(vint(-1)), v(io_v)));
+#if defined(__unix__)
+            SocketSsize result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::send(sd, reinterpret_cast<Pointer>(buf_r->raw().is8), buf_r->length(), flags);
+            }
+#else
             SocketSsize result = ::send(sd, reinterpret_cast<Pointer>(buf_r->raw().is8), buf_r->length(), flags);
+#endif
             if(result == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(result), v(io_v)));
@@ -210,7 +242,15 @@ extern "C" {
               return return_value(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
             if(offset >= buf_r->length() || offset + len > buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)), EINVAL);
+#if defined(__unix__)
+            SocketSsize result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::recv(sd, reinterpret_cast<Pointer>(buf_r->raw().is8 + offset), len, flags);
+            }
+#else
             SocketSsize result = ::recv(sd, reinterpret_cast<Pointer>(buf_r->raw().is8 + offset), len, flags);
+#endif
             if(result == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
             return return_value(vm, context, vut(vut(vint(result), v(buf_v)), v(io_v)));
@@ -230,7 +270,15 @@ extern "C" {
               return return_value(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
             if(offset >= buf_r->length() || offset + len > buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)), EINVAL);
+#if defined(__unix__)
+            SocketSsize result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::send(sd, reinterpret_cast<Pointer>(buf_r->raw().is8 + offset), len, flags);
+            }
+#else
             SocketSsize result = ::send(sd, reinterpret_cast<Pointer>(buf_r->raw().is8 + offset), len, flags);
+#endif
             if(result == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
             return return_value(vm, context, vut(vut(vint(result), v(buf_v)), v(io_v)));
@@ -251,7 +299,15 @@ extern "C" {
             RegisteredReference buf_r(vm->gc()->new_object(OBJECT_TYPE_IARRAY8, len, context), context);
             if(buf_r.is_null()) return error_return_value(ERROR_OUT_OF_MEMORY);
             fill_n(buf_r->raw().is8, buf_r->length(), 0);
+#if defined(__unix__)
+            SocketSsize result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::recvfrom(sd, reinterpret_cast<Pointer>(buf_r->raw().is8), len, flags, &(addr.addr), &addr_len);
+            }
+#else
             SocketSsize result = ::recvfrom(sd, reinterpret_cast<Pointer>(buf_r->raw().is8), len, flags, &(addr.addr), &addr_len);
+#endif
             if(result == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(result), vref(buf_r), vsockaddr(addr))), v(io_v)));
@@ -268,7 +324,15 @@ extern "C" {
             SocketAddress addr;
             if(!convert_args(args, tosd(sd), tobufref(buf_r), toflags(flags), tosockaddr(addr)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
+            SocketSsize result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::sendto(sd, reinterpret_cast<Pointer>(buf_r->raw().is8), buf_r->length(), flags, &(addr.addr), addr.length());
+            }
+#else
             SocketSsize result = ::sendto(sd, reinterpret_cast<Pointer>(buf_r->raw().is8), buf_r->length(), flags, &(addr.addr), addr.length());
+#endif
             if(result == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(result), v(io_v)));
@@ -290,7 +354,15 @@ extern "C" {
               return return_value(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
             if(offset >= buf_r->length() || offset + len > buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v), vnone), v(io_v)), EINVAL);
+#if defined(__unix__)
+            SocketSsize result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::recvfrom(sd, reinterpret_cast<Pointer>(buf_r->raw().is8 + offset), len, flags, &(addr.addr), &(addr_len));
+            }
+#else
             SocketSsize result = ::recvfrom(sd, reinterpret_cast<Pointer>(buf_r->raw().is8 + offset), len, flags, &(addr.addr), &(addr_len));
+#endif
             if(result == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vut(vint(-1), v(buf_v), vnone), v(io_v)));
             return return_value(vm, context, vut(vut(vint(result), v(buf_v), vsome(vsockaddr(addr))), v(io_v)));
@@ -311,7 +383,15 @@ extern "C" {
               return return_value(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
             if(offset >= buf_r->length() || offset + len > buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)), EINVAL);
+#if defined(__unix__)
+            SocketSsize result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::sendto(sd, reinterpret_cast<Pointer>(buf_r->raw().is8 + offset), len, flags, &(addr.addr), addr.length());
+            }
+#else
             SocketSsize result = ::sendto(sd, reinterpret_cast<Pointer>(buf_r->raw().is8 + offset), len, flags, &(addr.addr), addr.length());
+#endif
             if(result == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)));
             return return_value(vm, context, vut(vut(vint(result), v(buf_v)), v(io_v)));
@@ -432,7 +512,15 @@ extern "C" {
             struct ::timeval timeout;
             if(!convert_args(args, tonfds(nfds), tofd_set(rfds), tofd_set(wfds), tofd_set(efds), tooption(totimeval(timeout), is_timeout)))
               return return_value(vm, context, vut(vnone, v(io_v)));
+#if defined(__unix__)
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::select(nfds, &rfds, &wfds, &efds, (is_timeout ? &timeout : nullptr));
+            }
+#else
             int result = ::select(nfds, &rfds, &wfds, &efds, (is_timeout ? &timeout : nullptr));
+#endif
             if(result == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(result), vfd_set(rfds), vfd_set(rfds), vfd_set(rfds))), v(io_v)));
@@ -450,7 +538,15 @@ extern "C" {
             struct ::timeval timeout;
             if(!convert_args(args, tonfds(nfds), tofd_set(rfds), tofd_set(wfds), tofd_set(efds), tooption(totimeval(timeout), is_timeout)))
               return return_value(vm, context, vut(vt(vint(-1), v(rfds_v), v(wfds_v), v(efds_v)), v(io_v)));
+#if defined(__unix__)
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::select(nfds, &rfds, &wfds, &efds, (is_timeout ? &timeout : nullptr));
+            }
+#else
             int result = ::select(nfds, &rfds, &wfds, &efds, (is_timeout ? &timeout : nullptr));
+#endif
             if(result == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vt(vint(-1), v(rfds_v), v(wfds_v), v(efds_v)), v(io_v)));
             system_fd_set_to_object(rfds, *(rfds_v.r().ptr()));
@@ -475,7 +571,7 @@ extern "C" {
               return return_value_with_errno_for_socket(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(result), vpollfds(fds))), v(io_v)));
 #elif defined(_WIN32) || defined(_WIN64)
-             return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
+            return return_value_with_errno(vm, context, vut(vnone, v(io_v)), ENOSYS);
 #else
 #error "Unsupported operating system."
 #endif

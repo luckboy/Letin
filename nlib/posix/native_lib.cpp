@@ -200,7 +200,11 @@ extern "C" {
             if(buf_r.is_null()) return error_return_value(ERROR_OUT_OF_MEMORY);
             fill_n(buf_r->raw().is8, buf_r->length(), 0);
 #if defined(__unix__)
-            ::ssize_t result = ::read(fd, buf_r->raw().is8, count);
+            ::ssize_t result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::read(fd, buf_r->raw().is8, count);
+            }
 #elif defined(_WIN32) || defined(_WIN64)
             ::ssize_t result = ::_read(fd, buf_r->raw().is8, count);
 #else
@@ -222,7 +226,11 @@ extern "C" {
             if(!convert_args(args, tofd(fd), tobufref(buf_r)))
               return return_value(vm, context, vut(vt(vint(-1)), v(io_v)));
 #if defined(__unix__)
-            ::ssize_t result = ::write(fd, buf_r->raw().is8, buf_r->length());
+            ::ssize_t result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::write(fd, buf_r->raw().is8, buf_r->length());
+            }
 #elif defined(_WIN32) || defined(_WIN64)
             ::ssize_t result = ::_write(fd, buf_r->raw().is8, buf_r->length());
 #else
@@ -247,7 +255,11 @@ extern "C" {
             if(offset >= buf_r->length() || offset + count > buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)), EINVAL);
 #if defined(__unix__)
-            ::ssize_t result = ::read(fd, buf_r->raw().is8 + offset, count);
+            ::ssize_t result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::read(fd, buf_r->raw().is8 + offset, count);
+            }
 #elif defined(_WIN32) || defined(_WIN64)
             ::ssize_t result = ::_read(fd, buf_r->raw().is8 + offset, count);
 #else
@@ -272,7 +284,11 @@ extern "C" {
             if(offset >= buf_r->length() || offset + count > buf_r->length())
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(buf_v)), v(io_v)), EINVAL);
 #if defined(__unix__)
-            ::ssize_t result = ::write(fd, buf_r->raw().is8 + offset, count);
+            ::ssize_t result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::write(fd, buf_r->raw().is8 + offset, count);
+            }
 #elif defined(_WIN32) || defined(_WIN64)
             ::ssize_t result = ::_write(fd, buf_r->raw().is8 + offset, count);
 #else
@@ -323,15 +339,19 @@ extern "C" {
             Value &io_v = args[3];
             string path_name;
             int flags;
-            mode_t mode;
+            ::mode_t mode;
             if(!convert_args(args, topath(path_name), toflags(flags), tomode(mode)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
 #if defined(__unix__)
+            int fd;
+            {
+              InterruptibleFunctionAround around(context);
 #ifdef HAVE_OPEN64
-            int fd = ::open64(path_name.c_str(), flags, mode);
+              fd = ::open64(path_name.c_str(), flags, mode);
 #else
-            int fd = ::open(path_name.c_str(), flags, mode);
+              fd = ::open(path_name.c_str(), flags, mode);
 #endif
+            }
 #elif defined(_WIN32) || defined(_WIN64)
             int fd = ::_open(path_name.c_str(), flags, mode);
 #else
@@ -352,7 +372,11 @@ extern "C" {
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
 #if defined(__unix__)
-            int result = ::close(fd);
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::close(fd);
+            }
 #elif defined(_WIN32) || defined(_WIN64)
             int result = ::_close(fd);
 #else
@@ -413,7 +437,15 @@ extern "C" {
             if(!convert_args(args, tofd(old_fd), tofd(new_fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
 #if defined(__unix__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
             int result = ::dup2(old_fd, new_fd);
+#else
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::dup2(old_fd, new_fd);
+            }
+#endif
 #elif defined(_WIN32) || defined(_WIN64)
             int result = ::_dup2(old_fd, new_fd);
 #else
@@ -445,7 +477,11 @@ extern "C" {
             struct ::timeval timeout;
             if(!convert_args(args, tonfds(nfds), tofd_set(rfds), tofd_set(wfds), tofd_set(efds), tooption(totimeval(timeout), is_timeout)))
               return return_value(vm, context, vut(vnone, v(io_v)));
-            int result = ::select(nfds, &rfds, &wfds, &efds, (is_timeout ? &timeout : nullptr));
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::select(nfds, &rfds, &wfds, &efds, (is_timeout ? &timeout : nullptr));
+            }
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(result), vfd_set(rfds), vfd_set(rfds), vfd_set(rfds))), v(io_v)));
@@ -469,7 +505,11 @@ extern "C" {
             struct ::timeval timeout;
             if(!convert_args(args, tonfds(nfds), tofd_set(rfds), tofd_set(wfds), tofd_set(efds), tooption(totimeval(timeout), is_timeout)))
               return return_value(vm, context, vut(vt(vint(-1), v(rfds_v), v(wfds_v), v(efds_v)), v(io_v)));
-            int result = ::select(nfds, &rfds, &wfds, &efds, (is_timeout ? &timeout : nullptr));
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              ::select(nfds, &rfds, &wfds, &efds, (is_timeout ? &timeout : nullptr));
+            }
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vt(vint(-1), v(rfds_v), v(wfds_v), v(efds_v)), v(io_v)));
             system_fd_set_to_object(rfds, *(rfds_v.r().ptr()));
@@ -494,7 +534,11 @@ extern "C" {
             int timeout;
             if(!convert_args(args, topollfds(fds), toarg(timeout)))
               return return_value(vm, context, vut(vnone, v(io_v)));
-            int result = ::poll(fds.ptr(), fds.length(), timeout);
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::poll(fds.ptr(), fds.length(), timeout);
+            }
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(result), vpollfds(fds))), v(io_v)));
@@ -516,7 +560,11 @@ extern "C" {
             int timeout;
             if(!convert_args(args, topollfds(fds), toarg(timeout)))
               return return_value(vm, context, vut(vut(vint(-1), v(fds_v)), v(io_v)));
-            int result = ::poll(fds.ptr(), fds.length(), timeout);
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::poll(fds.ptr(), fds.length(), timeout);
+            }
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vut(vint(-1), v(fds_v)), v(io_v)));
             system_pollfds_to_object(fds, *(fds_v.r().ptr()));
@@ -706,12 +754,28 @@ extern "C" {
             struct ::flock64 lock;
             if(!convert_args(args, tofd(fd), toflock64(lock)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__linux__)
             int result = ::fcntl(fd, F_SETLKW64, &lock);
+#else
+            int result;
+            {
+              NonRestertableFunctionAround around(context);
+              result = ::fcntl(fd, F_SETLKW64, &lock);
+            }
+#endif
 #else
             struct ::flock lock;
             if(!convert_args(args, tofd(fd), toflock(lock)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__linux__)
             int result = ::fcntl(fd, F_SETLKW, &lock);
+#else
+            int result;
+            {
+              NonRestertableFunctionAround around(context);
+              result = ::fcntl(fd, F_SETLKW, &lock);
+            }
+#endif
 #endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
@@ -909,7 +973,15 @@ extern "C" {
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
             int result = ::fchdir(fd);
+#else
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::fchdir(fd);
+            }
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -1098,7 +1170,15 @@ extern "C" {
             ::mode_t mode;
             if(!convert_args(args, tofd(fd), tomode(mode)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
             int result = ::fchmod(fd, mode);
+#else
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::fchmod(fd, mode);
+            }
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -1167,7 +1247,15 @@ extern "C" {
             ::gid_t group;
             if(!convert_args(args, tofd(fd), touid(owner), togid(group)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
             int result = ::fchown(fd, owner, group);
+#else
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::fchown(fd, owner, group);
+            }
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -1318,7 +1406,15 @@ extern "C" {
             int status;
             if(!convert_args(args, towpid(pid), towoptions(options)))
               return return_value(vm, context, vut(vnone, v(io_v)));
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
             Pid result = ::waitpid(pid, &status, options);
+#else
+            Pid result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::waitpid(pid, &status, options);
+            }
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             if(result != 0) 
@@ -1544,7 +1640,11 @@ extern "C" {
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
 #if defined(__unix__)
-            int result = ::pause();
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::pause();
+            }
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -1565,7 +1665,11 @@ extern "C" {
             ::useconds_t useconds;
             if(!convert_args(args, touseconds(useconds)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
-            int result = ::usleep(useconds);
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::usleep(useconds);
+            }
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
 #elif defined(_WIN32) || defined(_WIN64)
@@ -1589,7 +1693,11 @@ extern "C" {
             struct ::timespec req, rem;
             if(!convert_args(args, totimespec(req)))
               return return_value(vm, context, vut(vt(vint(-1), vnone), v(io_v)));
-            int result = ::nanosleep(&req, &rem);
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::nanosleep(&req, &rem);
+            }
             if(result == -1) {
               if(errno == EINTR)
                 return return_value_with_errno(vm, context, vut(vt(vint(-1), vsome(vtimespec(rem))), v(io_v)));
@@ -1974,7 +2082,11 @@ extern "C" {
             struct ::termios termios;
             if(!convert_args(args, tofd(fd), tooactions(optional_actions), totermios(termios)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
-            int result = ::tcsetattr(fd, optional_actions, &termios);
+            int result; 
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::tcsetattr(fd, optional_actions, &termios);
+            }
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(1), v(io_v)));
@@ -2016,7 +2128,11 @@ extern "C" {
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
-            int result = ::tcdrain(fd);
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = ::tcdrain(fd);
+            }
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
@@ -2187,7 +2303,15 @@ extern "C" {
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
 #if defined(__unix__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
             int result = ::fsync(fd);
+#else
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              ::fsync(fd);
+            }
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
 #elif defined(_WIN32) || defined(_WIN64)
@@ -2212,7 +2336,7 @@ extern "C" {
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
-#if defined(__unix__)
+#if defined(__unix__) && !defined(__FreeBSD__)
             int result = ::fdatasync(fd);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
@@ -2346,7 +2470,15 @@ extern "C" {
             Directory **dir_ptr = reinterpret_cast<Directory **>(dir_v.r()->raw().ntvo.bs);
             *dir_ptr = nullptr;
             atomic_thread_fence(memory_order_release);
+#if defined(__unix__)
+            int result;
+            {
+              InterruptibleFunctionAround around(context);
+              result = close_dir(dir);
+            }
+#else
             int result = close_dir(dir);
+#endif
             if(result == -1) 
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
