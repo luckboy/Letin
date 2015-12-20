@@ -279,6 +279,7 @@ int main(int argc, char **argv)
       native_lib_file_names.push_back(native_lib_file_name);
     }
     initialize_vm();
+    int status = 0;
     VirtualMachineFinalization final;
     unique_ptr<NativeFunctionHandlerLoader> native_fun_handler_loader(new_native_function_handler_loader());
     vector<NativeFunctionHandler *> native_fun_handlers;
@@ -290,7 +291,20 @@ int main(int argc, char **argv)
     unique_ptr<MemoizationCacheFactory> memo_cache_factory;
     unique_ptr<EvaluationStrategy> eval_strategy(parse_eval_strategy_string(eval_strategy_string, memo_cache_factory));
     if(eval_strategy.get() == nullptr) return 1;
-    unique_ptr<VirtualMachine> vm(new_virtual_machine(loader.get(), gc.get(), native_fun_handler.get(), eval_strategy.get()));
+    unique_ptr<VirtualMachine> vm;
+    function<void ()> exit_fun = [status, &native_fun_handler_loader, &loader, &alloc, &gc, &native_fun_handler, &memo_cache_factory, &eval_strategy, &vm]() {
+      vm.reset();
+      eval_strategy.reset();
+      memo_cache_factory.reset();
+      native_fun_handler.reset();
+      gc.reset();
+      alloc.reset();
+      loader.reset();
+      native_fun_handler_loader.reset();
+      finalize_vm();
+      exit(status);
+    };
+    vm = unique_ptr<VirtualMachine>(new_virtual_machine(loader.get(), gc.get(), native_fun_handler.get(), eval_strategy.get(), exit_fun));
     list<LoadingError> errors;
     if(!vm->load(file_names, &errors)) {
       for(auto error : errors)
@@ -317,7 +331,6 @@ int main(int argc, char **argv)
       args.push_back(unique_io_ref);
       is_unique_result = true;
     }
-    int status = 0;
     Thread thread = vm->start(args, [is_unique_result, &status](const ReturnValue & value) {
       if(!is_unique_result) {
         cout << "i=" << value.i() << endl;

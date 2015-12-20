@@ -72,11 +72,14 @@ namespace letin
         std::mutex _M_gc_thread_mutex;
         bool _M_is_locked_gc_thread;
         ImplForkHandler *_M_impl_fork_handler;
+        ThreadContext *_M_forking_thread_context;
+        bool _M_must_stop_from_vm_thread;
       public:
         ImplGarbageCollectorBase(Allocator *alloc, unsigned int interval_usecs) :
           GarbageCollector(alloc), _M_threads(_M_thread_contexts), _M_is_started(false),
           _M_interval_usecs(interval_usecs), _M_is_locked_gc_thread(false),
-          _M_impl_fork_handler(nullptr) {}
+          _M_impl_fork_handler(nullptr), _M_forking_thread_context(nullptr),
+          _M_must_stop_from_vm_thread(false) {}
 
         ~ImplGarbageCollectorBase();
       protected:
@@ -90,9 +93,13 @@ namespace letin
 
         void delete_thread_context(ThreadContext *context);
 
+        std::size_t thread_context_count();
+
         void add_vm_context(VirtualMachineContext *context);
 
         void delete_vm_context(VirtualMachineContext *context);
+
+        std::size_t vm_context_count();
       private:
         void start_gc_thread();
 
@@ -107,6 +114,8 @@ namespace letin
         void unlock();
 
         std::thread &system_thread();
+
+        bool must_stop_from_vm_thread();
       };
     }
   }

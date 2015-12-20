@@ -191,7 +191,11 @@ namespace letin
     public:
       ThreadContext(const VirtualMachineContext &vm_context, std::size_t stack_size = 32 * 1024);
 
-      ~ThreadContext() { if(_M_gc != nullptr) _M_gc->delete_thread_context(this); delete[] _M_stack; }
+      ~ThreadContext()
+      {
+        if(_M_gc != nullptr) _M_gc->delete_thread_context(this);
+        if(_M_stack != nullptr) delete[] _M_stack;
+      }
 
       GarbageCollector *gc() { return _M_gc; }
 
@@ -475,6 +479,14 @@ namespace letin
       std::mutex &interruptible_fun_mutex() { return _M_interruptible_fun_mutex; }
 
       bool &interruptible_fun_flag() { return _M_interruptible_fun_flag; }
+
+      void free_stack()
+      {
+        if(_M_stack != nullptr) {
+          delete[] _M_stack;
+          _M_stack = nullptr;
+        }
+      }
     };
 
     class VirtualMachineContext

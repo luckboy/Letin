@@ -28,7 +28,7 @@ namespace letin
         Value (*_M_return_value_to_ref_value)(const ReturnValue &);
         bool (InterpreterVirtualMachine::*_M_force_pushed_args)(ThreadContext &);
       public:
-        InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy);
+        InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy, std::function<void ()> exit_fun = []() {});
 
         ~InterpreterVirtualMachine();
 

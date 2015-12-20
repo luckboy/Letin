@@ -540,8 +540,8 @@ namespace letin
       // An InterpreterVirtualMachine class.
       //
 
-      InterpreterVirtualMachine::InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy) :
-        ImplVirtualMachineBase(loader, gc, native_fun_handler, eval_strategy)
+      InterpreterVirtualMachine::InterpreterVirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy, function<void ()> exit_fun) :
+        ImplVirtualMachineBase(loader, gc, native_fun_handler, eval_strategy, exit_fun)
       {
         if(_M_eval_strategy->is_eager()) {
           _M_return_value_to_int_value = return_value_to_int_value_for_eager_eval;

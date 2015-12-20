@@ -747,9 +747,10 @@ namespace letin
       GarbageCollector *_M_gc;
       NativeFunctionHandler *_M_native_fun_handler;
       EvaluationStrategy *_M_eval_strategy;
+      std::function<void ()> _M_exit_fun;
 
-      VirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy) :
-        _M_loader(loader), _M_gc(gc), _M_native_fun_handler(native_fun_handler), _M_eval_strategy(eval_strategy) {}
+      VirtualMachine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy, std::function<void ()> exit_fun) :
+        _M_loader(loader), _M_gc(gc), _M_native_fun_handler(native_fun_handler), _M_eval_strategy(eval_strategy), _M_exit_fun(exit_fun) {}
     public:
       virtual ~VirtualMachine();
 
@@ -827,9 +828,13 @@ namespace letin
 
       virtual void delete_thread_context(ThreadContext *context) = 0;
 
+      virtual std::size_t thread_context_count() = 0;
+
       virtual void add_vm_context(VirtualMachineContext *context) = 0;
 
       virtual void delete_vm_context(VirtualMachineContext *context) = 0;
+
+      virtual std::size_t vm_context_count() = 0;
 
       Object *new_object(int type, std::size_t length, ThreadContext *context = nullptr);
 
@@ -866,6 +871,8 @@ namespace letin
       virtual std::thread &system_thread() = 0;
       
       virtual std::size_t header_size() = 0;
+
+      virtual bool must_stop_from_vm_thread() = 0;
     };
 
     class NativeFunctionHandler
@@ -1034,7 +1041,7 @@ namespace letin
 
     EvaluationStrategy *new_evaluation_strategy();
 
-    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy);
+    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy, std::function<void ()> exit_fun = []() {});
 
     NativeFunctionHandlerLoader *new_native_function_handler_loader();
 

@@ -61,24 +61,46 @@ namespace letin
         _M_gc->_M_other_thread_mutex.lock();
         _M_gc->_M_interval_mutex.lock();
         _M_gc->_M_gc_mutex.lock();
-        for(auto context : _M_gc->_M_threads.contexts) {
+        _M_gc->_M_forking_thread_context = nullptr;
+        for(auto context : _M_gc->_M_thread_contexts) {
           context->interruptible_fun_mutex().lock();
+          if(context->system_thread().get_id() == this_thread::get_id())
+            _M_gc->_M_forking_thread_context = context;
         }
       }
 
       void ImplGarbageCollectorBase::ImplForkHandler::post_fork(bool is_child)
       {
-        for(auto context : _M_gc->_M_threads.contexts) {
-          context->interruptible_fun_mutex().unlock();
+        if(is_child) {
+          for(auto context : _M_gc->_M_thread_contexts) {
+            if(context == _M_gc->_M_forking_thread_context) {
+              context->interruptible_fun_mutex().unlock();
+            } else {
+              context->set_gc(nullptr);
+              context->system_thread() = thread();
+              context->free_stack();
+            }
+          }
+          _M_gc->_M_thread_contexts.clear();
+          _M_gc->_M_thread_contexts.insert(_M_gc->_M_forking_thread_context);
+        } else {
+          for(auto context : _M_gc->_M_thread_contexts) {
+            context->interruptible_fun_mutex().unlock();
+          }
         }
+        bool is_forking_thread_context = (_M_gc->_M_forking_thread_context != nullptr);
+        _M_gc->_M_forking_thread_context = nullptr;
         _M_gc->_M_is_locked_gc_thread = false;
         bool is_started = _M_gc->_M_is_started;
-        if(is_child) _M_gc->_M_is_started = false;
+        if(is_child) {
+          _M_gc->_M_is_started = false;
+          _M_gc->_M_must_stop_from_vm_thread = true;
+        }
         _M_gc->_M_gc_mutex.unlock();
         _M_gc->_M_interval_mutex.unlock();
         _M_gc->_M_other_thread_mutex.unlock();
         _M_gc->_M_gc_thread_mutex.unlock();
-        if(is_child && is_started) _M_gc->start_gc_thread();
+        if(is_child && is_started && is_forking_thread_context) _M_gc->start_gc_thread();
       }
 
       ImplGarbageCollectorBase::~ImplGarbageCollectorBase()
@@ -99,6 +121,9 @@ namespace letin
         _M_thread_contexts.erase(context);
       }
 
+      size_t ImplGarbageCollectorBase::thread_context_count()
+      { return _M_thread_contexts.size(); }
+
       void ImplGarbageCollectorBase::add_vm_context(VirtualMachineContext *context)
       {
         lock_guard<GarbageCollector> gaurd(*this);
@@ -110,6 +135,9 @@ namespace letin
         lock_guard<GarbageCollector> gaurd(*this);
         _M_vm_contexts.erase(context);
       }
+
+      size_t ImplGarbageCollectorBase::vm_context_count()
+      { return _M_vm_contexts.size(); }
 
       void ImplGarbageCollectorBase::start_gc_thread()
       {
@@ -175,6 +203,8 @@ namespace letin
       void ImplGarbageCollectorBase::unlock() { _M_gc_mutex.unlock(); }
 
       thread &ImplGarbageCollectorBase::system_thread() { return _M_gc_thread; }
+
+      bool ImplGarbageCollectorBase::must_stop_from_vm_thread() { return _M_must_stop_from_vm_thread; }
     }
   }
 }

@@ -27,8 +27,8 @@ namespace letin
   {
     namespace impl
     {
-      ImplVirtualMachineBase::ImplVirtualMachineBase(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy) :
-        VirtualMachine(loader, gc, native_fun_handler, eval_strategy)
+      ImplVirtualMachineBase::ImplVirtualMachineBase(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy, function<void ()> exit_fun) :
+        VirtualMachine(loader, gc, native_fun_handler, eval_strategy, exit_fun)
       {
         for(int nfi = _M_native_fun_handler->min_native_fun_index(); nfi <= _M_native_fun_handler->max_native_fun_index(); nfi++) {
           if(_M_native_fun_handler->native_fun_name(nfi) != nullptr)
@@ -338,6 +338,10 @@ namespace letin
           try { fun(value); } catch(...) {}
           _M_gc->delete_thread_context(thread2.context());
           stop_thread_stop_cont();
+          if(_M_gc->must_stop_from_vm_thread() && _M_gc->thread_context_count() == 0) {
+            _M_gc->stop();
+            _M_exit_fun();
+          }
         });
         return thread;
       }

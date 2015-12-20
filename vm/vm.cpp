@@ -1501,8 +1501,8 @@ namespace letin
     EvaluationStrategy *new_evaluation_strategy()
     { return new impl::EagerEvaluationStrategy(); }
 
-    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy)
-    { return new impl::InterpreterVirtualMachine(loader, gc, native_fun_handler, eval_strategy); }
+    VirtualMachine *new_virtual_machine(Loader *loader, GarbageCollector *gc, NativeFunctionHandler *native_fun_handler, EvaluationStrategy *eval_strategy, function<void ()> exit_fun)
+    { return new impl::InterpreterVirtualMachine(loader, gc, native_fun_handler, eval_strategy, exit_fun); }
 
     NativeFunctionHandlerLoader *new_native_function_handler_loader()
     { return new impl::ImplNativeFunctionHandlerLoader(); }
