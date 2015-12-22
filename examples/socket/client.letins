@@ -1,0 +1,109 @@
+.entry main
+
+substring(a4) = {
+	let ige a1, a2
+	in
+	jc lv0, label
+	arg rianth8 a0, a1
+	let riarray8()
+	in
+	let riacat8 a3, lv1 
+	in
+	arg rload a0
+	arg iadd a1, 1
+	arg iload a2
+	arg rload lv2
+	retry
+label:	ret rload a3
+}
+
+pairToString(a1) = {
+	let riarray8()
+	in
+	arg rtnth a0, 1
+	arg iload 0
+	arg rtnth a0, 0
+	arg rload lv0
+	ret rcall &substring
+}
+
+main(a2) = {
+	arg rranth a0, 0
+	let incall &#atoi			// lv0
+	in
+	arg iload 2
+	arg iload lv0
+	arg iload 0x7f000001
+	let rtuple()				// lv1
+	in
+	arg iload 2
+	arg iload 0
+	arg iload 0
+	arg rload a1
+	lettuple(lv2) rncall &#socket.socket	// lv2, lv3
+	in
+	let ieq lv2, -1				// lv4
+	in
+	jc lv4, label1
+	arg iload lv2
+	arg rload lv1
+	arg rload lv3
+	lettuple(lv2) rncall &#socket.connect	// lv5, lv6
+	in
+	let ieq lv5, -1				// lv7
+	in
+	jc lv7, label2
+	arg iload lv2
+	arg rranth a0, 1
+	arg iload 0
+	arg rload lv6
+	lettuple(lv2) rncall &#socket.send	// lv8, lv9
+	in
+	arg iload lv2
+	arg iload 256
+	arg iload 0
+	arg rload lv9
+	lettuple(lv2) rncall &#socket.recv	// lv10, lv11
+	in
+	let rtnth lv10, 0			// lv12
+	in
+	let ieq lv12, 0				// lv13
+	in
+	jc lv13, label3
+	arg rtnth lv10, 1
+	let rcall &pairToString			// lv14
+	jump label4
+label3:	let riarray8()
+label4:	in
+	arg iload 1
+	arg rload lv14
+	arg rload lv11
+	lettuple(lv2) rncall &#posix.write	// lv15, lv16
+	in
+	arg iload '\n'
+	let riarray8()				// lv17
+	in
+	arg iload 1
+	arg rload lv17
+	arg rload lv16
+	lettuple(lv2) rncall &#posix.write	// lv18, lv19
+	in
+	arg iload lv2
+	arg iload 2
+	arg rload lv19
+	let rncall &#socket.shutdown		// lv20
+	in
+	arg iload 0
+	ret rutsnth lv20, 0
+label1:	let rutfilli 2, 1			// lv5
+	in
+	arg rload lv3
+	ret rutsnth lv5, 1
+label2:	arg iload lv2
+	arg iload 2
+	arg rload lv6
+	let rncall &#socket.shutdown		// lv8
+	in
+	arg iload 1
+	ret rutsnth lv8, 0
+}

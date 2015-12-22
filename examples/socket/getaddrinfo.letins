@@ -1,0 +1,308 @@
+.entry main
+
+aiFlags = "ai_flags:\t"
+nlAiFamily = "\nai_family:\t"
+nlAiSocktype = "\nai_socktype:\t"
+nlAiProtocol = "\nai_protocol:\t"
+nlAiAddr = "\nai_addr:\t"
+nlAiCanonname = "\nai_canonname:\t"
+unknown = "unknown"
+
+concatThreeStrings(a3) = {
+	let riacat8 a0, a1
+	in
+	ret riacat8 lv0, a2
+}
+
+concatStringCharString(a3) = {
+	arg iload a1
+	let riarray8()
+	in
+	let riacat8 a0, lv0
+	in
+	ret riacat8 lv1, a2
+}
+
+intArrayToString(a6) = {
+	let ige a2, a3				// lv0
+	in
+	jc lv0, label1
+	arg rianth64 a1, a2
+	let rcall a0				// lv1
+	in
+	let ieq a2, 0				// lv2
+	in
+	jc lv2, label2
+	arg iload a5
+label2:	let riarray8()				// lv3
+	in
+	let riacat8 a4, lv3			// lv4
+	in
+	arg iload a0
+	arg rload a1
+	arg iadd a2, 1
+	arg iload a3
+	arg riacat8 lv4, lv1
+	arg iload a5
+	retry
+label1:	ret rload a4
+}
+
+intToString(a1) = {
+	arg iload a0
+	ret rncall &#itoa
+}
+
+int4ToHexString(a1) = {
+	let ige a0, 10
+	in
+	jc lv0, label
+	arg iadd a0, '0'
+	ret riarray8()
+label:	arg iadd a0, 'a' - 10
+	ret riarray8()
+}
+
+int16ToHexString(a1) = {
+	let ishru a0, 4				// lv0
+	let ishru a0, 8				// lv1
+	let ishru a0, 12			// lv2
+	in
+	let iand a0, 15				// lv3
+	let iand lv0, 15			// lv4
+	let iand lv1, 15			// lv5
+	let iand lv2, 15			// lv6
+	in
+	let ieq lv0, 0				// lv7
+	let ieq lv1, 0				// lv8
+	let ieq lv2, 0				// lv9
+	in
+	arg iload lv3
+	let rcall &int4ToHexString		// lv10
+	in
+	jc lv7, label1
+	arg iload lv4
+	let rcall &int4ToHexString		// lv11
+	in
+	let riacat8 lv11, lv10			// lv12
+	in
+	jc lv8, label2
+	arg iload lv5
+	let rcall &int4ToHexString		// lv13
+	in
+	let riacat8 lv13, lv12			// lv14
+	in
+	jc lv9, label3
+	arg iload lv6
+	let rcall &int4ToHexString		// lv15
+	in
+	ret riacat8 lv15, lv14
+label1:	ret rload lv10
+label2: ret rload lv12
+label3: ret rload lv14
+}
+
+portAndAddrToString(a2) = {
+	let ishru a1, 8				// lv0
+	let ishru a1, 16			// lv1
+	let ishru a1, 24			// lv2
+	in
+	arg iand lv2, 255
+	arg iand lv1, 255
+	arg iand lv0, 255
+	arg iand a1, 255
+	let riarray64()				// lv3
+	in
+	let riarray8()				// lv4
+	in
+	arg iload &intToString
+	arg rload lv3
+	arg iload 0
+	arg iload 4
+	arg rload lv4
+	arg iload '.'
+	let rcall &intArrayToString		// lv5
+	in
+	arg iload a0
+	let rncall &#itoa			// lv6
+	in
+	arg iload ' '
+	let riarray8()				// lv7
+	in
+	let riacat8 lv5, lv7			// lv8
+	in
+	ret riacat8 lv8, lv6
+}
+
+portAndAddr6ToString(a3) = {
+	let ishru a1, 16			// lv0
+	let ishru a1, 32			// lv1
+	let ishru a1, 48			// lv2
+	let ishru a2, 16			// lv3
+	let ishru a2, 32			// lv4
+	let ishru a2, 48			// lv5
+	in
+	arg iand lv2, 65535
+	arg iand lv1, 65535
+	arg iand lv0, 65535
+	arg iand a1, 65535
+	arg iand lv5, 65535
+	arg iand lv4, 65535
+	arg iand lv3, 65535
+	arg iand a2, 65535
+	let riarray64()				// lv6
+	in
+	let riarray8()				// lv7
+	in
+	arg iload &int16ToHexString
+	arg rload lv6
+	arg iload 0
+	arg iload 8
+	arg rload lv7
+	arg iload ':'
+	let rcall &intArrayToString		// lv8
+	in
+	arg iload a0
+	let rncall &#itoa			// lv9
+	in
+	arg iload ' '
+	let riarray8()				// lv10
+	in
+	let riacat8 lv8, lv10			// lv11
+	in
+	ret riacat8 lv11, lv9
+}
+
+sockaddrToString(a1) = {
+	let rtnth a0, 0				// lv0
+	in
+	let ine lv0, 2				// lv1
+	in
+	jc lv1, label1
+	// inet
+	arg rtnth a0, 1
+	arg rtnth a0, 2
+	ret rcall &portAndAddrToString
+label1:	let ine lv0, 3				// lv2
+	in
+	jc lv2, label2
+	// inet6
+	arg rtnth a0, 1
+	arg rtnth a0, 3
+	arg rtnth a0, 4
+	ret rcall &portAndAddr6ToString
+label2:	ret rload unknown
+}
+
+sockaddrOptionToString(a1) = {
+	let rtnth a0, 0
+	in
+	jc lv0, label
+	ret riarray8()
+label:	arg rtnth a0, 1
+	ret rcall &sockaddrToString
+}
+
+addrinfoToString(a1) = {
+	arg rtnth a0, 0				// ai_flags
+	let rncall &#itoa			// lv0
+	in
+	let riacat8 aiFlags, lv0		// lv1
+	arg rtnth a0, 1				// ai_family
+	let rncall &#itoa			// lv2
+	in
+	arg rload lv1
+	arg rload nlAiFamily
+	arg rload lv2
+	let rcall &concatThreeStrings		// lv3
+	arg rtnth a0, 2				// ai_socktype
+	let rncall &#itoa			// lv4
+	in
+	arg rload lv3
+	arg rload nlAiSocktype
+	arg rload lv4
+	let rcall &concatThreeStrings		// lv5
+	arg rtnth a0, 3				// ai_protocol
+	let rncall &#itoa			// lv6
+	in
+	arg rload lv5
+	arg rload nlAiProtocol
+	arg rload lv6
+	let rcall &concatThreeStrings		// lv7
+	arg rtnth a0, 4				// ai_addr
+	let rcall &sockaddrOptionToString	// lv8
+	in
+	arg rload lv7
+	arg rload nlAiAddr
+	arg rload lv8
+	let rcall &concatThreeStrings		// lv9
+	let rtnth a0, 5				// lv10 - ai_canonname
+	in
+	let rtnth lv10, 0			// lv11
+	in
+	jc lv11, label1
+	let riarray8()				// lv12
+label1:	jump label2
+	let rtnth lv10, 1			// lv12
+label2:	in
+	arg rload lv9
+	arg rload nlAiCanonname
+	arg rload lv12
+	let rcall &concatThreeStrings		// lv13
+	in
+	arg iload '\n'
+	arg iload '\n'
+	let riarray8()				// lv14
+	in
+	ret riacat8 lv13, lv14
+}
+
+printAddrinfoList(a2) = {
+	let rtnth a0, 0				// lv0
+	in
+	let ieq lv0, 0				// lv1
+	in
+	jc lv1, label
+	arg rtnth a0, 1
+	let rcall &addrinfoToString		// lv2
+	in
+	arg iload 1
+	arg rload lv2
+	arg rload a1
+	lettuple(lv2) rncall &#posix.write	// lv3, lv4
+	in
+	arg rtnth a0, 2
+	arg rload lv4
+	retry
+label:	let rutfilli 2, 0			// lv2
+	in
+	arg rload a1
+	ret rutsnth lv2, 1
+}
+
+main(a2) = {
+	arg iload 1
+	arg rranth a0, 0
+	let rtuple()				// lv0
+	arg iload 0
+	let rtuple()				// lv1
+	in
+	arg rload lv0
+	arg rload lv1
+	arg rload lv1
+	arg rload a1
+	lettuple(lv2) rncall &#socket.getaddrinfo // lv2, lv3
+	in
+	lettuple(lv2) rload lv2			// lv4, lv5
+	in
+	let ieq lv4, 0				// lv6
+	in
+	jc lv6, label
+	arg rload lv5
+	arg rload lv3
+	ret rcall &printAddrinfoList
+label:	let rutfilli 2, 1			// lv6
+	in
+	arg rload lv3
+	ret rutsnth lv6, 1
+}

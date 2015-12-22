@@ -1,0 +1,87 @@
+.entry main
+
+argsToTuple(a4) = {
+	let ige a1, a2
+	in
+	jc lv0, label
+	arg rranth a0, a1
+	let incall &#atoi
+	in
+	arg iload lv1
+	let rtuple()
+	in
+	arg rload a0
+	arg iadd a1, 1
+	arg iload a2
+	arg rtcat a3, lv2
+	retry
+label:	ret rload a3
+}
+
+argsToSockaddr(a1) = {
+	let rralen a0				// lv0
+	in
+	let ine lv0, 2				// lv1
+	in
+	jc lv1, label
+	arg iload 2
+	let rtuple()				// lv2
+	in
+	arg rload a0
+	arg iload 0
+	arg iload 2
+	arg rload lv2
+	ret rcall &argsToTuple
+label:	arg iload 3
+	let rtuple()				// lv2
+	in
+	arg rload a0
+	arg iload 0
+	arg iload 5
+	arg rload lv2
+	ret rcall &argsToTuple
+}
+
+printPair(a2) = {
+	arg iload '\n'
+	let riarray8()				// lv0
+	in
+	let rtnth a0, 0				// lv1
+	let rtnth a0, 1				// lv2
+	in
+	let riacat8 lv1, lv0			// lv3
+	in
+	let riacat8 lv3, lv2			// lv4
+	in
+	let riacat8 lv4, lv0			// lv5
+	in
+	arg iload 1
+	arg rload lv5
+	arg rload a1
+	let rncall &#posix.write		// lv6
+	in
+	arg iload 0
+	ret rutsnth lv6, 0
+}
+
+main(a2) = {
+	arg rload a0
+	let rcall &argsToSockaddr		// lv0
+	in
+	arg rload lv0
+	arg iload 0
+	arg rload a1
+	lettuple(lv2) rncall &#socket.getnameinfo // lv1, lv2
+	in
+	lettuple(lv2) rload lv1			// lv3, lv4
+	in
+	let ieq lv3, 0				// lv5
+	in
+	jc lv5, label
+	arg rload lv4
+	arg rload lv2
+	ret rcall &printPair
+label:	let rutfilli 2, 1			// lv6
+	in
+	ret rutsnth lv6, lv2
+}

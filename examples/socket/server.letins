@@ -1,0 +1,230 @@
+.entry main
+
+changeCases(a3) = {
+	let ige a1, a2				// lv0
+	in
+	jc lv0, label1
+	lettuple(lv2) ruianth8 a0, a1		// lv1, lv2
+	in
+	let ilt lv1, 'A'			// lv3
+	let igt lv1, 'Z'			// lv4
+	let ilt lv1, 'a'			// lv5
+	let igt lv1, 'z'			// lv6
+	in
+	let ior lv3, lv4			// lv7
+	let ior lv5, lv6			// lv8
+	in
+	let iand lv7, lv8			// lv9
+	in
+	jc lv9, label2
+	arg ixor lv1, 0x20
+	let ruiasnth8 lv2, a1			// lv10
+	jump label3
+label2:	let rload lv2				// lv10
+label3:	in
+	arg rload lv10
+	arg iadd a1, 1
+	arg iload a2
+	retry
+label1:	ret rload a0
+}
+
+sockaddrToString(a4) = {
+	let ige a1, a2				// lv0
+	in
+	jc lv0, label1
+	arg rtnth a0, a1
+	let rncall &#itoa			// lv1
+	in
+	let ieq a1, 0				// lv2
+	in
+	jc lv2, label2
+	arg iload ' '
+label2:	let riarray8()				// lv3
+	in
+	let riacat8 a3, lv3			// lv4
+	in
+	arg rload a0
+	arg iadd a1, 1
+	arg iload a2
+	arg riacat8 lv4, lv1
+	retry
+label1:	ret rload a3
+}
+
+printAddr(a2) = {
+	let riarray8()				// lv0
+	in
+	arg rload a0
+	arg iload 0
+	arg rtlen a0
+	arg rload lv0
+	let rcall &sockaddrToString		// lv1
+	in
+	arg iload '\n'
+	let riarray8()				// lv2
+	in
+	arg iload 1
+	arg riacat8 lv1, lv2
+	arg rload a1
+	let rncall &#posix.write		// lv3
+	in
+	arg iload 0
+	ret rutsnth lv3, 0
+}
+
+handleRequest(a3) = {
+	arg rload a1
+	arg rload a2
+	lettuple(lv2) rcall &printAddr		// lv0, lv1
+	in
+	arg iload a0
+	arg ruiafill8 1024, 0
+	arg iload 0
+	arg iload 1024
+	arg iload 0
+	arg rload lv1
+	lettuple(lv2) rncall &#socket.urecv	// lv2, lv3
+	in
+	lettuple(lv2) rload lv2			// lv4, lv5
+	in
+	let ieq lv4, -1				// lv6
+	in
+	jc lv6, label
+	arg iload 1
+	arg rload lv5
+	arg iload 0
+	arg iload lv4
+	arg rload lv3
+	lettuple(lv2) rncall &#posix.uwrite	// lv7, lv8
+	in
+	lettuple(lv2) rload lv7			// lv9, lv10
+	in
+	arg iload '\n'
+	let riarray8()				// lv11
+	in
+	arg iload 1
+	arg rload lv11
+	arg rload lv8
+	lettuple(lv2) rncall &#posix.write	// lv12, lv13
+	in
+	arg rload lv10
+	arg iload 0
+	arg iload lv4
+	let rcall &changeCases			// lv14
+	in
+	arg iload a0
+	arg rload lv14
+	arg iload 0
+	arg iload lv4
+	arg iload 0
+	arg rload lv13
+	lettuple(lv2) rncall &#socket.usend	// lv15, lv16
+	in
+	lettuple(lv2) rload lv15		// lv17, lv18
+	in
+	lettuple(lv2) ruianth8 lv18, 0		// lv19, lv20
+	in
+	let ine lv4, 1				// lv21
+	let ine lv19, 'Q'			// lv22
+	in
+	arg iload a0
+	arg iload 2
+	arg rload lv16
+	let rncall &#socket.shutdown		// lv23
+	in
+	arg ior lv21, lv22
+	ret rutsnth lv23, 0
+label:	arg iload a0
+	arg iload 2
+	arg rload lv3
+	let rncall &#socket.shutdown		// lv7
+	in
+	arg iload 0
+	ret rutsnth lv7, 0
+}
+
+serverLoop(a2) = {
+	arg iload a0
+	arg rload a1
+	lettuple(lv2) rncall &#socket.accept	// lv0, lv1
+	in
+	let rtnth lv0, 0			// lv2
+	in
+	let ieq lv2, -1				// lv3
+	in
+	jc lv3, label1
+	lettuple(lv2) rtnth lv0, 1		// lv4, lv5
+	in
+	arg iload lv4
+	arg rload lv5
+	arg rload lv1
+	lettuple(lv2) rcall &handleRequest	// lv6, lv7
+	in
+	let ieq lv6, 0				// lv8
+	in
+	jc lv8, label2
+	arg iload a0
+	arg rload lv7
+	retry
+label1:	arg iload a0
+	arg rload lv1
+	retry
+label2: arg iload a0
+	arg iload 2
+	arg rload lv7
+	let rncall &#socket.shutdown		// lv9
+	in
+	arg iload 0
+	ret rutsnth lv9, 0
+}
+
+main(a2) = {
+	arg rranth a0, 0
+	let incall &#atoi			// lv0
+	in
+	arg iload 2
+	arg iload lv0
+	arg iload 0x7f000001
+	let rtuple()				// lv1
+	in
+	arg iload 2
+	arg iload 0
+	arg iload 0
+	arg rload a1
+	lettuple(lv2) rncall &#socket.socket	// lv2, lv3
+	in
+	let ieq lv2, -1				// lv4
+	in
+	jc lv4, label1
+	arg iload lv2
+	arg rload lv1
+	arg rload lv3
+	lettuple(lv2) rncall &#socket.bind	// lv5, lv6
+	in
+	let ieq lv5, -1				// lv7
+	in
+	jc lv7, label2
+	arg iload lv2
+	arg iload 0
+	arg rload lv6
+	lettuple(lv2) rncall &#socket.listen	// lv8, lv9
+	in
+	arg iload lv2
+	arg rload lv9
+	let rcall &serverLoop			// lv10
+	in
+	arg iload 0
+	ret rutsnth lv10, 0
+label1:	let rutfilli 2, 1			// lv5
+	in
+	arg rload lv3
+	ret rutsnth lv5, 1
+label2:	arg iload lv2
+	arg iload 2
+	arg rload lv6
+	let rncall &#socket.shutdown		// lv8
+	in
+	arg iload 1
+	ret rutsnth lv8, 0
+}
