@@ -168,7 +168,7 @@ namespace letin
 
       bool protocol_to_system_protocol(int64_t protocol, int &system_protocol)
       {
-        if((protocol < numeric_limits<int>::min()) || (protocol < (numeric_limits<int>::max()))) {
+        if((protocol < numeric_limits<int>::min()) || (protocol > (numeric_limits<int>::max()))) {
 #if defined(__unix__)
           letin_errno() = EPROTONOSUPPORT;
 #elif defined(_WIN32) || defined(_WIN64)
@@ -225,6 +225,7 @@ namespace letin
           letin_errno() = EINVAL;
           return false;
         }
+        system_flags = 0;
 #ifdef MSG_CTRUNC
         if((flags & (1 << 0)) != 0) system_flags |= MSG_CTRUNC;
 #else
@@ -275,7 +276,7 @@ namespace letin
 
       bool length_to_system_length(int64_t length, SocketSize &system_length)
       {
-        if((length < 0) || (length < numeric_limits<SocketSsize>::max())) {
+        if((length < 0) || (length > numeric_limits<SocketSsize>::max())) {
           letin_errno() = EINVAL;
           return false;
         }
@@ -731,6 +732,7 @@ namespace letin
           case 3:
           {
             size_t n = (object.elem(0).i() == 2 ? 3 : 6);
+            if(object.length() != n) return ERROR_INCORRECT_OBJECT;
             for(size_t i = 1; i < n; i++) {
               error = vm->force_tuple_elem(context, object, i);
               if(error != ERROR_SUCCESS) return error;
@@ -973,7 +975,7 @@ namespace letin
       //     int,       // ai_socktype
       //     int,       // ai_protocol
       //     option sockaddr, // ai_addr
-      //     option iarray8 // ai_cononname
+      //     option iarray8 // ai_canonname
       //   )
       //
 
@@ -1042,7 +1044,7 @@ namespace letin
           r->set_elem(0, Value(tmp_addr_info != nullptr ? 1 : 0));
           for(size_t i = 1; i < tuple_length; i++) r->set_elem(i, Value());
           r.register_ref();
-          if(!prev_r.is_null())
+          if(!prev_r.has_nil())
             prev_r->set_elem(2, Value(r));
           else
             tmp_r = r;
@@ -1056,14 +1058,42 @@ namespace letin
           addr_info_r->set_elem(2, Value(system_type_to_type(tmp_addr_info->ai_socktype)));
           addr_info_r->set_elem(3, Value(tmp_addr_info->ai_protocol));
           SocketAddress *addr = reinterpret_cast<SocketAddress *>(tmp_addr_info->ai_addr);
-          RegisteredReference tmp_r2(context, false);
-          if(!set_new_socket_address(vm, context, tmp_r2, *addr)) return false;
-          addr_info_r->set_elem(4, Value(tmp_r2));
-          size_t canonical_name_length = strlen(tmp_addr_info->ai_canonname);
-          RegisteredReference tmp_r3(vm->gc()->new_object(OBJECT_TYPE_IARRAY8, canonical_name_length, context), context);
-          if(tmp_r3.is_null()) return false;
-          copy_n(reinterpret_cast<int8_t *>(tmp_addr_info->ai_canonname), canonical_name_length, tmp_r3->raw().is8);
-          addr_info_r->set_elem(5, Value(tmp_r3));
+          if(addr != nullptr) {
+            RegisteredReference tmp_r2(context, false);
+            if(!set_new_socket_address(vm, context, tmp_r2, *addr)) return false;
+            RegisteredReference tmp_r3(vm->gc()->new_object(OBJECT_TYPE_TUPLE, 2, context), context, false);
+            if(tmp_r3.is_null()) return false;
+            for(size_t i = 0; i < 2; i++) tmp_r3->set_elem(i, Value());
+            tmp_r3.register_ref();
+            tmp_r3->set_elem(0, Value(1));
+            tmp_r3->set_elem(1, Value(tmp_r2));
+            addr_info_r->set_elem(4, Value(tmp_r3));
+          } else {
+            RegisteredReference tmp_r2(vm->gc()->new_object(OBJECT_TYPE_TUPLE, 1, context), context, false);
+            if(tmp_r2.is_null()) return false;
+            tmp_r2->set_elem(0, Value(0));
+            tmp_r2.register_ref();
+            addr_info_r->set_elem(4, Value(tmp_r2));
+          }
+          if(tmp_addr_info->ai_canonname != nullptr) {
+            size_t canonical_name_length = strlen(tmp_addr_info->ai_canonname);
+            RegisteredReference tmp_r4(vm->gc()->new_object(OBJECT_TYPE_IARRAY8, canonical_name_length, context), context);
+            if(tmp_r4.is_null()) return false;
+            copy_n(reinterpret_cast<int8_t *>(tmp_addr_info->ai_canonname), canonical_name_length, tmp_r4->raw().is8);
+            RegisteredReference tmp_r5(vm->gc()->new_object(OBJECT_TYPE_TUPLE, 2, context), context, false);
+            if(tmp_r5.is_null()) return false;
+            for(size_t i = 0; i < 2; i++) tmp_r5->set_elem(i, Value());
+            tmp_r5.register_ref();
+            tmp_r5->set_elem(0, Value(1));
+            tmp_r5->set_elem(1, Value(tmp_r4));
+            addr_info_r->set_elem(5, Value(tmp_r5));
+          } else {
+            RegisteredReference tmp_r4(vm->gc()->new_object(OBJECT_TYPE_TUPLE, 1, context), context, false);
+            if(tmp_r4.is_null()) return false;
+            tmp_r4->set_elem(0, Value(0));
+            tmp_r4.register_ref();
+            addr_info_r->set_elem(5, Value(tmp_r4));
+          }
           r->set_elem(1, Value(addr_info_r));
           tmp_addr_info = tmp_addr_info->ai_next;
           prev_r = r;

@@ -160,8 +160,8 @@ extern "C" {
             Value &io_v = args[1];
             int sd;
             SocketAddress addr;
-            Socklen addr_len;
-            if(!convert_args(args, tosd(sd), tosockaddr(addr)))
+            Socklen addr_len = sizeof(SocketAddress);
+            if(!convert_args(args, tosd(sd)))
               return return_value(vm, context, vut(vnone, v(io_v)));
 #if defined(__unix__)
             int accepted_sd;
@@ -608,7 +608,7 @@ extern "C" {
         {
           "socket.getaddrinfo", // (node: option iarray8, service: option iarray8, hints: option tuple, io: uio) -> (either int (list tuple), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
-            int error = check_args(vm, context, args, ciarray8, ciarray8, coption(caddrinfo), cuio);
+            int error = check_args(vm, context, args, coption(ciarray8), coption(ciarray8), coption(caddrinfo), cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[3];
             string node, service;
@@ -625,8 +625,8 @@ extern "C" {
                 return return_value(vm, context, vut(vleft(vint(2)), v(io_v)));
             }
             letin_errno() = tmp_errno;
-            struct ::addrinfo *tmp_res;
-            int result = ::getaddrinfo((is_node ? node.c_str() : nullptr), (is_service ? service.c_str() : nullptr), &(addr_info.info), &tmp_res);
+            struct ::addrinfo *tmp_res = nullptr;
+            int result = ::getaddrinfo((is_node ? node.c_str() : nullptr), (is_service ? service.c_str() : nullptr), (is_addr_info ? &(addr_info.info) : nullptr), &tmp_res);
             res = unique_ptr<struct ::addrinfo, AddrinfoDelete>(tmp_res);
             if(result != 0) {
               int addr_info_error = system_addr_info_error_to_addr_info_error(result);
