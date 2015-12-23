@@ -49,8 +49,8 @@ namespace letin
         {
           ImplGarbageCollectorBase *_M_gc;
         public:
-          ImplForkHandler(ImplGarbageCollectorBase *gc) {}
-          
+          ImplForkHandler(ImplGarbageCollectorBase *gc) : _M_gc(gc) {}
+
           ~ImplForkHandler();
 
           virtual void pre_fork();

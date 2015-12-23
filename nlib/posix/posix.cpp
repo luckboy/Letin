@@ -2004,7 +2004,7 @@ namespace letin
         tmp_r->set_elem(3, Value(version_r));
         RegisteredReference machine_r(vm->gc()->new_string(os_info.machine, context), context);
         if(machine_r.is_null()) return false;
-        tmp_r->set_elem(3, Value(machine_r));
+        tmp_r->set_elem(4, Value(machine_r));
         tmp_r.register_ref();
         return true;
       }

@@ -173,7 +173,7 @@ extern "C" {
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
-            Value &io_v = args[0];
+            Value &io_v = args[1];
             int new_errno;
             if(!convert_args(args, toerrno(new_errno)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));

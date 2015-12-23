@@ -87,7 +87,7 @@ namespace letin
         Argv() {}
 
         ~Argv()
-        { for(std::size_t i = 0; _M_ptr.get()[i] != nullptr; i++) delete [] _M_ptr.get(); }
+        { for(std::size_t i = 0; _M_ptr.get()[i] != nullptr; i++) delete [] _M_ptr.get()[i]; }
         
         void set_ptr(char **ptr) { _M_ptr = std::unique_ptr<char *[]>(ptr); }
 

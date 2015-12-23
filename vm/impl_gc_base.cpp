@@ -100,7 +100,12 @@ namespace letin
         _M_gc->_M_interval_mutex.unlock();
         _M_gc->_M_other_thread_mutex.unlock();
         _M_gc->_M_gc_thread_mutex.unlock();
-        if(is_child && is_started && is_forking_thread_context) _M_gc->start_gc_thread();
+        if(is_child && is_started && is_forking_thread_context) {
+          _M_gc->_M_gc_mutex.~recursive_mutex();
+          new (&(_M_gc->_M_gc_mutex)) recursive_mutex;
+          new (&(_M_gc->_M_gc_thread)) thread;
+          _M_gc->start_gc_thread();
+        }
       }
 
       ImplGarbageCollectorBase::~ImplGarbageCollectorBase()
