@@ -1,0 +1,88 @@
+.entry main
+
+waitStatusMsg = "wait status "
+sp = " "
+nl = "\n"
+childString = "child\n"
+childEndString = "child end\n"
+parentString = "parent\n"
+
+printWaitStatus(a2) = {
+	arg rtnth a0, 0
+	let rncall &#itoa			// lv0
+	arg rtnth a0, 1
+	let rncall &#itoa			// lv1
+	in
+	let riacat8 waitStatusMsg, lv0		// lv2
+	in
+	let riacat8 lv2, sp			// lv3
+	in
+	let riacat8 lv3, lv1			// lv4
+	in
+	arg iload 1
+	arg riacat8 lv4, nl
+	arg rload a1
+	let rncall &#posix.write		// lv5
+	in
+	arg iload 0
+	ret rutsnth lv5, 0
+}
+
+main(a2) = {
+	arg rload a1
+	lettuple(lv2) rncall &#posix.fork	// lv0, lv1
+	in
+	let ieq lv0, 0				// lv2
+	in
+	jc lv2, child
+	let ine lv0, -1				// lv3
+	in
+	jc lv3, parent
+	let rutfilli 2, 0			// lv4
+	in
+	arg rload lv1
+	ret rutsnth lv4, 1
+child:	arg iload 1
+	arg rload childString
+	arg rload lv1
+	lettuple(lv2) rncall &#posix.write	// lv3, lv4
+	in
+	arg iload 5000000
+	arg rload lv4
+	lettuple(lv2) rncall &#posix.usleep	// lv5, lv6
+	in
+	arg iload 1
+	arg rload childEndString
+	arg rload lv6
+	let rncall &#posix.write		// lv7
+	in
+	arg iload 0
+	ret rutsnth lv7, 0
+parent:	arg iload 1
+	arg rload parentString
+	arg rload lv1
+	lettuple(lv2) rncall &#posix.write	// lv4, lv5
+	in
+	arg iload lv0
+	arg iload 0
+	arg rload lv5
+	lettuple(lv2) rncall &#posix.waitpid	// lv6, lv7
+	in
+	let rtnth lv6, 0			// lv8
+	in
+	let ieq lv8, 0				// lv9
+	in
+	jc lv9, label
+	let rtnth lv6, 1			// lv10
+	in
+	arg rtnth lv10, 1
+	arg rload lv7
+	let rcall &printWaitStatus		// lv11
+	in
+	arg iload 0
+	ret rutsnth lv11, 0
+label:	let rutfilli 2, 1			// lv10
+	in
+	arg iload lv7
+	ret rutsnth lv10, 1
+}

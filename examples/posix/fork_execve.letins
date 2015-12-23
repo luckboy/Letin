@@ -1,0 +1,66 @@
+.entry main
+
+waitStatusMsg = "wait status "
+sp = " "
+nl = "\n"
+
+printWaitStatus(a2) = {
+	arg rtnth a0, 0
+	let rncall &#itoa			// lv0
+	arg rtnth a0, 1
+	let rncall &#itoa			// lv1
+	in
+	let riacat8 waitStatusMsg, lv0		// lv2
+	in
+	let riacat8 lv2, sp			// lv3
+	in
+	let riacat8 lv3, lv1			// lv4
+	in
+	arg iload 1
+	arg riacat8 lv4, nl
+	arg rload a1
+	let rncall &#posix.write		// lv5
+	in
+	arg iload 0
+	ret rutsnth lv5, 0
+}
+
+main(a2) = {
+	let rncall &#posix.environ		// lv0
+	in
+	arg rranth a0, 0
+	arg rload a0
+	arg rload lv0
+	arg rload a1
+	lettuple(lv2) rncall &#posix.fork_execve // lv1, lv2
+	in
+	let ieq lv1, -1				// lv3
+	in
+	jc lv3, label1
+	arg iload lv1
+	arg iload 0
+	arg rload lv2
+	lettuple(lv2) rncall &#posix.waitpid	// lv4, lv5
+	in
+	let rtnth lv4, 0			// lv6
+	in
+	let ieq lv6, 0				// lv7
+	in
+	jc lv7, label2
+	let rtnth lv4, 1			// lv8
+	in
+	arg rtnth lv8, 1
+	arg rload lv5
+	let rcall &printWaitStatus		// lv9
+	in
+	arg iload 0
+	ret rutsnth lv9, 0
+label1:	let rutfilli 2, 1			// lv4
+	in
+	arg rload lv2
+	ret rutsnth lv4, 1
+label2:	let rutfilli 2, 1			// lv8
+	in
+	arg rload lv5
+	ret rutsnth lv8, 1
+}

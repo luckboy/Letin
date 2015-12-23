@@ -1,0 +1,56 @@
+.entry main
+
+oldError = "old error: "
+error = "error: "
+
+printStringAndInt(a3) = {
+	arg iload a1
+	let rncall &#itoa			// lv0
+	in
+	arg iload '\n'
+	let riarray8()				// lv1
+	let riacat8 a0, lv0			// lv2
+	in
+	arg iload 1
+	arg riacat8 lv2, lv1
+	arg rload a2
+	let rncall &#posix.write		// lv3
+	in
+	arg iload 0
+	ret rutsnth lv3, 0
+}
+
+main(a2) = {
+	arg rranth a0, 0
+	let incall &#atoi			// lv0
+	in
+	arg rload a1
+	lettuple(lv2) rncall &#posix.errno	// lv1, lv2
+	in
+	arg rload oldError
+	arg iload lv1
+	arg rload lv2
+	lettuple(lv2) rcall &printStringAndInt	// lv3, lv4
+	in
+	arg iload lv0
+	arg rload lv4
+	lettuple(lv2) rncall &#posix.set_errno	// lv5, lv6
+	in
+	let ieq lv5, -1				// lv7
+	in
+	jc lv7, label
+	arg rload lv6
+	lettuple(lv2) rncall &#posix.errno	// lv8, lv9
+	in
+	arg rload error
+	arg iload lv8
+	arg rload lv9
+	let rcall &printStringAndInt		// lv10
+	in
+	arg iload 0
+	ret rutsnth lv10, 0
+label:	let rutfilli 2, 1			// lv8
+	in
+	arg rload lv6
+	ret rutsnth lv8, 1
+}

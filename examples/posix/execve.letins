@@ -1,0 +1,21 @@
+.entry main
+
+errorMsg = "can't execute program\n"
+
+main(a2) = {
+	let rncall &#posix.environ
+	in
+	arg rranth a0, 0
+	arg rload a0
+	arg rload lv0
+	arg rload a1
+	lettuple(lv2) rncall &#posix.execve
+	in
+	arg iload 2
+	arg rload errorMsg
+	arg rload lv2
+	let rncall &#posix.write
+	in
+	arg iload 1
+	ret rutsnth lv3, 0
+}

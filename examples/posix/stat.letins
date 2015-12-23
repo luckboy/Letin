@@ -173,7 +173,7 @@ main(a2) = {
 	in
 	let ieq lv2, 0				// lv3
 	in
-	jc lv3, label1
+	jc lv3, label
 	arg rtnth lv0, 1
 	let rcall &statToString			// lv4
 	in
@@ -184,7 +184,7 @@ main(a2) = {
 	in
 	arg iload 0
 	ret rutsnth lv5, 0
-label1:	let rutfilli 2, 1			// lv4
+label:	let rutfilli 2, 1			// lv4
 	in
 	arg rload lv1
 	ret rutsnth lv4, 1

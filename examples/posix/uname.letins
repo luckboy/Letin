@@ -1,0 +1,73 @@
+.entry main
+
+sysname = "sysname:\t"
+nlNodename = "\nnodename:\t"
+nlRelease = "\nrelease:\t"
+nlVersion = "\nversion:\t"
+nlMachine = "\nmachine:\t"
+
+concatThreeStrings(a3) = {
+	let riacat8 a0, a1
+	in
+	ret riacat8 lv0, a2
+}
+
+utsnameToString(a1) = {
+	let rtnth a0, 0				// lv0 - sysname
+	in
+	let riacat8 sysname, lv0		// lv1
+	let rtnth a0, 1				// lv2 - nodename
+	in
+	arg rload lv1
+	arg rload nlNodename
+	arg rload lv2
+	let rcall &concatThreeStrings		// lv3
+	let rtnth a0, 2				// lv4 - release
+	in
+	arg rload lv3
+	arg rload nlRelease
+	arg rload lv4
+	let rcall &concatThreeStrings		// lv5
+	let rtnth a0, 3				// lv6 - version
+	in
+	arg rload lv5
+	arg rload nlVersion
+	arg rload lv6
+	let rcall &concatThreeStrings		// lv7
+	let rtnth a0, 4				// lv8 - machine
+	in
+	arg rload lv7
+	arg rload nlMachine
+	arg rload lv8
+	let rcall &concatThreeStrings		// lv9
+	in
+	arg iload '\n'
+	let riarray8()				// lv10
+	in
+	ret riacat8 lv9, lv10
+}
+
+main(a2) = {
+	arg rload a1
+	lettuple(lv2) rncall &#posix.uname	// lv0, lv1
+	in
+	let rtnth lv0, 0			// lv2
+	in
+	let ieq lv2, 0				// lv3
+	in
+	jc lv3, label
+	arg rtnth lv0, 1
+	let rcall &utsnameToString		// lv4
+	in
+	arg iload 1
+	arg rload lv4
+	arg rload lv1
+	let rncall &#posix.write		// lv5
+	in
+	arg iload 0
+	ret rutsnth lv5, 0
+label:	let rutfilli 2, 1			// lv4
+	in
+	arg rload lv1
+	ret rutsnth lv4, 1
+}
