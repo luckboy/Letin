@@ -448,7 +448,13 @@ namespace letin
     { for(auto iter = _M_mutexes.begin(); iter != _M_mutexes.end(); iter++) (*iter)->lock(); }
 
     void MutexForkHandler::post_fork(bool is_child)
-    { for(auto iter = _M_mutexes.rbegin(); iter != _M_mutexes.rend(); iter++) (*iter)->unlock(); }
+    {
+      if(is_child) {
+        for(auto iter = _M_mutexes.begin(); iter != _M_mutexes.end(); iter++) new (*iter) mutex;
+      } else {
+        for(auto iter = _M_mutexes.rbegin(); iter != _M_mutexes.rend(); iter++) (*iter)->unlock();
+      }
+    }
 
     //
     // An InterruptibleFunctionAround class.
@@ -1849,7 +1855,12 @@ namespace letin
       { lazy_value_mutex_sem.lock(); }
 
       void InternalForkHandler::post_fork(bool is_child)
-      { lazy_value_mutex_sem.unlock(); }
+      {
+        if(is_child)
+          new (&lazy_value_mutex_sem) Semaphore(1);
+        else
+          lazy_value_mutex_sem.unlock();
+      }
 
       //
       // A DefaultNativeFunctionForkHandler class.
@@ -1861,7 +1872,12 @@ namespace letin
       { io_stream_mutex.lock(); }
 
       void DefaultNativeFunctionForkHandler::post_fork(bool is_child)
-      { io_stream_mutex.unlock(); }
+      {
+        if(is_child)
+          new (&io_stream_mutex) mutex;
+        else
+          io_stream_mutex.unlock();
+      }
 
       //
       // Private variables.

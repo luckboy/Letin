@@ -292,6 +292,8 @@ namespace letin
         void lock() { _M_mutex.lock(); }
 
         void unlock() { _M_mutex.unlock(); }
+
+        void reinitialize_mutex() { new (&_M_mutex) std::mutex; }
       };
 
       template<>

@@ -74,10 +74,10 @@ namespace letin
         if(is_child) {
           for(auto context : _M_gc->_M_thread_contexts) {
             if(context == _M_gc->_M_forking_thread_context) {
-              context->interruptible_fun_mutex().unlock();
+              new (&(context->interruptible_fun_mutex())) mutex;
             } else {
               context->set_gc(nullptr);
-              context->system_thread() = thread();
+              new (&(context->system_thread())) thread;
               context->free_stack();
             }
           }
@@ -95,14 +95,18 @@ namespace letin
         if(is_child) {
           _M_gc->_M_is_started = false;
           _M_gc->_M_must_stop_from_vm_thread = true;
-        }
-        _M_gc->_M_gc_mutex.unlock();
-        _M_gc->_M_interval_mutex.unlock();
-        _M_gc->_M_other_thread_mutex.unlock();
-        _M_gc->_M_gc_thread_mutex.unlock();
-        if(is_child && is_started && is_forking_thread_context) {
-          _M_gc->_M_gc_mutex.~recursive_mutex();
+          new (&(_M_gc->_M_interval_cv)) condition_variable;
           new (&(_M_gc->_M_gc_mutex)) recursive_mutex;
+          new (&(_M_gc->_M_interval_mutex)) mutex;
+          new (&(_M_gc->_M_other_thread_mutex)) mutex;
+          new (&(_M_gc->_M_gc_thread_mutex)) mutex;
+        } else {
+          _M_gc->_M_gc_mutex.unlock();
+          _M_gc->_M_interval_mutex.unlock();
+          _M_gc->_M_other_thread_mutex.unlock();
+          _M_gc->_M_gc_thread_mutex.unlock();
+        }
+        if(is_child && is_started && is_forking_thread_context) {
           new (&(_M_gc->_M_gc_thread)) thread;
           _M_gc->start_gc_thread();
         }
