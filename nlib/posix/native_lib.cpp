@@ -80,7 +80,7 @@ static void add_arg_to_cmd_line(string &cmd_line, const char *arg)
       case '\\':
       {
         size_t backslash_count = 0;
-        for(; arg[i] != '\\'; i++) backslash_count++;
+        for(; arg[i] == '\\'; i++) backslash_count++;
         if(arg[i] == '"') {
           for(size_t j = 0; j < backslash_count; j++) cmd_line += "\\\\";
         } else {
@@ -353,7 +353,7 @@ extern "C" {
 #endif
             }
 #elif defined(_WIN32) || defined(_WIN64)
-            int fd = ::_open(path_name.c_str(), flags, mode);
+            int fd = ::_open(path_name.c_str(), flags | O_BINARY, mode);
 #else
 #error "Unsupported operating system."
 #endif
@@ -1424,7 +1424,7 @@ extern "C" {
 #elif defined(_WIN32) || defined(_WIN64)
             if(!convert_args(args, towpid(pid), towoptions(options)))
               return return_value(vm, context, vut(vnone, v(io_v)));
-            ::HANDLE handle = ::OpenProcess(SYNCHRONIZE, FALSE, pid);
+            ::HANDLE handle = ::OpenProcess(SYNCHRONIZE | PROCESS_QUERY_INFORMATION, FALSE, pid);
             if(handle == nullptr)
               return return_value_with_errno_for_windows(vm, context, vut(vnone, v(io_v)), true);
             if((options & 1) == 0) {
@@ -1488,15 +1488,15 @@ extern "C" {
             string cmd_line;
             add_file_name_and_argv_to_cmd_line(cmd_line, file_name.c_str(), argv.ptr());
             unique_ptr<char []> env_block(env_to_env_block(env.ptr()));
-            STARTUPINFO startup_info;
-            fill_n(reinterpret_cast<uint8_t *>(&startup_info), sizeof(STARTUPINFO), 0);
-            startup_info.cb = sizeof(STARTUPINFO);
+            ::STARTUPINFO startup_info;
+            fill_n(reinterpret_cast<uint8_t *>(&startup_info), sizeof(::STARTUPINFO), 0);
+            startup_info.cb = sizeof(::STARTUPINFO);
             startup_info.dwFlags = STARTF_USESTDHANDLES;
             startup_info.hStdInput = ::GetStdHandle(STD_INPUT_HANDLE);
             startup_info.hStdOutput = ::GetStdHandle(STD_OUTPUT_HANDLE);
             startup_info.hStdError = ::GetStdHandle(STD_ERROR_HANDLE);
-            PROCESS_INFORMATION process_info;
-            BOOL result = ::CreateProcess(file_name.c_str(), const_cast<char *>(cmd_line.c_str()), nullptr, nullptr, TRUE, 0, env_block.get(), nullptr, &startup_info, &process_info);
+            ::PROCESS_INFORMATION process_info;
+            ::BOOL result = ::CreateProcess(file_name.c_str(), const_cast<char *>(cmd_line.c_str()), nullptr, nullptr, TRUE, 0, env_block.get(), nullptr, &startup_info, &process_info);
             if(result == FALSE)
               return return_value_with_errno_for_windows(vm, context, vut(vnone, v(io_v)));
             ::CloseHandle(process_info.hThread);
@@ -1665,18 +1665,26 @@ extern "C" {
             ::useconds_t useconds;
             if(!convert_args(args, touseconds(useconds)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
+#if defined(__unix__)
             int result;
             {
               InterruptibleFunctionAround around(context);
               result = ::usleep(useconds);
             }
+#else
+            struct ::timespec req;
+            req.tv_sec = useconds / 1000000;
+            req.tv_nsec = (useconds % 1000000) * 1000;
+            int result = ::nanosleep(&req, nullptr);
+#endif
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
 #elif defined(_WIN32) || defined(_WIN64)
-            DWORD useconds;
+            ::DWORD useconds;
             if(!convert_args(args, touseconds(useconds)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
-            ::Sleep(useconds / 1000);
+            ::DWORD milliseconds = useconds / 1000;
+            if(milliseconds > 0) ::Sleep(milliseconds);
 #else
 #error "Unsupported operating system."
 #endif
@@ -1693,11 +1701,15 @@ extern "C" {
             struct ::timespec req, rem;
             if(!convert_args(args, totimespec(req)))
               return return_value(vm, context, vut(vt(vint(-1), vnone), v(io_v)));
+#if defined(__unix__)
             int result;
             {
               InterruptibleFunctionAround around(context);
               result = ::nanosleep(&req, &rem);
             }
+#else
+            int result = ::nanosleep(&req, &rem);
+#endif
             if(result == -1) {
               if(errno == EINTR)
                 return return_value_with_errno(vm, context, vut(vt(vint(-1), vsome(vtimespec(rem))), v(io_v)));
@@ -1709,7 +1721,7 @@ extern "C" {
             ::DWORD req_dword;
             if(!convert_args(args, totimespecdw(req_dword)))
               return return_value(vm, context, vut(vt(vint(-1), vnone), v(io_v)));
-            ::Sleep(req_dword);
+            if(req_dword > 0) ::Sleep(req_dword);
             return return_value(vm, context, vut(vt(vint(0), vnone), v(io_v)));
 #else
 #error "Unsupported operating system."
@@ -2026,7 +2038,7 @@ extern "C" {
             return return_value(vm, context, vut(vsome(vtimeval(tv)), v(io_v)));
 #elif defined(_WIN32) || defined(_WIN64)
             ::SYSTEMTIME system_time;
-            ::GetSystemTime(&system_time);
+            ::GetLocalTime(&system_time);
             struct tm time;
             time.tm_year = system_time.wYear - 1900;
             time.tm_mon = system_time.wMonth - 1;
@@ -2432,7 +2444,7 @@ extern "C" {
             ostringstream version_oss;
             version_oss << os_version_info.dwBuildNumber;
             string version(version_oss.str());
-            return return_value_with_errno(vm, context, vut(vt(vstr(sysname), vstr(nodename), vstr(machine), vstr(release), vstr(version)), v(io_v)), ENOSYS);
+            return return_value_with_errno(vm, context, vut(vsome(vt(vstr(sysname), vstr(nodename), vstr(release), vstr(version), vstr(machine))), v(io_v)), ENOSYS);
 #else
 #error "Unsupported operating system."
 #endif

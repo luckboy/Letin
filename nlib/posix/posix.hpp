@@ -402,7 +402,7 @@ namespace letin
 
 #if defined(_WIN32) || defined(_WIN64)
 #if !defined(__MINGW32__) && !defined(__MINGW64__)
-      bool object_to_system_timespec_dword(const vm::Object &object, ::DWORD);
+      bool object_to_system_timespec_dword(const vm::Object &object, ::DWORD &dword);
       LETIN_NATIVE_OBJECT_CONVERTER(totimespecdw, object_to_system_timespec_dword, ::DWORD);
 #endif
 

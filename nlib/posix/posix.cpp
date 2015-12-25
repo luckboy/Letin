@@ -60,13 +60,23 @@ namespace letin
       static NativeObjectTypeIdentity directory_type_ident;
 
       static void finalize_directory(const void *ptr)
-      { close_dir(*reinterpret_cast<Directory * const *>(ptr)); }
+      {
+        Directory *dir = *reinterpret_cast<Directory * const *>(ptr);
+        if(dir != nullptr) close_dir(dir);
+      }
 
       static uint64_t hash_directory(const void *ptr)
-      { return reinterpret_cast<uint64_t>(*reinterpret_cast<Directory * const *>(ptr)); }
+      {
+        Directory *dir = *reinterpret_cast<Directory * const *>(ptr);
+        return dir != nullptr ?reinterpret_cast<uint64_t>(dir) : 0;
+      }
 
       static bool equal_directories(const void *ptr1, const void *ptr2)
-      { return *reinterpret_cast<Directory * const *>(ptr1) == *reinterpret_cast<Directory * const *>(ptr2); }
+      {
+        Directory *dir1 = *reinterpret_cast<Directory * const *>(ptr1);
+        Directory *dir2 = *reinterpret_cast<Directory * const *>(ptr2);
+        return dir1 == dir2;
+      }
 
       static NativeObjectFunctions directory_funs(finalize_directory, hash_directory, equal_directories);
 

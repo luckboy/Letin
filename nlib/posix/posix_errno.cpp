@@ -226,7 +226,8 @@ namespace letin
         error_offset = min_system_error;
         fill(errors.begin(), errors.end(), -1);
         for(int i = 0; i < static_cast<int>(system_errors.size()); i++) {
-          errors[system_errors[i] - min_system_error] = i;
+          if(system_errors[i] < (1 << 29))
+            errors[system_errors[i] - min_system_error] = i;
         }
 #if defined(_WIN32) || defined(_WIN64)
         int min_winsock2_system_error = numeric_limits<int>::max();
@@ -241,7 +242,8 @@ namespace letin
         winsock2_error_offset = min_winsock2_system_error;
         fill(winsock2_errors.begin(), winsock2_errors.end(), -1);
         for(int i = 0; i < static_cast<int>(system_errors.size()); i++) {
-          winsock2_errors[system_errors[i] - min_winsock2_system_error] = i;
+          if(system_errors[i] >= (1 << 29) && system_errors[i] < (1 << 30))
+            winsock2_errors[system_errors[i] - min_winsock2_system_error] = i;
         }
         int min_other_system_error = numeric_limits<int>::max();
         int max_other_system_error = numeric_limits<int>::min();
@@ -255,7 +257,8 @@ namespace letin
         other_error_offset = min_other_system_error;
         fill(other_errors.begin(), other_errors.end(), -1);
         for(int i = 0; i < static_cast<int>(system_errors.size()); i++) {
-          other_errors[system_errors[i] - min_other_system_error] = i;
+          if(system_errors[i] >= (1 << 30))
+            other_errors[system_errors[i] - min_other_system_error] = i;
         }
 #endif
       }

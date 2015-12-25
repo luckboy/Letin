@@ -123,13 +123,13 @@ namespace letin
 
       bool close_dir(Directory *dir)
       {
-        lock_guard<recursive_mutex> guard(dir->mutex);
-        if(dir->handle != -1) {
-          bool is_success = (::_findclose(dir->handle) == -1);
-          delete dir;
-          return is_success;
+        bool is_success = true;
+        {
+          lock_guard<recursive_mutex> guard(dir->mutex);
+          if(dir->handle != -1) is_success = (::_findclose(dir->handle) == -1);
         }
-        return true;
+        delete dir;
+        return is_success;
       }
 
       bool read_dir(Directory *dir, DirectoryEntry *entry, DirectoryEntry *&result)
@@ -139,7 +139,10 @@ namespace letin
         if(!dir->has_entry) {
           if(dir->handle != -1) {
             if(::_findnext(dir->handle, &(dir->buffer)) == -1) {
-              if(errno != ENOENT) return false;
+              if(errno == ENOENT) {
+                errno = 0;
+                return false;
+              }
               result = nullptr;
             }
           }
