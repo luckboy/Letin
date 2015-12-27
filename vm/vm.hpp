@@ -311,6 +311,8 @@ namespace letin
       {
         _M_regs.abp2 -= _M_regs.tmp_ac2;
         _M_regs.ac2 = _M_regs.tmp_ac2;
+        _M_regs.sec = _M_regs.abp2 + _M_regs.ac2;
+        std::atomic_thread_fence(std::memory_order_release);
       }
 
       bool push_tmp_ac2()
