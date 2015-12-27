@@ -82,11 +82,11 @@ static bool parse_fun_eval_strategy_string(const string &str, unsigned &fun_eval
   fun_eval_strategy = 0;
   while(iter != str.end()) {
     auto iter2 = find(iter, str.end(), '+');
-    if(equal(iter, iter2, "eager"))
+    if(string(iter, iter2) == "eager")
       ;
-    else if(equal(iter, iter2, "lazy"))
+    else if(string(iter, iter2) == "lazy")
       fun_eval_strategy |= 1 << EVAL_STRATEGY_LAZY;
-    else if(equal(iter, iter2, "memo"))
+    else if(string(iter, iter2) == "memo")
       fun_eval_strategy |= 1 << EVAL_STRATEGY_MEMO;
     else
       return false;
@@ -114,11 +114,13 @@ static bool load_native_fun_handlers(NativeFunctionHandlerLoader *native_fun_han
   return true;                      
 }
 
+
+
 EvaluationStrategy *parse_eval_strategy_string(const string &str, unique_ptr<MemoizationCacheFactory> &memo_cache_factory)
 {
   auto name_begin = str.begin();
   auto name_end = find(str.begin(), str.end(), ':');
-  bool are_args = (name_end != str.end());
+  bool are_args = name_end != str.end();
   size_t bucket_count = DEFAULT_BUCKET_COUNT;
   unsigned default_fun_eval_strategy = 0;
   function<EvaluationStrategy *()> fun;
@@ -126,20 +128,20 @@ EvaluationStrategy *parse_eval_strategy_string(const string &str, unique_ptr<Mem
   if(equal(name_begin, name_end, "eager")) {
     fun = []() { return new_eager_evaluation_strategy(); };
     has_args = false;
-  } else if(equal(name_begin, name_end, "fun")) {
+  } else if(string(name_begin, name_end) == "fun") {
     fun = [&memo_cache_factory, &bucket_count, &default_fun_eval_strategy]() {
       memo_cache_factory = unique_ptr<MemoizationCacheFactory>(new_memoization_cache_factory(bucket_count));
       return new_function_evaluation_strategy(memo_cache_factory.get(), default_fun_eval_strategy);
     };
-  } else if(equal(name_begin, name_end, "lazy")) {
+  } else if(string(name_begin, name_end) == "lazy") {
     fun = []() { return new_lazy_evaluation_strategy(); };
     has_args = false;
-  } else if(equal(name_begin, name_end, "memo")) {
+  } else if(string(name_begin, name_end) == "memo") {
     fun = [&memo_cache_factory, &bucket_count]() {
       memo_cache_factory = unique_ptr<MemoizationCacheFactory>(new_memoization_cache_factory(bucket_count));
       return new_memoization_evaluation_strategy(memo_cache_factory.get());
     };
-  } else if(equal(name_begin, name_end, "memolazy")) {
+  } else if(string(name_begin, name_end) == "memolazy") {
     fun = [&memo_cache_factory, &bucket_count]() {
       memo_cache_factory = unique_ptr<MemoizationCacheFactory>(new_memoization_cache_factory(bucket_count));
       return new_memoization_lazy_evaluation_strategy(memo_cache_factory.get());
