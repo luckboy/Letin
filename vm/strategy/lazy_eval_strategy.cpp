@@ -21,7 +21,7 @@ namespace letin
 
       bool LazyEvaluationStrategy::pre_enter_to_fun(VirtualMachine *vm, ThreadContext *context, size_t i, int value_type, bool &is_fun_result)
       {
-        Reference r(context->gc()->new_object(OBJECT_TYPE_LAZY_VALUE, context->regs().ac2));
+        Reference r(context->gc()->new_object(OBJECT_TYPE_LAZY_VALUE, context->regs().ac2, context));
         if(r.is_null()) {
           context->set_error(ERROR_OUT_OF_MEMORY);
           is_fun_result = false;
