@@ -1642,8 +1642,8 @@ namespace letin
         if(object == nullptr) return nullptr;
         object->set_elem(0, Value(system_flock_type_to_flock_type(lock.l_type)));
         object->set_elem(1, Value(system_whence_to_whence(lock.l_whence)));
-        object->set_elem(2, Value(lock.l_start));
-        object->set_elem(3, Value(lock.l_len));
+        object->set_elem(2, Value(static_cast<int64_t>(lock.l_start)));
+        object->set_elem(3, Value(static_cast<int64_t>(lock.l_len)));
         object->set_elem(4, Value(lock.l_pid));
         return object;
       }
@@ -1895,10 +1895,10 @@ namespace letin
       {
         Object *object = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 4, context);
         if(object == nullptr) return nullptr;
-        object->set_elem(0, times.tms_utime);
-        object->set_elem(1, times.tms_stime);
-        object->set_elem(2, times.tms_cutime);
-        object->set_elem(3, times.tms_cstime);
+        object->set_elem(0, Value(static_cast<int64_t>(times.tms_utime)));
+        object->set_elem(1, Value(static_cast<int64_t>(times.tms_stime)));
+        object->set_elem(2, Value(static_cast<int64_t>(times.tms_cutime)));
+        object->set_elem(3, Value(static_cast<int64_t>(times.tms_cstime)));
         return object;
       }
 #endif

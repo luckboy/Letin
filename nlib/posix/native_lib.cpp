@@ -2483,15 +2483,15 @@ extern "C" {
             *dir_ptr = nullptr;
             atomic_thread_fence(memory_order_release);
 #if defined(__unix__)
-            int result;
+            bool result;
             {
               InterruptibleFunctionAround around(context);
               result = close_dir(dir);
             }
 #else
-            int result = close_dir(dir);
+            bool result = close_dir(dir);
 #endif
-            if(result == -1) 
+            if(!result)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
             return return_value(vm, context, vut(vint(0), v(io_v)));
           }

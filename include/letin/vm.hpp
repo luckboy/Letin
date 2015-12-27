@@ -137,8 +137,8 @@ namespace letin
         Reference r;
         struct
         {
-          uint32_t first;
-          uint32_t second;
+          std::uint32_t first;
+          std::uint32_t second;
         } p;
       };
 

@@ -292,7 +292,7 @@ int main(int argc, char **argv)
     unique_ptr<EvaluationStrategy> eval_strategy(parse_eval_strategy_string(eval_strategy_string, memo_cache_factory));
     if(eval_strategy.get() == nullptr) return 1;
     unique_ptr<VirtualMachine> vm;
-    function<void ()> exit_fun = [status, &native_fun_handler_loader, &loader, &alloc, &gc, &native_fun_handler, &memo_cache_factory, &eval_strategy, &vm]() {
+    function<void ()> exit_fun = [&status, &native_fun_handler_loader, &loader, &alloc, &gc, &native_fun_handler, &memo_cache_factory, &eval_strategy, &vm]() {
       vm.reset();
       eval_strategy.reset();
       memo_cache_factory.reset();
