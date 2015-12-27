@@ -196,7 +196,8 @@ namespace letin
           atomic_thread_fence(memory_order_release);
           return true;
         case OBJECT_TYPE_TUPLE:
-          _M_raw.tuple_elem_types()[i] = TupleElementType(VALUE_TYPE_ERROR);
+          if(_M_raw.tes[i].raw().r != value.raw().r)
+            _M_raw.tuple_elem_types()[i] = TupleElementType(VALUE_TYPE_ERROR);
           atomic_thread_fence(memory_order_release);
           _M_raw.tes[i] = TupleElement(value.raw().i);
           atomic_thread_fence(memory_order_release);

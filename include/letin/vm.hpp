@@ -163,7 +163,7 @@ namespace letin
       
       void safely_assign_for_gc(const Value &value)
       {
-        _M_raw.type = VALUE_TYPE_ERROR;
+        if(_M_raw.r != value._M_raw.r) _M_raw.type = VALUE_TYPE_ERROR;
         std::atomic_thread_fence(std::memory_order_release);
         _M_raw.i = value.raw().i;
         std::atomic_thread_fence(std::memory_order_release);
