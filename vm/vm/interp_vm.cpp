@@ -1434,8 +1434,7 @@ namespace letin
             if(!check_object_elem_index(context, *r, i)) return Value();
             Value value = context.pushed_arg(0);
             if(context.pushed_arg(0).is_unique()) context.pushed_arg(0).cancel_ref();
-            if(r->raw().tes[i].raw().r != value.raw().r)
-              r->raw().tuple_elem_types()[i] = VALUE_TYPE_ERROR;
+            r->raw().tuple_elem_types()[i] = VALUE_TYPE_ERROR;
             atomic_thread_fence(memory_order_release);
             r->raw().tes[i] = value.tuple_elem();
             atomic_thread_fence(memory_order_release);
