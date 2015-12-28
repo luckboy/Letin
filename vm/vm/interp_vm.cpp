@@ -1911,8 +1911,7 @@ namespace letin
             if(!check_object_elem_index(context, *r, i)) return Value();
             Value value = context.pushed_arg(0);
             cancel_ref_for_unique(context.pushed_arg(0));
-            if(r->raw().tes[i].raw().r != value.raw().r)
-              r->raw().tuple_elem_types()[i].safely_assign_for_gc(VALUE_TYPE_ERROR);
+            r->raw().tuple_elem_types()[i].safely_assign_for_gc(VALUE_TYPE_ERROR);
             r->raw().tes[i].safely_assign_for_gc(value.tuple_elem());
             r->raw().tuple_elem_types()[i].safely_assign_for_gc(value.tuple_elem_type());
             return Value(r);
