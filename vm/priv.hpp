@@ -12,6 +12,13 @@
 #include <letin/vm.hpp>
 #include "util.hpp"
 
+#ifdef _U
+#define ___U                            _U
+#undef _U
+const int _U =                          ___U;
+#undef ___U
+#endif
+
 namespace letin
 {
   namespace vm
