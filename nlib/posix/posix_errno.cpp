@@ -13,7 +13,28 @@
 #endif
 #include "posix.hpp"
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+
+#ifndef ENODATA
+#define ENODATA                         ((1 << 30) + 0)
+#endif
+#ifndef ENOSR
+#define ENOSR                           ((1 << 30) + 1)
+#endif
+#ifndef ENOSTR
+#define ENOSTR                          ((1 << 30) + 2)
+#endif
+#ifndef ENOTRECOVERABLE
+#define ENOTRECOVERABLE                 ((1 << 30) + 3)
+#endif
+#ifndef EOWNERDEAD
+#define EOWNERDEAD                      ((1 << 30) + 4)
+#endif
+#ifndef ETIME
+#define ETIME                           ((1 << 30) + 5)
+#endif
+
+#elif defined(_WIN32) || defined(_WIN64)
 
 #undef EADDRINUSE
 #define EADDRINUSE                      ((1 << 29) + WSAEADDRINUSE)
@@ -126,6 +147,8 @@ namespace letin
 #if defined(_WIN32) || defined(_WIN64)
       static vector<int> winsock2_errors;
       static size_t winsock2_error_offset;
+#endif
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(_WIN32) || defined(_WIN64)
       static vector<int> other_errors;
       static size_t other_error_offset;
 #endif
@@ -245,6 +268,8 @@ namespace letin
           if(system_errors[i] >= (1 << 29) && system_errors[i] < (1 << 30))
             winsock2_errors[system_errors[i] - min_winsock2_system_error] = i;
         }
+#endif
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(_WIN32) || defined(_WIN64)
         int min_other_system_error = numeric_limits<int>::max();
         int max_other_system_error = numeric_limits<int>::min();
         for(auto system_error : system_errors) {
@@ -275,7 +300,14 @@ namespace letin
           return errors[system_error - error_offset];
         } else {
 #if defined(__unix__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+          if(system_error >= static_cast<int>(other_error_offset) && system_error < static_cast<int>(other_errors.size()))
+            return errors[system_error - other_error_offset];
+          else
+            return -1;
+#else
           return -1;
+#endif
 #elif defined(_WIN32) || defined(_WIN64)
           if(system_error >= static_cast<int>(winsock2_error_offset) && system_error < static_cast<int>(winsock2_errors.size()))
             return errors[system_error - winsock2_error_offset];

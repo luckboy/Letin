@@ -47,6 +47,8 @@ namespace letin
     {
       static long static_system_clk_tck;
 #if defined(__unix__)
+      static size_t static_system_tty_name_max;
+      static size_t static_system_host_name_max;
       static vector<int> system_signals;
       static vector<int> signals;
       static size_t signal_offset;
@@ -90,137 +92,139 @@ namespace letin
 #error "Unsupported operating system."
 #endif
 #if defined(__unix__)
+        static_system_tty_name_max = ::sysconf(_SC_TTY_NAME_MAX);
+        static_system_host_name_max = ::sysconf(_SC_HOST_NAME_MAX);
         system_signals = {
 #ifdef SIGHUP
-          SIGHUP,
+          SIGHUP
 #else
-          0,
+          0
 #endif
-          SIGINT,
+          , SIGINT
 #ifdef SIGQUIT
-          SIGQUIT,
+          , SIGQUIT
 #else
-          0,
+          , 0
 #endif
-          SIGILL,
+          , SIGILL
 #ifdef SIGTRAP
-          SIGTRAP,
+          , SIGTRAP
 #else
-          0,
+          , 0
 #endif
-          SIGABRT,
+          , SIGABRT
 #ifdef SIGBUS
-          SIGBUS,
+          , SIGBUS
 #else
-          0,
+          , 0
 #endif
-          SIGFPE,
+          , SIGFPE
 #ifdef SIGKILL
-          SIGKILL,
+          , SIGKILL
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGUSR1
-          SIGUSR1,
+          , SIGUSR1
 #else
-          0,
+          , 0
 #endif
-          SIGSEGV,
+          , SIGSEGV
 #ifdef SIGUSR2
-          SIGUSR2,
+          , SIGUSR2
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGPIPE
-          SIGPIPE,
+          , SIGPIPE
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGALRM
-          SIGALRM,
+          , SIGALRM
 #else
-          0,
+          , 0
 #endif
-          SIGTERM,
+          , SIGTERM
 #ifdef SIGSTKFLT
-          SIGSTKFLT,
+          , SIGSTKFLT
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGCHLD
-          SIGCHLD,
+          , SIGCHLD
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGCONT
-          SIGCONT,
+          , SIGCONT
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGSTOP
-          SIGSTOP,
+          , SIGSTOP
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGTSTP
-          SIGTSTP,
+          , SIGTSTP
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGTTIN
-          SIGTTIN,
+          , SIGTTIN
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGTTOU
-          SIGTTOU,
+          , SIGTTOU
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGURG
-          SIGURG,
+          , SIGURG
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGXCPU
-          SIGXCPU,
+          , SIGXCPU
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGVTALRM
-          SIGVTALRM,
+          , SIGVTALRM
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGPROF
-          SIGPROF,
+          , SIGPROF
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGWINCH
-          SIGWINCH,
+          , SIGWINCH
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGPOLL
-          SIGPOLL,
+          , SIGPOLL
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGIO
-          SIGIO,
+          , SIGIO
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGPWR
-          SIGPWR,
+          , SIGPWR
 #else
-          0,
+          , 0
 #endif
 #ifdef SIGSYS
-          SIGSYS
+          , SIGSYS
 #else
-          0,
+          , 0
 #endif
         };
         int min_system_signal = numeric_limits<int>::max();
@@ -236,61 +240,61 @@ namespace letin
           if(system_signals[i] != 0) signals[system_signals[i] - min_system_signal] = i;
         }
         system_termios_cc_indexes = {
-          VEOF,
-          VEOL,
-          VERASE,
-          VINTR,
-          VKILL,
-          VMIN,
-          VQUIT,
-          VSTART,
-          VSTOP,
-          VSUSP,
-          VTIME,
+          VEOF
+          , VEOL
+          , VERASE
+          , VINTR
+          , VKILL
+          , VMIN
+          , VQUIT
+          , VSTART
+          , VSTOP
+          , VSUSP
+          , VTIME
 #ifdef VEOL2
-          VEOL2,
+          , VEOL2
 #else
-          -1,
+          , -1
 #endif
 #ifdef VERASE2
-          VERASE2,
+          , VERASE2
 #else
-          -1,
+          , -1
 #endif
 #ifdef VWERASE
-          VWERASE,
+          , VWERASE
 #else
-          -1,
+          , -1
 #endif
 #ifdef VSWTC
-          VSWTC,
+          , VSWTC
 #else
-          -1,
+          , -1
 #endif
 #ifdef VLNEXT
-          VLNEXT,
+          , VLNEXT
 #else
-          -1,
+          , -1
 #endif
 #ifdef VDISCARD
-          VDISCARD,
+          , VDISCARD
 #else
-          -1,
+          , -1
 #endif
 #ifdef VREPRINT
-          VREPRINT
+          , VREPRINT
 #else
-          -1,
+          , -1
 #endif
 #ifdef VDSUSP
-          VDSUSP,
+          , VDSUSP
 #else
-          -1,
+          , -1
 #endif
 #ifdef VSTATUS
-          VSTATUS
+          , VSTATUS
 #else
-          -1
+          , -1
 #endif
         };
         system_speeds = {
@@ -376,6 +380,12 @@ namespace letin
       }
 
       long int system_clk_tck() { return static_system_clk_tck; }
+
+#if defined(__unix__)
+      size_t system_tty_name_max() { return static_system_tty_name_max; }
+
+      size_t system_host_name_max() { return static_system_host_name_max; }
+#endif
 
       int64_t system_whence_to_whence(int system_whence)
       {
@@ -857,7 +867,9 @@ namespace letin
         if((system_iflag & INLCR) != 0) iflag |= 1 << 5;
         if((system_iflag & INPCK) != 0) iflag |= 1 << 6;
         if((system_iflag & ISTRIP) != 0) iflag |= 1 << 7;
+#ifdef IUCLC
         if((system_iflag & IUCLC) != 0) iflag |= 1 << 8;
+#endif
         if((system_iflag & IXANY) != 0) iflag |= 1 << 9;
         if((system_iflag & IXOFF) != 0) iflag |= 1 << 10;
         if((system_iflag & IXON) != 0) iflag |= 1 << 11;
@@ -880,7 +892,14 @@ namespace letin
         if((iflag & (1 << 5)) != 0) system_iflag |= INLCR;
         if((iflag & (1 << 6)) != 0) system_iflag |= INPCK;
         if((iflag & (1 << 7)) != 0) system_iflag |= ISTRIP;
+#ifdef IUCLC
         if((iflag & (1 << 8)) != 0) system_iflag |= IUCLC;
+#else
+        if((iflag & (1 << 8)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
         if((iflag & (1 << 9)) != 0) system_iflag |= IXANY;
         if((iflag & (1 << 10)) != 0) system_iflag |= IXOFF;
         if((iflag & (1 << 11)) != 0) system_iflag |= IXON;
@@ -892,12 +911,17 @@ namespace letin
       {
         int64_t oflag = 0;
         if((system_oflag & OPOST) != 0) oflag |= 1 << 0;
+#ifdef OLCUC
         if((system_oflag & OLCUC) != 0) oflag |= 1 << 1;
+#endif
         if((system_oflag & ONLCR) != 0) oflag |= 1 << 2;
         if((system_oflag & OCRNL) != 0) oflag |= 1 << 3;
         if((system_oflag & ONOCR) != 0) oflag |= 1 << 4;
         if((system_oflag & ONLRET) != 0) oflag |= 1 << 5;
+#ifdef OFILL
         if((system_oflag & OFILL) != 0) oflag |= 1 << 6;
+#endif
+#ifdef NLDLY
         switch(system_oflag & NLDLY) {
           case NL0:
             break;
@@ -907,6 +931,8 @@ namespace letin
           default:
             return -1;
         }
+#endif
+#ifdef CRDLY
         switch(system_oflag & CRDLY) {
           case CR0:
             break;
@@ -922,21 +948,27 @@ namespace letin
           default:
             return -1;
         }
+#endif
         switch(system_oflag & TABDLY) {
           case TAB0:
             break;
+#ifdef TAB1
           case TAB1:
             oflag |= 1 << 10;
             break;
+#endif
+#ifdef TAB2
           case TAB2:
             oflag |= 2 << 10;
             break;
+#endif
           case TAB3:
             oflag |= 3 << 10;
             break;
           default:
             return -1;
         }
+#ifdef BSDLY
         switch(system_oflag & BSDLY) {
           case BS0:
             break;
@@ -946,6 +978,8 @@ namespace letin
           default:
             return -1;
         }
+#endif
+#ifdef VTDLY
         switch(system_oflag & VTDLY) {
           case VT0:
             break;
@@ -955,6 +989,8 @@ namespace letin
           default:
             return -1;
         }
+#endif
+#ifdef FFDLY
         switch(system_oflag & FFDLY) {
           case FF0:
             break;
@@ -964,6 +1000,7 @@ namespace letin
           default:
             return -1;
         }
+#endif
         return oflag;
       }
 
@@ -974,12 +1011,27 @@ namespace letin
           return false;
         }
         if((system_oflag & (1 << 0)) != 0) system_oflag |= OPOST;
+#ifdef OLCUC
         if((system_oflag & (1 << 1)) != 0) system_oflag |= OLCUC;
+#else
+        if((system_oflag & (1 << 1)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
         if((system_oflag & (1 << 2)) != 0) system_oflag |= ONLCR;
         if((system_oflag & (1 << 3)) != 0) system_oflag |= OCRNL;
         if((system_oflag & (1 << 4)) != 0) system_oflag |= ONOCR;
         if((system_oflag & (1 << 5)) != 0) system_oflag |= ONLRET;
+#ifdef OFILL
         if((system_oflag & (1 << 6)) != 0) system_oflag |= OFILL;
+#else
+        if((system_oflag & (1 << 6)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
+#ifdef NLDLY
         switch(system_oflag & (1 << 7)) {
           case 0 << 7:
             system_oflag |= NL0;
@@ -988,6 +1040,13 @@ namespace letin
             system_oflag |= NL1;
             break;
         }
+#else
+        if((system_oflag & (1 << 7)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
+#ifdef CRDLY
         switch(system_oflag & (3 << 8)) {
           case 0 << 8:
             system_oflag |= CR0;
@@ -1002,20 +1061,39 @@ namespace letin
             system_oflag |= CR3;
             break;
         }
+#else
+        if((system_oflag & (3 << 8)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
         switch(system_oflag & (3 << 10)) {
           case 0 << 10:
             system_oflag |= TAB0;
             break;
+#ifdef TAB1
           case 1 << 10:
             system_oflag |= TAB1;
             break;
+#else
+          case 1 << 10:
+            letin_errno() = EINVAL;
+            return false;
+#endif
+#ifdef TAB1
           case 2 << 10:
             system_oflag |= TAB2;
             break;
+#else
+          case 2 << 10:
+            letin_errno() = EINVAL;
+            return false;
+#endif
           case 3 << 10:
             system_oflag |= TAB3;
             break;
         }
+#ifdef BSDLY
         switch(system_oflag & (1 << 12)) {
           case 0 << 12:
             system_oflag |= BS0;
@@ -1024,6 +1102,13 @@ namespace letin
             system_oflag |= BS1;
             break;
         }
+#else
+        if((system_oflag & (1 << 12)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
+#ifdef VTDLY
         switch(system_oflag & (1 << 13)) {
           case 0 << 13:
             system_oflag |= VT0;
@@ -1032,6 +1117,13 @@ namespace letin
             system_oflag |= VT1;
             break;
         }
+#else
+        if((system_oflag & (1 << 13)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
+#ifdef FFDLY
         switch(system_oflag & (1 << 14)) {
           case 0 << 14:
             system_oflag |= FF0;
@@ -1040,6 +1132,12 @@ namespace letin
             system_oflag |= FF1;
             break;
         }
+#else
+        if((system_oflag & (1 << 14)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
         return true;
       }
 
@@ -1111,7 +1209,9 @@ namespace letin
         if((system_lflag & IEXTEN) != 0) lflag |= 1 << 5;
         if((system_lflag & NOFLSH) != 0) lflag |= 1 << 6;
         if((system_lflag & TOSTOP) != 0) lflag |= 1 << 7;
+#ifdef XCASE
         if((system_lflag & XCASE) != 0) lflag |= 1 << 8;
+#endif
         return lflag;
       }
 
@@ -1130,7 +1230,14 @@ namespace letin
         if((system_lflag & (1 << 5)) != 0) lflag |= IEXTEN;
         if((system_lflag & (1 << 6)) != 0) lflag |= NOFLSH;
         if((system_lflag & (1 << 7)) != 0) lflag |= TOSTOP;
+#ifdef XCASE
         if((system_lflag & (1 << 8)) != 0) lflag |= XCASE;
+#else
+        if((system_lflag & (1 << 8)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
         return true;
       }
 

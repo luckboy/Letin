@@ -104,6 +104,12 @@ namespace letin
 
       long system_clk_tck();
 
+#if defined(__unix__)
+      std::size_t system_tty_name_max();
+
+      std::size_t system_host_name_max();
+#endif
+
       std::int64_t system_error_to_error(int system_error);
 
       bool error_to_system_error(std::int64_t error_num, int &system_error_num);

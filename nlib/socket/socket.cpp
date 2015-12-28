@@ -21,9 +21,16 @@
 #endif
 #include <algorithm>
 #include <cerrno>
+#include <cstring>
 #include <limits>
 #include <vector>
 #include "socket.hpp"
+
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+#if defined(HAVE_STRUCT_SOCKADDR_IN6) && defined(AF_INET6)
+#define s6_addr16                       __u6_addr.__u6_addr16
+#endif
+#endif
 
 using namespace std;
 using namespace letin::vm;

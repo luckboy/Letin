@@ -43,6 +43,7 @@
 #include <fcntl.h>
 #include <limits>
 #include <mutex>
+#include <signal.h>
 #include <string>
 #include <time.h>
 #include <letin/native.hpp>
@@ -759,7 +760,7 @@ extern "C" {
 #else
             int result;
             {
-              NonRestertableFunctionAround around(context);
+              InterruptibleFunctionAround around(context);
               result = ::fcntl(fd, F_SETLKW64, &lock);
             }
 #endif
@@ -772,7 +773,7 @@ extern "C" {
 #else
             int result;
             {
-              NonRestertableFunctionAround around(context);
+              InterruptibleFunctionAround around(context);
               result = ::fcntl(fd, F_SETLKW, &lock);
             }
 #endif
@@ -2269,11 +2270,11 @@ extern "C" {
             Value &io_v = args[1];
 #if defined(__unix__)
             int fd;
-            unique_ptr<char []> buf(new char[TTY_NAME_MAX + 1]);
-            fill_n(buf.get(), TTY_NAME_MAX + 1, 0);
+            unique_ptr<char []> buf(new char[system_tty_name_max() + 1]);
+            fill_n(buf.get(), system_tty_name_max() + 1, 0);
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vnone, v(io_v)));
-            int result = ::ttyname_r(fd, buf.get(), TTY_NAME_MAX + 1);
+            int result = ::ttyname_r(fd, buf.get(), system_tty_name_max() + 1);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vcstr(buf.get())), v(io_v)));
@@ -2348,10 +2349,14 @@ extern "C" {
             int fd;
             if(!convert_args(args, tofd(fd)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
-#if defined(__unix__) && !defined(__FreeBSD__)
+#if defined(__unix__)
+#if !defined(__FreeBSD__)
             int result = ::fdatasync(fd);
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
+#else
+            return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)), ENOSYS);
+#endif
 #elif defined(_WIN32) || defined(_WIN64)
             ::HANDLE handle = reinterpret_cast<::HANDLE>(::_get_osfhandle(fd));
             if(handle == INVALID_HANDLE_VALUE)
@@ -2567,7 +2572,7 @@ extern "C" {
             if(error != letin::ERROR_SUCCESS) return error_return_value(error);
             Value &io_v = args[0];
 #if defined(__unix__)
-            size_t len = HOST_NAME_MAX + 1;
+            size_t len = system_host_name_max() + 1;
 #elif defined(_WIN32) || defined(_WIN64)
             int len = 256;
 #else
