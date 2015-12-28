@@ -15,23 +15,35 @@
 
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 
+#ifndef EBADMSG
+#define EBADMSG                         ((1 << 30) + 0)
+#endif
 #ifndef ENODATA
-#define ENODATA                         ((1 << 30) + 0)
+#define ENODATA                         ((1 << 30) + 1)
+#endif
+#ifndef EMULTIHOP
+#define EMULTIHOP                       ((1 << 30) + 2)
+#endif
+#ifndef ENOLINK
+#define ENOLINK                         ((1 << 30) + 3)
 #endif
 #ifndef ENOSR
-#define ENOSR                           ((1 << 30) + 1)
+#define ENOSR                           ((1 << 30) + 4)
 #endif
 #ifndef ENOSTR
-#define ENOSTR                          ((1 << 30) + 2)
+#define ENOSTR                          ((1 << 30) + 5)
 #endif
 #ifndef ENOTRECOVERABLE
-#define ENOTRECOVERABLE                 ((1 << 30) + 3)
+#define ENOTRECOVERABLE                 ((1 << 30) + 6)
 #endif
 #ifndef EOWNERDEAD
-#define EOWNERDEAD                      ((1 << 30) + 4)
+#define EOWNERDEAD                      ((1 << 30) + 7)
+#endif
+#ifndef EPROTO
+#define EPROTO                          ((1 << 30) + 8)
 #endif
 #ifndef ETIME
-#define ETIME                           ((1 << 30) + 5)
+#define ETIME                           ((1 << 30) + 9)
 #endif
 
 #elif defined(_WIN32) || defined(_WIN64)
