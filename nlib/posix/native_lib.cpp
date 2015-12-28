@@ -1744,7 +1744,7 @@ extern "C" {
 #if defined(__unix__)
             struct ::tms buf;
             ::clock_t result = ::times(&buf);
-            if(result == -1)
+            if(result == static_cast<::clock_t>(-1))
               return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
             return return_value(vm, context, vut(vsome(vt(vint(result), vtms(buf))), v(io_v)));
 #elif defined(_WIN32) || defined(_WIN64)

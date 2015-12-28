@@ -949,6 +949,7 @@ namespace letin
             return -1;
         }
 #endif
+#ifdef TABDLY
         switch(system_oflag & TABDLY) {
           case TAB0:
             break;
@@ -968,6 +969,7 @@ namespace letin
           default:
             return -1;
         }
+#endif
 #ifdef BSDLY
         switch(system_oflag & BSDLY) {
           case BS0:
@@ -1067,6 +1069,7 @@ namespace letin
           return false;
         }
 #endif
+#ifdef TABDLY
         switch(system_oflag & (3 << 10)) {
           case 0 << 10:
             system_oflag |= TAB0;
@@ -1093,6 +1096,12 @@ namespace letin
             system_oflag |= TAB3;
             break;
         }
+#else
+        if((system_oflag & (3 << 10)) != 0) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+#endif
 #ifdef BSDLY
         switch(system_oflag & (1 << 12)) {
           case 0 << 12:

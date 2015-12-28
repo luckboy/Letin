@@ -668,7 +668,9 @@ namespace letin
             inet_addr.sin_family = AF_INET;
             if(!in_port_to_system_in_port(object.elem(1).i(), inet_addr.sin_port)) return false;
             inet_addr.sin_port = htons(inet_addr.sin_port);
-            if(!in_addr_to_system_in_addr(object.elem(2).i(), inet_addr.sin_addr.s_addr)) return false;
+            InAddr tmp_system_addr;
+            if(!in_addr_to_system_in_addr(object.elem(2).i(), tmp_system_addr)) return false;
+            inet_addr.sin_addr.s_addr = tmp_system_addr;
             inet_addr.sin_addr.s_addr = htonl(inet_addr.sin_addr.s_addr);
             return true;
           }
