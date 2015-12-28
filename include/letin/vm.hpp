@@ -214,6 +214,9 @@ namespace letin
         std::atomic_thread_fence(std::memory_order_release);
       }
 
+      void safely_assign_for_push(const Value &value)
+      { *this = value; std::atomic_thread_fence(std::memory_order_release); }
+
       TupleElementType tuple_elem_type() const { return TupleElementType(_M_raw.type); }
 
       TupleElement tuple_elem() const { return TupleElement(_M_raw.i); }
