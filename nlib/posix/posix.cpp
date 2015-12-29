@@ -1752,7 +1752,7 @@ namespace letin
       //
 
 #if defined(__unix__)
-      Object *new_flock_option(VirtualMachine *vm, ThreadContext *context, const struct ::flock &lock)
+      Object *new_flock(VirtualMachine *vm, ThreadContext *context, const struct ::flock &lock)
       {
         Object *object = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 5, context);
         if(object == nullptr) return nullptr;
