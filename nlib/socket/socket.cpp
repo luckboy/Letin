@@ -689,14 +689,14 @@ namespace letin
 #error "Unsupported operating system."
 #endif
             inet6_addr.sin6_flowinfo = htons(inet6_addr.sin6_flowinfo);
-            inet6_addr.sin6_addr.s6_addr16[0] = (object.elem(3).i() >> 48) & 0xffff;
-            inet6_addr.sin6_addr.s6_addr16[1] = (object.elem(3).i() >> 32) & 0xffff;
-            inet6_addr.sin6_addr.s6_addr16[2] = (object.elem(3).i() >> 16) & 0xffff;
-            inet6_addr.sin6_addr.s6_addr16[3] = (object.elem(3).i() >> 0) & 0xffff;
-            inet6_addr.sin6_addr.s6_addr16[4] = (object.elem(4).i() >> 48) & 0xffff;
-            inet6_addr.sin6_addr.s6_addr16[5] = (object.elem(4).i() >> 32) & 0xffff;
-            inet6_addr.sin6_addr.s6_addr16[6] = (object.elem(4).i() >> 16) & 0xffff;
-            inet6_addr.sin6_addr.s6_addr16[7] = (object.elem(4).i() >> 0) & 0xffff;
+            inet6_addr.sin6_addr.s6_addr16[0] = htons((object.elem(3).i() >> 48) & 0xffff);
+            inet6_addr.sin6_addr.s6_addr16[1] = htons((object.elem(3).i() >> 32) & 0xffff);
+            inet6_addr.sin6_addr.s6_addr16[2] = htons((object.elem(3).i() >> 16) & 0xffff);
+            inet6_addr.sin6_addr.s6_addr16[3] = htons((object.elem(3).i() >> 0) & 0xffff);
+            inet6_addr.sin6_addr.s6_addr16[4] = htons((object.elem(4).i() >> 48) & 0xffff);
+            inet6_addr.sin6_addr.s6_addr16[5] = htons((object.elem(4).i() >> 32) & 0xffff);
+            inet6_addr.sin6_addr.s6_addr16[6] = htons((object.elem(4).i() >> 16) & 0xffff);
+            inet6_addr.sin6_addr.s6_addr16[7] = htons((object.elem(4).i() >> 0) & 0xffff);
 #if defined(__unix__)
             if(!uint32_to_system_uint32(object.elem(5).i(), inet6_addr.sin6_scope_id)) return false;
 #elif defined(_WIN32) || defined(_WIN64)
