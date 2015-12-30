@@ -1,0 +1,48 @@
+.entry main
+
+@memoized
+ackermann(a2) = {
+	let ile a0, 0		// m <= 0
+	in
+	jc lv0, label1
+	let ile a1, 0		// n <= 0
+	in
+	jc lv1, label2
+	arg iload a0		// m
+	arg isub a1, 1		// n - 1
+	let icall &ackermann	// ackermann(m, n - 1)
+	in
+	arg isub a0, 1		// m - 1
+	arg iload lv2		// ackermann(m, n - 1)
+	ret icall &ackermann	// ackermann(m - 1, ack(m, n - 1))
+label2:	arg isub a0, 1		// m - 1
+	arg iload 1
+	ret icall &ackermann	// ackermann(m - 1, 1)
+label1:	ret iadd a1, 1		// n + 1
+}
+
+main(a2) = {
+	arg rranth a0, 0
+	let incall &#atoi
+	in
+	arg rranth a0, 1
+	let incall &#atoi
+	in
+	arg iload lv0
+	arg iload lv1
+	let icall &ackermann
+	in
+	arg iload lv2
+	let rncall &#itoa
+	in
+	arg rload lv3
+	arg rload a1
+	lettuple(lv2) rncall &#put_string
+	in
+	arg iload '\n'
+	arg rload lv5
+	let rncall &#put_char
+	in
+	arg iload 0
+	ret rutsnth lv6, 0
+}
