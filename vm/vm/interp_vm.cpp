@@ -755,7 +755,10 @@ namespace letin
           }
           if(opcode_to_instr(instr.opcode) == INSTR_ARG) context.regs().arg_instr_flag = true;
           if(!restore_and_pop_regs_for_force(context)) return false;
-          if(opcode_to_instr(instr.opcode) == INSTR_ARG) context.regs().arg_instr_flag = false;
+          if(opcode_to_instr(instr.opcode) == INSTR_ARG) {
+            context.regs().arg_instr_flag = false;
+            context.restore_abp2_and_ac2();
+          }
         }
         switch(opcode_to_instr(instr.opcode)) {
           case INSTR_LET:
