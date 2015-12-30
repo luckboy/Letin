@@ -73,22 +73,22 @@
 }
 
 #define RELOC(reloc)            tmp_prog_helper.add_reloc(reloc)
-#define RELOC_A1F(addr)         RELOC(make_reloc(format::RELOC_TYPE_ARG1_FUN, addr, 0))
-#define RELOC_A2F(addr)         RELOC(make_reloc(format::RELOC_TYPE_ARG2_FUN, addr, 0))
-#define RELOC_A1V(addr)         RELOC(make_reloc(format::RELOC_TYPE_ARG1_VAR, addr, 0))
-#define RELOC_A2V(addr)         RELOC(make_reloc(format::RELOC_TYPE_ARG2_VAR, addr, 0))
-#define RELOC_EF(addr)          RELOC(make_reloc(format::RELOC_TYPE_ELEM_FUN, addr, 0))
-#define RELOC_VF(addr)          RELOC(make_reloc(format::RELOC_TYPE_VAR_FUN, addr, 0))
-#define RELOC_SA1F(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG1_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SA2F(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG2_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SA1V(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG1_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SA2V(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG2_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SEF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ELEM_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SVF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_VAR_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SA1NF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG1_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SA2NF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ARG2_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SENF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_ELEM_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
-#define RELOC_SVNF(addr, symbol) RELOC(make_reloc(format::RELOC_TYPE_VAR_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_A1F(addr)         RELOC(make_relocation(format::RELOC_TYPE_ARG1_FUN, addr, 0))
+#define RELOC_A2F(addr)         RELOC(make_relocation(format::RELOC_TYPE_ARG2_FUN, addr, 0))
+#define RELOC_A1V(addr)         RELOC(make_relocation(format::RELOC_TYPE_ARG1_VAR, addr, 0))
+#define RELOC_A2V(addr)         RELOC(make_relocation(format::RELOC_TYPE_ARG2_VAR, addr, 0))
+#define RELOC_EF(addr)          RELOC(make_relocation(format::RELOC_TYPE_ELEM_FUN, addr, 0))
+#define RELOC_VF(addr)          RELOC(make_relocation(format::RELOC_TYPE_VAR_FUN, addr, 0))
+#define RELOC_SA1F(addr, symbol) RELOC(make_relocation(format::RELOC_TYPE_ARG1_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA2F(addr, symbol) RELOC(make_relocation(format::RELOC_TYPE_ARG2_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA1V(addr, symbol) RELOC(make_relocation(format::RELOC_TYPE_ARG1_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA2V(addr, symbol) RELOC(make_relocation(format::RELOC_TYPE_ARG2_VAR | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SEF(addr, symbol) RELOC(make_relocation(format::RELOC_TYPE_ELEM_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SVF(addr, symbol) RELOC(make_relocation(format::RELOC_TYPE_VAR_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA1NF(addr, symbol) RELOC(make_relocation(format::RELOC_TYPE_ARG1_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SA2NF(addr, symbol) RELOC(make_relocation(format::RELOC_TYPE_ARG2_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SENF(addr, symbol) RELOC(make_relocation(format::RELOC_TYPE_ELEM_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
+#define RELOC_SVNF(addr, symbol) RELOC(make_relocation(format::RELOC_TYPE_VAR_NATIVE_FUN | format::RELOC_TYPE_SYMBOLIC, addr, symbol))
 
 #define SYMBOL(type, name, index)                                               \
 {                                                                               \
@@ -102,7 +102,7 @@
 #define SYMBOL_DV(name, index)  SYMBOL(format::SYMBOL_TYPE_VAR | format::SYMBOL_TYPE_DEFINED, name, index)
 
 #define FUN_INFO(fun_index, eval_strategy, eval_strategy_mask)                  \
-tmp_prog_helper.add_fun_info(make_fun_info(fun_index, eval_strategy, eval_strategy_mask))
+tmp_prog_helper.add_fun_info(make_function_info(fun_index, eval_strategy, eval_strategy_mask))
 
 #define PROG(var, entry)                                                        \
 ProgramHelper var(entry);                                                       \
@@ -232,9 +232,9 @@ namespace letin
 
       format::Value make_ref_value(std::uint32_t addr);
 
-      format::Relocation make_reloc(std::uint32_t type, std::uint32_t addr, std::uint32_t symbol);
+      format::Relocation make_relocation(std::uint32_t type, std::uint32_t addr, std::uint32_t symbol);
 
-      format::FunctionInfo make_fun_info(std::uint32_t fun_index, std::uint8_t eval_strategy, std::uint8_t eval_strategy_mask);
+      format::FunctionInfo make_function_info(std::uint32_t fun_index, std::uint8_t eval_strategy, std::uint8_t eval_strategy_mask);
 
       struct ProgramDelete
       {

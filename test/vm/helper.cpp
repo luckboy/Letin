@@ -262,7 +262,7 @@ namespace letin
         return value;
       }
 
-      format::Relocation make_reloc(uint32_t type, uint32_t addr, uint32_t symbol)
+      format::Relocation make_relocation(uint32_t type, uint32_t addr, uint32_t symbol)
       {
         format::Relocation reloc;
         reloc.type = htonl(type);
@@ -271,7 +271,7 @@ namespace letin
         return reloc;
       }
 
-      format::FunctionInfo make_fun_info(uint32_t fun_index, uint8_t eval_strategy, uint8_t eval_strategy_mask)
+      format::FunctionInfo make_function_info(uint32_t fun_index, uint8_t eval_strategy, uint8_t eval_strategy_mask)
       {
         format::FunctionInfo fun_info;
         fun_info.fun_index = htonl(fun_index);
