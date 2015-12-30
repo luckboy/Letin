@@ -118,6 +118,7 @@ namespace letin
         CPPUNIT_TEST(test_vm_loads_program_with_function_infos);
         CPPUNIT_TEST(test_vm_evaluates_lettuple_with_rcall_operation_for_lazy_evaluation);
         CPPUNIT_TEST(test_vm_evaluates_nested_invocations_with_value_type_changes_for_lazy_evaluation);
+        CPPUNIT_TEST(test_vm_evaluates_function_argument_for_lazy_evaluation);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -186,6 +187,7 @@ namespace letin
         void test_vm_loads_program_with_function_infos();
         void test_vm_evaluates_lettuple_with_rcall_operation_for_lazy_evaluation();
         void test_vm_evaluates_nested_invocations_with_value_type_changes_for_lazy_evaluation();
+        void test_vm_evaluates_function_argument_for_lazy_evaluation();
       };
 
       DECL_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);

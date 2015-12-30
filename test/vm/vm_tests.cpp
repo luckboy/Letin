@@ -1945,6 +1945,45 @@ namespace letin
         CPPUNIT_ASSERT(is_expected);        
       }
 
+      void VirtualMachineTests::test_vm_evaluates_function_argument_for_lazy_evaluation()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(5), NA());
+        LET(ICALL, IMM(1), NA());
+        IN();
+        ARG(ILOAD, IMM(10), NA());
+        ARG(ILOAD, IMM(20), NA());
+        ARG(IADD, LV(0), IMM(3));
+        ARG(ILOAD, IMM(40), NA());
+        RET(ICALL, IMM(2), NA());
+        END_FUN();
+        FUN(2);
+        RET(IADD, A(0), A(1));
+        END_FUN();
+        FUN(4);
+        LET(IMUL, A(0), A(1));
+        IN();
+        LET(IADD, LV(0), A(2));
+        IN();
+        RET(IADD, LV(1), A(3));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (249 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);        
+        CPPUNIT_ASSERT(is_expected);        
+      }
+
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);
