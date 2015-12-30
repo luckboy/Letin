@@ -1670,7 +1670,14 @@ extern "C" {
             int result;
             {
               InterruptibleFunctionAround around(context);
+#if defined(__NetBSD__)
+              struct ::timespec req;
+              req.tv_sec = useconds / 1000000;
+              req.tv_nsec = (useconds % 1000000) * 1000;
+              result = ::nanosleep(&req, nullptr);
+#else
               result = ::usleep(useconds);
+#endif
             }
 #else
             struct ::timespec req;

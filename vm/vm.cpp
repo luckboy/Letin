@@ -1309,20 +1309,22 @@ namespace letin
       return value;
     }
 
-    void ThreadContext::unlock_lazy_values(size_t new_stack_elem_count)
+    void ThreadContext::try_lock_and_unlock_lazy_values(size_t new_stack_elem_count)
     {
       size_t i = _M_regs.abp2 + _M_regs.ac2;
       while(i > new_stack_elem_count) {
         i--;
-        if(_M_stack[i].type() == VALUE_TYPE_LOCKED_LAZY_VALUE_REF)
+        if(_M_stack[i].type() == VALUE_TYPE_LOCKED_LAZY_VALUE_REF) {
+          _M_stack[i].raw().r->raw().lzv.mutex.try_lock();
           _M_stack[i].raw().r->raw().lzv.mutex.unlock();
+        }
       }
       atomic_thread_fence(memory_order_release);
     }
     
     void ThreadContext::set_error_without_try(int error, const Reference &r)
     {
-      unlock_lazy_values(_M_regs.nfbp);
+      try_lock_and_unlock_lazy_values(_M_regs.nfbp);
       _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp;
       _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
       _M_regs.fp = static_cast<size_t>(-1);
@@ -1338,7 +1340,7 @@ namespace letin
       if(!_M_regs.try_flag || _M_regs.try_abp < _M_regs.nfbp) {
         set_error_without_try(error, r);
       } else {
-        unlock_lazy_values(_M_regs.try_abp + _M_regs.try_ac);
+        try_lock_and_unlock_lazy_values(_M_regs.try_abp + _M_regs.try_ac);
         _M_regs.abp = _M_regs.try_abp;
         _M_regs.ac = _M_regs.try_ac;
         _M_regs.rv = ReturnValue(0, 0.0, r, error);

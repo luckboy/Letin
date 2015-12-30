@@ -2363,17 +2363,23 @@ namespace letin
               if(!push_ai(context)) return false;
               if(!push_locked_lazy_value_ref(context, value.raw().r)) return false;
               Value *args = object.raw().lzv.args;
+              uint32_t tmp_abp2 = context.regs().abp2;
               for(size_t i = 0; i < object.length(); i++)
                 if(!push_arg(context, args[i])) return false;
               context.regs().after_leaving_flag_index = 1;
               if(is_try) context.set_try_regs_for_force();
               if(!call_fun_for_force_with_eval_strategy(context, object.raw().lzv.fun, object.raw().lzv.value_type)) {
-                if(context.regs().rv.raw().error == ERROR_SUCCESS) lock.release();
+                if(context.regs().rv.raw().error == ERROR_SUCCESS || tmp_abp2 > context.regs().abp2) lock.release();
                 return false;
               }
-              if(!_M_eval_strategy->post_leave_from_fun_for_force(this, &context, object.raw().lzv.fun, object.raw().lzv.value_type))
+              if(!_M_eval_strategy->post_leave_from_fun_for_force(this, &context, object.raw().lzv.fun, object.raw().lzv.value_type)) {
+                if(tmp_abp2 > context.regs().abp2) lock.release();
                 return false;
-              if(!restore_and_pop_regs_for_force(context)) return false;
+              }
+              if(!restore_and_pop_regs_for_force(context)) {
+                lock.release();
+                return false;
+              }
             }
             context.regs().after_leaving_flags[1] = false;
             if(!context.regs().rv.raw().r->is_lazy()) {
@@ -2388,9 +2394,11 @@ namespace letin
                   object.raw().lzv.value = Value(context.regs().rv.raw().r);
                   break;
                 case VALUE_TYPE_CANCELED_REF:
+                  lock.release();
                   context.set_error(ERROR_AGAIN_USED_UNIQUE);
                   return false;
                 default:
+                  lock.release();
                   context.set_error(ERROR_INCORRECT_VALUE);
                   return false;
               }
@@ -2409,9 +2417,11 @@ namespace letin
                     object.raw().lzv.value = Value(Reference());
                     break;
                   case VALUE_TYPE_CANCELED_REF:
+                    lock.release();
                     context.set_error(ERROR_AGAIN_USED_UNIQUE);
                     return false;
                   default:
+                    lock.release();
                     context.set_error(ERROR_INCORRECT_VALUE);
                     return false;
                 }
@@ -2422,17 +2432,20 @@ namespace letin
           tmp_must_be_shared = object.raw().lzv.must_be_shared;
           if(object.raw().lzv.value_type == VALUE_TYPE_REF && object.raw().lzv.value.is_unique())
             object.raw().lzv.value.cancel_ref();
-          object.raw().lzv.mutex.unlock();
+          lock.unlock();
           if(object.raw().lzv.value_type == VALUE_TYPE_REF && tmp_value.type() == VALUE_TYPE_CANCELED_REF) {
+            lock.release();
             context.set_error(ERROR_AGAIN_USED_UNIQUE);
             return false;
           }
           if(tmp_value.is_unique()) {
             if(value.is_lazily_canceled()) {
+              lock.release();
               context.set_error(ERROR_AGAIN_USED_UNIQUE);
               return false;
             }
             if(tmp_must_be_shared) {
+              lock.release();
               context.set_error(ERROR_UNIQUE_OBJECT);
               return false;
             }

@@ -517,6 +517,14 @@ namespace letin
           { value = vm::Value(0); return ERROR_SUCCESS; }
         };
 
+        struct OneIntSetter
+        {
+          OneIntSetter() {}
+
+          int set(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
+          { value = vm::Value(1); return ERROR_SUCCESS; }
+        };
+
         class FloatSetter
         {
           const double &_M_f;
@@ -798,24 +806,24 @@ namespace letin
       const priv::TupleSetter<0, priv::ZeroIntSetter> vnone = priv::TupleSetter<0, priv::ZeroIntSetter>(priv::ZeroIntSetter());
 
       template<typename _T>
-      inline priv::TupleSetter<0, priv::IntSetter, _T> vsome(_T setter) { return vt(vint(1), setter); }
+      inline priv::TupleSetter<0, priv::OneIntSetter, _T> vsome(_T setter) { return vt(priv::OneIntSetter(), setter); }
 
       const priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::ZeroIntSetter> vunone = priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::ZeroIntSetter>(priv::ZeroIntSetter());
 
       template<typename _T>
-      inline priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::IntSetter, _T> vusome(_T setter) { return vut(vint(1), setter); }
+      inline priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::OneIntSetter, _T> vusome(_T setter) { return vut(priv::OneIntSetter(), setter); }
 
       template<typename _T>
-      inline priv::TupleSetter<0, priv::IntSetter, _T> vleft(_T setter) { return vt(vint(0), setter); }
+      inline priv::TupleSetter<0, priv::ZeroIntSetter, _T> vleft(_T setter) { return vt(priv::ZeroIntSetter(), setter); }
 
       template<typename _T>
-      inline priv::TupleSetter<0, priv::IntSetter, _T> vright(_T setter) { return vt(vint(1), setter); }
+      inline priv::TupleSetter<0, priv::OneIntSetter, _T> vright(_T setter) { return vt(priv::OneIntSetter(), setter); }
 
       template<typename _T>
-      inline priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::IntSetter, _T> vuleft(_T setter) { return vut(vint(0), setter); }
+      inline priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::ZeroIntSetter, _T> vuleft(_T setter) { return vut(priv::ZeroIntSetter(), setter); }
 
       template<typename _T>
-      inline priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::IntSetter, _T> vuright(_T setter) { return vut(vint(1), setter); }
+      inline priv::TupleSetter<OBJECT_TYPE_UNIQUE, priv::OneIntSetter, _T> vuright(_T setter) { return vut(priv::OneIntSetter(), setter); }
 
       template<typename _T>
       inline vm::ReturnValue return_value(vm::VirtualMachine *vm, vm::ThreadContext *context, _T setter)

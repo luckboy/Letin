@@ -292,7 +292,7 @@ namespace letin
 
       ReturnValue invoke_native_fun(VirtualMachine *vm, int nfi, ArgumentList &args);
     private:
-      void unlock_lazy_values(std::size_t stack_elem_count);
+      void try_lock_and_unlock_lazy_values(std::size_t stack_elem_count);
 
       void set_error_without_try(int error, const Reference &r);
     public:
