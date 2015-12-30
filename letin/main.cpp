@@ -85,12 +85,12 @@ static bool parse_fun_eval_strategy_string(const string &str, unsigned &fun_eval
     if(string(iter, iter2) == "eager")
       ;
     else if(string(iter, iter2) == "lazy")
-      fun_eval_strategy |= 1 << EVAL_STRATEGY_LAZY;
+      fun_eval_strategy |= EVAL_STRATEGY_LAZY;
     else if(string(iter, iter2) == "memo")
-      fun_eval_strategy |= 1 << EVAL_STRATEGY_MEMO;
+      fun_eval_strategy |= EVAL_STRATEGY_MEMO;
     else
       return false;
-    if(iter2 != str.end()) iter = iter2 + 1;
+    iter = (iter2 != str.end() ? iter2 + 1 : iter2);
   }
   return true;
 }
@@ -113,8 +113,6 @@ static bool load_native_fun_handlers(NativeFunctionHandlerLoader *native_fun_han
   for(auto native_lib_fun : native_lib_funs) native_fun_handlers.push_back(native_lib_fun());
   return true;                      
 }
-
-
 
 EvaluationStrategy *parse_eval_strategy_string(const string &str, unique_ptr<MemoizationCacheFactory> &memo_cache_factory)
 {
@@ -163,14 +161,14 @@ EvaluationStrategy *parse_eval_strategy_string(const string &str, unique_ptr<Mem
       auto arg_name_end = find(arg_begin, arg_end, '=');
       bool is_arg_value = (arg_name_end != arg_end);
       auto arg_value_begin = (is_arg_value ? arg_name_end + 1 : arg_name_end);
-      if(equal(arg_begin, arg_name_end, "bucket_count") && is_arg_value) {
+      if(string(arg_begin, arg_name_end) == "bucket_count" && is_arg_value) {
         istringstream iss(string(arg_value_begin, arg_end));
         iss >> bucket_count;
         if(iss.fail() || !iss.eof()) {
           cerr << "error: incorrect number of buckets" << endl;
           return nullptr;
         }
-      } else if(equal(arg_begin, arg_name_end, "default_fes") && is_arg_value) {
+      } else if(string(arg_begin, arg_name_end) == "default_fes" && is_arg_value) {
         if(!parse_fun_eval_strategy_string(string(arg_value_begin, arg_end), default_fun_eval_strategy)) {
           cerr << "error: incorrect default evaluation strategy of function" << endl;
           return nullptr;
@@ -179,7 +177,7 @@ EvaluationStrategy *parse_eval_strategy_string(const string &str, unique_ptr<Mem
         cerr << "error: incorrect argument of evaluation strategy" << endl;
         return nullptr;
       }
-      if(arg_begin != arg_list_end) arg_begin = arg_end + 1;
+      arg_begin = (arg_end != arg_list_end ? arg_end + 1 : arg_end);
     }
   }
   return fun();
