@@ -301,8 +301,8 @@ main(a2) = {
 	arg rload lv5
 	arg rload lv3
 	ret rcall &printAddrinfoList
-label:	let rutfilli 2, 1			// lv6
+label:	let rutfilli 2, 1			// lv7
 	in
 	arg rload lv3
-	ret rutsnth lv6, 1
+	ret rutsnth lv7, 1
 }
