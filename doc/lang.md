@@ -2,7 +2,7 @@
 
 ## Copyright and license
 
-Copyright (C) 2015 Łukasz Szpakowski.  
+Copyright (C) 2015-2016 Łukasz Szpakowski.  
 This documentation is licensed under the Creative Commons Attribution-ShareAlike 4.0
 International Public License.
 
@@ -257,8 +257,9 @@ values. Also, an object can be written without a name of object type. The object
     <array> ::= <name> "[" [<nl>] <values> [<nl>] "]"
     <iarray64> ::= "[" [<nl>] <values> [<nl>] "]"
     <tuple> ::= "(" [<nl>] <values> [<nl>] ")"
-    <values> ::= <values> [<nl>] "," [<nl>] <value>
-               | <value>
+    <values> ::= <values2> | ""
+    <values2> ::= <values2> [<nl>] "," [<nl>] <value>
+                | <value>
 
 The names of object types with the corresponding syntax rules are presented in the following
 table:
