@@ -104,6 +104,7 @@
 %type <def>             var_def
 %type <def>             entry_def
 %type <values>          values
+%type <values>          values2
 %type <fun_lines>       fun_lines
 %type <num_value>       expr
 
@@ -122,8 +123,7 @@
 %destructor { delete $$; }      <values>
 %destructor { delete $$; }      <fun_lines>
 
-%right                  '?'
-%left                   ':'
+%right                  '?' ':'
 %left                   BARBAR
 %left                   AMPAMP
 %left                   '|'
@@ -226,13 +226,16 @@ object:         STRING                          { $$ = new Object(*$1, P(@1)); d
 |               '(' onl values onl ')'          { $$ = new Object("tuple", *$3, P(@1)); delete $3; }
 ;
 
-values:         values onl ',' onl value        { (*$1)->push_back(*$5); $$ = $1; delete $5; }
+values:         values2
+|                                               {
+  $$ = new std::shared_ptr<std::list<Value>>(new std::list<Value>());
+}
+;
+
+values2:        values2 onl ',' onl value       { (*$1)->push_back(*$5); $$ = $1; delete $5; }
 |               value                           {
   $$ = new std::shared_ptr<std::list<Value>>(new std::list<Value> { *$1 });
   delete $1;
-}
-|                                               {
-  $$ = new std::shared_ptr<std::list<Value>>(new std::list<Value>());
 }
 ;
 
