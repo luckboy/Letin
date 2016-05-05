@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2016 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -658,11 +658,11 @@ namespace letin
               case VALUE_TYPE_INT:
                 if(arg.v().type() == ArgumentValue::TYPE_INT) {
                   if(arg.v().i() < INT32_MIN) {
-                    errors.push_back(Error(instr_pos, "too small integer number"));
+                    errors.push_back(Error(instr_pos, "integer number is too small"));
                     return false;
                   }
                   if(arg.v().i() > static_cast<int64_t>(UINT32_MAX)) {
-                    errors.push_back(Error(instr_pos, "too large integer number"));
+                    errors.push_back(Error(instr_pos, "integer number is too large"));
                     return false;
                   }
                   format_arg.i = arg.v().i();
@@ -777,11 +777,11 @@ namespace letin
           if(instr.local_var_count() != nullptr) {
             local_var_count = *(instr.local_var_count());
             if(local_var_count < 2) {
-              errors.push_back(Error(instr.pos(), "too small number of local variables"));
+              errors.push_back(Error(instr.pos(), "number of local variables is too small"));
               is_success = false;
             }
             if(local_var_count > 258) {
-              errors.push_back(Error(instr.pos(), "too large number of local variables"));
+              errors.push_back(Error(instr.pos(), "number of local variables is too large"));
               is_success = false;
             }
           } else {
@@ -1097,11 +1097,11 @@ namespace letin
             case OBJECT_TYPE_IARRAY8:
               for(auto &elem : object->elems()) {
                 if(elem.i() < INT8_MIN) {
-                  errors.push_back(Error(elem.pos(), "too small integer number"));
+                  errors.push_back(Error(elem.pos(), "integer number is too small"));
                   is_success = false;
                 }
                 if(elem.i() > static_cast<int64_t>(UINT8_MAX)) {
-                  errors.push_back(Error(elem.pos(), "too large integer number"));
+                  errors.push_back(Error(elem.pos(), "integer number is too large"));
                   is_success = false;
                 }
                 format_object->is8[j] = elem.i();
@@ -1111,11 +1111,11 @@ namespace letin
             case OBJECT_TYPE_IARRAY16:
               for(auto &elem : object->elems()) {
                 if(elem.i() < INT16_MIN) {
-                  errors.push_back(Error(elem.pos(), "too small integer number"));
+                  errors.push_back(Error(elem.pos(), "integer number is too small"));
                   is_success = false;
                 }
                 if(elem.i() > static_cast<int64_t>(UINT16_MAX)) {
-                  errors.push_back(Error(elem.pos(), "too large integer number"));
+                  errors.push_back(Error(elem.pos(), "integer number is too large"));
                   is_success = false;
                 }
                 format_object->is16[j] = htons(elem.i());
@@ -1126,11 +1126,11 @@ namespace letin
               for(auto &elem : object->elems()) {
                 if(elem.type() != Value::TYPE_FUN_INDEX && elem.type() != Value::TYPE_NATIVE_FUN_INDEX) {
                   if(elem.i() < INT32_MIN) {
-                    errors.push_back(Error(elem.pos(), "too small integer number"));
+                    errors.push_back(Error(elem.pos(), "integer number is too small"));
                     is_success = false;
                   }
                   if(elem.i() > static_cast<int64_t>(UINT32_MAX)) {
-                    errors.push_back(Error(elem.pos(), "too large integer number"));
+                    errors.push_back(Error(elem.pos(), "integer number is too large"));
                     is_success = false;
                   }
                 }
