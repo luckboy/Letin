@@ -41,7 +41,7 @@ literal is:
     <float> ::= ("0" | ... | "9")+ "." ("0" | ... | "9")*
                 [("E" | "e") ["+" | "-"] ("0" | ... | "9")+]
               | ("0" | ... | "9")+ ("E" | "e") ["+" | "-"] ("0" | ... | "9")+
-    <escape_seq> ::= "\\" ("a" | "b" | "t" | "n" | "v" | "f" | "r")
+    <escape_seq> ::= "\\" ("a" | "b" | "t" | "n" | "v" | "f" | "r" | "\\" | "\"" | "'")
                    | "\\" [["0" | ... | "3"] ("0" | ... | "7")] ("0" | ... | "7")
 
 A string can represent an array of 8-bit integer numbers. The syntax of string literal is:
