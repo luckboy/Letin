@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2015 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2015-2016 Łukasz Szpakowski.                             *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -31,7 +31,7 @@ namespace letin
       bool ImplNativeFunctionHandlerLoader::load(const char *file_name, function<NativeFunctionHandler *()> &fun)
       {
         DynamicLibrary *lib = open_dyn_lib(file_name);
-        if(lib == nullptr) return nullptr;
+        if(lib == nullptr) return false;
         void *init_ptr = get_dyn_lib_symbol_addr(lib, "letin_initialize");
         if(init_ptr == nullptr) {
           close_dyn_lib(lib);
