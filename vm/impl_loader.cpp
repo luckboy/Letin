@@ -103,7 +103,10 @@ namespace letin
         uint8_t *data = tmp_ptr + tmp_idx;
         size_t data_size = header->data_size;
         set<uint32_t> data_addrs;
-        tmp_idx += align(data_size, 8);
+        if(data_size != 0 && align(data_size, 8) == 0) return nullptr;
+        tmp_idx2 = tmp_idx + align(data_size, 8);
+        if((tmp_idx | align(data_size, 8)) > tmp_idx2) return nullptr;
+        tmp_idx = tmp_idx2;
         if(tmp_idx > size) return nullptr;
         for(size_t i = 0; i < data_size;) {
           size_t tmp_i, elem_size;
