@@ -60,6 +60,10 @@ namespace letin
           funs[i].addr = ntohl(funs[i].addr);
           funs[i].arg_count = ntohl(funs[i].arg_count);
           funs[i].instr_count = ntohl(funs[i].instr_count);
+          if(funs[i].addr >= header->code_size) return nullptr;
+          size_t instr_end_addr = funs[i].addr + funs[i].instr_count;
+          if((funs[i].addr | funs[i].instr_count) > instr_end_addr) return nullptr;
+          if(instr_end_addr > header->code_size) return nullptr;
         }
 
         format::Value *vars = reinterpret_cast<format::Value *>(tmp_ptr + tmp_idx);
