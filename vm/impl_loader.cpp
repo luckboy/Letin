@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2017 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -33,6 +33,7 @@ namespace letin
       {
         uint8_t *tmp_ptr = reinterpret_cast<uint8_t *>(ptr);
         size_t tmp_idx = 0;
+        size_t tmp_idx2;
         format::Header *header = reinterpret_cast<format::Header *>(tmp_ptr + tmp_idx);
         tmp_idx += align(sizeof(format::Header), 8);
         if(tmp_idx > size) return nullptr;
@@ -48,7 +49,12 @@ namespace letin
 
         format::Function *funs = reinterpret_cast<format::Function *>(tmp_ptr + tmp_idx);
         size_t fun_count = header->fun_count;
-        tmp_idx += align(sizeof(format::Function) * fun_count, 8);
+        size_t fun_array_size = sizeof(format::Function) * fun_count;
+        if(fun_array_size / sizeof(format::Function) != fun_count) return nullptr;
+        if(fun_array_size != 0 && align(fun_array_size, 8) == 0) return nullptr; 
+        tmp_idx2 = tmp_idx + align(fun_array_size, 8);
+        if((tmp_idx | align(fun_array_size, 8)) > tmp_idx2) return nullptr;
+        tmp_idx = tmp_idx2;
         if(tmp_idx > size) return nullptr;
         for(size_t i = 0; i < fun_count; i++) {
           funs[i].addr = ntohl(funs[i].addr);
@@ -58,7 +64,12 @@ namespace letin
 
         format::Value *vars = reinterpret_cast<format::Value *>(tmp_ptr + tmp_idx);
         size_t var_count = header->var_count;
-        tmp_idx += align(sizeof(format::Value) * var_count, 8);
+        size_t var_array_size = sizeof(format::Value) * var_count;
+        if(var_array_size / sizeof(format::Value) != var_count) return nullptr;
+        if(var_array_size != 0 && align(var_array_size, 8) == 0) return nullptr; 
+        tmp_idx2 = tmp_idx + align(var_array_size, 8);
+        if((tmp_idx | align(var_array_size, 8)) > tmp_idx2) return nullptr;
+        tmp_idx = tmp_idx2;
         if(tmp_idx > size) return nullptr;
         set<uint32_t> var_addrs;
         for(size_t i = 0; i < var_count; i++) {
@@ -72,7 +83,12 @@ namespace letin
 
         format::Instruction *code = reinterpret_cast<format::Instruction *>(tmp_ptr + tmp_idx);
         size_t code_size = header->code_size;
-        tmp_idx += align(sizeof(format::Instruction) * code_size, 8);
+        size_t instr_array_size = sizeof(format::Instruction) * code_size;
+        if(instr_array_size / sizeof(format::Instruction) != code_size) return nullptr;
+        if(instr_array_size != 0 && align(instr_array_size, 8) == 0) return nullptr;
+        tmp_idx2 = tmp_idx + align(instr_array_size, 8);
+        if((tmp_idx | align(instr_array_size, 8)) > tmp_idx2) return nullptr;
+        tmp_idx = tmp_idx2;
         if(tmp_idx > size) return nullptr;
         for(size_t i = 0; i < code_size; i++) {
           code[i].opcode = ntohl(code[i].opcode);
@@ -83,42 +99,74 @@ namespace letin
         uint8_t *data = tmp_ptr + tmp_idx;
         size_t data_size = header->data_size;
         set<uint32_t> data_addrs;
-        tmp_idx += align(data_size, 8);
+        if(data_size != 0 && align(data_size, 8) == 0) return nullptr;
+        tmp_idx2 = tmp_idx + align(data_size, 8);
+        if((tmp_idx | align(data_size, 8)) > tmp_idx2) return nullptr;
+        tmp_idx = tmp_idx2;
         if(tmp_idx > size) return nullptr;
         for(size_t i = 0; i < data_size;) {
+          size_t tmp_i, elem_size;
           if(var_addrs.find(i) != var_addrs.end()) var_addrs.erase(i);
           data_addrs.insert(i);
           format::Object *object = reinterpret_cast<format::Object *>(data + i);
           object->type = ntohl(object->type);
           object->length = ntohl(object->length);
-          i += sizeof(format::Object) - 8;
+          tmp_i = i + sizeof(format::Object) - 8;
+          if((i | (sizeof(format::Object) - 8)) > tmp_i) return nullptr;
+          i = tmp_i;
           switch(object->type) {
             case OBJECT_TYPE_IARRAY8:
-              i += object->length;
+              elem_size = 1;
+              break;
+            case OBJECT_TYPE_IARRAY16:
+              elem_size = 2;
+              break;
+            case OBJECT_TYPE_IARRAY32:
+              elem_size = 4;
+              break;
+            case OBJECT_TYPE_IARRAY64:
+              elem_size = 8;
+              break;
+            case OBJECT_TYPE_SFARRAY:
+              elem_size = 4;
+              break;
+            case OBJECT_TYPE_DFARRAY:
+              elem_size = 8;
+              break;
+            case OBJECT_TYPE_RARRAY:
+              elem_size = 4;
+              break;
+            case OBJECT_TYPE_TUPLE:
+              elem_size = 9;
+              break;
+            default:
+              return nullptr;
+          }
+          size_t elem_array_size = object->length * elem_size;
+          if(elem_array_size / elem_size != object->length) return nullptr;
+          tmp_i = i + elem_array_size;
+          if((i | elem_array_size) > tmp_i) return nullptr;
+          if(tmp_i > data_size) return nullptr;
+          switch(object->type) {
+            case OBJECT_TYPE_IARRAY8:
               break;
             case OBJECT_TYPE_IARRAY16:
               for(size_t j = 0; j < object->length; j++) object->is16[j] = ntohs(object->is16[j]);
-              i += object->length * 2;
               break;
             case OBJECT_TYPE_IARRAY32:
               for(size_t j = 0; j < object->length; j++) object->is32[j] = ntohl(object->is32[j]);
-              i += object->length * 4;
               break;
             case OBJECT_TYPE_IARRAY64:
               for(size_t j = 0; j < object->length; j++) object->is64[j] = ntohll(object->is64[j]);
-              i += object->length * 8;
               break;
             case OBJECT_TYPE_SFARRAY:
               for(size_t j = 0; j < object->length; j++) object->sfs[j].word = ntohl(object->sfs[j].word);
-              i += object->length * 4;
               break;
             case OBJECT_TYPE_DFARRAY:
               for(size_t j = 0; j < object->length; j++) object->dfs[j].dword = ntohll(object->dfs[j].dword);
-              i += object->length * 8;
               break;
             case OBJECT_TYPE_RARRAY:
               for(size_t j = 0; j < object->length; j++) object->rs[j] = ntohl(object->rs[j]);
-              i += object->length * 4;
               break;
             case OBJECT_TYPE_TUPLE:
               for(size_t j = 0; j < object->length; j++) {
@@ -127,12 +175,12 @@ namespace letin
                     object->tuple_elem_types()[j] != VALUE_TYPE_FLOAT &&
                     object->tuple_elem_types()[j] != VALUE_TYPE_REF) return nullptr;
               }
-              i += object->length * 9;
               break;
             default:
               return nullptr;
           }
-          if(i > data_size) return nullptr;
+          i = tmp_i;
+          if(i != 0 && align(i, 8) == 0) return nullptr;
           i = align(i, 8);
         }
         if(!var_addrs.empty()) return nullptr;
@@ -145,7 +193,12 @@ namespace letin
         if((header->flags & format::HEADER_FLAG_RELOCATABLE) != 0) {
           relocs = reinterpret_cast<format::Relocation *>(tmp_ptr + tmp_idx);
           reloc_count = header->reloc_count;
-          tmp_idx += align(sizeof(format::Relocation) * reloc_count, 8);
+          size_t reloc_array_size = sizeof(format::Relocation) * reloc_count;
+          if(reloc_array_size / sizeof(format::Relocation) != reloc_count) return nullptr;
+          if(reloc_array_size != 0  && align(reloc_array_size, 8) == 0) return nullptr;
+          tmp_idx2 = tmp_idx + align(reloc_array_size, 8);
+          if((tmp_idx | align(reloc_array_size, 8)) > tmp_idx2) return nullptr;
+          tmp_idx = tmp_idx2;
           set<uint32_t> reloc_symbol_idxs;
           if(tmp_idx > size) return nullptr;
           for(size_t i = 0; i < reloc_count; i++) {
@@ -167,6 +220,7 @@ namespace letin
           for(size_t i = 0, j = 0; j < symbol_count; j++) {
             format::Symbol *symbol = reinterpret_cast<format::Symbol *>(symbols + i);
             size_t symbol_size = sizeof(format::Symbol) - 1;
+            size_t tmp_symbol_size, tmp_i;
             if(tmp_idx + symbol_size > size) return nullptr;
             if((symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_FUN &&
                 (symbol->type & ~format::SYMBOL_TYPE_DEFINED) != format::SYMBOL_TYPE_VAR)
@@ -175,10 +229,22 @@ namespace letin
             symbol_offsets.push_back(i);
             symbol->index = ntohl(symbol->index);
             symbol->length = ntohs(symbol->length);
-            symbol_size += symbol->length;
-            tmp_idx += (j + 1 < symbol_count ? align(symbol_size, 8) : symbol_size);
+            tmp_symbol_size = symbol_size + symbol->length;
+            if((symbol_size | symbol->length) > tmp_symbol_size) return nullptr;
+            symbol_size = tmp_symbol_size;
+            if(j + 1 < symbol_count) {
+              if(symbol_size != 0 && align(symbol_size, 8) == 0) return nullptr;
+              tmp_symbol_size = align(symbol_size, 8);
+            } else
+              tmp_symbol_size = symbol_size;
+            tmp_idx2 = tmp_idx + tmp_symbol_size;
+            if((tmp_idx | tmp_symbol_size) > tmp_idx2) return nullptr;
+            tmp_idx = tmp_idx2;
             if(tmp_idx > size) return nullptr;
-            i += align(symbol_size, 8);
+            if(symbol_size != 0 && align(symbol_size, 8) == 0) return nullptr;
+            tmp_i = i + align(symbol_size, 8);
+            if((i | align(symbol_size, 8)) > tmp_i) return nullptr;
+            i = tmp_i;
           }
           if(tmp_idx > size) return nullptr;
           if(!reloc_symbol_idxs.empty()) return nullptr;
