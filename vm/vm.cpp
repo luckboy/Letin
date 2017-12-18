@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2017 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -70,7 +70,11 @@ namespace letin
         default:
           return 0;
       }
-      return (sizeof(Object) - max(sizeof(int64_t), sizeof(double))) + length * elem_size;
+      size_t array_size = length * elem_size;
+      if(elem_size != 0 && array_size / elem_size != length) return 0;
+      size_t size = (sizeof(Object) - max(sizeof(int64_t), sizeof(double))) + array_size;
+      if(((sizeof(Object) - max(sizeof(int64_t), sizeof(double))) | array_size) > size) return 0;
+      return size;
     }
 
     //
