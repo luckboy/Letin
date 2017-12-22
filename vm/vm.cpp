@@ -649,12 +649,14 @@ namespace letin
         if((symbol->type & ~format::SYMBOL_TYPE_DEFINED) != symbol_type) return false;
         auto iter = indexes.find(string(symbol->name, symbol->length));
         if(iter == indexes.end()) return false;
+        if(iter->second > UINT32_MAX) return false;
         index = iter->second;
         return true;
       } else {
         size_t old_offset = (symbol_type == format::SYMBOL_TYPE_FUN ? _M_fun_offset : _M_var_offset);
-        index = index - old_offset + offset;
-        if(index > UINT32_MAX) return false;
+        uint64_t tmp_index = static_cast<uint64_t>(index) - static_cast<uint64_t>(old_offset) + offset;
+        if(tmp_index > UINT32_MAX) return false;
+        index = static_cast<size_t>(tmp_index);
         return true;
       }
     }
