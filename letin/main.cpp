@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2017 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -65,14 +65,17 @@ static void add_dirs_from_env_var(const char *var_name, vector<string> &dirs)
   if(var_value == nullptr) return;
   char *ptr = var_value;
   char *end = var_value + strlen(var_value);
-  while(ptr != end) {
+  while(true) {
 #if defined(_WIN32) || defined(_WIN64)    
     char *ptr2 = find(ptr, end, ';');
 #else
     char *ptr2 = find(ptr, end, ':');
 #endif
     dirs.push_back(string(ptr, ptr2));
-    if(ptr2 != end) ptr = ptr2 + 1;
+    if(ptr2 != end)
+      ptr = ptr2 + 1;
+    else
+      break;
   }
 }
 
