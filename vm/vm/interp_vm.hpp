@@ -46,15 +46,15 @@ namespace letin
       private:
         bool get_int(ThreadContext &context, std::int64_t &i, Value &value);
 
-        bool get_int(ThreadContext &context, std::int64_t &i, std::uint32_t arg_type, Argument arg);
+        bool get_int(ThreadContext &context, std::int64_t &i, std::uint32_t arg_type, Argument arg, std::size_t &j);
 
         bool get_float(ThreadContext &context, double &f, Value &value);
 
-        bool get_float(ThreadContext &context, double &f, std::uint32_t arg_type, Argument arg);
+        bool get_float(ThreadContext &context, double &f, std::uint32_t arg_type, Argument arg, std::size_t &j);
 
         bool get_ref(ThreadContext &context, Reference &r, Value &value);
 
-        bool get_ref(ThreadContext &context, Reference &r, std::uint32_t arg_type, Argument arg);
+        bool get_ref(ThreadContext &context, Reference &r, std::uint32_t arg_type, Argument arg, std::size_t &j);
       protected:
         bool interpret_instr(ThreadContext &context);
       private:

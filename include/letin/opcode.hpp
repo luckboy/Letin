@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -23,6 +23,7 @@ namespace letin
     const std::uint32_t INSTR_RETRY =   0x06;
     const std::uint32_t INSTR_LETTUPLE = 0x07;
     const std::uint32_t INSTR_THROW =   0x08;
+    const std::uint32_t INSTR_PUSH =    0x09;
 
     const std::uint32_t OP_ILOAD =      0x00;
     const std::uint32_t OP_ILOAD2 =     0x01;
@@ -168,6 +169,7 @@ namespace letin
     const std::uint32_t ARG_TYPE_ARG =  0x1;
     const std::uint32_t ARG_TYPE_IMM =  0x2;
     const std::uint32_t ARG_TYPE_GVAR = 0x3;
+    const std::uint32_t ARG_TYPE_POP =  0x4;
 
     inline std::uint32_t opcode(std::uint32_t instr, std::uint32_t op, std::uint32_t arg_type1 = 0, std::uint32_t arg_type2 = 0, std::uint32_t local_var_count = 2)
     {

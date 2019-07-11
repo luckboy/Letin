@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -127,6 +127,7 @@ namespace letin
       std::uint32_t abp2;
       std::uint32_t ac2;
       std::uint32_t sec;
+      std::uint32_t esec;
       std::uint32_t nfbp;
       std::size_t fp;
       std::uint32_t ip;
@@ -148,6 +149,7 @@ namespace letin
       Reference force_tmp_r;
       Reference force_tmp_r2;
       ReturnValue force_tmp_rv2;
+      Value tmp_expr;
     };
 
     struct SavedRegisters
@@ -169,6 +171,7 @@ namespace letin
       ReturnValue force_tmp_rv;
       ReturnValue force_tmp_rv2;
       std::uint32_t sec;
+      std::uint32_t esec;
     };
 
     class ThreadContext
@@ -179,6 +182,8 @@ namespace letin
       Registers _M_regs;
       Value *_M_stack;
       std::size_t _M_stack_size;
+      Value * _M_expr_stack;
+      std::size_t _M_expr_stack_size;
       const Function *_M_funs;
       std::size_t _M_fun_count;
       const Value *_M_global_vars;
@@ -189,12 +194,13 @@ namespace letin
       std::mutex _M_interruptible_fun_mutex;
       bool _M_interruptible_fun_flag;
     public:
-      ThreadContext(const VirtualMachineContext &vm_context, std::size_t stack_size = 32 * 1024);
+      ThreadContext(const VirtualMachineContext &vm_context, std::size_t stack_size = 32 * 1024, std::size_t expr_stack_size = 16 * 1024);
 
       ~ThreadContext()
       {
         if(_M_gc != nullptr) _M_gc->delete_thread_context(this);
         if(_M_stack != nullptr) delete[] _M_stack;
+        if(_M_expr_stack != nullptr) delete[] _M_expr_stack;
       }
 
       GarbageCollector *gc() { return _M_gc; }
@@ -217,6 +223,10 @@ namespace letin
 
       std::size_t stack_size() const { return _M_stack_size; }
 
+      const Value &expr_stack_elem(std::size_t i) const { return _M_expr_stack[i]; }
+
+      std::size_t expr_stack_size() const { return _M_expr_stack_size; }
+
       const Function &fun(std::size_t i) const { return _M_funs[i]; }
 
       std::size_t fun_count() const { return _M_fun_count; }
@@ -235,7 +245,7 @@ namespace letin
 
       RegisteredReference *&last_registered_r() { return _M_last_registered_r; }
 
-      std::size_t lvbp() const { return _M_regs.abp + _M_regs.ac + 3; }
+      std::size_t lvbp() const { return _M_regs.abp + _M_regs.ac + 4; }
 
       const Value &arg(std::size_t i) const { return _M_stack[_M_regs.abp + i]; }
 
@@ -448,6 +458,37 @@ namespace letin
       {
         if(_M_regs.abp2 > 0) {
           value.safely_assign_for_gc(_M_stack[_M_regs.abp2 - 1]);
+          return true;
+        } else
+          return false;
+      }
+
+      bool push_expr(Value &value)
+      {
+        if(_M_regs.esec < _M_expr_stack_size) {
+          _M_expr_stack[_M_regs.esec].safely_assign_for_push(value);
+          _M_regs.esec++;
+          std::atomic_thread_fence(std::memory_order_release);
+          return true;
+        } else
+          return false;        
+      }
+
+      bool pop_exprs(std::size_t n)
+      {
+        if(_M_regs.esec >= n) {
+          _M_regs.esec -= n;
+          std::atomic_thread_fence(std::memory_order_release);
+          return true;
+        } else
+          return false;
+      }
+
+      bool get_expr(std::size_t i, Value &value)
+      {
+        if(_M_regs.esec > i) {
+          value.safely_assign_for_gc(_M_expr_stack[_M_regs.esec - i - 1]);
+          std::atomic_thread_fence(std::memory_order_release);
           return true;
         } else
           return false;

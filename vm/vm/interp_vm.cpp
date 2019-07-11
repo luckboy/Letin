@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -81,7 +81,7 @@ namespace letin
         return true;
       }
 
-      static inline bool get_int_value(ThreadContext &context, Value &value, uint32_t arg_type, Argument arg)
+      static inline bool get_int_value(ThreadContext &context, Value &value, uint32_t arg_type, Argument arg, size_t &j)
       {
         switch(arg_type) {
           case ARG_TYPE_LVAR:
@@ -105,6 +105,13 @@ namespace letin
               return false;
             }
             return get_int_value(context, value, context.global_var(arg.gvar));
+          case ARG_TYPE_POP:
+            if(!context.get_expr(j, context.regs().tmp_expr)) {
+              context.set_error(ERROR_EMPTY_STACK);
+              return false;
+            }
+            j++;
+            return get_int_value(context, value, context.regs().tmp_expr);
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -126,7 +133,7 @@ namespace letin
         return true;
       }
 
-      static inline bool get_float_value(ThreadContext &context, Value &value, uint32_t arg_type, Argument arg)
+      static inline bool get_float_value(ThreadContext &context, Value &value, uint32_t arg_type, Argument arg, size_t &j)
       {
         switch(arg_type) {
           case opcode::ARG_TYPE_LVAR:
@@ -150,6 +157,13 @@ namespace letin
               return false;
             }
             return get_float_value(context, value, context.global_var(arg.gvar));
+          case ARG_TYPE_POP:
+            if(!context.get_expr(j, context.regs().tmp_expr)) {
+              context.set_error(ERROR_EMPTY_STACK);
+              return false;
+            }
+            j++;
+            return get_float_value(context, value, context.regs().tmp_expr);
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -193,7 +207,7 @@ namespace letin
         return true;
       }
 
-      static inline bool get_ref_value(ThreadContext &context, Value &value, uint32_t arg_type, Argument arg)
+      static inline bool get_ref_value(ThreadContext &context, Value &value, uint32_t arg_type, Argument arg, size_t &j)
       {
         switch(arg_type) {
           case opcode::ARG_TYPE_LVAR:
@@ -214,12 +228,28 @@ namespace letin
               return false;
             }
             return get_ref_value_for_const_value(context, value, context.global_var(arg.gvar));
+          case ARG_TYPE_POP:
+            if(!context.get_expr(j, context.regs().tmp_expr)) {
+              context.set_error(ERROR_EMPTY_STACK);
+              return false;
+            }
+            j++;
+            return get_ref_value(context, value, context.regs().tmp_expr);
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
         }
       }
 
+      static inline bool pop_exprs(ThreadContext &context, size_t n)
+      {
+        if(!context.pop_exprs(n)) {
+          context.set_error(ERROR_EMPTY_STACK);
+          return false;
+        }
+        return true;
+      }
+      
       static inline Object *new_object(ThreadContext &context, int type, int64_t length)
       {
         Object *object = context.gc()->new_object_for_length64(type, length, &context);
@@ -617,7 +647,7 @@ namespace letin
         return true;
       }
 
-      inline bool InterpreterVirtualMachine::get_int(ThreadContext &context, int64_t &i, uint32_t arg_type, Argument arg)
+      inline bool InterpreterVirtualMachine::get_int(ThreadContext &context, int64_t &i, uint32_t arg_type, Argument arg, size_t &j)
       {
         switch(arg_type) {
           case ARG_TYPE_LVAR:
@@ -641,6 +671,13 @@ namespace letin
               return false;
             }
             return get_int_for_const_value(context, i, context.global_var(arg.gvar));
+          case ARG_TYPE_POP:
+            if(!context.get_expr(j, context.regs().tmp_expr)) {
+              context.set_error(ERROR_EMPTY_STACK);
+              return false;
+            }
+            j++;
+            return get_int(context, i, context.regs().tmp_expr);
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -661,7 +698,7 @@ namespace letin
         return true;
       }
 
-      inline bool InterpreterVirtualMachine::get_float(ThreadContext &context, double &f, uint32_t arg_type, Argument arg)
+      inline bool InterpreterVirtualMachine::get_float(ThreadContext &context, double &f, uint32_t arg_type, Argument arg, size_t &j)
       {
         switch(arg_type) {
           case opcode::ARG_TYPE_LVAR:
@@ -685,6 +722,13 @@ namespace letin
               return false;
             }
             return get_float_for_const_value(context, f, context.global_var(arg.gvar));
+          case ARG_TYPE_POP:
+            if(!context.get_expr(j, context.regs().tmp_expr)) {
+              context.set_error(ERROR_EMPTY_STACK);
+              return false;
+            }
+            j++;
+            return get_float(context, f, context.regs().tmp_expr);
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -709,7 +753,7 @@ namespace letin
         return true;
       }
 
-      inline bool InterpreterVirtualMachine::get_ref(ThreadContext &context, Reference &r, uint32_t arg_type, Argument arg)
+      inline bool InterpreterVirtualMachine::get_ref(ThreadContext &context, Reference &r, uint32_t arg_type, Argument arg, size_t &j)
       {
         switch(arg_type) {
           case opcode::ARG_TYPE_LVAR:
@@ -730,6 +774,13 @@ namespace letin
               return false;
             }
             return get_ref_for_const_value(context, r, context.global_var(arg.gvar));
+          case ARG_TYPE_POP:
+            if(!context.get_expr(j, context.regs().tmp_expr)) {
+              context.set_error(ERROR_EMPTY_STACK);
+              return false;
+            }
+            j++;
+            return get_ref(context, r, context.regs().tmp_expr);
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -769,6 +820,7 @@ namespace letin
               if(!context.push_local_var(value)) context.set_error(ERROR_STACK_OVERFLOW);
             context.regs().rv.raw().r = Reference();
             context.regs().gc_tmp_ptr = nullptr;
+            context.regs().tmp_expr.safely_assign_for_gc(Value());
             break;
           }
           case INSTR_IN:
@@ -782,13 +834,17 @@ namespace letin
               context.regs().rv = value;
             }
             context.regs().gc_tmp_ptr = nullptr;
+            context.regs().tmp_expr.safely_assign_for_gc(Value());
             break;
           }
           case INSTR_JC:
           {
             int64_t i;
-            if(get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1))
+            size_t j = 0;
+            if(get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) {
+              pop_exprs(context, j);
               if(i != 0) context.regs().ip += instr.arg2.i;
+            }
             break;
           }
           case INSTR_JUMP:
@@ -806,6 +862,7 @@ namespace letin
             }
             context.regs().rv.raw().r = Reference();
             context.regs().gc_tmp_ptr = nullptr;
+            context.regs().tmp_expr.safely_assign_for_gc(Value());
             break;
           }
           case INSTR_RETRY:
@@ -851,13 +908,29 @@ namespace letin
             }
             context.regs().rv.raw().r = Reference();
             context.regs().gc_tmp_ptr = nullptr;
+            context.regs().tmp_expr.safely_assign_for_gc(Value());
             break;
           }
           case INSTR_THROW:
           {
             Reference r;
-            if(get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1))
+            size_t j = 0;
+            if(get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) {
+              pop_exprs(context, j);
               context.set_error(ERROR_USER_EXCEPTION, r);
+            }
+            break;
+          }          
+          case INSTR_PUSH:
+          {
+            Value value = interpret_op(context, instr);
+            context.pop_args();
+            if(!value.is_error())
+              if(!context.push_expr(value)) context.set_error(ERROR_STACK_OVERFLOW);
+            context.regs().rv.raw().r = Reference();
+            context.regs().gc_tmp_ptr = nullptr;
+            context.regs().tmp_expr.safely_assign_for_gc(Value());
+            break;
           }
         }
         atomic_thread_fence(memory_order_release);
@@ -870,48 +943,62 @@ namespace letin
           case OP_ILOAD:
           {
             Value value;
-            if(!get_int_value(context, value, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_int_value(context, value, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return value;
           }
           case OP_ILOAD2:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value((i1 << 32) | (i2 & 0xffffffff));
           }
           case OP_INEG:
           {
             int64_t i;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(-i);
           }
           case OP_IADD:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 + i2);
           }
           case OP_ISUB:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 - i2);
           }
           case OP_IMUL:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 * i2);
           }
           case OP_IDIV:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(i2 == 0) {
               context.set_error(ERROR_DIV_BY_ZERO);
               return Value();
@@ -921,8 +1008,10 @@ namespace letin
           case OP_IMOD:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(i2 == 0) {
               context.set_error(ERROR_DIV_BY_ZERO);
               return Value();
@@ -932,104 +1021,134 @@ namespace letin
           case OP_INOT:
           {
             int64_t i;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(~i);
           }
           case OP_IAND:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 & i2);
           }
           case OP_IOR:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 | i2);
           }
           case OP_IXOR:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 ^ i2);
           }
           case OP_ISHL:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 << i2);
           }
           case OP_ISHR:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 >> i2);
           }
           case OP_ISHRU:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(static_cast<std::int64_t>(static_cast<std::uint64_t>(i1) >> i2));
           }
           case OP_IEQ:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 == i2 ? 1 : 0);
           }
           case OP_INE:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 != i2 ? 1 : 0);
           }
           case OP_ILT:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 < i2 ? 1 : 0);
           }
           case OP_IGE:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 >= i2 ? 1 : 0);
           }
           case OP_IGT:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 > i2 ? 1 : 0);
           }
           case OP_ILE:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i1 <= i2 ? 1 : 0);
           }
           case OP_FLOAD:
           {
             Value value;
-            if(!get_float_value(context, value, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float_value(context, value, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return value;
           }
           case OP_FLOAD2:
           {
             std::int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             format::Double x;
             x.dword = (i1 << 32) | (i2 & 0xffffffff);
             return format_double_to_double(x);
@@ -1037,105 +1156,133 @@ namespace letin
           case OP_FNEG:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(-f);
           }
           case OP_FADD:
           {
             double f1, f2;
-            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(f1 + f2);
           }
           case OP_FSUB:
           {
             double f1, f2;
-            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(f1 - f2);
           }
           case OP_FMUL:
           {
             double f1, f2;
-            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(f1 * f2);
           }
           case OP_FDIV:
           {
             double f1, f2;
-            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(f1 / f2);
           }
           case OP_FEQ:
           {
             double f1, f2;
-            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(f1 == f2 ? 1 : 0);
           }
           case OP_FNE:
           {
             double f1, f2;
-            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(f1 != f2 ? 1 : 0);
           }
           case OP_FLT:
           {
             double f1, f2;
-            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(f1 < f2 ? 1 : 0);
           }
           case OP_FGE:
           {
             double f1, f2;
-            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(f1 >= f2 ? 1 : 0);
           }
           case OP_FGT:
           {
             double f1, f2;
-            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(f1 > f2 ? 1 : 0);
           }
           case OP_FLE:
           {
             double f1, f2;
-            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(f1 <= f2 ? 1 : 0);
           }
           case OP_RLOAD:
           {
             Value value;
-            if(!get_ref_value(context, value, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref_value(context, value, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return value;
           }
           case OP_REQ:
           {
             Reference r1, r2;
+            size_t j = 0;
             if(opcode_to_arg_type1(instr.opcode) != ARG_TYPE_GVAR && opcode_to_arg_type2(instr.opcode) != ARG_TYPE_GVAR) {
               context.set_error(ERROR_INCORRECT_INSTR);
               return Value();
             }
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(r1 == r2 ? 1 : 0);
           }
           case OP_RNE:
           {
             Reference r1, r2;
+            size_t j = 0;
             if(opcode_to_arg_type1(instr.opcode) != ARG_TYPE_GVAR && opcode_to_arg_type2(instr.opcode) != ARG_TYPE_GVAR) {
               context.set_error(ERROR_INCORRECT_INSTR);
               return Value();
             }
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(r1 != r2 ? 1 : 0);
           }
           case OP_RIARRAY8:
@@ -1234,8 +1381,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY8)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             return Value(r->raw().is8[i]);
@@ -1244,8 +1393,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY16)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             return Value(r->raw().is16[i]);
@@ -1254,8 +1405,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY32)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             return Value(r->raw().is32[i]);
@@ -1264,8 +1417,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY64)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             return Value(r->raw().is64[i]);
@@ -1274,8 +1429,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_SFARRAY)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             return Value(r->raw().sfs[i]);
@@ -1284,8 +1441,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_DFARRAY)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             return Value(r->raw().dfs[i]);
@@ -1294,8 +1453,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_RARRAY)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             return Value(r->raw().rs[i]);
@@ -1304,8 +1465,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_TUPLE)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             return Value(r->raw().tuple_elem_types()[i], r->raw().tes[i]);
@@ -1313,65 +1476,83 @@ namespace letin
           case OP_RIALEN8:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY8)) return Value();
             return Value(static_cast<int64_t>(r->length()));
           }
           case OP_RIALEN16:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY16)) return Value();
             return Value(static_cast<int64_t>(r->length()));
           }
           case OP_RIALEN32:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY32)) return Value();
             return Value(static_cast<int64_t>(r->length()));
           }
           case OP_RIALEN64:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY64)) return Value();
             return Value(static_cast<int64_t>(r->length()));
           }
           case OP_RSFALEN:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_SFARRAY)) return Value();
             return Value(static_cast<int64_t>(r->length()));
           }
           case OP_RDFALEN:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_DFARRAY)) return Value();
             return Value(static_cast<int64_t>(r->length()));
           }
           case OP_RRALEN:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_RARRAY)) return Value();
             return Value(static_cast<int64_t>(r->length()));
           }
           case OP_RTLEN:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_TUPLE)) return Value();
             return Value(static_cast<int64_t>(r->length()));
           }
           case OP_RIACAT8:
           {
             Reference r1, r2;
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
-            if(!check_object_type(context, *r1, OBJECT_TYPE_IARRAY8)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
+            if(!check_object_type(context, *r1, OBJECT_TYPE_IARRAY8)) return Value();            
             if(!check_object_type(context, *r2, OBJECT_TYPE_IARRAY8)) return Value();
             size_t object_length;
             if(!add_object_lengths(context, object_length, r1->length(), r2->length())) return Value();
@@ -1384,8 +1565,10 @@ namespace letin
           case OP_RIACAT16:
           {
             Reference r1, r2;
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r1, OBJECT_TYPE_IARRAY16)) return Value();
             if(!check_object_type(context, *r2, OBJECT_TYPE_IARRAY16)) return Value();
             size_t object_length;
@@ -1399,8 +1582,10 @@ namespace letin
           case OP_RIACAT32:
           {
             Reference r1, r2;
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r1, OBJECT_TYPE_IARRAY32)) return Value();
             if(!check_object_type(context, *r2, OBJECT_TYPE_IARRAY32)) return Value();
             size_t object_length;
@@ -1414,8 +1599,10 @@ namespace letin
           case OP_RIACAT64:
           {
             Reference r1, r2;
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r1, OBJECT_TYPE_IARRAY64)) return Value();
             if(!check_object_type(context, *r2, OBJECT_TYPE_IARRAY64)) return Value();
             size_t object_length;
@@ -1429,8 +1616,10 @@ namespace letin
           case OP_RSFACAT:
           {
             Reference r1, r2;
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r1, OBJECT_TYPE_SFARRAY)) return Value();
             if(!check_object_type(context, *r2, OBJECT_TYPE_SFARRAY)) return Value();
             size_t object_length;
@@ -1444,8 +1633,10 @@ namespace letin
           case OP_RDFACAT:
           {
             Reference r1, r2;
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r1, OBJECT_TYPE_DFARRAY)) return Value();
             if(!check_object_type(context, *r2, OBJECT_TYPE_DFARRAY)) return Value();
             size_t object_length;
@@ -1459,8 +1650,10 @@ namespace letin
           case OP_RRACAT:
           {
             Reference r1, r2;
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r1, OBJECT_TYPE_RARRAY)) return Value();
             if(!check_object_type(context, *r2, OBJECT_TYPE_RARRAY)) return Value();
             size_t object_length;
@@ -1475,8 +1668,10 @@ namespace letin
           case OP_RTCAT:
           {
             Reference r1, r2;
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_ref(context, r2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r1, OBJECT_TYPE_TUPLE)) return Value();
             if(!check_object_type(context, *r2, OBJECT_TYPE_TUPLE)) return Value();
             size_t object_length;
@@ -1493,17 +1688,21 @@ namespace letin
           case OP_RTYPE:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(r->type());
           }
           case OP_ICALL:
           {
             int64_t i;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
             if(!context.regs().after_leaving_flags[0]) {
               if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
               if(!call_fun(context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
             }
+            if(!pop_exprs(context, j)) return Value();
             context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             if(!_M_eval_strategy->post_leave_from_fun(this, &context, static_cast<uint32_t>(i), VALUE_TYPE_INT)) return Value();
@@ -1513,11 +1712,13 @@ namespace letin
           case OP_FCALL:
           {
             int64_t i;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
             if(!context.regs().after_leaving_flags[0]) {
               if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
               if(!call_fun(context, static_cast<uint32_t>(i), VALUE_TYPE_FLOAT)) return Value();
             }
+            if(!pop_exprs(context, j)) return Value();
             context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             if(!_M_eval_strategy->post_leave_from_fun(this, &context, static_cast<uint32_t>(i), VALUE_TYPE_FLOAT)) return Value();
@@ -1527,11 +1728,13 @@ namespace letin
           case OP_RCALL:
           {
             int64_t i;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
             if(!context.regs().after_leaving_flags[0]) {
               if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
               if(!call_fun(context, static_cast<uint32_t>(i), VALUE_TYPE_REF)) return Value();
             }
+            if(!pop_exprs(context, j)) return Value();
             context.regs().after_leaving_flags[0] = false;
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             if(!_M_eval_strategy->post_leave_from_fun(this, &context, static_cast<uint32_t>(i), VALUE_TYPE_REF)) return Value();
@@ -1541,19 +1744,25 @@ namespace letin
           case OP_ITOF:
           {
             int64_t i;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(static_cast<double>(i));
           }
           case OP_FTOI:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(static_cast<int64_t>(f));
           }
           case OP_INCALL:
           {
             int64_t i;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
             ArgumentList args = context.pushed_args();
             ReturnValue rv = context.invoke_native_fun(this, i, args);
@@ -1568,7 +1777,9 @@ namespace letin
           case OP_FNCALL:
           {
             int64_t i;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
             ArgumentList args = context.pushed_args();
             ReturnValue rv = context.invoke_native_fun(this, i, args);
@@ -1583,7 +1794,9 @@ namespace letin
           case OP_RNCALL:
           {
             int64_t i;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(context.regs().arg_instr_flag) if(!push_tmp_ac2(context)) return Value();
             ArgumentList args = context.pushed_args();
             ReturnValue rv = context.invoke_native_fun(this, i, args);
@@ -1598,8 +1811,10 @@ namespace letin
           case OP_RUIAFILL8:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE, i1));
             if(r.is_null()) return Value();
             fill_n(r->raw().is8, i1, i2);
@@ -1608,8 +1823,10 @@ namespace letin
           case OP_RUIAFILL16:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE, i1));
             if(r.is_null()) return Value();
             fill_n(r->raw().is16, i1, i2);
@@ -1618,8 +1835,10 @@ namespace letin
           case OP_RUIAFILL32:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE, i1));
             if(r.is_null()) return Value();
             fill_n(r->raw().is32, i1, i2);
@@ -1628,8 +1847,10 @@ namespace letin
           case OP_RUIAFILL64:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE, i1));
             if(r.is_null()) return Value();
             fill_n(r->raw().is64, i1, i2);
@@ -1639,8 +1860,10 @@ namespace letin
           {
             int64_t i;
             double f;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE, i));
             if(r.is_null()) return Value();
             fill_n(r->raw().sfs, i, f);
@@ -1650,8 +1873,10 @@ namespace letin
           {
             int64_t i;
             double f;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE, i));
             if(r.is_null()) return Value();
             fill_n(r->raw().dfs, i, f);
@@ -1661,8 +1886,10 @@ namespace letin
           {
             int64_t i;
             Reference r;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_ref(context, r, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_ref(context, r, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_shared_for_object(context, *r)) return Value(); 
             Reference r2(new_object(context, OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE, i));
             if(r2.is_null()) return Value();
@@ -1672,8 +1899,10 @@ namespace letin
           case OP_RUTFILLI:
           {
             int64_t i1, i2;
-            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, i1));
             if(r.is_null()) return Value();
             fill_n(r->raw().tes, i1, TupleElement(i2));
@@ -1684,8 +1913,10 @@ namespace letin
           {
             int64_t i;
             double f;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             Reference r(new_object(context, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, i));
             if(r.is_null()) return Value();
             fill_n(r->raw().tes, i, TupleElement(f));
@@ -1696,8 +1927,10 @@ namespace letin
           {
             int64_t i;
             Reference r;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_ref(context, r, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_ref(context, r, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             Reference r2(new_object(context, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE, i));
             if(r2.is_null()) return Value();
             if(static_cast<size_t>(i) > 1U && !check_shared_for_object(context, *r)) {
@@ -1712,8 +1945,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             Reference r2(new_unique_pair(context, Value(r->raw().is8[i]), Value(r)));
@@ -1724,8 +1959,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             Reference r2(new_unique_pair(context, Value(r->raw().is16[i]), Value(r)));
@@ -1736,8 +1973,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             Reference r2(new_unique_pair(context, Value(r->raw().is32[i]), Value(r)));
@@ -1748,8 +1987,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             Reference r2(new_unique_pair(context, Value(r->raw().is64[i]), Value(r)));
@@ -1760,8 +2001,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             Reference r2(new_unique_pair(context, Value(r->raw().sfs[i]), Value(r)));
@@ -1772,8 +2015,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             Reference r2(new_unique_pair(context, Value(r->raw().dfs[i]), Value(r)));
@@ -1784,8 +2029,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             if(!check_shared_for_object(context, *(r->raw().rs[i]))) return Value();
@@ -1797,8 +2044,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
             Value value(r->raw().tuple_elem_types()[i], r->raw().tes[i]);
@@ -1814,8 +2063,10 @@ namespace letin
           {
             Reference r;
             int64_t i1, i2;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i1, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i1, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_pushed_arg_count(context, 1)) return Value();
             if(!get_int(context, i2, context.pushed_arg(0))) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE)) return Value();
@@ -1827,8 +2078,10 @@ namespace letin
           {
             Reference r;
             int64_t i1, i2;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i1, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i1, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_pushed_arg_count(context, 1)) return Value();
             if(!get_int(context, i2, context.pushed_arg(0))) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE)) return Value();
@@ -1840,8 +2093,10 @@ namespace letin
           {
             Reference r;
             int64_t i1, i2;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i1, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i1, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_pushed_arg_count(context, 1)) return Value();
             if(!get_int(context, i2, context.pushed_arg(0))) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE)) return Value();
@@ -1853,8 +2108,10 @@ namespace letin
           {
             Reference r;
             int64_t i1, i2;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i1, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i1, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_pushed_arg_count(context, 1)) return Value();
             if(!get_int(context, i2, context.pushed_arg(0))) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE)) return Value();
@@ -1867,8 +2124,10 @@ namespace letin
             Reference r;
             int64_t i;
             double f;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_pushed_arg_count(context, 1)) return Value();
             if(!get_float(context, f, context.pushed_arg(0))) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
@@ -1881,8 +2140,10 @@ namespace letin
             Reference r;
             int64_t i;
             double f;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_pushed_arg_count(context, 1)) return Value();
             if(!get_float(context, f, context.pushed_arg(0))) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
@@ -1894,8 +2155,10 @@ namespace letin
           {
             Reference r1, r2;
             int64_t i;
-            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_pushed_arg_count(context, 1)) return Value();
             if(!get_ref(context, r2, context.pushed_arg(0))) return Value();
             if(!check_object_type(context, *r1, OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE)) return Value();
@@ -1907,8 +2170,10 @@ namespace letin
           {
             Reference r;
             int64_t i;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_pushed_arg_count(context, 1)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE)) return Value();
             if(!check_object_elem_index(context, *r, i)) return Value();
@@ -1922,7 +2187,9 @@ namespace letin
           case OP_RUIALEN8:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
             if(r2.is_null()) return Value();
@@ -1931,7 +2198,9 @@ namespace letin
           case OP_RUIALEN16:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
             if(r2.is_null()) return Value();
@@ -1940,7 +2209,9 @@ namespace letin
           case OP_RUIALEN32:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
             if(r2.is_null()) return Value();
@@ -1949,7 +2220,9 @@ namespace letin
           case OP_RUIALEN64:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
             if(r2.is_null()) return Value();
@@ -1958,7 +2231,9 @@ namespace letin
           case OP_RUSFALEN:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
             if(r2.is_null()) return Value();
@@ -1967,7 +2242,9 @@ namespace letin
           case OP_RUDFALEN:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
             if(r2.is_null()) return Value();
@@ -1976,7 +2253,9 @@ namespace letin
           case OP_RURALEN:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
             if(r2.is_null()) return Value();
@@ -1985,7 +2264,9 @@ namespace letin
           case OP_RUTLEN:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_unique_pair(context, Value(static_cast<int64_t>(r->length())), Value(r)));
             if(r2.is_null()) return Value();
@@ -1994,7 +2275,9 @@ namespace letin
           case OP_RUTYPE:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             Reference r2(new_unique_pair(context, Value(r->type()), Value(r)));
             if(r2.is_null()) return Value();
             return Value(r2);
@@ -2002,7 +2285,9 @@ namespace letin
           case OP_RUIATOIA8:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY8 | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_object(context, OBJECT_TYPE_IARRAY8, context.regs().ac2));
             if(r2.is_null()) return Value();
@@ -2017,7 +2302,9 @@ namespace letin
           case OP_RUIATOIA16:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY16 | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_object(context, OBJECT_TYPE_IARRAY16, context.regs().ac2));
             if(r2.is_null()) return Value();
@@ -2032,7 +2319,9 @@ namespace letin
           case OP_RUIATOIA32:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY32 | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_object(context, OBJECT_TYPE_IARRAY32, context.regs().ac2));
             if(r2.is_null()) return Value();
@@ -2047,7 +2336,9 @@ namespace letin
           case OP_RUIATOIA64:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_IARRAY64 | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_object(context, OBJECT_TYPE_IARRAY64, context.regs().ac2));
             if(r2.is_null()) return Value();
@@ -2062,7 +2353,9 @@ namespace letin
           case OP_RUSFATOSFA:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_SFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_object(context, OBJECT_TYPE_SFARRAY, context.regs().ac2));
             if(r2.is_null()) return Value();
@@ -2077,7 +2370,9 @@ namespace letin
           case OP_RUDFATODFA:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_DFARRAY | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_object(context, OBJECT_TYPE_DFARRAY, context.regs().ac2));
             if(r2.is_null()) return Value();
@@ -2092,7 +2387,9 @@ namespace letin
           case OP_RURATORA:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_object(context, OBJECT_TYPE_RARRAY, context.regs().ac2));
             if(r2.is_null()) return Value();
@@ -2110,7 +2407,9 @@ namespace letin
           case OP_RUTTOT:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             if(!check_object_type(context, *r, OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE)) return Value();
             Reference r2(new_object(context, OBJECT_TYPE_TUPLE, context.regs().ac2));
             if(r2.is_null()) return Value();
@@ -2131,94 +2430,124 @@ namespace letin
           case OP_FPOW:
           {
             double f1, f2;
-            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!get_float(context, f2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(pow(f1, f2));
           }
           case OP_FSQRT:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(sqrt(f));
           }
           case OP_FEXP:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(exp(f));
           }
           case OP_FLOG:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(log(f));
           }
           case OP_FCOS:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(cos(f));
           }
           case OP_FSIN:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(sin(f));
           }
           case OP_FTAN:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(tan(f));
           }
           case OP_FACOS:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(acos(f));
           }
           case OP_FASIN:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(asin(f));
           }
           case OP_FATAN:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(atan(f));
           }
           case OP_FCEIL:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(ceil(f));
           }
           case OP_FFLOOR:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(floor(f));
           }
           case OP_FROUND:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(round(f));
           }
           case OP_FTRUNC:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(trunc(f));
           }
           case OP_TRY:
           {
+            size_t j;
             if(!context.regs().after_leaving_flags[0]) {
               int64_t i1, i2;
-              if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
-              if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
+              j = 0;
+              if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+              if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
               if(!check_pushed_arg_count(context, 3)) return Value();
               Value arg1 = context.pushed_arg(0);
               Value arg2 = context.pushed_arg(1);
@@ -2241,6 +2570,10 @@ namespace letin
               int error = context.regs().rv.error();
               Value arg2 = context.regs().try_arg2;
               Reference io_r = context.regs().try_io_r;
+              int64_t i1, i2;
+              j = 0;
+              if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+              if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j)) return Value();
               if(!force_rv(context, true)) return Value();
               context.regs().after_leaving_flags[0] = false;
               if(!pop_try_regs(context)) return Value();
@@ -2248,6 +2581,7 @@ namespace letin
               if(!context.regs().arg_instr_flag) context.restore_abp2_and_ac2();
               Reference r = context.regs().rv.raw().r;
               if(error == ERROR_SUCCESS) {
+                if(!pop_exprs(context, j)) return Value();
                 // Checks and returns the reference for the arg1 function or the arg2 function. 
                 if(r->type() != (OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) ||
                     r->length() != 2 ||
@@ -2259,8 +2593,6 @@ namespace letin
                 return Value(r);
               } else {
                 context.regs().rv.raw().error = ERROR_SUCCESS;
-                int64_t i;
-                if(!get_int(context, i, opcode_to_arg_type2(instr.opcode), instr.arg2)) return Value();
                 if(!context.regs().arg_instr_flag) context.hide_args();
                 if(!push_tmp_ac2(context)) return Value();
                 if(!push_try_regs(context)) return Value();
@@ -2268,7 +2600,7 @@ namespace letin
                 if(!push_arg(context, Value(r))) return Value();
                 if(!push_arg(context, arg2)) return Value();
                 if(!push_arg(context, io_r)) return Value();
-                if(!call_fun_for_force(context, static_cast<uint32_t>(i))) return Value();
+                if(!call_fun_for_force(context, static_cast<uint32_t>(i2))) return Value();
                 must_repeat = true;
               }
             } while(must_repeat);
@@ -2276,19 +2608,25 @@ namespace letin
           case OP_IFORCE:
           {
             int64_t i;
-            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(i);
           }
           case OP_FFORCE:
           {
             double f;
-            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_float(context, f, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(f);
           }
           case OP_RFORCE:
           {
             Reference r;
-            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1)) return Value();
+            size_t j = 0;
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j)) return Value();
+            if(!pop_exprs(context, j)) return Value();
             return Value(r);
           }
           default:

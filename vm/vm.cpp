@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015, 2017 Łukasz Szpakowski.                       *
+ *   Copyright (C) 2014-2015, 2017, 2019 Łukasz Szpakowski.                 *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -1216,14 +1216,14 @@ namespace letin
     // A ThreadContext class.
     //
 
-    ThreadContext::ThreadContext(const VirtualMachineContext &context, size_t stack_size) :
+    ThreadContext::ThreadContext(const VirtualMachineContext &context, size_t stack_size, size_t expr_stack_size) :
       _M_funs(context.funs()), _M_fun_count(context.fun_count()),
       _M_global_vars(context.vars()), _M_global_var_count(context.var_count()),
       _M_fun_infos(context.fun_infos())
     {
       _M_gc = nullptr;
       _M_native_fun_handler = nullptr;
-      _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp = 0;
+      _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.esec = _M_regs.nfbp = 0;
       _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
       _M_regs.fp = static_cast<size_t>(-1);
       _M_regs.ip = 0;
@@ -1248,14 +1248,17 @@ namespace letin
       _M_first_registered_r = _M_last_registered_r = nullptr;
       _M_stack = new Value[stack_size];
       _M_stack_size = stack_size;
+      _M_expr_stack = new Value[expr_stack_size];
+      _M_expr_stack_size = expr_stack_size;
     }
 
     bool ThreadContext::enter_to_fun(size_t i)
     {
-      if(_M_regs.abp2 + _M_regs.ac2 + 3 < _M_stack_size) {
+      if(_M_regs.abp2 + _M_regs.ac2 + 4 < _M_stack_size) {
         _M_stack[_M_regs.abp2 + _M_regs.ac2 + 0].safely_assign_for_gc(Value(_M_regs.abp, _M_regs.ac));
         _M_stack[_M_regs.abp2 + _M_regs.ac2 + 1].safely_assign_for_gc(Value(_M_regs.lvc, _M_regs.ip - 1));
         _M_stack[_M_regs.abp2 + _M_regs.ac2 + 2].safely_assign_for_gc(Value(static_cast<int64_t>((static_cast<int64_t>(_M_regs.fp) << 8) | (_M_regs.after_leaving_flag_index & 1) | ((_M_regs.cached_fun_result_flag & 1) << 1))));
+        _M_stack[_M_regs.abp2 + _M_regs.ac2 + 3].safely_assign_for_gc(Value(static_cast<int64_t>(_M_regs.esec)));
         atomic_thread_fence(memory_order_release);
         _M_regs.abp = _M_regs.abp2;
         _M_regs.ac = _M_regs.ac2;
@@ -1276,10 +1279,11 @@ namespace letin
     bool ThreadContext::leave_from_fun()
     {
       auto fbp = _M_regs.abp + _M_regs.ac;
-      if(fbp + 3 < _M_stack_size &&
+      if(fbp + 4 < _M_stack_size &&
           _M_stack[fbp + 0].type() == VALUE_TYPE_PAIR &&
           _M_stack[fbp + 1].type() == VALUE_TYPE_PAIR &&
-          _M_stack[fbp + 2].type() == VALUE_TYPE_INT) {
+          _M_stack[fbp + 2].type() == VALUE_TYPE_INT &&
+          _M_stack[fbp + 3].type() == VALUE_TYPE_INT) {
         _M_regs.abp2 = _M_regs.abp;
         _M_regs.ac2 = _M_regs.ac;
         _M_regs.abp = _M_stack[fbp + 0].raw().p.first;
@@ -1291,6 +1295,7 @@ namespace letin
         _M_regs.after_leaving_flag_index = static_cast<unsigned>(_M_stack[fbp + 2].raw().i & 1);
         _M_regs.after_leaving_flags[_M_regs.after_leaving_flag_index] = true;
         _M_regs.cached_fun_result_flag = (_M_stack[fbp + 2].raw().i >> 1) & 1;
+        _M_regs.esec = static_cast<uint32_t>(_M_stack[fbp + 3].raw().i);
         atomic_thread_fence(memory_order_release);
         return true;
       } else
@@ -1332,7 +1337,7 @@ namespace letin
     {
       try_lock_and_unlock_lazy_values(_M_regs.nfbp);
       _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp;
-      _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
+      _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = _M_regs.esec = 0;
       _M_regs.fp = static_cast<size_t>(-1);
       _M_regs.ip = 0;
       _M_regs.rv = ReturnValue(0, 0.0, r, error);
@@ -1361,6 +1366,10 @@ namespace letin
         if(is_ref_value_type_for_gc(_M_stack[i].type()) && !_M_stack[i].raw().r.has_nil())
           fun(_M_stack[i].raw().r.ptr());
       }
+      for(size_t i = 0; i < _M_regs.sec; i++) {
+        if(is_ref_value_type_for_gc(_M_stack[i].type()) && !_M_stack[i].raw().r.has_nil())
+          fun(_M_stack[i].raw().r.ptr());
+      }
       if(!_M_regs.rv.raw().r.has_nil())
         fun(_M_regs.rv.raw().r.ptr());
       if(!_M_regs.tmp_r.has_nil())
@@ -1384,6 +1393,8 @@ namespace letin
           r = r->_M_next;
         } while(r != _M_first_registered_r);
       }
+      if(is_ref_value_type_for_gc(_M_regs.tmp_expr.type()) && !_M_regs.tmp_expr.raw().r.has_nil())
+        fun(_M_regs.tmp_expr.raw().r.ptr());
     }
 
     bool ThreadContext::save_regs_and_set_regs(SavedRegisters &saved_regs)
@@ -1405,6 +1416,7 @@ namespace letin
       saved_regs.force_tmp_rv = _M_regs.force_tmp_rv;
       saved_regs.force_tmp_rv2 = _M_regs.force_tmp_rv2;
       saved_regs.sec = _M_regs.abp2 + _M_regs.ac2;
+      saved_regs.esec = _M_regs.esec;
       uint32_t sec = saved_regs.sec;
       if(sec + 6 > _M_stack_size) return false;
       _M_stack[sec + 0].safely_assign_for_gc(_M_regs.try_arg2);
@@ -1465,6 +1477,7 @@ namespace letin
       _M_regs.after_leaving_flags[0] = saved_regs.after_leaving_flag1;
       _M_regs.ip = saved_regs.ip;
       _M_regs.fp = saved_regs.fp;
+      _M_regs.esec = saved_regs.esec;
       _M_regs.sec = saved_regs.abp2 + saved_regs.ac2;
       _M_regs.ac2 = saved_regs.ac2;
       _M_regs.abp2 = saved_regs.abp2;
