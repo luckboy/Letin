@@ -129,6 +129,7 @@ namespace letin
       std::uint32_t sec;
       std::uint32_t esec;
       std::uint32_t nfbp;
+      std::uint32_t enfbp;
       std::size_t fp;
       std::uint32_t ip;
       ReturnValue rv;
@@ -155,6 +156,7 @@ namespace letin
     struct SavedRegisters
     {
       std::uint32_t nfbp;
+      std::uint32_t enfbp;
       std::uint32_t abp;
       std::uint32_t ac;
       std::uint32_t lvc;

@@ -1223,7 +1223,7 @@ namespace letin
     {
       _M_gc = nullptr;
       _M_native_fun_handler = nullptr;
-      _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.esec = _M_regs.nfbp = 0;
+      _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.esec = _M_regs.nfbp = _M_regs.enfbp = 0;
       _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
       _M_regs.fp = static_cast<size_t>(-1);
       _M_regs.ip = 0;
@@ -1337,7 +1337,8 @@ namespace letin
     {
       try_lock_and_unlock_lazy_values(_M_regs.nfbp);
       _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp;
-      _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = _M_regs.esec = 0;
+      _M_regs.esec = _M_regs.enfbp;
+      _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
       _M_regs.fp = static_cast<size_t>(-1);
       _M_regs.ip = 0;
       _M_regs.rv = ReturnValue(0, 0.0, r, error);
@@ -1400,6 +1401,7 @@ namespace letin
     bool ThreadContext::save_regs_and_set_regs(SavedRegisters &saved_regs)
     {
       saved_regs.nfbp = _M_regs.nfbp;
+      saved_regs.enfbp = _M_regs.enfbp;
       saved_regs.abp = _M_regs.abp;
       saved_regs.ac = _M_regs.ac;
       saved_regs.lvc = _M_regs.lvc;
@@ -1426,6 +1428,7 @@ namespace letin
       _M_stack[sec + 4].safely_assign_for_gc(Value(_M_regs.force_tmp_r2));
       _M_stack[sec + 5].safely_assign_for_gc(Value(_M_regs.force_tmp_rv2.raw().r));
       _M_regs.nfbp = sec + 6;
+      _M_regs.enfbp = _M_regs.esec;
       _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp;
       _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
       _M_regs.fp = static_cast<size_t>(-1);
@@ -1484,6 +1487,7 @@ namespace letin
       _M_regs.lvc = saved_regs.lvc;
       _M_regs.ac = saved_regs.ac;
       _M_regs.abp = saved_regs.abp;
+      _M_regs.enfbp = saved_regs.enfbp;
       _M_regs.nfbp = saved_regs.nfbp;
       atomic_thread_fence(memory_order_release);
       return result;
