@@ -845,6 +845,7 @@ namespace letin
               pop_exprs(context, j);
               if(i != 0) context.regs().ip += instr.arg2.i;
             }
+            context.regs().tmp_expr.safely_assign_for_gc(Value());
             break;
           }
           case INSTR_JUMP:
