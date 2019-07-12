@@ -127,6 +127,8 @@ namespace letin
       std::uint32_t abp2;
       std::uint32_t ac2;
       std::uint32_t sec;
+      std::uint32_t ebp;
+      std::uint32_t ec;
       std::uint32_t esec;
       std::uint32_t nfbp;
       std::uint32_t enfbp;
@@ -173,7 +175,8 @@ namespace letin
       ReturnValue force_tmp_rv;
       ReturnValue force_tmp_rv2;
       std::uint32_t sec;
-      std::uint32_t esec;
+      std::uint32_t ebp;
+      std::uint32_t ec;
     };
 
     class ThreadContext
@@ -467,8 +470,9 @@ namespace letin
 
       bool push_expr(Value &value)
       {
-        if(_M_regs.esec < _M_expr_stack_size) {
-          _M_expr_stack[_M_regs.esec].safely_assign_for_push(value);
+        if(_M_regs.ebp + _M_regs.ec < _M_expr_stack_size) {
+          _M_expr_stack[_M_regs.ebp + _M_regs.ec].safely_assign_for_push(value);
+          _M_regs.ec++;
           _M_regs.esec++;
           std::atomic_thread_fence(std::memory_order_release);
           return true;
@@ -478,7 +482,8 @@ namespace letin
 
       bool pop_exprs(std::size_t n)
       {
-        if(_M_regs.esec >= n) {
+        if(_M_regs.ec >= n) {
+          _M_regs.ec -= n;
           _M_regs.esec -= n;
           std::atomic_thread_fence(std::memory_order_release);
           return true;
@@ -488,8 +493,8 @@ namespace letin
 
       bool get_expr(std::size_t i, Value &value)
       {
-        if(_M_regs.esec > i) {
-          value.safely_assign_for_gc(_M_expr_stack[_M_regs.esec - i - 1]);
+        if(_M_regs.ec > i) {
+          value.safely_assign_for_gc(_M_expr_stack[_M_regs.ebp + _M_regs.ec - i - 1]);
           std::atomic_thread_fence(std::memory_order_release);
           return true;
         } else
