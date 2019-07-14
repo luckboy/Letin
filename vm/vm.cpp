@@ -1245,7 +1245,8 @@ namespace letin
       _M_regs.force_tmp_r = Reference();
       _M_regs.force_tmp_r2 = Reference();
       _M_regs.force_tmp_rv2 = ReturnValue();
-      _M_regs.tmp_expr = Value();
+      _M_regs.tmp_exprs[0] = Value();
+      _M_regs.tmp_exprs[1] = Value();
       _M_first_registered_r = _M_last_registered_r = nullptr;
       _M_stack = new Value[stack_size];
       _M_stack_size = stack_size;
@@ -1400,8 +1401,10 @@ namespace letin
           r = r->_M_next;
         } while(r != _M_first_registered_r);
       }
-      if(is_ref_value_type_for_gc(_M_regs.tmp_expr.type()) && !_M_regs.tmp_expr.raw().r.has_nil())
-        fun(_M_regs.tmp_expr.raw().r.ptr());
+      for(size_t i = 0; i < 2; i++) {
+        if(is_ref_value_type_for_gc(_M_regs.tmp_exprs[i].type()) && !_M_regs.tmp_exprs[i].raw().r.has_nil())
+          fun(_M_regs.tmp_exprs[i].raw().r.ptr());
+      }
     }
 
     bool ThreadContext::save_regs_and_set_regs(SavedRegisters &saved_regs)

@@ -152,7 +152,7 @@ namespace letin
       Reference force_tmp_r;
       Reference force_tmp_r2;
       ReturnValue force_tmp_rv2;
-      Value tmp_expr;
+      Value tmp_exprs[2];
     };
 
     struct SavedRegisters

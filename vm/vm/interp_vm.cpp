@@ -106,12 +106,15 @@ namespace letin
             }
             return get_int_value(context, value, context.global_var(arg.gvar));
           case ARG_TYPE_POP:
-            if(!context.get_expr(j, context.regs().tmp_expr)) {
+          {
+            if(!context.get_expr(j, context.regs().tmp_exprs[j])) {
               context.set_error(ERROR_EMPTY_STACK);
               return false;
             }
+            bool result = get_int_value(context, value, context.regs().tmp_exprs[j]);
             j++;
-            return get_int_value(context, value, context.regs().tmp_expr);
+            return result;
+          }
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -158,12 +161,15 @@ namespace letin
             }
             return get_float_value(context, value, context.global_var(arg.gvar));
           case ARG_TYPE_POP:
-            if(!context.get_expr(j, context.regs().tmp_expr)) {
+          {
+            if(!context.get_expr(j, context.regs().tmp_exprs[j])) {
               context.set_error(ERROR_EMPTY_STACK);
               return false;
             }
+            bool result = get_float_value(context, value, context.regs().tmp_exprs[j]);
             j++;
-            return get_float_value(context, value, context.regs().tmp_expr);
+            return result;
+          }
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -229,12 +235,15 @@ namespace letin
             }
             return get_ref_value_for_const_value(context, value, context.global_var(arg.gvar));
           case ARG_TYPE_POP:
-            if(!context.get_expr(j, context.regs().tmp_expr)) {
+          {
+            if(!context.get_expr(j, context.regs().tmp_exprs[j])) {
               context.set_error(ERROR_EMPTY_STACK);
               return false;
             }
+            bool result = get_ref_value(context, value, context.regs().tmp_exprs[j]);
             j++;
-            return get_ref_value(context, value, context.regs().tmp_expr);
+            return result;
+          }
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -672,12 +681,15 @@ namespace letin
             }
             return get_int_for_const_value(context, i, context.global_var(arg.gvar));
           case ARG_TYPE_POP:
-            if(!context.get_expr(j, context.regs().tmp_expr)) {
+          {
+            if(!context.get_expr(j, context.regs().tmp_exprs[j])) {
               context.set_error(ERROR_EMPTY_STACK);
               return false;
             }
+            bool result = get_int(context, i, context.regs().tmp_exprs[j]);
             j++;
-            return get_int(context, i, context.regs().tmp_expr);
+            return result;
+          }
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -723,12 +735,15 @@ namespace letin
             }
             return get_float_for_const_value(context, f, context.global_var(arg.gvar));
           case ARG_TYPE_POP:
-            if(!context.get_expr(j, context.regs().tmp_expr)) {
+          {
+            if(!context.get_expr(j, context.regs().tmp_exprs[j])) {
               context.set_error(ERROR_EMPTY_STACK);
               return false;
             }
+            bool result = get_float(context, f, context.regs().tmp_exprs[j]);
             j++;
-            return get_float(context, f, context.regs().tmp_expr);
+            return result;
+          }
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -775,12 +790,15 @@ namespace letin
             }
             return get_ref_for_const_value(context, r, context.global_var(arg.gvar));
           case ARG_TYPE_POP:
-            if(!context.get_expr(j, context.regs().tmp_expr)) {
+          {
+            if(!context.get_expr(j, context.regs().tmp_exprs[j])) {
               context.set_error(ERROR_EMPTY_STACK);
               return false;
             }
+            bool result = get_ref(context, r, context.regs().tmp_exprs[j]);
             j++;
-            return get_ref(context, r, context.regs().tmp_expr);
+            return result;
+          }
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -820,7 +838,8 @@ namespace letin
               if(!context.push_local_var(value)) context.set_error(ERROR_STACK_OVERFLOW);
             context.regs().rv.raw().r = Reference();
             context.regs().gc_tmp_ptr = nullptr;
-            context.regs().tmp_expr.safely_assign_for_gc(Value());
+            context.regs().tmp_exprs[0].safely_assign_for_gc(Value());
+            context.regs().tmp_exprs[1].safely_assign_for_gc(Value());
             break;
           }
           case INSTR_IN:
@@ -834,7 +853,8 @@ namespace letin
               context.regs().rv = value;
             }
             context.regs().gc_tmp_ptr = nullptr;
-            context.regs().tmp_expr.safely_assign_for_gc(Value());
+            context.regs().tmp_exprs[0].safely_assign_for_gc(Value());
+            context.regs().tmp_exprs[1].safely_assign_for_gc(Value());
             break;
           }
           case INSTR_JC:
@@ -845,7 +865,7 @@ namespace letin
               pop_exprs(context, j);
               if(i != 0) context.regs().ip += instr.arg2.i;
             }
-            context.regs().tmp_expr.safely_assign_for_gc(Value());
+            context.regs().tmp_exprs[0].safely_assign_for_gc(Value());
             break;
           }
           case INSTR_JUMP:
@@ -863,7 +883,8 @@ namespace letin
             }
             context.regs().rv.raw().r = Reference();
             context.regs().gc_tmp_ptr = nullptr;
-            context.regs().tmp_expr.safely_assign_for_gc(Value());
+            context.regs().tmp_exprs[0].safely_assign_for_gc(Value());
+            context.regs().tmp_exprs[1].safely_assign_for_gc(Value());
             break;
           }
           case INSTR_RETRY:
@@ -909,7 +930,8 @@ namespace letin
             }
             context.regs().rv.raw().r = Reference();
             context.regs().gc_tmp_ptr = nullptr;
-            context.regs().tmp_expr.safely_assign_for_gc(Value());
+            context.regs().tmp_exprs[0].safely_assign_for_gc(Value());
+            context.regs().tmp_exprs[1].safely_assign_for_gc(Value());
             break;
           }
           case INSTR_THROW:
@@ -930,7 +952,8 @@ namespace letin
               if(!context.push_expr(value)) context.set_error(ERROR_STACK_OVERFLOW);
             context.regs().rv.raw().r = Reference();
             context.regs().gc_tmp_ptr = nullptr;
-            context.regs().tmp_expr.safely_assign_for_gc(Value());
+            context.regs().tmp_exprs[0].safely_assign_for_gc(Value());
+            context.regs().tmp_exprs[1].safely_assign_for_gc(Value());
             break;
           }
         }
