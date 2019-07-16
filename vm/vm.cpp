@@ -1816,6 +1816,8 @@ namespace letin
           return "again used unique object";
         case ERROR_USER_EXCEPTION:
           return "user exception";
+        case ERROR_NO_EXPR:
+          return "no expression";
         default:
           return "unknown error";
       }

@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -73,6 +73,7 @@ namespace letin
   const int ERROR_UNIQUE_OBJECT =       19;
   const int ERROR_AGAIN_USED_UNIQUE =   20;
   const int ERROR_USER_EXCEPTION =      21;
+  const int ERROR_NO_EXPR =             22;
 
   const int NATIVE_FUN_ATOI =           0;
   const int NATIVE_FUN_ITOA =           1;

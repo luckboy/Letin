@@ -491,6 +491,8 @@ namespace letin
           return false;
       }
 
+      Value &expr(std::size_t i) { return _M_expr_stack[_M_regs.ebp + _M_regs.ec - i - 1]; }
+      
       bool get_expr(std::size_t i, Value &value)
       {
         if(_M_regs.ec > i) {

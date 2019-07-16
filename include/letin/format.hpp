@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -98,6 +98,7 @@ namespace letin
       std::uint32_t     lvar;
       std::uint32_t     arg;
       std::uint32_t     gvar;
+      std::uint32_t     expr;
     };
 
     struct Instruction
