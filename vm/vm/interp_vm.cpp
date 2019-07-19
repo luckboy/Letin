@@ -3005,7 +3005,7 @@ namespace letin
               }
             }
           }
-          context.regs().tmp_r.safely_assign_for_gc(value.r());
+          context.regs().tmp_r.safely_assign_for_gc(value.raw().r);
           value.safely_assign_for_gc(tmp_value);
           context.regs().tmp_r.safely_assign_for_gc(Reference());
         }
