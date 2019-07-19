@@ -2558,9 +2558,7 @@ namespace letin
                 if(!fully_force_value(context, tmp_elem_value, [r, i](Reference elem_r) {
                   r->set_elem(i, Value(elem_r));
                 })) return false;
-                context.regs().tmp_r.safely_assign_for_gc(tmp_elem_value.r());
                 r->set_elem(i, tmp_elem_value);
-                context.regs().tmp_r.safely_assign_for_gc(Reference());
               }
               value.safely_assign_for_gc(Value(r));
               break;
