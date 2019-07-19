@@ -127,8 +127,8 @@ namespace letin
       std::uint32_t abp2;
       std::uint32_t ac2;
       std::uint32_t sec;
-      std::uint32_t ebp;
-      std::uint32_t ec;
+      std::uint32_t evbp;
+      std::uint32_t evc;
       std::uint32_t esec;
       std::uint32_t nfbp;
       std::uint32_t enfbp;
@@ -152,7 +152,7 @@ namespace letin
       Reference force_tmp_r;
       Reference force_tmp_r2;
       ReturnValue force_tmp_rv2;
-      Value tmp_exprs[2];
+      Value tmp_expr_values[2];
     };
 
     struct SavedRegisters
@@ -175,8 +175,8 @@ namespace letin
       ReturnValue force_tmp_rv;
       ReturnValue force_tmp_rv2;
       std::uint32_t sec;
-      std::uint32_t ebp;
-      std::uint32_t ec;
+      std::uint32_t evbp;
+      std::uint32_t evc;
     };
 
     class ThreadContext
@@ -468,11 +468,11 @@ namespace letin
           return false;
       }
 
-      bool push_expr(Value &value)
+      bool push_expr_value(Value &value)
       {
-        if(_M_regs.ebp + _M_regs.ec < _M_expr_stack_size) {
-          _M_expr_stack[_M_regs.ebp + _M_regs.ec].safely_assign_for_push(value);
-          _M_regs.ec++;
+        if(_M_regs.evbp + _M_regs.evc < _M_expr_stack_size) {
+          _M_expr_stack[_M_regs.evbp + _M_regs.evc].safely_assign_for_push(value);
+          _M_regs.evc++;
           _M_regs.esec++;
           std::atomic_thread_fence(std::memory_order_release);
           return true;
@@ -480,10 +480,10 @@ namespace letin
           return false;        
       }
 
-      bool pop_exprs(std::size_t n)
+      bool pop_expr_values(std::size_t n)
       {
-        if(_M_regs.ec >= n) {
-          _M_regs.ec -= n;
+        if(_M_regs.evc >= n) {
+          _M_regs.evc -= n;
           _M_regs.esec -= n;
           std::atomic_thread_fence(std::memory_order_release);
           return true;
@@ -491,12 +491,12 @@ namespace letin
           return false;
       }
 
-      Value &expr(std::size_t i) { return _M_expr_stack[_M_regs.ebp + _M_regs.ec - i - 1]; }
+      Value &expr_value(std::size_t i) { return _M_expr_stack[_M_regs.evbp + _M_regs.evc - i - 1]; }
       
-      bool get_expr(std::size_t i, Value &value)
+      bool get_expr_value(std::size_t i, Value &value)
       {
-        if(_M_regs.ec > i) {
-          value.safely_assign_for_gc(_M_expr_stack[_M_regs.ebp + _M_regs.ec - i - 1]);
+        if(_M_regs.evc > i) {
+          value.safely_assign_for_gc(_M_expr_stack[_M_regs.evbp + _M_regs.evc - i - 1]);
           std::atomic_thread_fence(std::memory_order_release);
           return true;
         } else

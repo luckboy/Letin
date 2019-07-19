@@ -171,7 +171,7 @@ namespace letin
     const std::uint32_t ARG_TYPE_IMM =  0x2;
     const std::uint32_t ARG_TYPE_GVAR = 0x3;
     const std::uint32_t ARG_TYPE_POP =  0x4;
-    const std::uint32_t ARG_TYPE_EXPR = 0x5;
+    const std::uint32_t ARG_TYPE_EVAL = 0x5;
 
     inline std::uint32_t opcode(std::uint32_t instr, std::uint32_t op, std::uint32_t arg_type1 = 0, std::uint32_t arg_type2 = 0, std::uint32_t local_var_count = 2)
     {

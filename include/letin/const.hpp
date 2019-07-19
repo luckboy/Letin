@@ -73,7 +73,7 @@ namespace letin
   const int ERROR_UNIQUE_OBJECT =       19;
   const int ERROR_AGAIN_USED_UNIQUE =   20;
   const int ERROR_USER_EXCEPTION =      21;
-  const int ERROR_NO_EXPR =             22;
+  const int ERROR_NO_EXPR_VALUE =       22;
 
   const int NATIVE_FUN_ATOI =           0;
   const int NATIVE_FUN_ITOA =           1;

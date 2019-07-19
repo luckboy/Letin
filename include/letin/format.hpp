@@ -98,7 +98,7 @@ namespace letin
       std::uint32_t     lvar;
       std::uint32_t     arg;
       std::uint32_t     gvar;
-      std::uint32_t     expr;
+      std::uint32_t     eval;
     };
 
     struct Instruction
