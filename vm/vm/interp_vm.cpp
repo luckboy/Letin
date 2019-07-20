@@ -131,11 +131,11 @@ namespace letin
             return result;
           }
           case ARG_TYPE_EVAL:
-            if(arg.eval >= context.regs().evc) {
+            if(arg.eval + n >= context.regs().evc) {
               context.set_error(ERROR_NO_EXPR_VALUE);
               return false;
             }
-            return get_int_value(context, value, context.expr_value(arg.eval));
+            return get_int_value(context, value, context.expr_value(arg.eval + n));
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -192,11 +192,11 @@ namespace letin
             return result;
           }
           case ARG_TYPE_EVAL:
-            if(arg.eval >= context.regs().evc) {
+            if(arg.eval + n >= context.regs().evc) {
               context.set_error(ERROR_NO_EXPR_VALUE);
               return false;
             }
-            return get_float_value(context, value, context.expr_value(arg.eval));
+            return get_float_value(context, value, context.expr_value(arg.eval + n));
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -272,11 +272,11 @@ namespace letin
             return result;
           }
           case ARG_TYPE_EVAL:
-            if(arg.eval >= context.regs().evc) {
+            if(arg.eval + n >= context.regs().evc) {
               context.set_error(ERROR_NO_EXPR_VALUE);
               return false;
             }
-            return get_ref_value(context, value, context.expr_value(arg.eval));
+            return get_ref_value(context, value, context.expr_value(arg.eval + n));
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -724,11 +724,11 @@ namespace letin
             return result;
           }
           case ARG_TYPE_EVAL:
-            if(arg.eval >= context.regs().evc) {
+            if(arg.eval + n >= context.regs().evc) {
               context.set_error(ERROR_NO_EXPR_VALUE);
               return false;
             }
-            return get_int(context, i, context.expr_value(arg.eval));
+            return get_int(context, i, context.expr_value(arg.eval + n));
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -784,11 +784,11 @@ namespace letin
             return result;
           }
           case ARG_TYPE_EVAL:
-            if(arg.eval >= context.regs().evc) {
+            if(arg.eval + n >= context.regs().evc) {
               context.set_error(ERROR_NO_EXPR_VALUE);
               return false;
             }
-            return get_float(context, f, context.expr_value(arg.eval));
+            return get_float(context, f, context.expr_value(arg.eval + n));
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
@@ -845,11 +845,11 @@ namespace letin
             return result;
           }
           case ARG_TYPE_EVAL:
-            if(arg.eval >= context.regs().evc) {
+            if(arg.eval + n >= context.regs().evc) {
               context.set_error(ERROR_NO_EXPR_VALUE);
               return false;
             }
-            return get_ref(context, r, context.expr_value(arg.eval));
+            return get_ref(context, r, context.expr_value(arg.eval + n));
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             return false;
