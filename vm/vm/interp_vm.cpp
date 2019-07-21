@@ -914,7 +914,7 @@ namespace letin
             size_t j = 0;
             size_t n =  expr_pop_arg_count(opcode_to_arg_type1(instr.opcode));
             if(get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j, n)) {
-              pop_expr_values(context, j);
+              pop_expr_values(context, n);
               if(i != 0) context.regs().ip += instr.arg2.i;
             }
             context.regs().tmp_expr_values[0].safely_assign_for_gc(Value());
@@ -992,7 +992,7 @@ namespace letin
             size_t j = 0;
             size_t n =  expr_pop_arg_count(opcode_to_arg_type1(instr.opcode));
             if(get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j, n)) {
-              pop_expr_values(context, j);
+              pop_expr_values(context, n);
               context.set_error(ERROR_USER_EXCEPTION, r);
             }
             break;
@@ -1036,7 +1036,7 @@ namespace letin
             size_t n = expr_pop_arg_count(opcode_to_arg_type1(instr.opcode), opcode_to_arg_type2(instr.opcode));
             if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j, n)) return Value();
             if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j, n)) return Value();
-            if(!pop_expr_values(context, j)) return Value();
+            if(!pop_expr_values(context, n)) return Value();
             return Value((i1 << 32) | (i2 & 0xffffffff));
           }
           case OP_INEG:
