@@ -121,7 +121,7 @@ namespace letin
         CPPUNIT_TEST(test_vm_evaluates_function_argument_for_lazy_evaluation);
         CPPUNIT_TEST(test_vm_pushes_and_pops_expression_values);
         CPPUNIT_TEST(test_vm_pushes_and_gets_and_pops_expression_values);
-        CPPUNIT_TEST(test_vm_pushes_and_pops_expression_values_for_nested_invokated_function);
+        CPPUNIT_TEST(test_vm_pushes_and_pops_expression_values_in_invoked_function);
         CPPUNIT_TEST(test_vm_pops_and_gets_expression_values_for_one_instruction);
         CPPUNIT_TEST(test_vm_complains_on_empty_expression_stack);
         CPPUNIT_TEST(test_vm_complains_on_non_existent_expression_value);
@@ -196,7 +196,7 @@ namespace letin
         void test_vm_evaluates_function_argument_for_lazy_evaluation();
         void test_vm_pushes_and_pops_expression_values();
         void test_vm_pushes_and_gets_and_pops_expression_values();
-        void test_vm_pushes_and_pops_expression_values_for_nested_invokated_function();
+        void test_vm_pushes_and_pops_expression_values_in_invoked_function();
         void test_vm_pops_and_gets_expression_values_for_one_instruction();
         void test_vm_complains_on_empty_expression_stack();
         void test_vm_complains_on_non_existent_expression_value();

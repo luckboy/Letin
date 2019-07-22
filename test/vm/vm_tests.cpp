@@ -2064,7 +2064,7 @@ namespace letin
         CPPUNIT_ASSERT(is_expected);
       }
 
-      void VirtualMachineTests::test_vm_pushes_and_pops_expression_values_for_nested_invokated_function()
+      void VirtualMachineTests::test_vm_pushes_and_pops_expression_values_in_invoked_function()
       {
         PROG(prog_helper, 0);
         FUN(3); // (10, 6, 5)
