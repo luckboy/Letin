@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -1984,6 +1984,185 @@ namespace letin
         CPPUNIT_ASSERT(is_expected);        
       }
 
+      void VirtualMachineTests::test_vm_pushes_and_pops_expression_values()
+      {
+        PROG(prog_helper, 0);
+        FUN(4); // (5, 6, 3, 2)
+        PUSH(ILOAD, A(0), NA());
+        PUSH(IADD, A(1), PP()); // 6 + 5 = 11
+        PUSH(ILOAD, A(2), NA()); 
+        PUSH(IMUL, PP(), A(3)); // 3 * 2 = 6
+        RET(ISUB, PP(), PP()); // 11 - 6 = 5
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(5));
+        args.push_back(Value(6));
+        args.push_back(Value(3));
+        args.push_back(Value(2));
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (5 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_pushes_and_gets_and_pops_expression_values()
+      {
+        PROG(prog_helper, 0);
+        FUN(5); // (30, 10, 12, 6, 2)
+        PUSH(ILOAD, IMM(1), NA());
+        PUSH(ILOAD, A(0), NA());
+        PUSH(ILOAD, A(1), NA());
+        ARG(ILOAD, EV(1), NA());
+        ARG(ILOAD, EV(0), NA());
+        POP(2);
+        PUSH(ICALL, PP(), NA()); // 30 - 10 = 20
+        PUSH(ILOAD, A(2), NA());
+        PUSH(ILOAD, A(3), NA());
+        PUSH(ILOAD, A(4), NA());
+        ARG(ILOAD, EV(2), NA());
+        ARG(ILOAD, EV(1), NA());
+        ARG(ILOAD, EV(0), NA());
+        POP(3);
+        PUSH(ICALL, IMM(2), NA()); // (12 - 6) / 2 = 3
+        RET(ISUB, PP(), PP()); // 20 - 3 = 17
+        END_FUN();
+        FUN(2);
+        RET(ISUB, A(0), A(1));
+        END_FUN();
+        FUN(3);
+        LET(ISUB, A(0), A(1));
+        IN();
+        RET(IDIV, LV(0), A(2));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(30));
+        args.push_back(Value(10));
+        args.push_back(Value(12));
+        args.push_back(Value(6));
+        args.push_back(Value(2));
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (17 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_pushes_and_pops_expression_values_for_nested_invokated_function()
+      {
+        PROG(prog_helper, 0);
+        FUN(3); // (10, 6, 5)
+        PUSH(ILOAD, A(0), NA());
+        PUSH(ILOAD, A(1), NA());
+        PUSH(ILOAD, A(2), NA());
+        ARG(ILOAD, EV(1), NA());
+        ARG(ILOAD, EV(0), NA());
+        POP(2);
+        PUSH(ICALL, IMM(1), NA()); // 6 - 5 = 1
+        RET(ISUB, PP(), PP()); // 10 - 1 = 9
+        END_FUN();
+        FUN(2);
+        PUSH(ILOAD, A(0), NA());
+        PUSH(ILOAD, A(1), NA());
+        RET(ISUB, PP(), PP());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(10));
+        args.push_back(Value(6));
+        args.push_back(Value(5));
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (9 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_pops_and_gets_expression_values_for_one_instruction()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        PUSH(ILOAD, IMM(40), NA());
+        PUSH(ILOAD, IMM(10), NA());
+        RET(ISUB, EV(0), PP());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (30 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_complains_on_empty_expression_stack()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        PUSH(ILOAD, IMM(10), NA());
+        RET(IADD, PP(), PP());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_EMPTY_STACK == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }      
+
+      void VirtualMachineTests::test_vm_complains_on_non_existent_expression_value()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        PUSH(ILOAD, IMM(10), NA());
+        PUSH(ILOAD, IMM(20), NA());
+        RET(IADD, IMM(30), EV(2));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_NO_EXPR_VALUE == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+      
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);

@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -25,6 +25,8 @@
 #define LV(i)                   Argument(opcode::ARG_TYPE_LVAR, i)
 #define A(i)                    Argument(opcode::ARG_TYPE_ARG, i)
 #define GV(i)                   Argument(opcode::ARG_TYPE_GVAR, i)
+#define PP()                    Argument(opcode::ARG_TYPE_POP, 0)
+#define EV(i)                   Argument(opcode::ARG_TYPE_EVAL, i)
 #define NA()                    Argument(0)
 
 #define INSTR(instr)            tmp_prog_helper.add_instr(instr)
@@ -37,6 +39,8 @@
 #define RETRY()                 INSTR(make_instruction(opcode::INSTR_RETRY, 0, Argument(0), Argument(0), 2))
 #define LETTUPLE(op, local_var_count, arg1, arg2) INSTR(make_instruction(opcode::INSTR_LETTUPLE, opcode::OP_##op, arg1, arg2, local_var_count)) 
 #define THROW(arg)              INSTR(make_instruction(opcode::INSTR_THROW, 0, arg, Argument(0), 2))
+#define PUSH(op, arg1, arg2)    INSTR(make_instruction(opcode::INSTR_PUSH, opcode::OP_##op, arg1, arg2, 2))
+#define POP(i)                  INSTR(make_instruction(opcode::INSTR_POP, 0, Argument(i), Argument(0), 2))
 
 #define FUN(arg_count)                                                          \
 {                                                                               \
