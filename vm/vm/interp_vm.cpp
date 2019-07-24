@@ -995,6 +995,7 @@ namespace letin
               pop_expr_values(context, n);
               context.set_error(ERROR_USER_EXCEPTION, r);
             }
+            context.regs().tmp_expr_values[0].safely_assign_for_gc(Value());
             break;
           }          
           case INSTR_PUSH:
