@@ -2931,10 +2931,7 @@ namespace letin
                   if(tmp_abp2 > context.regs().abp2) lock.release();
                   return false;
                 }
-                if(!restore_and_pop_regs_for_force(context)) {
-                  lock.release();
-                  return false;
-                }
+                if(!restore_and_pop_regs_for_force(context)) return false;
               }
               context.regs().after_leaving_flags[1] = false;
               if(!context.regs().rv.raw().r->is_lazy()) {
@@ -2949,11 +2946,9 @@ namespace letin
                     object.raw().lzv.value = Value(context.regs().rv.raw().r);
                     break;
                   case VALUE_TYPE_CANCELED_REF:
-                    lock.release();
                     context.set_error(ERROR_AGAIN_USED_UNIQUE);
                     return false;
                   default:
-                    lock.release();
                     context.set_error(ERROR_INCORRECT_VALUE);
                     return false;
                 }
@@ -2972,11 +2967,9 @@ namespace letin
                       object.raw().lzv.value = Value(Reference());
                       break;
                     case VALUE_TYPE_CANCELED_REF:
-                      lock.release();
                       context.set_error(ERROR_AGAIN_USED_UNIQUE);
                       return false;
                     default:
-                      lock.release();
                       context.set_error(ERROR_INCORRECT_VALUE);
                       return false;
                   }
@@ -2989,18 +2982,15 @@ namespace letin
               object.raw().lzv.value.cancel_ref();
             lock.unlock();
             if(object.raw().lzv.value_type == VALUE_TYPE_REF && tmp_value.type() == VALUE_TYPE_CANCELED_REF) {
-              lock.release();
               context.set_error(ERROR_AGAIN_USED_UNIQUE);
               return false;
             }
             if(tmp_value.is_unique()) {
               if(value.is_lazily_canceled()) {
-                lock.release();
                 context.set_error(ERROR_AGAIN_USED_UNIQUE);
                 return false;
               }
               if(tmp_must_be_shared) {
-                lock.release();
                 context.set_error(ERROR_UNIQUE_OBJECT);
                 return false;
               }
