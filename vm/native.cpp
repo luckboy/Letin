@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2015 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2015, 2019 Łukasz Szpakowski.                            *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -59,7 +59,8 @@ namespace letin
       {
         vm::Value tmp_value = object.elem(i);
         RegisteredReference tmp_r(context, true);
-        if(tmp_value.is_lazy()) tmp_r = tmp_value.raw().r;
+        if(tmp_value.is_lazy() || tmp_value.is_ref() || tmp_value.type() == VALUE_TYPE_CANCELED_REF)
+          tmp_r = tmp_value.raw().r;
         int result = fun(vm, context, tmp_value);
         object.set_elem(i, tmp_value);
         return result;
