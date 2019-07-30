@@ -858,7 +858,11 @@ namespace letin
             Reference r;
             if(get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1))
               context.set_error(ERROR_USER_EXCEPTION, r);
+            break;
           }
+          default:
+            context.set_error(ERROR_INCORRECT_INSTR);
+            break;
         }
         atomic_thread_fence(memory_order_release);
         return true;
