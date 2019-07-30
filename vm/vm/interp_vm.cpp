@@ -1013,6 +1013,9 @@ namespace letin
           case INSTR_POP:
             if(!context.pop_expr_values(instr.arg1.eval)) context.set_error(ERROR_EMPTY_STACK);
             break;
+          default:
+            context.set_error(ERROR_INCORRECT_INSTR);
+            break;
         }
         atomic_thread_fence(memory_order_release);
         return true;
