@@ -833,6 +833,9 @@ namespace letin
       inline vm::ReturnValue error_return_value(int error)
       { return vm::ReturnValue::error(error); }
 
+      inline vm::ReturnValue error_return_value(int error, vm::Reference r)
+      { return vm::ReturnValue::error(error, r); }
+
       template<typename _T>
       inline vm::ReturnValue return_value_with_errno(vm::VirtualMachine *vm, vm::ThreadContext *context, _T setter, int error_num)
       {

@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2015 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2015, 2019 Łukasz Szpakowski.                            *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -136,7 +136,7 @@ extern "C" {
           "posix.environ", // () -> rarray
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             size_t n = 0;
             for(n = 0; environ[n] != nullptr; n++);
             RegisteredReference env_r(vm->gc()->new_object(OBJECT_TYPE_RARRAY, n, context), context, false);
@@ -163,7 +163,7 @@ extern "C" {
           "posix.errno", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
             int tmp_errno = system_error_to_error(letin_errno());
             return return_value(vm, context, vut(vint(tmp_errno), v(io_v)));
@@ -173,7 +173,7 @@ extern "C" {
           "posix.set_errno", // (new_errno: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             int new_errno;
             if(!convert_args(args, toerrno(new_errno)))
@@ -191,7 +191,7 @@ extern "C" {
           "posix.read", // (fd: int, count: int, io: uio) -> (option (int, iarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             int fd;
             size_t count;
@@ -220,7 +220,7 @@ extern "C" {
           "posix.write", // (fd: int, buf: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, ciarray8, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             int fd;
             Reference buf_r;
@@ -246,7 +246,7 @@ extern "C" {
           "posix.uread", // (fd: int, buf: uiarray8, offset: int, count: int, io: uio) -> ((int, uiarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuiarray8, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &buf_v = args[1], io_v = args[4];
             int fd;
             Reference buf_r;
@@ -275,7 +275,7 @@ extern "C" {
           "posix.uwrite", // (fd: int, buf: uiarray8, offset: int, count: int, io: uio) -> ((int, uiarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuiarray8, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &buf_v = args[1], io_v = args[4];
             int fd;
             Reference buf_r;
@@ -304,7 +304,7 @@ extern "C" {
           "posix.lseek", // (fd: int, offset: int, whence: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
             int fd, whence;
 #if defined(__unix__)
@@ -336,7 +336,7 @@ extern "C" {
           "posix.open", // (path_name: iarray8, flags: int, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
             string path_name;
             int flags;
@@ -367,7 +367,7 @@ extern "C" {
           "posix.close", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             int fd;
             if(!convert_args(args, tofd(fd)))
@@ -392,7 +392,7 @@ extern "C" {
           "posix.pipe", // (io: uio) -> (option (int, int), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             int fds[2];
@@ -411,7 +411,7 @@ extern "C" {
           "posix.dup", // (old_fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             int old_fd;
             if(!convert_args(args, tofd(old_fd)))
@@ -432,7 +432,7 @@ extern "C" {
           "posix.dup2", // (old_fd: int, int new_fd, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             int old_fd, new_fd;
             if(!convert_args(args, tofd(old_fd), tofd(new_fd)))
@@ -461,7 +461,7 @@ extern "C" {
           "posix.FD_SETSIZE", // () -> int
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             return return_value(vm, context, vint(FD_SETSIZE));
           }
         },
@@ -497,7 +497,7 @@ extern "C" {
           "posix.uselect", // (nfds: int, rfds: uiarray8, wfds: uiarray8, efds: uiarray8, timeout: option tuple, io: uio) -> ((int, uiarray8, uiarray8, uiarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuiarray8, cuiarray8, cuiarray8, coption(ctimeval), cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &rfds_v = args[1], wfds_v = args[2], efds_v = args[3], io_v = args[5];
 #if defined(__unix__)
             bool is_timeout;
@@ -528,7 +528,7 @@ extern "C" {
           "posix.poll", // (fds: rarray, timeout: int, io: uio) -> (option (int, rarray), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cpollfds, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             Array<struct ::pollfd> fds;
@@ -554,7 +554,7 @@ extern "C" {
           "posix.upoll", // (fds: urarray, timeout: int, io: uio) -> ((int, urarray), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cupollfds, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &fds_v = args[0], io_v = args[2];
 #if defined(__unix__)
             Array<struct ::pollfd> fds;
@@ -581,7 +581,7 @@ extern "C" {
           "posix.fcntl_dupfd", // (fd: int, min_fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             int fd, min_fd;
@@ -602,7 +602,7 @@ extern "C" {
           "posix.fcntl_getfd", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             int fd;
@@ -623,7 +623,7 @@ extern "C" {
           "posix.fcntl_setfd", // (fd: int, bit: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             int fd, bit;
@@ -644,7 +644,7 @@ extern "C" {
           "posix.fcntl_getfl", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             int fd;
@@ -666,7 +666,7 @@ extern "C" {
           "posix.fcntl_setfl", // (fd: int, flags: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             int fd, flags;
@@ -687,7 +687,7 @@ extern "C" {
           "posix.fcntl_getlk", // (fd: int, io: uio) -> ((int, tuple) | (int), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             int fd;
@@ -718,7 +718,7 @@ extern "C" {
           "posix.fcntl_setlk", // (fd: int, lock: tuple, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cflock, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             int fd;
@@ -747,7 +747,7 @@ extern "C" {
           "posix.fcntl_setlkw", // (fd: int, lock: tuple, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cflock, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             int fd;
@@ -797,7 +797,7 @@ extern "C" {
           "posix.stat", // (path_name: iarray8, io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             string path_name;
             if(!convert_args(args, topath(path_name)))
@@ -835,7 +835,7 @@ extern "C" {
           "posix.lstat", // (path_name: iarray8, io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             string path_name;
@@ -866,7 +866,7 @@ extern "C" {
           "posix.fstat", // (fd: int, io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             int fd;
             if(!convert_args(args, tofd(fd)))
@@ -926,7 +926,7 @@ extern "C" {
           "posix.getcwd", // (io: uio) -> (option iarray8, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
             unique_ptr<char []> buf(new char[PATH_MAX + 1]);
             fill_n(buf.get(), PATH_MAX + 1, 0);
@@ -947,7 +947,7 @@ extern "C" {
           "posix.chdir", // (dir_name: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             string dir_name;
             if(!convert_args(args, topath(dir_name)))
@@ -968,7 +968,7 @@ extern "C" {
           "posix.fchdir", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             int fd;
@@ -997,7 +997,7 @@ extern "C" {
           "posix.mkdir", // (dir_name: iarray8, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             string dir_name;
             ::mode_t mode;
@@ -1019,7 +1019,7 @@ extern "C" {
           "posix.rmdir", // (dir_name: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             string dir_name;
             if(!convert_args(args, topath(dir_name)))
@@ -1040,7 +1040,7 @@ extern "C" {
           "posix.link", // (old_file_name: iarray8, new_file_name: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, ciarray8, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             string old_file_name, new_file_name;
@@ -1061,7 +1061,7 @@ extern "C" {
           "posix.unlink", // (file_name: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, ciarray8, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             string file_name;
             if(!convert_args(args, topath(file_name)))
@@ -1082,7 +1082,7 @@ extern "C" {
           "posix.rename", // (old_path_name: iarray8, new_path_name: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, ciarray8, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             string old_path_name, new_path_name;
             if(!convert_args(args, topath(old_path_name), topath(new_path_name)))
@@ -1097,7 +1097,7 @@ extern "C" {
           "posix.symlink", // (old_path_name: iarray8, new_path_name: iarray8, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, ciarray8, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             string old_file_name, new_file_name;
@@ -1118,7 +1118,7 @@ extern "C" {
           "posix.readlink", // (path_name: iarray8, io: uio) -> (option iarray8, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             string path_name;
@@ -1142,7 +1142,7 @@ extern "C" {
           "posix.chmod", // (path_name: iarray8, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             string path_name;
             ::mode_t mode;
@@ -1164,7 +1164,7 @@ extern "C" {
           "posix.fchmod", // (fd: int, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             int fd;
@@ -1194,7 +1194,7 @@ extern "C" {
           "posix.chown", // (path_name: iarray8, owner: int, group: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
 #if defined(__unix__)
             string path_name;
@@ -1217,7 +1217,7 @@ extern "C" {
           "posix.lchown", // (path_name: iarray8, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
 #if defined(__unix__)
             string path_name;
@@ -1240,7 +1240,7 @@ extern "C" {
           "posix.fchown", // (fd: int, mode: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
 #if defined(__unix__)
             int fd;
@@ -1271,7 +1271,7 @@ extern "C" {
           "posix.mknod", // (path_name: iarray8, mode: int, dev: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
 #if defined(__unix__)
             string path_name;
@@ -1296,7 +1296,7 @@ extern "C" {
           "posix.utimes", // (path_name: iarray8, times: (tuple, tuple), io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, ct(ctimeval, ctimeval), cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             string path_name;
             struct ::timeval times[2];
@@ -1321,7 +1321,7 @@ extern "C" {
           "posix.umask", // (mask: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             ::mode_t mask;
             if(!convert_args(args, tomode(mask)))
@@ -1345,7 +1345,7 @@ extern "C" {
           "posix.getpid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             Pid pid = ::getpid();
@@ -1361,7 +1361,7 @@ extern "C" {
           "posix.getppid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             Pid pid = ::getppid();
@@ -1377,7 +1377,7 @@ extern "C" {
           "posix.fork", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             Pid pid;
@@ -1399,7 +1399,7 @@ extern "C" {
           "posix.waitpid", // (pid: int, options: int, io: uio) -> (option (int, (int, int)), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             Pid pid;
             int options;
@@ -1451,7 +1451,7 @@ extern "C" {
           "posix.execve", // (file_name: iarray8, argv: rarray, env: rarray, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cargv, cargv, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
             string file_name;
             Argv argv, env;
@@ -1471,7 +1471,7 @@ extern "C" {
           "posix.fork_execve", // (file_name: iarray8, argv: rarray, env: rarray, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cargv, cargv, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
             string file_name;
             Argv argv, env;
@@ -1512,7 +1512,7 @@ extern "C" {
           "posix.exit", // (status: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             int status;
             if(!convert_args(args, toarg(status)))
@@ -1524,7 +1524,7 @@ extern "C" {
           "posix.kill", // (pid: int, sig: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             ::pid_t pid;
@@ -1557,7 +1557,7 @@ extern "C" {
           "posix.getpgid", // (pid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             ::pid_t pid;
@@ -1578,7 +1578,7 @@ extern "C" {
           "posix.setpgid", // (pid: int, pgid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             ::pid_t pid, pgid;
@@ -1599,7 +1599,7 @@ extern "C" {
           "posix.getsid", // (pid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             ::pid_t pid;
@@ -1620,7 +1620,7 @@ extern "C" {
           "posix.setsid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             ::pid_t sid = ::setsid();
@@ -1638,7 +1638,7 @@ extern "C" {
           "posix.pause", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             int result;
@@ -1660,7 +1660,7 @@ extern "C" {
           "posix.usleep", // (useconds: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__) || ((defined(_WIN32) || defined(_WIN64)) && (defined(__MINGW32__) || defined(__MINGW64__)))
             ::useconds_t useconds;
@@ -1703,7 +1703,7 @@ extern "C" {
           "posix.nanosleep", // (req: tuple, io: uio) -> ((int, option tuple), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ctimespec, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__) || ((defined(_WIN32) || defined(_WIN64)) && (defined(__MINGW32__) || defined(__MINGW64__)))
             struct ::timespec req, rem;
@@ -1746,7 +1746,7 @@ extern "C" {
           "posix.times", // (io: uio) -> (option (int, tuple), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             struct ::tms buf;
@@ -1765,7 +1765,7 @@ extern "C" {
           "posix.nice", // (inc: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             int inc;
@@ -1786,7 +1786,7 @@ extern "C" {
           "posix.getpriority", // (which: int, who: int, io: uio) -> (option int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             int which, who;
@@ -1808,7 +1808,7 @@ extern "C" {
           "posix.setpriority", // (which: int, who: int, prio: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
 #if defined(__unix__)
             int which, who, prio;
@@ -1834,7 +1834,7 @@ extern "C" {
           "posix.getuid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             ::uid_t uid = ::getuid();
@@ -1850,7 +1850,7 @@ extern "C" {
           "posix.setuid", // (uid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             ::uid_t uid;
@@ -1871,7 +1871,7 @@ extern "C" {
           "posix.getgid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             ::gid_t gid = ::getgid();
@@ -1887,7 +1887,7 @@ extern "C" {
           "posix.setgid", // (gid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             ::gid_t gid;
@@ -1908,7 +1908,7 @@ extern "C" {
           "posix.geteuid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             ::uid_t uid = ::geteuid();
@@ -1924,7 +1924,7 @@ extern "C" {
           "posix.seteuid", // (uid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             ::uid_t uid;
@@ -1945,7 +1945,7 @@ extern "C" {
           "posix.getegid", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             ::gid_t gid = ::getegid();
@@ -1961,7 +1961,7 @@ extern "C" {
           "posix.setegid", // (gid: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             ::gid_t gid;
@@ -1982,7 +1982,7 @@ extern "C" {
           "posix.getgroups", // (io: uio) -> (option iarray32, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             {
@@ -2010,7 +2010,7 @@ extern "C" {
           "posix.setgroups", // (groups: iarray32, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray32, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             Array<::gid_t> groups;
@@ -2036,7 +2036,7 @@ extern "C" {
           "posix.gettimeofday", // (io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__) || ((defined(_WIN32) || defined(_WIN64)) && (defined(__MINGW32__) || defined(__MINGW64__)))
             struct ::timeval tv;
@@ -2073,7 +2073,7 @@ extern "C" {
           "posix.tcgetattr", // (fd: int, io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             int fd;
@@ -2095,7 +2095,7 @@ extern "C" {
           "posix.tcsetattr", // (fd: int, optional_actions: int, termios: tuple, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, ctermios, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
 #if defined(__unix__)
             int fd, optional_actions;
@@ -2121,7 +2121,7 @@ extern "C" {
           "posix.tcsendbreak", // (fd: int, duration: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             int fd, duration;
@@ -2142,7 +2142,7 @@ extern "C" {
           "posix.tcdrain", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             int fd;
@@ -2167,7 +2167,7 @@ extern "C" {
           "posix.tcflush", // (fd: int, queue_selector: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             int fd, queue_selector;
@@ -2188,7 +2188,7 @@ extern "C" {
           "posix.tcflow", // (fd: int, action: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             int fd, action;
@@ -2209,7 +2209,7 @@ extern "C" {
           "posix.tcgetpgrp", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             int fd;
@@ -2230,7 +2230,7 @@ extern "C" {
           "posix.tcsetpgrp", // (fd: int, pgrp: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             int fd;
@@ -2252,7 +2252,7 @@ extern "C" {
           "posix.isatty", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             int fd;
             if(!convert_args(args, tofd(fd)))
@@ -2273,7 +2273,7 @@ extern "C" {
           "posix.ttyname", // (fd: int, io: uio) -> (option iarray8, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
 #if defined(__unix__)
             int fd;
@@ -2301,7 +2301,7 @@ extern "C" {
           "posix.sync", // (io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             ::sync();
@@ -2317,7 +2317,7 @@ extern "C" {
           "posix.fsync", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             int fd;
             if(!convert_args(args, tofd(fd)))
@@ -2351,7 +2351,7 @@ extern "C" {
           "posix.fdatasync", // (fd: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             int fd;
             if(!convert_args(args, tofd(fd)))
@@ -2381,7 +2381,7 @@ extern "C" {
           "posix.uname", // (io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             struct ::utsname buf;
@@ -2471,7 +2471,7 @@ extern "C" {
           "posix.opendir", // (dir_name: iarray8, io: uio) -> (uoption unative, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ciarray8, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             string dir_name;
             if(!convert_args(args, topath(dir_name)))
@@ -2486,7 +2486,7 @@ extern "C" {
           "posix.closedir", // (dir: unative, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cdir, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &dir_v = args[0], &io_v = args[1];
             Directory *dir;
             if(!convert_args(args, todir(dir)))
@@ -2512,7 +2512,7 @@ extern "C" {
           "posix.readdir", // (dir: unative, io: uio) -> ((option tuple, unative), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cdir, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &dir_v = args[0], &io_v = args[1];
             Directory *dir;
             unique_ptr<DirectoryEntry, DirectoryEntryDelete> dir_entry(new_directory_entry());
@@ -2531,7 +2531,7 @@ extern "C" {
           "posix.rewinddir", // (dir: unative, io: uio) -> ((int, unative), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cdir, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &dir_v = args[0], &io_v = args[1];
             Directory *dir;
             if(!convert_args(args, todir(dir)))
@@ -2544,7 +2544,7 @@ extern "C" {
           "posix.seekdir", // (dir: unative, loc: int, io: uio) -> ((int, unative), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cdir, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &dir_v = args[0], &io_v = args[2];
             Directory *dir;
             long loc;
@@ -2558,7 +2558,7 @@ extern "C" {
           "posix.telldir", // (dir: unative, io: uio) -> ((int, unative), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cdir, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &dir_v = args[0], &io_v = args[1];
             Directory *dir;
             if(!convert_args(args, todir(dir)))
@@ -2576,7 +2576,7 @@ extern "C" {
           "posix.gethostname", // (io: uio) -> (option iarray8, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[0];
 #if defined(__unix__)
             size_t len = system_host_name_max() + 1;

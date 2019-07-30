@@ -1823,6 +1823,9 @@ namespace letin
       }
     }
 
+    Reference user_exception_ref(ThreadContext *vm)
+    { return vm->regs().rv.error() == ERROR_USER_EXCEPTION ? vm->regs().rv.r() : Reference(); }
+
     namespace priv
     {
       //

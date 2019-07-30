@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2015 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2015, 2019 Łukasz Szpakowski.                            *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -131,7 +131,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, cint, cfloat, native::cref, cint);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -161,7 +161,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, ciarray8, cuiarray32, crarray);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -202,7 +202,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, ct(cint, ciarray8, cfloat), cut(cusfarray, cint), ct());
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -245,7 +245,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, coption(cint), cuoption(cfloat), cuoption(cint), coption(cfloat));
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -283,7 +283,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, cueither(cint, cfloat), ceither(cfloat, cint), cueither(cint, cfloat), ceither(cfloat, cint));
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -323,7 +323,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, cfloat, cint, native::cref, cfloat);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               double f1;
               int64_t i2;
               Reference r3;
@@ -364,7 +364,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, ct(cint, cfloat), ct(), ct(cint, cint));
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               int64_t i1;
               double f2;
               int64_t i3, i4;
@@ -409,7 +409,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, coption(cfloat), coption(cint));
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               bool is_some1;
               double f1 = 0.0;
               bool is_some2;
@@ -454,7 +454,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, ceither(cfloat, cint), ceither(cint, cfloat));
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               bool is_right1;
               double f11 = 0.0;
               int64_t i12 = 0;
@@ -504,7 +504,7 @@ namespace letin
             "test1",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           },
@@ -512,7 +512,7 @@ namespace letin
             "test2",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vfloat(2.5));
             }
           },
@@ -568,7 +568,7 @@ namespace letin
             "test1",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vt(vint(1), vfloat(2.0)));
             }
           },
@@ -576,7 +576,7 @@ namespace letin
             "test2",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vt());
             }
           },
@@ -584,7 +584,7 @@ namespace letin
             "test3",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vut(vfloat(0.5), vint(1), v(Value(2))));
             }
           }
@@ -648,7 +648,7 @@ namespace letin
             "test1",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vstr(string("abc")));
             }
           },
@@ -656,7 +656,7 @@ namespace letin
             "test2",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vcstr("def"));
             }
           },
@@ -722,7 +722,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, cint, cint, cint);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -750,7 +750,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, cint, cfloat, native::cref);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -778,7 +778,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, ct(cint, cfloat));
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -808,7 +808,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, cuiarray8);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -838,7 +838,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, ciarray8);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -868,7 +868,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, ct(cint, cfloat));
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -899,7 +899,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, coption(cint));
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -930,7 +930,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, ceither(cfloat, cint));
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -961,7 +961,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, ctest1);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -991,7 +991,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, ctest2);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -1021,7 +1021,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, cint);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               int i;
               if(!convert_args(args, totest1(i)))
                 return return_value(vm, context, vint(0));
@@ -1052,7 +1052,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, cfloat);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               int i;
               if(!convert_args(args, totest2(i)))
                 return return_value(vm, context, vint(0));
@@ -1083,7 +1083,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, native::cref);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               int i;
               if(!convert_args(args, totest3(i)))
                 return return_value(vm, context, vint(0));
@@ -1116,7 +1116,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, native::cref);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               int i;
               if(!convert_args(args, totest4(i)))
                 return return_value(vm, context, vint(0));
@@ -1149,7 +1149,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vtest1(1));
             }
           }
@@ -1179,7 +1179,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vtest2(2));
             }
           }
@@ -1209,7 +1209,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, ctest3);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -1239,7 +1239,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, ctest4);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               return return_value(vm, context, vint(1));
             }
           }
@@ -1269,7 +1269,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, cint);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               int i;
               if(!convert_args(args, totest5(i)))
                 return return_value(vm, context, vint(0));
@@ -1300,7 +1300,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, cfloat);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               int i;
               if(!convert_args(args, totest6(i)))
                 return return_value(vm, context, vint(0));
@@ -1331,7 +1331,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, native::cref);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               int i;
               if(!convert_args(args, totest7(i)))
                 return return_value(vm, context, vint(0));
@@ -1364,7 +1364,7 @@ namespace letin
             "test",
             [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
               int error = check_args(vm, context, args, native::cref);
-              if(error != ERROR_SUCCESS) return error_return_value(error);
+              if(error != ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
               int i;
               if(!convert_args(args, totest8(i)))
                 return return_value(vm, context, vint(0));

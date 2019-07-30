@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2015 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2015, 2019 Łukasz Szpakowski.                            *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -49,7 +49,7 @@ extern "C" {
           "socket.socket", // (domain: int, type: int, protocol: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
             int domain, type, protocol;
             if(!convert_args(args, todomain(domain), totype(type), toprotocol(protocol)))
@@ -64,7 +64,7 @@ extern "C" {
           "socket.socketpair", // (domain: int, type: int, protocol: int, io: uio) -> (option (int, int), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
 #if defined(__unix__)
             int domain, type, protocol;
@@ -86,7 +86,7 @@ extern "C" {
           "socket.shutdown", // (sd: int, how: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             int sd, how;
             if(!convert_args(args, tosd(sd), tohow(how)))
@@ -101,7 +101,7 @@ extern "C" {
           "socket.connect", // (sd: int, addr: tuple, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, csockaddr, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             int sd;
             SocketAddress addr;
@@ -125,7 +125,7 @@ extern "C" {
           "socket.bind", // (sd: int, addr: tuple, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, csockaddr, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             int sd;
             SocketAddress addr;
@@ -141,7 +141,7 @@ extern "C" {
           "socket.listen", // (sd: int, backlog: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             int sd, backlog;
             if(!convert_args(args, tosd(sd), toarg(backlog)))
@@ -156,7 +156,7 @@ extern "C" {
           "socket.accept", // (sd: int, io: uio) -> (option (int, tuple), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             int sd;
             SocketAddress addr;
@@ -181,7 +181,7 @@ extern "C" {
           "socket.recv", // (sd: int, len: int, flags: int, io: uio) -> (option (int, iarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
             int sd, flags;
             SocketSize len;
@@ -208,7 +208,7 @@ extern "C" {
           "socket.send", // (sd: int, buf: iarray8, flags: int, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, ciarray8, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
             int sd, flags;
             Reference buf_r;
@@ -232,7 +232,7 @@ extern "C" {
           "socket.urecv", // (sd: int, buf: uiarray8, offset: int, len: int, flags: int, io: uio) -> ((int, uiarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuiarray8, cint, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &buf_v = args[1], io_v = args[5];
             int sd, flags;
             Reference buf_r;
@@ -260,7 +260,7 @@ extern "C" {
           "socket.usend", // (sd: int, buf: uiarray8, offset: int, lent: int, flags: int, io: uio) -> ((int, uiarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuiarray8, cint, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &buf_v = args[1], io_v = args[5];
             int sd, flags;
             Reference buf_r;
@@ -288,7 +288,7 @@ extern "C" {
           "socket.recvfrom", // (sd: int, len: int, flags: int, io: uio) -> (option (int, iarray8, tuple), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cint, csockaddr, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
             int sd, flags;
             SocketSize len;
@@ -317,7 +317,7 @@ extern "C" {
           "socket.sendto", // (sd: int, buf: iarray8, flags: int, addr: tuple, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, ciarray8, cint, csockaddr, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[4];
             int sd, flags;
             Reference buf_r;
@@ -342,7 +342,7 @@ extern "C" {
           "socket.urecvfrom", // (sd: int, buf: uiarray8, offset: int, len: int, flags: int, io: uio) -> ((int, uiarray8, option tuple), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuiarray8, cint, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &buf_v = args[1], io_v = args[5];
             int sd, flags;
             Reference buf_r;
@@ -372,7 +372,7 @@ extern "C" {
           "socket.usendto", // (sd: int, buf: uiarray8, offset: int, lent: int, flags: int, addr: tuple, io: uio) -> ((int, uiarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuiarray8, cint, cint, cint, csockaddr, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &buf_v = args[1], io_v = args[6];
             int sd, flags;
             Reference buf_r;
@@ -401,7 +401,7 @@ extern "C" {
           "socket.getpeername", // (sd: int, io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             int sd;
             SocketAddress addr;
@@ -418,7 +418,7 @@ extern "C" {
           "socket.getsockname", // (sd: int, io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[1];
             int sd;
             SocketAddress addr;
@@ -435,7 +435,7 @@ extern "C" {
           "socket.getsockopt", // (sd: int, level: int, opt_name: int, io: uio) -> (option tuple, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
             int sd, level, opt_name;
             ::socklen_t opt_len;
@@ -475,7 +475,7 @@ extern "C" {
           "socket.setsockopt", // (sd: int, level: int, opt_name: int, opt_val: tuple, io: uio) -> (int, uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cint, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[4];
             int sd, level, opt_name;
             OptionValue opt_val;
@@ -496,7 +496,7 @@ extern "C" {
           "socket.FD_SETSIZE", // () -> int
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             return return_value(vm, context, vint(FD_SETSIZE));
           }
         },
@@ -504,7 +504,7 @@ extern "C" {
           "socket.select", // (nfds: int, rfds: iarray8, wfds: iarray8, efds: iarray8, timeout: option tuple, io: uio) -> (option (int, iarray8, iarray8, iarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, ciarray8, ciarray8, ciarray8, coption(ctimeval), cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value io_v = args[5];
             bool is_timeout;
             int nfds;
@@ -530,7 +530,7 @@ extern "C" {
           "socket.uselect", // (nfds: int, rfds: uiarray8, wfds: uiarray8, efds: uiarray8, timeout: option tuple, io: uio) -> ((int, uiarray8, uiarray8, uiarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuiarray8, cuiarray8, cuiarray8, coption(ctimeval), cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &rfds_v = args[1], wfds_v = args[2], efds_v = args[3], io_v = args[5];
             bool is_timeout;
             int nfds;
@@ -559,7 +559,7 @@ extern "C" {
           "socket.poll", // (fds: rarray, timeout: int, io: uio) -> (option (int, rarray), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cpollfds, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
 #if defined(__unix__)
             Array<struct ::pollfd> fds;
@@ -581,7 +581,7 @@ extern "C" {
           "socket.upoll", // (fds: urarray, timeout: int, io: uio) -> ((int, urarray), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cupollfds, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &fds_v = args[0], io_v = args[2];
 #if defined(__unix__)
             Array<struct ::pollfd> fds;
@@ -609,7 +609,7 @@ extern "C" {
           "socket.getaddrinfo", // (node: option iarray8, service: option iarray8, hints: option tuple, io: uio) -> (either int (list tuple), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, coption(ciarray8), coption(ciarray8), coption(caddrinfo), cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[3];
             string node, service;
             bool is_node, is_service;
@@ -648,7 +648,7 @@ extern "C" {
           "socket.getnameinfo", // (sa: tuple, flags: int, io: uio) -> (either int (iarray8, iarray8), uio)
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, csockaddr, cint, cuio);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
             Value &io_v = args[2];
             SocketAddress addr;
             int flags, tmp_errno = letin_errno();
