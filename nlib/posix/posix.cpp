@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2015 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2015, 2019 Łukasz Szpakowski.                            *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -1695,13 +1695,17 @@ namespace letin
         return true;
       }
 
-      void system_pollfds_to_object(const Array<struct ::pollfd> &fds, Object &object)
+      bool system_pollfds_to_object(VirtualMachine *vm, ThreadContext *context, const Array<struct ::pollfd> &fds, Object &object)
       {
         for(size_t i = 0; i < object.length(); i++) {
-          object.elem(i).r()->set_elem(0, fds[i].fd);
-          object.elem(i).r()->set_elem(1, system_poll_events_to_poll_events(fds[i].events));
-          object.elem(i).r()->set_elem(2, system_poll_events_to_poll_events(fds[i].revents));
+          Reference fd_r = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 3, context);
+          if(fd_r.is_null()) return false;
+          fd_r->set_elem(0, fds[i].fd);
+          fd_r->set_elem(1, system_poll_events_to_poll_events(fds[i].events));
+          fd_r->set_elem(2, system_poll_events_to_poll_events(fds[i].revents));
+          object.set_elem(i, Value(fd_r));
         }
+        return true;
       }
 
       bool object_to_system_pollfds(Object &object, Array<struct ::pollfd> &fds)
@@ -1722,7 +1726,7 @@ namespace letin
         if(!(is_unique ? object.is_unique_rarray() : object.is_rarray())) return ERROR_INCORRECT_OBJECT;
         for(size_t i = 0; i < object.length(); i++) {
           Reference fd_r = object.elem(i).r();
-          if(!(is_unique ? fd_r->is_unique_tuple() : fd_r->is_tuple())) return ERROR_INCORRECT_OBJECT;
+          if(!fd_r->is_tuple()) return ERROR_INCORRECT_OBJECT;
           if(fd_r->length() != 3) return ERROR_INCORRECT_OBJECT;
           for(size_t j = 0; j < 3; j++) {
             int error = vm->force_tuple_elem(context, *fd_r, j);

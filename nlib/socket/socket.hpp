@@ -239,7 +239,7 @@ namespace letin
       bool set_new_pollfds(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &tmp_r, const Array<struct ::pollfd> &fds);
       LETIN_NATIVE_REF_SETTER(vpollfds, set_new_pollfds, Array<struct ::pollfd>);
 
-      void system_pollfds_to_object(const Array<struct ::pollfd> &fds, vm::Object &object);
+      bool system_pollfds_to_object(vm::VirtualMachine *vm, vm::ThreadContext *context, const Array<struct ::pollfd> &fds, vm::Object &object);
 
       bool object_to_system_pollfds(vm::Object &object, Array<struct ::pollfd> &fds);
       LETIN_NATIVE_OBJECT_CONVERTER(topollfds, object_to_system_pollfds, Array<struct ::pollfd>);
