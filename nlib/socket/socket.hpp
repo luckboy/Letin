@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2015 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2015, 2019 Łukasz Szpakowski.                            *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -239,7 +239,7 @@ namespace letin
       bool set_new_pollfds(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::RegisteredReference &tmp_r, const Array<struct ::pollfd> &fds);
       LETIN_NATIVE_REF_SETTER(vpollfds, set_new_pollfds, Array<struct ::pollfd>);
 
-      void system_pollfds_to_object(const Array<struct ::pollfd> &fds, vm::Object &object);
+      bool system_pollfds_to_object(vm::VirtualMachine *vm, vm::ThreadContext *context, const Array<struct ::pollfd> &fds, vm::Object &object);
 
       bool object_to_system_pollfds(vm::Object &object, Array<struct ::pollfd> &fds);
       LETIN_NATIVE_OBJECT_CONVERTER(topollfds, object_to_system_pollfds, Array<struct ::pollfd>);

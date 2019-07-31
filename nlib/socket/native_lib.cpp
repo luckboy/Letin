@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2015 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2015, 2019 Łukasz Szpakowski.                            *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -591,7 +591,8 @@ extern "C" {
             int result = ::poll(fds.ptr(), fds.length(), timeout);
             if(result == -1)
               return return_value_with_errno_for_socket(vm, context, vut(vut(vint(-1), v(fds_v)), v(io_v)));
-            system_pollfds_to_object(fds, *(fds_v.r().ptr()));
+            if(!system_pollfds_to_object(vm, context, fds, *(fds_v.r().ptr())))
+              return error_return_value(ERROR_OUT_OF_MEMORY);
             return return_value(vm, context, vut(vut(vint(result), v(fds_v)), v(io_v)));
 #elif defined(_WIN32) || defined(_WIN64)
             return return_value_with_errno(vm, context, vut(vut(vint(-1), v(fds_v)), v(io_v)), ENOSYS);
