@@ -29,7 +29,7 @@ namespace letin
           if(tmp_r.is_null()) return false;
           for(size_t i = 0; i < tmp_r->length(); i++) tmp_r->set_elem(i, value.r()->elem(i));
           tmp_r.register_ref();
-          value = Value(tmp_r);
+          value.safely_assign_for_gc(Value(tmp_r));
         }
         return true;
       }
