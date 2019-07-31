@@ -22,28 +22,40 @@ const int _U =                          ___U;
 //
 
 #define LETIN_NATIVE_REF_CHECKER_TYPE(fun_name)                                 \
-::letin::native::priv::FunctionReferenceChecker<decltype(&fun_name), false>
+::letin::native::priv::FunctionReferenceChecker<decltype(&fun_name), false, false>
 
 #define LETIN_NATIVE_REF_CHECKER(name, fun_name)                                \
 static const LETIN_NATIVE_REF_CHECKER_TYPE(fun_name) name = LETIN_NATIVE_REF_CHECKER_TYPE(fun_name)(fun_name)
 
 #define LETIN_NATIVE_OBJECT_CHECKER_TYPE(fun_name)                              \
-::letin::native::priv::FunctionObjectChecker<decltype(&fun_name), false>
+::letin::native::priv::FunctionObjectChecker<decltype(&fun_name), false, false>
 
 #define LETIN_NATIVE_OBJECT_CHECKER(name, fun_name)                             \
 static const LETIN_NATIVE_OBJECT_CHECKER_TYPE(fun_name) name = LETIN_NATIVE_OBJECT_CHECKER_TYPE(fun_name)(fun_name)
 
 #define LETIN_NATIVE_UNIQUE_REF_CHECKER_TYPE(fun_name)                          \
-::letin::native::priv::FunctionReferenceChecker<decltype(&fun_name), true>
+::letin::native::priv::FunctionReferenceChecker<decltype(&fun_name), true, false>
 
 #define LETIN_NATIVE_UNIQUE_REF_CHECKER(name, fun_name)                         \
 static const LETIN_NATIVE_UNIQUE_REF_CHECKER_TYPE(fun_name) name = LETIN_NATIVE_UNIQUE_REF_CHECKER_TYPE(fun_name)(fun_name)
 
 #define LETIN_NATIVE_UNIQUE_OBJECT_CHECKER_TYPE(fun_name)                       \
-::letin::native::priv::FunctionObjectChecker<decltype(&fun_name), true>
+::letin::native::priv::FunctionObjectChecker<decltype(&fun_name), true, false>
 
 #define LETIN_NATIVE_UNIQUE_OBJECT_CHECKER(name, fun_name)                      \
 static const LETIN_NATIVE_UNIQUE_OBJECT_CHECKER_TYPE(fun_name) name = LETIN_NATIVE_UNIQUE_OBJECT_CHECKER_TYPE(fun_name)(fun_name)
+
+#define LETIN_NATIVE_REF_CHECKER_WITH_NEW_TUPLE_TYPE(fun_name)                  \
+::letin::native::priv::FunctionReferenceChecker<decltype(&fun_name), false, true>
+
+#define LETIN_NATIVE_REF_CHECKER_WITH_NEW_TUPLE(name, fun_name)                                \
+static const LETIN_NATIVE_REF_CHECKER_WITH_NEW_TUPLE_TYPE(fun_name) name = LETIN_NATIVE_REF_CHECKER_WITH_NEW_TUPLE_TYPE(fun_name)(fun_name)
+
+#define LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE_TYPE(fun_name)               \
+::letin::native::priv::FunctionObjectChecker<decltype(&fun_name), false, true>
+
+#define LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE(name, fun_name)              \
+static const LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE_TYPE(fun_name) name = LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE_TYPE(fun_name)(fun_name)
 
 //
 // Macro definitions for a converting.
@@ -143,7 +155,7 @@ namespace letin
       // Private types and private functions for a checking.
       //
 
-      typedef std::function<int (vm::VirtualMachine *, vm::ThreadContext *, vm::Value &)> CheckerFunction;
+      typedef std::function<int (vm::VirtualMachine *, vm::ThreadContext *, vm::Value &, vm::RegisteredReference &)> CheckerFunction;
 
       namespace
       {
@@ -151,7 +163,7 @@ namespace letin
         inline CheckerFunction bind_checker(_T &checker)
         {
           using namespace std::placeholders;
-          return std::bind(&_T::check, &checker, _1, _2, _3);
+          return std::bind(&_T::check, &checker, _1, _2, _3, _4);
         }
       }
 
@@ -161,7 +173,7 @@ namespace letin
       {
         struct IntChecker
         {
-          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
+          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
           { return check_int_value(vm, context, value); }
         };
       }
@@ -172,7 +184,7 @@ namespace letin
       {
         struct FloatChecker
         {
-          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
+          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
           { return check_float_value(vm, context, value); }
         };
       }
@@ -183,31 +195,31 @@ namespace letin
       {
         struct ReferenceChecker
         {
-          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
+          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
           { return check_ref_value(vm, context, value); }
         };
       }
       
-      int check_object_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, int object_type);
+      int check_object_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r, int object_type, bool is_new_tuple = false);
 
       namespace
       {
         template<int _ObjectType>
         struct ObjectChecker
         {
-          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
-          { return check_object_value(vm, context, value, _ObjectType); }
+          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
+          { return check_object_value(vm, context, value, tmp_r, _ObjectType); }
         };
 
         struct ForceChecker
         {
-          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
+          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
           { return vm->force(context, value); }
         };
 
         struct IgnoreChecker
         {
-          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
+          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
           { return ERROR_SUCCESS; }
         };
       }
@@ -228,9 +240,9 @@ namespace letin
         }
 
         template<int _ObiectTypeFlag, typename... _Ts>
-        inline int check_tuple_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, const TemplateList<_Ts...> checkers)
+        inline int check_tuple_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r, const TemplateList<_Ts...> checkers)
         {
-          int error = check_object_value(vm, context, value, OBJECT_TYPE_TUPLE | _ObiectTypeFlag);
+          int error = check_object_value(vm, context, value, tmp_r, OBJECT_TYPE_TUPLE | _ObiectTypeFlag, true);
           if(error != ERROR_SUCCESS) return error;
           if(value.r()->length() != TemplateParamCount<_Ts...>::value()) return ERROR_INCORRECT_OBJECT;
           return check_elems_from(vm, context, value, checkers, 0);
@@ -243,12 +255,12 @@ namespace letin
         public:
           TupleChecker(_Ts... checkers) : _M_checkers(checkers...) {}
 
-          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
-          { return check_tuple_value<_ObiectTypeFlag, _Ts...>(vm, context, value, _M_checkers); }
+          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
+          { return check_tuple_value<_ObiectTypeFlag, _Ts...>(vm, context, value, tmp_r, _M_checkers); }
         };
       }
 
-      int check_option_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, CheckerFunction fun, int object_type_flag);
+      int check_option_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r, CheckerFunction fun, int object_type_flag);
 
       namespace
       {
@@ -259,12 +271,12 @@ namespace letin
         public:
           OptionChecker(_T checker) : _M_checker(checker) {}
 
-          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
-          { return check_option_value(vm, context, value, bind_checker(_M_checker), _ObjectTypeFlag); }
+          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
+          { return check_option_value(vm, context, value, tmp_r, bind_checker(_M_checker), _ObjectTypeFlag); }
         };
       }
 
-      int check_either_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, CheckerFunction left, CheckerFunction right, int object_type_flag);
+      int check_either_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r, CheckerFunction left, CheckerFunction right, int object_type_flag);
 
       namespace
       {
@@ -275,40 +287,40 @@ namespace letin
         public:
           EitherChecker(_T left, _U right) : _M_left(left), _M_right(right) {}
 
-          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
-          { return check_either_value(vm, context, value, bind_checker(_M_left), bind_checker(_M_right), _ObjectTypeFlag); }
+          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
+          { return check_either_value(vm, context, value, tmp_r, bind_checker(_M_left), bind_checker(_M_right), _ObjectTypeFlag); }
         };
       }
       
-      int check_ref_value_for_fun(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, std::function<int (vm::VirtualMachine *, vm::ThreadContext *, vm::Reference)> fun, bool is_unique);
+      int check_ref_value_for_fun(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r, std::function<int (vm::VirtualMachine *, vm::ThreadContext *, vm::Reference)> fun, bool is_unique, bool is_new_tuple);
 
       namespace
       {
-        template<typename _Fun, bool _IsUnique>
+        template<typename _Fun, bool _IsUnique, bool _IsNewTuple>
         class FunctionReferenceChecker
         {
           _Fun _M_fun;
         public:
           FunctionReferenceChecker(_Fun fun) : _M_fun(fun) {}
 
-          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
-          { return check_ref_value_for_fun(vm, context, value, _M_fun, _IsUnique); }
+          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
+          { return check_ref_value_for_fun(vm, context, value, tmp_r, _M_fun, _IsUnique, _IsNewTuple); }
         };
       }
 
-      int check_object_value_for_fun(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, std::function<int (vm::VirtualMachine *, vm::ThreadContext *, vm::Object &)> fun, bool is_unique);
+      int check_object_value_for_fun(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r, std::function<int (vm::VirtualMachine *, vm::ThreadContext *, vm::Object &)> fun, bool is_unique, bool is_new_tuple);
 
       namespace
       {
-        template<typename _Fun, bool _IsUnique>
+        template<typename _Fun, bool _IsUnique, bool _IsNewTuple>
         class FunctionObjectChecker
         {
           _Fun _M_fun;
         public:
           FunctionObjectChecker(_Fun fun) : _M_fun(fun) {}
 
-          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value) const
-          { return check_object_value_for_fun(vm, context, value, _M_fun, _IsUnique); }
+          int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
+          { return check_object_value_for_fun(vm, context, value, tmp_r, _M_fun, _IsUnique, _IsNewTuple); }
         };
 
         inline int check_args_from(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::ArgumentList &args, std::size_t i)
@@ -317,8 +329,11 @@ namespace letin
         template<typename _T, typename... _Ts>
         inline int check_args_from(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::ArgumentList &args, std::size_t i, _T checker, _Ts... checkers)
         {
-          int error = checker.check(vm, context, args[i]);
-          if(error != ERROR_SUCCESS) return error;
+          {
+            vm::RegisteredReference tmp_r(context, false);
+            int error = checker.check(vm, context, args[i], tmp_r);
+            if(error != ERROR_SUCCESS) return error;
+          }
           return check_args_from(vm, context, args, i + 1, checkers...);
         }
       }

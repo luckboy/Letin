@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2015 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2015, 2019 Łukasz Szpakowski.                            *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -18,6 +18,22 @@ namespace letin
   {
     namespace priv
     {
+      //
+      // Static functions.
+      //
+
+      static bool copy_to_new_tuple(VirtualMachine *vm, ThreadContext *context, Value &value, RegisteredReference &tmp_r)
+      {
+        if(value.r()->is_tuple()) {
+          tmp_r = vm->gc()->new_object(OBJECT_TYPE_TUPLE, value.r()->length(), context);
+          if(tmp_r.is_null()) return false;
+          for(size_t i = 0; i < tmp_r->length(); i++) tmp_r->set_elem(i, value.r()->elem(i));
+          tmp_r.register_ref();
+          value = Value(tmp_r);
+        }
+        return true;
+      }
+      
       //
       // Private types and private functions for a checking.
       //
@@ -45,13 +61,16 @@ namespace letin
         return ERROR_SUCCESS;
       }
 
-      int check_object_value(VirtualMachine *vm, ThreadContext *context, Value &value, int object_type)
+      int check_object_value(VirtualMachine *vm, ThreadContext *context, Value &value, RegisteredReference &tmp_r, int object_type, bool is_new_tuple)
       {
         int error = vm->force(context, value);
         if(error != ERROR_SUCCESS) return error;
         if(!value.is_ref()) return ERROR_INCORRECT_VALUE;
         if(value.r()->type() != object_type) return ERROR_INCORRECT_OBJECT;
         if(value.is_unique()) value.cancel_ref();
+        if(is_new_tuple) {
+          if(!copy_to_new_tuple(vm, context, value, tmp_r)) return ERROR_OUT_OF_MEMORY;
+        }
         return ERROR_SUCCESS;
       }
 
@@ -59,15 +78,16 @@ namespace letin
       {
         vm::Value tmp_value = object.elem(i);
         RegisteredReference tmp_r(context, true);
+        RegisteredReference tmp_r2(context, false);
         if(tmp_value.is_lazy()) tmp_r = tmp_value.raw().r;
-        int result = fun(vm, context, tmp_value);
+        int result = fun(vm, context, tmp_value, tmp_r2);
         object.set_elem(i, tmp_value);
         return result;
       }
 
-      int check_option_value(VirtualMachine *vm, ThreadContext *context, Value &value, CheckerFunction fun, int object_type_flag)
+      int check_option_value(VirtualMachine *vm, ThreadContext *context, Value &value, RegisteredReference &tmp_r, CheckerFunction fun, int object_type_flag)
       {
-        int error = check_object_value(vm, context, value, OBJECT_TYPE_TUPLE | object_type_flag);
+        int error = check_object_value(vm, context, value, tmp_r, OBJECT_TYPE_TUPLE | object_type_flag, true);
         if(error != ERROR_SUCCESS) return error;
         if(value.r()->length() == 1 ? (value.r()->elem(0).is_int() && value.r()->elem(0).i() == 0) : false)
            return ERROR_SUCCESS;
@@ -77,9 +97,9 @@ namespace letin
           return ERROR_INCORRECT_OBJECT;
       }
 
-      int check_either_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, CheckerFunction left, CheckerFunction right, int object_type_flag)
+      int check_either_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, RegisteredReference &tmp_r, CheckerFunction left, CheckerFunction right, int object_type_flag)
       {
-        int error = check_object_value(vm, context, value, OBJECT_TYPE_TUPLE | object_type_flag);
+        int error = check_object_value(vm, context, value, tmp_r, OBJECT_TYPE_TUPLE | object_type_flag, true);
         if(error != ERROR_SUCCESS) return error;
         if(value.r()->length() == 2 ? (value.r()->elem(0).is_int() && value.r()->elem(0).i() == 0) : false)
           return check_elem(vm, context, *(value.r()), 1, left);
@@ -89,24 +109,28 @@ namespace letin
           return ERROR_INCORRECT_OBJECT;
       }
 
-      int check_ref_value_for_fun(VirtualMachine *vm, ThreadContext *context, Value &value, function<int (VirtualMachine *, ThreadContext *, Reference)> fun, bool is_unique)
+      int check_ref_value_for_fun(VirtualMachine *vm, ThreadContext *context, Value &value, RegisteredReference &tmp_r, function<int (VirtualMachine *, ThreadContext *, Reference)> fun, bool is_unique, bool is_new_tuple)
       {
         int error = vm->force(context, value);
         if(error != ERROR_SUCCESS) return error;
         if(!value.is_ref()) return ERROR_INCORRECT_VALUE;
         if((is_unique ? !value.is_unique() : value.is_unique())) return ERROR_INCORRECT_OBJECT;
+        if(is_new_tuple)
+          if(!copy_to_new_tuple(vm, context, value, tmp_r)) return ERROR_OUT_OF_MEMORY;
         error = fun(vm, context, value.r());
         if(error != ERROR_SUCCESS) return error;
         if(value.is_unique()) value.cancel_ref();
         return ERROR_SUCCESS;
       }
 
-      int check_object_value_for_fun(VirtualMachine *vm, ThreadContext *context, Value &value, function<int (VirtualMachine *, ThreadContext *, Object &)> fun, bool is_unique)
+      int check_object_value_for_fun(VirtualMachine *vm, ThreadContext *context, Value &value, RegisteredReference &tmp_r, function<int (VirtualMachine *, ThreadContext *, Object &)> fun, bool is_unique, bool is_new_tuple)
       {
         int error = vm->force(context, value);
         if(error != ERROR_SUCCESS) return error;
         if(!value.is_ref()) return ERROR_INCORRECT_VALUE;
         if((is_unique ? !value.is_unique() : value.is_unique())) return ERROR_INCORRECT_OBJECT;
+        if(is_new_tuple)
+          if(!copy_to_new_tuple(vm, context, value, tmp_r)) return ERROR_OUT_OF_MEMORY;        
         error = fun(vm, context, *(value.r().ptr()));
         if(error != ERROR_SUCCESS) return error;
         if(value.is_unique()) value.cancel_ref();

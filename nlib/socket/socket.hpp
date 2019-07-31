@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2015 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2015, 2019 Łukasz Szpakowski.                            *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -197,7 +197,7 @@ namespace letin
       LETIN_NATIVE_OBJECT_CONVERTER(tosockaddr, object_to_system_socket_address, SocketAddress);
 
       int check_socket_address(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
-      LETIN_NATIVE_OBJECT_CHECKER(csockaddr, check_socket_address);
+      LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE(csockaddr, check_socket_address);
 
       // Functions for struct linger.
 
@@ -213,7 +213,7 @@ namespace letin
       LETIN_NATIVE_OBJECT_CONVERTER(totimeval, object_to_system_timeval, struct ::timeval);
 
       int check_timeval(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
-      LETIN_NATIVE_OBJECT_CHECKER(ctimeval, check_timeval);
+      LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE(ctimeval, check_timeval);
 
       // Function for OptionValue.
 
@@ -221,7 +221,7 @@ namespace letin
       LETIN_NATIVE_OBJECT_CONVERTER(tooptval, object_to_system_option_value, OptionValue);
 
       int check_option_value(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
-      LETIN_NATIVE_OBJECT_CHECKER(coptval, check_option_value);
+      LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE(coptval, check_option_value);
 
       // Functions for fd_set.
 
