@@ -303,7 +303,7 @@ namespace letin
 #endif
 
       int check_pollfds(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
-      LETIN_NATIVE_OBJECT_CHECKER(cpollfds, check_pollfds);
+      LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_RARRAY(cpollfds, check_pollfds);
 
       int check_unique_pollfds(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
       LETIN_NATIVE_UNIQUE_OBJECT_CHECKER(cupollfds, check_unique_pollfds);

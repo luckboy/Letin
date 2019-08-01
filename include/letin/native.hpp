@@ -22,37 +22,49 @@ const int _U =                          ___U;
 //
 
 #define LETIN_NATIVE_REF_CHECKER_TYPE(fun_name)                                 \
-::letin::native::priv::FunctionReferenceChecker<decltype(&fun_name), false, false>
+::letin::native::priv::FunctionReferenceChecker<decltype(&fun_name), false, ::letin::native::priv::NEW_TYPE_NONE>
 
 #define LETIN_NATIVE_REF_CHECKER(name, fun_name)                                \
 static const LETIN_NATIVE_REF_CHECKER_TYPE(fun_name) name = LETIN_NATIVE_REF_CHECKER_TYPE(fun_name)(fun_name)
 
 #define LETIN_NATIVE_OBJECT_CHECKER_TYPE(fun_name)                              \
-::letin::native::priv::FunctionObjectChecker<decltype(&fun_name), false, false>
+::letin::native::priv::FunctionObjectChecker<decltype(&fun_name), false, ::letin::native::priv::NEW_TYPE_NONE>
 
 #define LETIN_NATIVE_OBJECT_CHECKER(name, fun_name)                             \
 static const LETIN_NATIVE_OBJECT_CHECKER_TYPE(fun_name) name = LETIN_NATIVE_OBJECT_CHECKER_TYPE(fun_name)(fun_name)
 
 #define LETIN_NATIVE_UNIQUE_REF_CHECKER_TYPE(fun_name)                          \
-::letin::native::priv::FunctionReferenceChecker<decltype(&fun_name), true, false>
+::letin::native::priv::FunctionReferenceChecker<decltype(&fun_name), true, ::letin::native::priv::NEW_TYPE_NONE>
 
 #define LETIN_NATIVE_UNIQUE_REF_CHECKER(name, fun_name)                         \
 static const LETIN_NATIVE_UNIQUE_REF_CHECKER_TYPE(fun_name) name = LETIN_NATIVE_UNIQUE_REF_CHECKER_TYPE(fun_name)(fun_name)
 
 #define LETIN_NATIVE_UNIQUE_OBJECT_CHECKER_TYPE(fun_name)                       \
-::letin::native::priv::FunctionObjectChecker<decltype(&fun_name), true, false>
+::letin::native::priv::FunctionObjectChecker<decltype(&fun_name), true, ::letin::native::priv::NEW_TYPE_NONE>
 
 #define LETIN_NATIVE_UNIQUE_OBJECT_CHECKER(name, fun_name)                      \
 static const LETIN_NATIVE_UNIQUE_OBJECT_CHECKER_TYPE(fun_name) name = LETIN_NATIVE_UNIQUE_OBJECT_CHECKER_TYPE(fun_name)(fun_name)
 
+#define LETIN_NATIVE_REF_CHECKER_WITH_NEW_RARRAY_TYPE(fun_name)                  \
+::letin::native::priv::FunctionReferenceChecker<decltype(&fun_name), false, ::letin::native::priv::NEW_TYPE_NEW_TUPLE>
+
+#define LETIN_NATIVE_REF_CHECKER_WITH_NEW_RARRAY(name, fun_name)                                \
+static const LETIN_NATIVE_REF_CHECKER_WITH_NEW_RARRAY_TYPE(fun_name) name = LETIN_NATIVE_REF_CHECKER_WITH_NEW_RARRAY_TYPE(fun_name)(fun_name)
+
+#define LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_RARRAY_TYPE(fun_name)               \
+::letin::native::priv::FunctionObjectChecker<decltype(&fun_name), false, ::letin::native::priv::NEW_TYPE_NEW_RARRAY>
+
+#define LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_RARRAY(name, fun_name)              \
+static const LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_RARRAY_TYPE(fun_name) name = LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_RARRAY_TYPE(fun_name)(fun_name)
+
 #define LETIN_NATIVE_REF_CHECKER_WITH_NEW_TUPLE_TYPE(fun_name)                  \
-::letin::native::priv::FunctionReferenceChecker<decltype(&fun_name), false, true>
+::letin::native::priv::FunctionReferenceChecker<decltype(&fun_name), false, ::letin::native::priv::NEW_TYPE_NEW_TUPLE>
 
 #define LETIN_NATIVE_REF_CHECKER_WITH_NEW_TUPLE(name, fun_name)                                \
 static const LETIN_NATIVE_REF_CHECKER_WITH_NEW_TUPLE_TYPE(fun_name) name = LETIN_NATIVE_REF_CHECKER_WITH_NEW_TUPLE_TYPE(fun_name)(fun_name)
 
 #define LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE_TYPE(fun_name)               \
-::letin::native::priv::FunctionObjectChecker<decltype(&fun_name), false, true>
+::letin::native::priv::FunctionObjectChecker<decltype(&fun_name), false, ::letin::native::priv::NEW_TYPE_NEW_TUPLE>
 
 #define LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE(name, fun_name)              \
 static const LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE_TYPE(fun_name) name = LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE_TYPE(fun_name)(fun_name)
@@ -292,11 +304,18 @@ namespace letin
         };
       }
       
-      int check_ref_value_for_fun(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r, std::function<int (vm::VirtualMachine *, vm::ThreadContext *, vm::Reference)> fun, bool is_unique, bool is_new_tuple);
+      enum NewType
+      {
+        NEW_TYPE_NONE,
+        NEW_TYPE_NEW_RARRAY,
+        NEW_TYPE_NEW_TUPLE
+      };
+      
+      int check_ref_value_for_fun(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r, std::function<int (vm::VirtualMachine *, vm::ThreadContext *, vm::Reference)> fun, bool is_unique, NewType new_type);
 
       namespace
       {
-        template<typename _Fun, bool _IsUnique, bool _IsNewTuple>
+        template<typename _Fun, bool _IsUnique, NewType _NewType>
         class FunctionReferenceChecker
         {
           _Fun _M_fun;
@@ -304,15 +323,15 @@ namespace letin
           FunctionReferenceChecker(_Fun fun) : _M_fun(fun) {}
 
           int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
-          { return check_ref_value_for_fun(vm, context, value, tmp_r, _M_fun, _IsUnique, _IsNewTuple); }
+          { return check_ref_value_for_fun(vm, context, value, tmp_r, _M_fun, _IsUnique, _NewType); }
         };
       }
 
-      int check_object_value_for_fun(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r, std::function<int (vm::VirtualMachine *, vm::ThreadContext *, vm::Object &)> fun, bool is_unique, bool is_new_tuple);
+      int check_object_value_for_fun(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r, std::function<int (vm::VirtualMachine *, vm::ThreadContext *, vm::Object &)> fun, bool is_unique, NewType new_type);
 
       namespace
       {
-        template<typename _Fun, bool _IsUnique, bool _IsNewTuple>
+        template<typename _Fun, bool _IsUnique, NewType _NewType>
         class FunctionObjectChecker
         {
           _Fun _M_fun;
@@ -320,7 +339,7 @@ namespace letin
           FunctionObjectChecker(_Fun fun) : _M_fun(fun) {}
 
           int check(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Value &value, vm::RegisteredReference &tmp_r) const
-          { return check_object_value_for_fun(vm, context, value, tmp_r, _M_fun, _IsUnique, _IsNewTuple); }
+          { return check_object_value_for_fun(vm, context, value, tmp_r, _M_fun, _IsUnique, _NewType); }
         };
 
         inline int check_args_from(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::ArgumentList &args, std::size_t i)

@@ -964,11 +964,16 @@ namespace letin
           Reference fd_r = object.elem(i).r();
           if(!fd_r->is_tuple()) return ERROR_INCORRECT_OBJECT;
           if(fd_r->length() != 3) return ERROR_INCORRECT_OBJECT;
+          RegisteredReference tmp_r(vm->gc()->new_object(OBJECT_TYPE_TUPLE, fd_r->length(), context), context, false);
+          if(tmp_r.is_null()) return ERROR_OUT_OF_MEMORY;
+          for(size_t j = 0; j < tmp_r->length(); j++) tmp_r->set_elem(j, fd_r->elem(i));
+          tmp_r.register_ref();
           for(size_t j = 0; j < 3; j++) {
-            int error = vm->force_tuple_elem(context, *fd_r, j);
+            int error = vm->force_tuple_elem(context, *tmp_r, j);
             if(error != ERROR_SUCCESS) return error;
-            if(!fd_r->elem(j).is_int()) return ERROR_INCORRECT_OBJECT;
+            if(!tmp_r->elem(j).is_int()) return ERROR_INCORRECT_OBJECT;
           }
+          object.set_elem(i, Value(tmp_r));
         }
         return ERROR_SUCCESS;
       }

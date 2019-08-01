@@ -22,6 +22,18 @@ namespace letin
       // Static functions.
       //
 
+      static bool copy_to_new_rarray(VirtualMachine *vm, ThreadContext *context, Value &value, RegisteredReference &tmp_r)
+      {
+        if(value.r()->is_rarray()) {
+          tmp_r = vm->gc()->new_object(OBJECT_TYPE_RARRAY, value.r()->length(), context);
+          if(tmp_r.is_null()) return false;
+          for(size_t i = 0; i < tmp_r->length(); i++) tmp_r->set_elem(i, value.r()->elem(i));
+          tmp_r.register_ref();
+          value.safely_assign_for_gc(Value(tmp_r));
+        }
+        return true;
+      }
+
       static bool copy_to_new_tuple(VirtualMachine *vm, ThreadContext *context, Value &value, RegisteredReference &tmp_r)
       {
         if(value.r()->is_tuple()) {
@@ -109,28 +121,44 @@ namespace letin
           return ERROR_INCORRECT_OBJECT;
       }
 
-      int check_ref_value_for_fun(VirtualMachine *vm, ThreadContext *context, Value &value, RegisteredReference &tmp_r, function<int (VirtualMachine *, ThreadContext *, Reference)> fun, bool is_unique, bool is_new_tuple)
+      int check_ref_value_for_fun(VirtualMachine *vm, ThreadContext *context, Value &value, RegisteredReference &tmp_r, function<int (VirtualMachine *, ThreadContext *, Reference)> fun, bool is_unique, NewType new_type)
       {
         int error = vm->force(context, value);
         if(error != ERROR_SUCCESS) return error;
         if(!value.is_ref()) return ERROR_INCORRECT_VALUE;
         if((is_unique ? !value.is_unique() : value.is_unique())) return ERROR_INCORRECT_OBJECT;
-        if(is_new_tuple)
-          if(!copy_to_new_tuple(vm, context, value, tmp_r)) return ERROR_OUT_OF_MEMORY;
+        switch(new_type) {
+          case NEW_TYPE_NEW_RARRAY:
+            if(!copy_to_new_rarray(vm, context, value, tmp_r)) return ERROR_OUT_OF_MEMORY;
+            break;
+          case NEW_TYPE_NEW_TUPLE:
+            if(!copy_to_new_tuple(vm, context, value, tmp_r)) return ERROR_OUT_OF_MEMORY;
+            break;
+          default:
+            break;
+        }
         error = fun(vm, context, value.r());
         if(error != ERROR_SUCCESS) return error;
         if(value.is_unique()) value.cancel_ref();
         return ERROR_SUCCESS;
       }
 
-      int check_object_value_for_fun(VirtualMachine *vm, ThreadContext *context, Value &value, RegisteredReference &tmp_r, function<int (VirtualMachine *, ThreadContext *, Object &)> fun, bool is_unique, bool is_new_tuple)
+      int check_object_value_for_fun(VirtualMachine *vm, ThreadContext *context, Value &value, RegisteredReference &tmp_r, function<int (VirtualMachine *, ThreadContext *, Object &)> fun, bool is_unique, NewType new_type)
       {
         int error = vm->force(context, value);
         if(error != ERROR_SUCCESS) return error;
         if(!value.is_ref()) return ERROR_INCORRECT_VALUE;
         if((is_unique ? !value.is_unique() : value.is_unique())) return ERROR_INCORRECT_OBJECT;
-        if(is_new_tuple)
-          if(!copy_to_new_tuple(vm, context, value, tmp_r)) return ERROR_OUT_OF_MEMORY;        
+        switch(new_type) {
+          case NEW_TYPE_NEW_RARRAY:
+            if(!copy_to_new_rarray(vm, context, value, tmp_r)) return ERROR_OUT_OF_MEMORY;
+            break;
+          case NEW_TYPE_NEW_TUPLE:
+            if(!copy_to_new_tuple(vm, context, value, tmp_r)) return ERROR_OUT_OF_MEMORY;
+            break;
+          default:
+            break;
+        }
         error = fun(vm, context, *(value.r().ptr()));
         if(error != ERROR_SUCCESS) return error;
         if(value.is_unique()) value.cancel_ref();
