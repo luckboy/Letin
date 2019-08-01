@@ -1741,7 +1741,7 @@ extern "C" {
           "posix.CLK_TCK", // () -> int
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args);
-            if(error != letin::ERROR_SUCCESS) return error_return_value(error);            
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));            
             return return_value(vm, context, vint(system_clk_tck()));
           }
         },
