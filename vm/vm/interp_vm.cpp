@@ -2540,6 +2540,35 @@ namespace letin
         if(!force_value_and_interpret(context, value)) return false;
         if(value.type() == VALUE_TYPE_REF) {
           switch(value.raw().r->type()) {
+            case OBJECT_TYPE_RARRAY:
+            {
+              Reference r(new_object(context, OBJECT_TYPE_RARRAY, value.raw().r->length()));
+              if(r.is_null()) return false;
+              for(size_t i = 0; i < r->length(); i++) r->set_elem(i, Value(Reference()));
+              fun(r);
+              context.safely_set_gc_tmp_ptr_for_gc(nullptr);
+              for(size_t i = 0; i < r->length(); i++) {
+                Value tmp_elem_value = value.raw().r->elem(i);
+                if(!fully_force_value(context, tmp_elem_value, [r, i](Reference elem_r) {
+                  r->set_elem(i, Value(elem_r));
+                })) return false;
+                r->set_elem(i, tmp_elem_value);
+              }
+              value.safely_assign_for_gc(Value(r));
+              break;
+            }
+            case OBJECT_TYPE_RARRAY | OBJECT_TYPE_UNIQUE:
+            {
+              for(size_t i = 0; i < value.raw().r->length(); i++) {
+                Value tmp_elem_value = value.raw().r->elem(i);
+                if(!fully_force_value(context, tmp_elem_value, [&context, i](Reference elem_r) {
+                  context.regs().force_tmp_r2.safely_assign_for_gc(elem_r);
+                })) return false;
+                value.raw().r->set_elem(i, tmp_elem_value);
+                context.regs().force_tmp_r2.safely_assign_for_gc(Reference()); 
+              }
+              break;
+            }
             case OBJECT_TYPE_TUPLE:
             {
               Reference r(new_object(context, OBJECT_TYPE_TUPLE, value.raw().r->length()));
