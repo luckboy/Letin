@@ -1315,6 +1315,7 @@ namespace letin
       if(!save_regs_and_set_regs(saved_regs))
         return ReturnValue(0, 0.0, Reference(), ERROR_STACK_OVERFLOW);
       ReturnValue value;
+      _M_regs.rv.safely_assign_for_gc(ReturnValue());
       try {
         value = _M_native_fun_handler->invoke(vm, this, nfi, args);
       } catch(bad_alloc &e) {
