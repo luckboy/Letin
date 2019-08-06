@@ -308,23 +308,23 @@ namespace letin
 #if defined(__unix__) && ENOTSUP != EOPNOTSUPP
         if(system_error == EOPNOTSUPP) system_error = ENOTSUP;
 #endif
-        if(system_error >= static_cast<int>(error_offset) && system_error < static_cast<int>(errors.size())) {
+        if(system_error >= static_cast<int>(error_offset) && system_error - static_cast<int>(error_offset) < static_cast<int>(errors.size())) {
           return errors[system_error - error_offset];
         } else {
 #if defined(__unix__)
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
-          if(system_error >= static_cast<int>(other_error_offset) && system_error < static_cast<int>(other_errors.size()))
-            return errors[system_error - other_error_offset];
+          if(system_error >= static_cast<int>(other_error_offset) && system_error - static_cast<int>(other_error_offset) < static_cast<int>(other_errors.size()))
+            return other_errors[system_error - other_error_offset];
           else
             return -1;
 #else
           return -1;
 #endif
 #elif defined(_WIN32) || defined(_WIN64)
-          if(system_error >= static_cast<int>(winsock2_error_offset) && system_error < static_cast<int>(winsock2_errors.size()))
-            return errors[system_error - winsock2_error_offset];
-          else if(system_error >= static_cast<int>(other_error_offset) && system_error < static_cast<int>(other_errors.size()))
-            return errors[system_error - other_error_offset];
+          if(system_error >= static_cast<int>(winsock2_error_offset) && system_error - static_cast<int>(winsock2_error_offset) < static_cast<int>(winsock2_errors.size()))
+            return winsock2_errors[system_error - winsock2_error_offset];
+          else if(system_error >= static_cast<int>(other_error_offset) && system_error - static_cast<int>(other_error_offset) < static_cast<int>(other_errors.size()))
+            return other_errors[system_error - other_error_offset];
           else
             return -1;
 #else
