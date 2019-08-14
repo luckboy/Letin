@@ -2237,6 +2237,7 @@ namespace letin
         thread.system_thread().join();
         CPPUNIT_ASSERT(is_expected_error);
       }
+
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);
