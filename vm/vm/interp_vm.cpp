@@ -720,6 +720,12 @@ namespace letin
               return false;
             }
             bool result = get_int(context, i, context.regs().tmp_expr_values[j]);
+            if(result) {
+              if(!context.set_expr_value(n - j - 1, context.regs().tmp_expr_values[j])) {
+                context.set_error(ERROR_EMPTY_STACK);
+                return false;
+              }
+            }
             j++;
             return result;
           }
@@ -780,6 +786,12 @@ namespace letin
               return false;
             }
             bool result = get_float(context, f, context.regs().tmp_expr_values[j]);
+            if(result) {
+              if(!context.set_expr_value(n - j - 1, context.regs().tmp_expr_values[j])) {
+                context.set_error(ERROR_EMPTY_STACK);
+                return false;
+              }
+            }
             j++;
             return result;
           }
@@ -841,6 +853,12 @@ namespace letin
               return false;
             }
             bool result = get_ref(context, r, context.regs().tmp_expr_values[j]);
+            if(result) {
+              if(!context.set_expr_value(n - j - 1, context.regs().tmp_expr_values[j])) {
+                context.set_error(ERROR_EMPTY_STACK);
+                return false;
+              }
+            }
             j++;
             return result;
           }

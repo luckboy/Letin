@@ -507,6 +507,16 @@ namespace letin
           return false;
       }
 
+      bool set_expr_value(std::size_t i, const Value &value)
+      {
+        if(_M_regs.evc > i) {
+          _M_expr_stack[_M_regs.evbp + _M_regs.evc - i - 1].safely_assign_for_gc(value);
+          std::atomic_thread_fence(std::memory_order_release);
+          return true;
+        } else
+          return false;
+      }
+
       void traverse_root_objects(std::function<void (Object *)> fun);
 
       void safely_set_gc_tmp_ptr_for_gc(void *ptr)
