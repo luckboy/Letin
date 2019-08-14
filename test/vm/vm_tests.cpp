@@ -2059,7 +2059,6 @@ namespace letin
         CPPUNIT_ASSERT(is_expected);
       }
       
-      
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);
