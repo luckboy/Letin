@@ -2245,7 +2245,7 @@ namespace letin
               int error = context.regs().rv.error();
               Value arg2 = context.regs().try_arg2;
               Reference io_r = context.regs().try_io_r;
-              if(!force_rv(context, true)) return Value();
+              if(!force_rv(context, !context.regs().try_catch_flag)) return Value();
               context.regs().after_leaving_flags[0] = false;
               if(!pop_try_regs(context)) return Value();
               if(!pop_tmp_ac2(context)) return Value();
@@ -2272,6 +2272,7 @@ namespace letin
                 if(!push_arg(context, Value(r))) return Value();
                 if(!push_arg(context, arg2)) return Value();
                 if(!push_arg(context, io_r)) return Value();
+                context.regs().try_catch_flag = true;
                 if(!call_fun_for_force(context, static_cast<uint32_t>(i))) return Value();
                 must_repeat = true;
               }

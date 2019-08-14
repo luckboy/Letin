@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -119,6 +119,7 @@ namespace letin
         CPPUNIT_TEST(test_vm_evaluates_lettuple_with_rcall_operation_for_lazy_evaluation);
         CPPUNIT_TEST(test_vm_evaluates_nested_invocations_with_value_type_changes_for_lazy_evaluation);
         CPPUNIT_TEST(test_vm_evaluates_function_argument_for_lazy_evaluation);
+        CPPUNIT_TEST(test_vm_executes_instructions_for_bug_of_catch_looping);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -188,6 +189,7 @@ namespace letin
         void test_vm_evaluates_lettuple_with_rcall_operation_for_lazy_evaluation();
         void test_vm_evaluates_nested_invocations_with_value_type_changes_for_lazy_evaluation();
         void test_vm_evaluates_function_argument_for_lazy_evaluation();
+        void test_vm_executes_instructions_for_bug_of_catch_looping();
       };
 
       DECL_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
