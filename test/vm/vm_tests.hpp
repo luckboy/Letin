@@ -119,6 +119,7 @@ namespace letin
         CPPUNIT_TEST(test_vm_evaluates_lettuple_with_rcall_operation_for_lazy_evaluation);
         CPPUNIT_TEST(test_vm_evaluates_nested_invocations_with_value_type_changes_for_lazy_evaluation);
         CPPUNIT_TEST(test_vm_evaluates_function_argument_for_lazy_evaluation);
+        CPPUNIT_TEST(test_vm_executes_instructions_for_bug_of_catch_looping);
         CPPUNIT_TEST(test_vm_pushes_and_pops_expression_values);
         CPPUNIT_TEST(test_vm_pushes_and_gets_and_pops_expression_values);
         CPPUNIT_TEST(test_vm_pushes_and_pops_expression_values_in_invoked_function);
@@ -194,6 +195,7 @@ namespace letin
         void test_vm_evaluates_lettuple_with_rcall_operation_for_lazy_evaluation();
         void test_vm_evaluates_nested_invocations_with_value_type_changes_for_lazy_evaluation();
         void test_vm_evaluates_function_argument_for_lazy_evaluation();
+        void test_vm_executes_instructions_for_bug_of_catch_looping();
         void test_vm_pushes_and_pops_expression_values();
         void test_vm_pushes_and_gets_and_pops_expression_values();
         void test_vm_pushes_and_pops_expression_values_in_invoked_function();

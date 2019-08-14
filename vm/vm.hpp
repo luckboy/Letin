@@ -144,6 +144,7 @@ namespace letin
       bool arg_instr_flag;
       unsigned cached_fun_result_flag;
       bool try_flag;
+      bool try_catch_flag;
       std::uint32_t try_abp;
       std::uint32_t try_ac;
       Value try_arg2;
@@ -170,6 +171,7 @@ namespace letin
       bool after_leaving_flag2;
       unsigned after_leaving_flag_index;
       bool try_flag;
+      bool try_catch_flag;
       std::uint32_t try_abp;
       std::uint32_t try_ac;
       ReturnValue force_tmp_rv;
@@ -364,6 +366,7 @@ namespace letin
       void set_try_regs(const Value &arg2, const Reference &io_r)
       {
         _M_regs.try_flag = true;
+        _M_regs.try_catch_flag = false;
         _M_regs.try_abp = _M_regs.abp2; _M_regs.try_ac = _M_regs.ac2;
         _M_regs.try_arg2.safely_assign_for_gc(arg2);
         _M_regs.try_io_r.safely_assign_for_gc(io_r);
@@ -378,7 +381,7 @@ namespace letin
 
       bool push_try_regs()
       {
-        if(!push_local_var(Value(_M_regs.try_flag ? 1 : 0))) return false;
+        if(!push_local_var(Value((_M_regs.try_flag ? 1 : 0) | (_M_regs.try_catch_flag ? 2 : 0)))) return false;
         if(!push_local_var(Value(static_cast<std::int64_t>((static_cast<std::uint64_t>(_M_regs.try_abp) << 32) | _M_regs.try_ac)))) return false;
         if(!push_local_var(_M_regs.try_arg2)) return false;
         if(!push_local_var(Value(_M_regs.try_io_r))) return false;
@@ -399,7 +402,8 @@ namespace letin
           _M_regs.try_arg2.safely_assign_for_gc(_M_stack[_M_regs.abp2 + 2]);
           _M_regs.try_abp = _M_stack[_M_regs.abp2 + 1].raw().i >> 32;
           _M_regs.try_ac = _M_stack[_M_regs.abp2 + 1].raw().i & 0xffffffff;
-          _M_regs.try_flag = (_M_stack[_M_regs.abp2 + 0].raw().i != 0);
+          _M_regs.try_flag = ((_M_stack[_M_regs.abp2 + 0].raw().i & 1) != 0);
+          _M_regs.try_catch_flag = ((_M_stack[_M_regs.abp2 + 0].raw().i & 2) != 0);
           return true;
         } else
           return false;

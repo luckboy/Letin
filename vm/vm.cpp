@@ -1237,6 +1237,7 @@ namespace letin
       _M_regs.arg_instr_flag = false;
       _M_regs.cached_fun_result_flag = 0;
       _M_regs.try_flag = false;
+      _M_regs.try_catch_flag = false;
       _M_regs.try_arg2 = Value();
       _M_regs.try_io_r = Reference();
       _M_regs.try_abp = _M_regs.nfbp;
@@ -1423,6 +1424,7 @@ namespace letin
       saved_regs.after_leaving_flag2 = _M_regs.after_leaving_flags[1];
       saved_regs.after_leaving_flag_index = _M_regs.after_leaving_flag_index;
       saved_regs.try_flag = _M_regs.try_flag;
+      saved_regs.try_catch_flag = _M_regs.try_catch_flag;
       saved_regs.try_abp = _M_regs.try_abp;
       saved_regs.try_ac = _M_regs.try_ac;
       saved_regs.force_tmp_rv = _M_regs.force_tmp_rv;
@@ -1448,6 +1450,7 @@ namespace letin
       _M_regs.after_leaving_flags[1] = false;
       _M_regs.after_leaving_flag_index = 0;
       _M_regs.try_flag = false;
+      _M_regs.try_catch_flag = false;
       _M_regs.try_arg2 = Value();
       _M_regs.try_io_r = Reference();
       _M_regs.try_abp = _M_regs.nfbp;
@@ -1475,11 +1478,13 @@ namespace letin
         _M_regs.try_arg2.safely_assign_for_gc(_M_stack[sec + 0]);
         _M_regs.try_ac = saved_regs.try_ac;
         _M_regs.try_abp = saved_regs.try_abp;
+        _M_regs.try_catch_flag = saved_regs.try_catch_flag;
         _M_regs.try_flag = saved_regs.try_flag;
       } else {
         _M_regs.force_tmp_r2 = Reference();
         _M_regs.force_tmp_r = Reference();
         _M_regs.try_flag = false;
+        _M_regs.try_catch_flag = false;
         _M_regs.try_arg2 = Value();
         _M_regs.try_io_r = Reference();
         _M_regs.try_abp = saved_regs.nfbp;
