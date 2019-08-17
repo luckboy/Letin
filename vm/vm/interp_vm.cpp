@@ -860,7 +860,7 @@ namespace letin
             }
             bool result = get_ref(context, r, context.regs().tmp_expr_values[j]);
             if(result) {
-              if(!context.set_expr_value(n - j - 1, context.regs().tmp_expr_values[j])) {
+              if(!context.set_expr_value(n - j - 1, context.regs().tmp_expr_values[j].type() == VALUE_TYPE_CANCELED_REF ? Value(context.regs().tmp_expr_values[j].raw().r) : context.regs().tmp_expr_values[j])) {
                 context.set_error(ERROR_EMPTY_STACK);
                 return false;
               }
