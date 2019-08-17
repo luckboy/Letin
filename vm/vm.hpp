@@ -474,6 +474,12 @@ namespace letin
           return false;
       }
 
+      void add_cancelation_undo_type(int *type)
+      {
+        _M_regs.cancelation_undo_types[_M_regs.cutc] = type;
+        _M_regs.cutc++;
+      }
+
       bool push_expr_value(Value &value)
       {
         if(_M_regs.evbp + _M_regs.evc < _M_expr_stack_size) {
@@ -517,12 +523,6 @@ namespace letin
           return true;
         } else
           return false;
-      }
-      
-      void add_cancelation_undo_type(int *type)
-      {
-        _M_regs.cancelation_undo_types[_M_regs.cutc] = type;
-        _M_regs.cutc++;
       }
 
       void traverse_root_objects(std::function<void (Object *)> fun);
