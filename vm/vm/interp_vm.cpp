@@ -708,8 +708,8 @@ namespace letin
           }
         }
         if(value.raw().r->is_unique()) {
-          context.add_cancelation_undo_type(&(value.raw().type));
           value.cancel_ref();
+          context.add_cancelation_undo_type(&(value.raw().type));
         }
         r = value.raw().r;
         return true;
