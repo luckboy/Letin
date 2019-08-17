@@ -218,7 +218,10 @@ namespace letin
             return false;
           }
         }
-        if(value.raw().r->is_unique()) value.cancel_ref();
+        if(value.raw().r->is_unique()) {
+          value.cancel_ref();
+          context.add_cancelation_undo_type(&(value.raw().type));
+        }
         out_value = Value(value.raw().r);
         return true;
       }
@@ -820,7 +823,10 @@ namespace letin
             return false;
           }
         }
-        if(value.raw().r->is_unique()) value.cancel_ref();
+        if(value.raw().r->is_unique()) {
+          context.add_cancelation_undo_type(&(value.raw().type));
+          value.cancel_ref();
+        }
         r = value.raw().r;
         return true;
       }
@@ -898,6 +904,7 @@ namespace letin
             context.restore_abp2_and_ac2();
           }
         }
+        context.regs().cutc = 0;
         switch(opcode_to_instr(instr.opcode)) {
           case INSTR_LET:
           {
@@ -2946,6 +2953,11 @@ namespace letin
                 context.regs().after_leaving_flag_index = 1;
                 if(is_try) context.set_try_regs_for_force();
                 if(!call_fun_for_force_with_eval_strategy(context, object.raw().lzv.fun, object.raw().lzv.value_type)) {
+                  if(context.regs().rv.raw().error == ERROR_SUCCESS) {
+                    for(size_t i = 0; i < context.regs().cutc; i++) {
+                      *(context.regs().cancelation_undo_types[i]) = VALUE_TYPE_REF;                      
+                    }
+                  }
                   if(context.regs().rv.raw().error == ERROR_SUCCESS || tmp_abp2 > context.regs().abp2) lock.release();
                   return false;
                 }
@@ -3079,6 +3091,7 @@ namespace letin
         context.regs().after_leaving_flags[0] = false;
         context.regs().after_leaving_flags[1] = false;
         context.regs().after_leaving_flag_index = 0;
+        context.regs().cutc = 0;
         if(!force_value(context, value)) {
           if(context.regs().rv.raw().error == ERROR_SUCCESS) {
             bool tmp_result;

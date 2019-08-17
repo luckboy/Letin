@@ -1246,6 +1246,7 @@ namespace letin
       _M_regs.force_tmp_r = Reference();
       _M_regs.force_tmp_r2 = Reference();
       _M_regs.force_tmp_rv2 = ReturnValue();
+      _M_regs.cutc = 0;
       _M_regs.tmp_expr_values[0] = Value();
       _M_regs.tmp_expr_values[1] = Value();
       _M_first_registered_r = _M_last_registered_r = nullptr;
