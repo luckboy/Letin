@@ -2059,6 +2059,35 @@ namespace letin
         CPPUNIT_ASSERT(is_expected);
       }
       
+      void VirtualMachineTests::test_vm_executes_instructions_for_bug_of_reference_cancelation()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        LET(RUIAFILL64, IMM(3), IMM(10));
+        LET(ICALL, IMM(1), NA());
+        IN();
+        LETTUPLE(RUIANTH64, 2, LV(0), LV(1));
+        IN();
+        RET(ILOAD, LV(2), NA());
+        END_FUN();
+        FUN(0);
+        RET(ILOAD, IMM(0), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (10 == value.i());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);        
+        CPPUNIT_ASSERT(is_expected);        
+      }      
+      
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);

@@ -149,6 +149,8 @@ namespace letin
       Reference force_tmp_r;
       Reference force_tmp_r2;
       ReturnValue force_tmp_rv2;
+      std::size_t cutc;
+      int *cancelation_undo_types[4];
     };
 
     struct SavedRegisters
@@ -455,6 +457,12 @@ namespace letin
           return true;
         } else
           return false;
+      }
+      
+      void add_cancelation_undo_type(int *type)
+      {
+        _M_regs.cancelation_undo_types[_M_regs.cutc] = type;
+        _M_regs.cutc++;
       }
 
       void traverse_root_objects(std::function<void (Object *)> fun);
