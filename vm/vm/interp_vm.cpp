@@ -2529,6 +2529,16 @@ namespace letin
             bool tmp_result;
             do {
               interpret(context);
+              if(context.regs().after_leaving_flags[1]) {
+                if(context.regs().rv.raw().error == ERROR_SUCCESS) {
+                  Reference locked_lazy_value_r;
+                  if(!get_locked_lazy_value_ref(context, locked_lazy_value_r)) break;
+                  if(!_M_eval_strategy->post_leave_from_fun_for_force(this, &context, locked_lazy_value_r->raw().lzv.fun, locked_lazy_value_r->raw().lzv.value_type))
+                    break;
+                }
+                if(!restore_and_pop_regs_for_force(context)) break;
+              } else
+                break;
               context.regs().cutc = 0;
               tmp_result = force_value(context, value);
             } while(!tmp_result && context.regs().rv.raw().error == ERROR_SUCCESS);
