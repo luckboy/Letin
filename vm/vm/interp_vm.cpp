@@ -3097,6 +3097,7 @@ namespace letin
             bool tmp_result;
             do {
               interpret(context);
+              context.regs().cutc = 0;
               tmp_result = force_value(context, value);
             } while(!tmp_result && context.regs().rv.raw().error == ERROR_SUCCESS);
           }
