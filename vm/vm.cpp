@@ -1347,8 +1347,8 @@ namespace letin
     {
       try_lock_and_unlock_lazy_values(_M_regs.nfbp);
       _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp;
-      _M_regs.esec = _M_regs.enfbp;
-      _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = 0;
+      _M_regs.esec = _M_regs.evbp =  _M_regs.enfbp;
+      _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = _M_regs.evc = 0;
       _M_regs.fp = static_cast<size_t>(-1);
       _M_regs.ip = 0;
       _M_regs.rv = ReturnValue(0, 0.0, r, error);
