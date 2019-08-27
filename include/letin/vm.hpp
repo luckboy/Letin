@@ -190,7 +190,9 @@ namespace letin
       bool is_error() const { return _M_raw.type == VALUE_TYPE_ERROR; }
 
       bool is_unique() const;
-
+      
+      bool is_canceled_ref() { return _M_raw.type == VALUE_TYPE_CANCELED_REF; }
+      
       bool is_lazy() const { return (_M_raw.type & ~VALUE_TYPE_LAZILY_CANCELED) == VALUE_TYPE_LAZY_VALUE_REF; }
 
       bool is_lazily_canceled() const { return (_M_raw.type & VALUE_TYPE_LAZILY_CANCELED) != 0; }
