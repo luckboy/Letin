@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -317,7 +317,7 @@ namespace letin
         return true;
       }
 
-      Thread ImplVirtualMachineBase::start(size_t i, const vector<Value> &args, function<void (const ReturnValue &)> fun, bool is_force)
+      Thread ImplVirtualMachineBase::start(size_t i, const vector<Value> &args, function<void (const ReturnValue &, const std::vector<StackTraceElement> *)> fun, bool is_force)
       {
         ThreadContext *context = new ThreadContext(_M_env);
         Thread thread(context);
@@ -335,7 +335,7 @@ namespace letin
             value = ReturnValue(0, 0.0, Reference(), ERROR_EXCEPTION);
           }
           lazy_value_mutex_sem.op(-1);
-          try { fun(value); } catch(...) {}
+          try { fun(value, nullptr); } catch(...) {}
           _M_gc->delete_thread_context(thread2.context());
           stop_thread_stop_cont();
           if(_M_gc->must_stop_from_vm_thread() && _M_gc->thread_context_count() == 0) {

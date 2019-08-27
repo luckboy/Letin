@@ -1219,7 +1219,9 @@ namespace letin
     ThreadContext::ThreadContext(const VirtualMachineContext &context, size_t stack_size, size_t expr_stack_size) :
       _M_funs(context.funs()), _M_fun_count(context.fun_count()),
       _M_global_vars(context.vars()), _M_global_var_count(context.var_count()),
-      _M_fun_infos(context.fun_infos())
+      _M_fun_infos(context.fun_infos()),
+      _M_fun_symbols(context.fun_symbols()),
+      _M_native_fun_symbols(context.native_fun_symbols())
     {
       _M_gc = nullptr;
       _M_native_fun_handler = nullptr;
@@ -1343,9 +1345,46 @@ namespace letin
       atomic_thread_fence(memory_order_release);
     }
     
-    void ThreadContext::set_error_without_try(int error, const Reference &r)
+    void ThreadContext::add_stack_trace_elems(std::size_t new_stack_elem_count, bool is_new_stack_trace)
+    {
+      try {
+        if(is_new_stack_trace) {
+          _M_stack_trace = unique_ptr<vector<StackTraceElement>>(new vector<StackTraceElement>());
+        } else {
+          if(_M_stack_trace.get() == nullptr)
+            _M_stack_trace = unique_ptr<vector<StackTraceElement>>(new vector<StackTraceElement>());
+        }
+        size_t fun = _M_regs.fp;
+        uint32_t instr = _M_regs.ip - 1;
+        uint32_t abp = _M_regs.abp;
+        uint32_t ac = _M_regs.ac;
+        while(true) {
+          _M_stack_trace->push_back(StackTraceElement(fun, fun_symbol(fun), instr));
+          if(abp + ac <= new_stack_elem_count) break;
+          uint32_t fbp = abp + ac;
+          if(fbp + 4 < _M_stack_size &&
+            _M_stack[fbp + 0].type() == VALUE_TYPE_PAIR &&
+            _M_stack[fbp + 1].type() == VALUE_TYPE_PAIR &&
+            _M_stack[fbp + 2].type() == VALUE_TYPE_INT &&
+            _M_stack[fbp + 3].type() == VALUE_TYPE_PAIR) {
+            abp = _M_stack[fbp + 0].raw().p.first;
+            ac = _M_stack[fbp + 0].raw().p.second;
+            instr = _M_stack[fbp + 1].raw().p.second;
+            fun = static_cast<size_t>(_M_stack[fbp + 2].raw().i >> 8);
+          } else {
+            _M_stack_trace = nullptr;
+            return;
+          }
+        }
+      } catch(bad_alloc &) {
+        _M_stack_trace = nullptr;
+      }
+    }
+
+    void ThreadContext::set_error_without_try(int error, const Reference &r, bool is_new_stack_trace)
     {
       try_lock_and_unlock_lazy_values(_M_regs.nfbp);
+      add_stack_trace_elems(_M_regs.nfbp, is_new_stack_trace);
       _M_regs.abp = _M_regs.abp2 = _M_regs.sec = _M_regs.nfbp;
       _M_regs.esec = _M_regs.evbp =  _M_regs.enfbp;
       _M_regs.ac = _M_regs.lvc = _M_regs.ac2 = _M_regs.evc = 0;
@@ -1357,17 +1396,31 @@ namespace letin
       atomic_thread_fence(memory_order_release);
     }
 
-    void ThreadContext::set_error(int error, const Reference &r)
+    void ThreadContext::set_error(int error, const Reference &r, bool is_new_stack_trace)
     {
       if(!_M_regs.try_flag || _M_regs.try_abp < _M_regs.nfbp) {
         set_error_without_try(error, r);
       } else {
         try_lock_and_unlock_lazy_values(_M_regs.try_abp + _M_regs.try_ac);
+        add_stack_trace_elems(_M_regs.try_abp + _M_regs.try_ac, is_new_stack_trace);
         _M_regs.abp = _M_regs.try_abp;
         _M_regs.ac = _M_regs.try_ac;
         _M_regs.rv = ReturnValue(0, 0.0, r, error);
         _M_regs.after_leaving_flag_index = 0;
         if(!leave_from_fun()) set_error_without_try(error, r);
+      }
+    }
+
+    bool ThreadContext::add_stack_trace_elem_for_native_fun(int native_fun)
+    {
+      try {
+        if(_M_stack_trace.get() == nullptr)
+          _M_stack_trace = unique_ptr<vector<StackTraceElement>>(new vector<StackTraceElement>());
+        _M_stack_trace->push_back(StackTraceElement(native_fun, native_fun_symbol(native_fun)));
+        return true;
+      } catch(bad_alloc &) {
+        _M_stack_trace = nullptr;
+        return false;
       }
     }
 

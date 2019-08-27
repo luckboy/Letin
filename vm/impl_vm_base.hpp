@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -33,7 +33,7 @@ namespace letin
       private:
         bool load_prog(std::size_t i, Program *prog, std::size_t fun_offset, std::size_t var_offset, std::list<LoadingError> *errors, void *data_to_free);
       public:
-        Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun, bool is_force);
+        Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &, const std::vector<StackTraceElement> *)> fun, bool is_force);
       protected:
         virtual ReturnValue start_in_thread(std::size_t i, const std::vector<Value> &args, ThreadContext &context, bool is_force) = 0;
       public:

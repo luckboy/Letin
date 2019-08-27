@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -61,6 +61,12 @@ namespace letin
 
       FunctionInfo *ImplEnvironment::fun_infos()
       { return _M_fun_infos.get(); }
+      
+      const map<size_t, string> &ImplEnvironment::fun_symbols() const
+      { return _M_fun_symbols; }
+
+      const map<int, string> &ImplEnvironment::native_fun_symbols() const
+      { return _M_native_fun_symbols; }
 
       const list<MemoizationCache *> &ImplEnvironment::memo_caches() const
       { return _M_memo_caches; }
@@ -85,6 +91,7 @@ namespace letin
         _M_var_count = 0;
         _M_fun_infos = unique_ptr<FunctionInfo []>(nullptr);
         _M_fun_indexes = unordered_map<string, size_t>();
+        _M_fun_symbols = map<size_t, string>();
         _M_var_indexes = unordered_map<string, size_t>();
         _M_memo_caches = list<MemoizationCache *>();
         _M_data_list_to_free = list<unique_ptr<char []>>();

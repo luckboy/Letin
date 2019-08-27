@@ -1944,7 +1944,8 @@ namespace letin
             ArgumentList args = context.pushed_args();
             ReturnValue rv = context.invoke_native_fun(this, i, args);
             if(rv.raw().error != ERROR_SUCCESS) {
-              context.set_error(rv.raw().error);
+              context.add_stack_trace_elem_for_native_fun(i);
+              context.set_error(rv.raw().error, Reference(), false);
               return Value();
             }
             context.regs().tmp_r.safely_assign_for_gc(Reference());
@@ -1962,7 +1963,8 @@ namespace letin
             ArgumentList args = context.pushed_args();
             ReturnValue rv = context.invoke_native_fun(this, i, args);
             if(rv.raw().error != ERROR_SUCCESS) {
-              context.set_error(rv.raw().error);
+              context.add_stack_trace_elem_for_native_fun(i);
+              context.set_error(rv.raw().error, Reference(), false);
               return Value();
             }
             context.regs().tmp_r.safely_assign_for_gc(Reference());
@@ -1980,7 +1982,8 @@ namespace letin
             ArgumentList args = context.pushed_args();
             ReturnValue rv = context.invoke_native_fun(this, i, args);
             if(rv.raw().error != ERROR_SUCCESS) {
-              context.set_error(rv.raw().error);
+              context.add_stack_trace_elem_for_native_fun(i);
+              context.set_error(rv.raw().error, Reference(), false);
               return Value();
             }
             context.regs().tmp_r.safely_assign_for_gc(Reference());
@@ -2813,6 +2816,7 @@ namespace letin
               if(!get_int(context, i1, opcode_to_arg_type1(instr.opcode), instr.arg1, j, n)) return Value();
               if(!get_int(context, i2, opcode_to_arg_type2(instr.opcode), instr.arg2, j, n)) return Value();
               if(!force_rv(context, !context.regs().try_catch_flag)) return Value();
+              if(context.regs().try_catch_flag) context.reset_try_catch_stack_trace();
               context.regs().after_leaving_flags[0] = false;
               if(!pop_try_regs(context)) return Value();
               if(!pop_tmp_ac2(context)) return Value();
@@ -2839,6 +2843,7 @@ namespace letin
                 if(!push_arg(context, arg2)) return Value();
                 if(!push_arg(context, io_r)) return Value();
                 context.regs().try_catch_flag = true;
+                context.move_stack_trace_to_try_catch_stack_trace();
                 if(!call_fun_for_force(context, static_cast<uint32_t>(i2))) return Value();
                 must_repeat = true;
               }

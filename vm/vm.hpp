@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <set>
 #include <thread>
 #include <unordered_map>
@@ -198,10 +199,14 @@ namespace letin
       const Value *_M_global_vars;
       std::size_t _M_global_var_count;
       const FunctionInfo *_M_fun_infos;
+      const std::map<std::size_t, std::string> &_M_fun_symbols;
+      const std::map<int, std::string> &_M_native_fun_symbols;
       RegisteredReference *_M_first_registered_r;
       RegisteredReference *_M_last_registered_r;
       std::mutex _M_interruptible_fun_mutex;
       bool _M_interruptible_fun_flag;
+      std::unique_ptr<std::vector<StackTraceElement>> _M_stack_trace;
+      std::unique_ptr<std::vector<StackTraceElement>> _M_try_catch_stack_trace;
     public:
       ThreadContext(const VirtualMachineContext &vm_context, std::size_t stack_size = 32 * 1024, std::size_t expr_stack_size = 16 * 1024);
 
@@ -245,6 +250,20 @@ namespace letin
       std::size_t global_var_count() const { return _M_global_var_count; }
 
       const FunctionInfo &fun_info(std::size_t i) const { return _M_fun_infos[i]; }
+
+      std::string *fun_symbol(std::size_t i) const
+      {
+        auto iter = _M_fun_symbols.find(i);
+        if(iter == _M_fun_symbols.end()) return nullptr;
+        return new std::string(iter->second);
+      }
+
+      std::string *native_fun_symbol(int i) const
+      {
+        auto iter = _M_native_fun_symbols.find(i);
+        if(iter == _M_native_fun_symbols.end()) return nullptr;
+        return new std::string(iter->second);
+      }
 
       const RegisteredReference *first_registered_r() const { return _M_first_registered_r; }
 
@@ -311,11 +330,13 @@ namespace letin
 
       ReturnValue invoke_native_fun(VirtualMachine *vm, int nfi, ArgumentList &args);
     private:
-      void try_lock_and_unlock_lazy_values(std::size_t stack_elem_count);
+      void try_lock_and_unlock_lazy_values(std::size_t new_stack_elem_count);
 
-      void set_error_without_try(int error, const Reference &r);
+      void add_stack_trace_elems(std::size_t new_stack_elem_count, bool is_new_stack_trace);
+
+      void set_error_without_try(int error, const Reference &r, bool is_new_stack_trace = true);
     public:
-      void set_error(int error, const Reference &r = Reference());
+      void set_error(int error, const Reference &r = Reference(), bool is_new_stack_trace = true);
 
       ArgumentList pushed_args() const { return ArgumentList(_M_stack + _M_regs.abp2, _M_regs.ac2); }
 
@@ -525,6 +546,8 @@ namespace letin
           return false;
       }
 
+      bool add_stack_trace_elem_for_native_fun(int native_fun);
+      
       void traverse_root_objects(std::function<void (Object *)> fun);
 
       void safely_set_gc_tmp_ptr_for_gc(void *ptr)
@@ -553,6 +576,21 @@ namespace letin
       std::mutex &interruptible_fun_mutex() { return _M_interruptible_fun_mutex; }
 
       bool &interruptible_fun_flag() { return _M_interruptible_fun_flag; }
+
+      const std::vector<StackTraceElement> *stack_trace() const
+      { return _M_stack_trace.get(); }
+
+      const std::vector<StackTraceElement> *try_catch_stack_trace() const
+      { return _M_try_catch_stack_trace.get(); }
+
+      void move_stack_trace_to_try_catch_stack_trace()
+      { _M_try_catch_stack_trace = std::move(_M_stack_trace); }
+
+      void move_try_catch_stack_trace_to_stack_trace()
+      { _M_stack_trace = std::move(_M_try_catch_stack_trace); }
+      
+      void reset_try_catch_stack_trace()
+      { _M_try_catch_stack_trace = nullptr; }
 
       void free_stack()
       {
@@ -585,6 +623,10 @@ namespace letin
       virtual const FunctionInfo *fun_infos() const = 0;
 
       virtual FunctionInfo *fun_infos() = 0;
+
+      virtual const std::map<std::size_t, std::string> &fun_symbols() const = 0;
+
+      virtual const std::map<int, std::string> &native_fun_symbols() const = 0;
 
       virtual const std::list<MemoizationCache *> &memo_caches() const = 0;
 

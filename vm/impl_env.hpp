@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <list>
+#include <map>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -30,8 +31,10 @@ namespace letin
         std::size_t _M_var_count;
         std::unique_ptr<FunctionInfo []> _M_fun_infos;
         std::unordered_map<std::string, std::size_t> _M_fun_indexes;
+        std::map<std::size_t, std::string> _M_fun_symbols;
         std::unordered_map<std::string, std::size_t> _M_var_indexes;
         std::unordered_map<std::string, int> _M_native_fun_indexes;
+        std::map<int, std::string> _M_native_fun_symbols;
         std::list<MemoizationCache *> _M_memo_caches;
         std::list<std::unique_ptr<char []>> _M_data_list_to_free;
       public:
@@ -83,6 +86,10 @@ namespace letin
 
         FunctionInfo *fun_infos();
 
+        const std::map<std::size_t, std::string> &fun_symbols() const;
+
+        const std::map<int, std::string> &native_fun_symbols() const;
+
         const std::list<MemoizationCache *> &memo_caches() const;
 
         void set_fun(std::size_t i, const Function &fun);
@@ -104,6 +111,7 @@ namespace letin
         {
           if(_M_fun_indexes.find(name) != _M_fun_indexes.end()) return false;
           _M_fun_indexes.insert(std::make_pair(name, i));
+          _M_fun_symbols.insert(std::make_pair(i, name));
           return true;
         }
 
@@ -118,6 +126,7 @@ namespace letin
         {
           if(_M_native_fun_indexes.find(name) != _M_native_fun_indexes.end()) return false;
           _M_native_fun_indexes.insert(std::make_pair(name, i));
+          _M_native_fun_symbols.insert(std::make_pair(i, name));
           return true;
         }
 

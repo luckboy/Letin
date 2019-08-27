@@ -746,6 +746,38 @@ namespace letin
 
       ~InterruptibleFunctionAround();
     };
+    
+    class StackTraceElement
+    {
+      bool _M_has_native_fun;
+      std::size_t _M_fun;
+      std::unique_ptr<std::string> _M_fun_name;
+      std::uint32_t _M_instr;
+    public:
+      StackTraceElement() : _M_has_native_fun(false), _M_fun(0), _M_instr(0) {}
+      
+      StackTraceElement(std::size_t fun, std::string *fun_name) :
+        _M_has_native_fun(true), _M_fun(fun), _M_fun_name(fun_name), _M_instr(0) {}
+        
+      StackTraceElement(std::size_t fun, std::string *fun_name, std::uint32_t instr) :
+        _M_has_native_fun(false), _M_fun(fun), _M_fun_name(fun_name), _M_instr(instr) {}
+
+      StackTraceElement(const StackTraceElement &elem) :
+        _M_has_native_fun(elem._M_has_native_fun),
+        _M_fun(elem._M_fun),
+        _M_fun_name(elem._M_fun_name.get() != nullptr ? new std::string(*(elem._M_fun_name)) : nullptr),
+        _M_instr(elem._M_instr) {}
+
+      bool has_native_fun() const { return _M_has_native_fun; }
+      
+      std::size_t fun() const { return _M_fun; }
+      
+      const std::string *fun_name() const { return _M_fun_name.get(); }
+
+      std::string *fun_name() { return _M_fun_name.get(); }
+
+      std::uint32_t instr() const { return _M_instr; }
+    };
 
     class VirtualMachine
     {
@@ -768,10 +800,14 @@ namespace letin
       bool load(const std::vector<std::string> &file_names, std::list<LoadingError> *errors = nullptr);
 
       bool load(const char *file_name, std::list<LoadingError> *errors = nullptr);
-      
-      virtual Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun, bool is_force = true) = 0;
 
-      Thread start(const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun, bool is_force = true) { return start(entry(), args, fun); }
+      virtual Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &, const std::vector<StackTraceElement> *)> fun, bool is_force = true) = 0;
+
+      Thread start(const std::vector<Value> &args, std::function<void (const ReturnValue &, const std::vector<StackTraceElement> *)> fun, bool is_force = true) { return start(entry(), args, fun, is_force); }
+
+      Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun, bool is_force = true) { return start(i, args, [fun](const ReturnValue &value, const std::vector<StackTraceElement> *stack_trace) { fun(value); }, is_force); }
+
+      Thread start(const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun, bool is_force = true) { return start(entry(), args, fun, is_force); }
 
       virtual Environment &env() = 0;
 
