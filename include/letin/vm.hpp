@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -767,7 +767,7 @@ namespace letin
       
       virtual Thread start(std::size_t i, const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun, bool is_force = true) = 0;
 
-      Thread start(const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun, bool is_force = true) { return start(entry(), args, fun); }
+      Thread start(const std::vector<Value> &args, std::function<void (const ReturnValue &)> fun, bool is_force = true) { return start(entry(), args, fun, is_force); }
 
       virtual Environment &env() = 0;
 
