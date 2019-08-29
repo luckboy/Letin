@@ -1565,6 +1565,59 @@ namespace letin
       atomic_thread_fence(memory_order_release);
       return result;
     }
+    
+    Object *ThreadContext::try_catch_stack_trace_to_object()
+    {
+      if(_M_try_catch_stack_trace.get() != nullptr) {
+        Object *object = _M_gc->new_object(OBJECT_TYPE_RARRAY, _M_try_catch_stack_trace->size(), this);
+        if(object == nullptr) return nullptr;
+        for(size_t i = 0; i < object->length(); i++) object->set_elem(i, Value(Reference()));
+        _M_regs.tmp_r.safely_assign_for_gc(object);
+        size_t i = 0;
+        for(auto &stack_trace_elem : *_M_try_catch_stack_trace) {
+          RegisteredReference tmp_r(_M_gc->new_object(OBJECT_TYPE_TUPLE, 4, this), this, false);
+          if(tmp_r.is_null()) {
+            _M_regs.tmp_r.safely_assign_for_gc(Reference());
+            return nullptr;
+          }
+          tmp_r->set_elem(0, Value(stack_trace_elem.has_native_fun() ? 1 : 0));
+          tmp_r->set_elem(1, Value(static_cast<int64_t>(stack_trace_elem.fun())));
+          tmp_r->set_elem(2, Value(Reference()));
+          tmp_r->set_elem(3, Value(static_cast<int64_t>(stack_trace_elem.instr())));
+          tmp_r.register_ref();
+          RegisteredReference tmp_r2(this, false);
+          if(stack_trace_elem.fun_name() != nullptr) {
+            RegisteredReference tmp_r3(_M_gc->new_string(*(stack_trace_elem.fun_name()), this), this);
+            if(tmp_r3.is_null()) {
+              _M_regs.tmp_r.safely_assign_for_gc(Reference());
+              return nullptr;
+            }            
+            tmp_r2 = _M_gc->new_pair(Value(1), Value(tmp_r3), this);
+            if(tmp_r2.is_null()) {
+              _M_regs.tmp_r.safely_assign_for_gc(Reference());
+              return nullptr;
+            }
+            tmp_r2.register_ref();
+          } else {
+            tmp_r2 = _M_gc->new_object(OBJECT_TYPE_TUPLE, 1, this);
+            if(tmp_r2.is_null()) {
+              _M_regs.tmp_r.safely_assign_for_gc(Reference());
+              return nullptr;
+            }
+            tmp_r2->set_elem(0, Value(0));
+            tmp_r2.register_ref();
+          }
+          tmp_r->set_elem(2, Value(tmp_r2));
+          object->set_elem(i, Value(tmp_r));
+          i++;
+        }
+        return object;
+      } else {
+        Object *object = _M_gc->new_object(OBJECT_TYPE_RARRAY, 0);
+        _M_regs.tmp_r.safely_assign_for_gc(object);
+        return object;
+      }
+    }
 
     //
     // A VirtualMachineContext class.

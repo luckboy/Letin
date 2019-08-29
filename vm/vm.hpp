@@ -592,6 +592,8 @@ namespace letin
       void reset_try_catch_stack_trace()
       { _M_try_catch_stack_trace = nullptr; }
 
+      Object *try_catch_stack_trace_to_object();
+      
       void free_stack()
       {
         if(_M_stack != nullptr) {

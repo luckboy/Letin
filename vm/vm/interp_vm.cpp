@@ -574,6 +574,16 @@ namespace letin
         return true;
       }
 
+      static inline Object *try_catch_stack_trace_to_object(ThreadContext &context)
+      {
+        Object *object = context.try_catch_stack_trace_to_object();
+        if(object == nullptr) {
+          context.set_error(ERROR_OUT_OF_MEMORY);
+          return nullptr;
+        }
+        return object;
+      }
+      
       //
       // Static functions.
       //
@@ -2876,6 +2886,22 @@ namespace letin
             if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j, n)) return Value();
             if(!pop_expr_values(context, n)) return Value();
             return Value(r);
+          }
+          case OP_STACKTRACE:
+          {
+            Reference r;
+            size_t j = 0;
+            size_t n = expr_pop_arg_count(opcode_to_arg_type1(instr.opcode));
+            if(!get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j, n)) return Value();
+            if(!pop_expr_values(context, n)) return Value();
+            if(!check_object_type(context, *r, OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) return Value();
+            Reference r2(try_catch_stack_trace_to_object(context));
+            if(r2.is_null()) return Value();
+            Reference r3(new_unique_pair(context, Value(r2), Value(r)));
+            if(r3.is_null()) return Value();
+            context.regs().rv.safely_assign_for_gc(Value(r3));
+            context.regs().tmp_r.safely_assign_for_gc(Reference());
+            return Value(r3);            
           }
           default:
           {
