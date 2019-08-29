@@ -1945,7 +1945,7 @@ namespace letin
             ReturnValue rv = context.invoke_native_fun(this, i, args);
             if(rv.raw().error != ERROR_SUCCESS) {
               context.add_stack_trace_elem_for_native_fun(i);
-              context.set_error(rv.raw().error, Reference(), false);
+              context.set_error(rv.raw().error, rv.raw().r, false);
               return Value();
             }
             context.regs().tmp_r.safely_assign_for_gc(Reference());
@@ -1964,7 +1964,7 @@ namespace letin
             ReturnValue rv = context.invoke_native_fun(this, i, args);
             if(rv.raw().error != ERROR_SUCCESS) {
               context.add_stack_trace_elem_for_native_fun(i);
-              context.set_error(rv.raw().error, Reference(), false);
+              context.set_error(rv.raw().error, rv.raw().r, false);
               return Value();
             }
             context.regs().tmp_r.safely_assign_for_gc(Reference());
@@ -1983,7 +1983,7 @@ namespace letin
             ReturnValue rv = context.invoke_native_fun(this, i, args);
             if(rv.raw().error != ERROR_SUCCESS) {
               context.add_stack_trace_elem_for_native_fun(i);
-              context.set_error(rv.raw().error, Reference(), false);
+              context.set_error(rv.raw().error, rv.raw().r, false);
               return Value();
             }
             context.regs().rv.safely_assign_for_gc(Value(rv.raw().r));
