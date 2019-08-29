@@ -1602,6 +1602,7 @@ namespace letin
               context.set_error(rv.raw().error);
               return Value();
             }
+            context.regs().rv.safely_assign_for_gc(Value(rv.raw().r));
             context.regs().tmp_r.safely_assign_for_gc(Reference());
             if(context.regs().arg_instr_flag) if(!pop_tmp_ac2(context)) return Value();
             return Value(rv.raw().r);
