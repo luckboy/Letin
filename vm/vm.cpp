@@ -1359,7 +1359,8 @@ namespace letin
         uint32_t abp = _M_regs.abp;
         uint32_t ac = _M_regs.ac;
         while(true) {
-          _M_stack_trace->push_back(StackTraceElement(fun, fun_symbol(fun), instr));
+          if(fun != static_cast<size_t>(-1))
+            _M_stack_trace->push_back(StackTraceElement(fun, fun_symbol(fun), instr));
           if(abp + ac <= new_stack_elem_count) break;
           uint32_t fbp = abp + ac;
           if(fbp + 4 < _M_stack_size &&
