@@ -150,6 +150,8 @@ namespace letin
       std::uint32_t try_ac;
       Value try_arg2;
       Reference try_io_r;
+      int try_catch_error;
+      Reference try_catch_r;
       ReturnValue force_tmp_rv;
       Reference force_tmp_r;
       Reference force_tmp_r2;
@@ -177,6 +179,7 @@ namespace letin
       bool try_catch_flag;
       std::uint32_t try_abp;
       std::uint32_t try_ac;
+      int try_catch_error;      
       ReturnValue force_tmp_rv;
       ReturnValue force_tmp_rv2;
       std::uint32_t sec;
@@ -393,6 +396,8 @@ namespace letin
         _M_regs.try_abp = _M_regs.abp2; _M_regs.try_ac = _M_regs.ac2;
         _M_regs.try_arg2.safely_assign_for_gc(arg2);
         _M_regs.try_io_r.safely_assign_for_gc(io_r);
+        _M_regs.try_catch_error = ERROR_SUCCESS;
+        _M_regs.try_catch_r.safely_assign_for_gc(Reference());
         std::atomic_thread_fence(std::memory_order_release);
       }
 
@@ -408,19 +413,25 @@ namespace letin
         if(!push_local_var(Value(static_cast<std::int64_t>((static_cast<std::uint64_t>(_M_regs.try_abp) << 32) | _M_regs.try_ac)))) return false;
         if(!push_local_var(_M_regs.try_arg2)) return false;
         if(!push_local_var(Value(_M_regs.try_io_r))) return false;
+        if(!push_local_var(Value(_M_regs.try_catch_error))) return false;
+        if(!push_local_var(Value(_M_regs.try_catch_r))) return false;
         return true;
       }
 
       bool pop_try_regs()
       {
-        uint32_t abp2 = _M_regs.abp2 - 4;
+        uint32_t abp2 = _M_regs.abp2 - 6;
         if(_M_regs.abp2 >= 4 &&
             _M_stack[abp2 + 0].type() == VALUE_TYPE_INT &&
             _M_stack[abp2 + 1].type() == VALUE_TYPE_INT &&
-            _M_stack[abp2 + 3].type() == VALUE_TYPE_REF) {
-          _M_regs.sec -= 4;
-          _M_regs.abp2 -= 4;
+            _M_stack[abp2 + 3].type() == VALUE_TYPE_REF &&
+            _M_stack[abp2 + 4].type() == VALUE_TYPE_INT &&
+            _M_stack[abp2 + 5].type() == VALUE_TYPE_REF) {
+          _M_regs.sec -= 6;
+          _M_regs.abp2 -= 6;
           std::atomic_thread_fence(std::memory_order_release);
+          _M_regs.try_catch_r.safely_assign_for_gc(_M_stack[_M_regs.abp2 + 5].raw().r);
+          _M_regs.try_catch_error = _M_stack[_M_regs.abp2 + 4].raw().i;
           _M_regs.try_io_r.safely_assign_for_gc(_M_stack[_M_regs.abp2 + 3].raw().r);
           _M_regs.try_arg2.safely_assign_for_gc(_M_stack[_M_regs.abp2 + 2]);
           _M_regs.try_abp = _M_stack[_M_regs.abp2 + 1].raw().i >> 32;

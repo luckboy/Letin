@@ -1027,7 +1027,7 @@ namespace letin
             size_t j = 0;
             size_t n =  expr_pop_arg_count(opcode_to_arg_type1(instr.opcode));
             if(get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j, n)) {
-              pop_expr_values(context, n);
+              if(!pop_expr_values(context, n)) break;
               context.set_error(ERROR_USER_EXCEPTION, r);
             }
             context.regs().tmp_expr_values[0].safely_assign_for_gc(Value());
@@ -1048,6 +1048,27 @@ namespace letin
           case INSTR_POP:
             if(!context.pop_expr_values(instr.arg1.eval)) context.set_error(ERROR_EMPTY_STACK);
             break;
+          case INSTR_RETHROW:
+          {
+            Reference r;
+            size_t j = 0;
+            size_t n =  expr_pop_arg_count(opcode_to_arg_type1(instr.opcode));
+            if(get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j, n)) {
+              if(!pop_expr_values(context, n)) break;
+              if(check_object_type(context, *r, OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) {
+                if(context.regs().try_catch_flag) {
+                  context.move_try_catch_stack_trace_to_stack_trace();
+                  context.set_error(context.regs().try_catch_error, context.regs().try_catch_r, false);
+                } else {
+                  context.set_error(ERROR_NO_ERROR, r);
+                }
+              } else {
+                context.set_error(ERROR_INCORRECT_OBJECT, r);
+              }
+            }
+            context.regs().tmp_expr_values[0].safely_assign_for_gc(Value());
+            break;
+          }
           default:
             context.set_error(ERROR_INCORRECT_INSTR);
             break;
@@ -2854,6 +2875,8 @@ namespace letin
                 if(!push_arg(context, arg2)) return Value();
                 if(!push_arg(context, io_r)) return Value();
                 context.regs().try_catch_flag = true;
+                context.regs().try_catch_error = error;
+                context.regs().try_catch_r.safely_assign_for_gc(r);
                 context.move_stack_trace_to_try_catch_stack_trace();
                 if(!call_fun_for_force(context, static_cast<uint32_t>(i2))) return Value();
                 must_repeat = true;

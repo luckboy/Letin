@@ -25,6 +25,7 @@ namespace letin
     const std::uint32_t INSTR_THROW =   0x08;
     const std::uint32_t INSTR_PUSH =    0x09;
     const std::uint32_t INSTR_POP =     0x0a;
+    const std::uint32_t INSTR_RETHROW = 0x0b;
 
     const std::uint32_t OP_ILOAD =      0x00;
     const std::uint32_t OP_ILOAD2 =     0x01;
