@@ -1943,6 +1943,8 @@ namespace letin
           return "user exception";
         case ERROR_NO_EXPR_VALUE:
           return "no expression value";
+        case ERROR_NO_ERROR:
+          return "no error";
         default:
           return "unknown error";
       }
