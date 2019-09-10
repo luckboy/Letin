@@ -949,7 +949,10 @@ namespace letin
             size_t j = 0;
             size_t n =  expr_pop_arg_count(opcode_to_arg_type1(instr.opcode));
             if(get_int(context, i, opcode_to_arg_type1(instr.opcode), instr.arg1, j, n)) {
-              if(!pop_expr_values(context, n)) break;
+              if(!pop_expr_values(context, n)) {
+                context.regs().tmp_expr_values[0].safely_assign_for_gc(Value());
+                break;
+              }
               if(i != 0) context.regs().ip += instr.arg2.i;
             }
             context.regs().tmp_expr_values[0].safely_assign_for_gc(Value());
@@ -1027,7 +1030,10 @@ namespace letin
             size_t j = 0;
             size_t n =  expr_pop_arg_count(opcode_to_arg_type1(instr.opcode));
             if(get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j, n)) {
-              if(!pop_expr_values(context, n)) break;
+              if(!pop_expr_values(context, n)) {
+                context.regs().tmp_expr_values[0].safely_assign_for_gc(Value());
+                break;
+              }
               context.set_error(ERROR_USER_EXCEPTION, r);
             }
             context.regs().tmp_expr_values[0].safely_assign_for_gc(Value());
@@ -1054,7 +1060,10 @@ namespace letin
             size_t j = 0;
             size_t n =  expr_pop_arg_count(opcode_to_arg_type1(instr.opcode));
             if(get_ref(context, r, opcode_to_arg_type1(instr.opcode), instr.arg1, j, n)) {
-              if(!pop_expr_values(context, n)) break;
+              if(!pop_expr_values(context, n)) {
+                context.regs().tmp_expr_values[0].safely_assign_for_gc(Value());
+                break;
+              }
               if(check_object_type(context, *r, OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) {
                 if(context.regs().try_catch_flag) {
                   context.move_try_catch_stack_trace_to_stack_trace();
