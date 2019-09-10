@@ -1586,40 +1586,40 @@ namespace letin
         _M_regs.tmp_r.safely_assign_for_gc(object);
         size_t i = 0;
         for(auto &stack_trace_elem : *_M_try_catch_stack_trace) {
-          RegisteredReference tmp_r(_M_gc->new_object(OBJECT_TYPE_TUPLE, 4, this), this, false);
-          if(tmp_r.is_null()) {
+          RegisteredReference stack_trace_elem_r(_M_gc->new_object(OBJECT_TYPE_TUPLE, 4, this), this, false);
+          if(stack_trace_elem_r.is_null()) {
             _M_regs.tmp_r.safely_assign_for_gc(Reference());
             return nullptr;
           }
-          tmp_r->set_elem(0, Value(stack_trace_elem.has_native_fun() ? 1 : 0));
-          tmp_r->set_elem(1, Value(static_cast<int64_t>(stack_trace_elem.fun())));
-          tmp_r->set_elem(2, Value(Reference()));
-          tmp_r->set_elem(3, Value(static_cast<int64_t>(stack_trace_elem.instr())));
-          tmp_r.register_ref();
-          RegisteredReference tmp_r2(this, false);
+          stack_trace_elem_r->set_elem(0, Value(stack_trace_elem.has_native_fun() ? 1 : 0));
+          stack_trace_elem_r->set_elem(1, Value(static_cast<int64_t>(stack_trace_elem.fun())));
+          stack_trace_elem_r->set_elem(2, Value(Reference()));
+          stack_trace_elem_r->set_elem(3, Value(static_cast<int64_t>(stack_trace_elem.instr())));
+          stack_trace_elem_r.register_ref();
+          RegisteredReference fun_name_opt_r(this, false);
           if(stack_trace_elem.fun_name() != nullptr) {
-            RegisteredReference tmp_r3(_M_gc->new_string(*(stack_trace_elem.fun_name()), this), this);
-            if(tmp_r3.is_null()) {
+            RegisteredReference fun_name_r(_M_gc->new_string(*(stack_trace_elem.fun_name()), this), this);
+            if(fun_name_r.is_null()) {
               _M_regs.tmp_r.safely_assign_for_gc(Reference());
               return nullptr;
             }            
-            tmp_r2 = _M_gc->new_pair(Value(1), Value(tmp_r3), this);
-            if(tmp_r2.is_null()) {
+            fun_name_opt_r = _M_gc->new_pair(Value(1), Value(fun_name_r), this);
+            if(fun_name_opt_r.is_null()) {
               _M_regs.tmp_r.safely_assign_for_gc(Reference());
               return nullptr;
             }
-            tmp_r2.register_ref();
+            fun_name_opt_r.register_ref();
           } else {
-            tmp_r2 = _M_gc->new_object(OBJECT_TYPE_TUPLE, 1, this);
-            if(tmp_r2.is_null()) {
+            fun_name_opt_r = _M_gc->new_object(OBJECT_TYPE_TUPLE, 1, this);
+            if(fun_name_opt_r.is_null()) {
               _M_regs.tmp_r.safely_assign_for_gc(Reference());
               return nullptr;
             }
-            tmp_r2->set_elem(0, Value(0));
-            tmp_r2.register_ref();
+            fun_name_opt_r->set_elem(0, Value(0));
+            fun_name_opt_r.register_ref();
           }
-          tmp_r->set_elem(2, Value(tmp_r2));
-          object->set_elem(i, Value(tmp_r));
+          stack_trace_elem_r->set_elem(2, Value(fun_name_opt_r));
+          object->set_elem(i, Value(stack_trace_elem_r));
           i++;
         }
         return object;
