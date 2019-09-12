@@ -1598,11 +1598,12 @@ namespace letin
           stack_trace_elem_r.register_ref();
           RegisteredReference fun_name_opt_r(this, false);
           if(stack_trace_elem.fun_name() != nullptr) {
-            RegisteredReference fun_name_r(_M_gc->new_string(*(stack_trace_elem.fun_name()), this), this);
+            RegisteredReference fun_name_r(_M_gc->new_string(*(stack_trace_elem.fun_name()), this), this, false);
             if(fun_name_r.is_null()) {
               _M_regs.tmp_r.safely_assign_for_gc(Reference());
               return nullptr;
-            }            
+            }
+            fun_name_r.register_ref();
             fun_name_opt_r = _M_gc->new_pair(Value(1), Value(fun_name_r), this);
             if(fun_name_opt_r.is_null()) {
               _M_regs.tmp_r.safely_assign_for_gc(Reference());
