@@ -127,6 +127,9 @@ namespace letin
         CPPUNIT_TEST(test_vm_pops_and_gets_expression_values_for_one_instruction);
         CPPUNIT_TEST(test_vm_complains_on_empty_expression_stack);
         CPPUNIT_TEST(test_vm_complains_on_non_existent_expression_value);
+        CPPUNIT_TEST(test_vm_returns_stack_trace);
+        CPPUNIT_TEST(test_vm_returns_stack_trace_with_function_name);
+        CPPUNIT_TEST(test_vm_does_not_return_stack_trace_for_success);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -204,6 +207,9 @@ namespace letin
         void test_vm_pops_and_gets_expression_values_for_one_instruction();
         void test_vm_complains_on_empty_expression_stack();
         void test_vm_complains_on_non_existent_expression_value();
+        void test_vm_returns_stack_trace();
+        void test_vm_returns_stack_trace_with_function_name();
+        void test_vm_does_not_return_stack_trace_for_success();
       };
 
       DECL_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);

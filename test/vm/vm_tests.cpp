@@ -2267,6 +2267,127 @@ namespace letin
         CPPUNIT_ASSERT(is_expected_error);
       }
 
+      void VirtualMachineTests::test_vm_returns_stack_trace()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        ARG(ILOAD, IMM(20), NA());
+        LET(ICALL, IMM(1), NA());
+        IN();
+        RET(IADD, LV(0), IMM(10));
+        END_FUN();
+        FUN(1);
+        THROW(GV(0));
+        END_FUN();
+        VAR_R(0);
+        OBJECT(IARRAY8);
+        I('a'); I('b'); I('c');
+        END_OBJECT();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_expected_error, &is_expected](const ReturnValue &value, const vector<StackTraceElement> *stack_trace) {
+          is_expected_error = (ERROR_USER_EXCEPTION == value.error());
+          is_expected = (OBJECT_TYPE_IARRAY8 == value.r()->type());
+          is_expected &= (3 == value.r()->length());
+          is_expected &= (strncmp("abc", reinterpret_cast<const char *>(value.r()->raw().is8), 3) == 0);
+          is_expected &= (stack_trace != nullptr);
+          if(stack_trace != nullptr) {
+            is_expected &= ((*stack_trace)[0].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[0].fun() == 1);
+            is_expected &= ((*stack_trace)[0].fun_name() == nullptr);
+            is_expected &= ((*stack_trace)[0].instr() == 0);
+            is_expected &= ((*stack_trace)[1].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[1].fun() == 0);
+            is_expected &= ((*stack_trace)[1].fun_name() == nullptr);
+            is_expected &= ((*stack_trace)[1].instr() == 1 || (*stack_trace)[1].instr() == 3);
+          }
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_returns_stack_trace_with_function_name()
+      {
+        PROG(prog_helper, 0);
+        FUN(2);
+        ARG(ILOAD, A(0), NA());
+        LET(ICALL, IMM(1), NA());
+        IN();
+        RET(IADD, LV(0), A(1));
+        END_FUN();
+        FUN(1);
+        ARG(ILOAD, A(0), NA());
+        LET(ICALL, IMM(2), NA());
+        IN();
+        RET(ISUB, LV(0), IMM(30));
+        END_FUN();
+        FUN(1);
+        RET(IDIV, A(0), IMM(0));
+        END_FUN();
+        SYMBOL_DF("f", 1);
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        bool is_expected = false;
+        vector<Value> args;
+        args.push_back(Value(10));
+        args.push_back(Value(20));
+        Thread thread = _M_vm->start(args, [&is_expected_error, &is_expected](const ReturnValue &value, const vector<StackTraceElement> *stack_trace) {
+          is_expected_error = (ERROR_DIV_BY_ZERO == value.error());
+          is_expected = (stack_trace != nullptr);
+          if(stack_trace != nullptr) {
+            is_expected &= ((*stack_trace)[0].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[0].fun() == 2);
+            is_expected &= ((*stack_trace)[0].fun_name() == nullptr);
+            is_expected &= ((*stack_trace)[0].instr() == 0);
+            is_expected &= ((*stack_trace)[1].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[1].fun() == 1);
+            is_expected &= ((*stack_trace)[1].fun_name() != nullptr);
+            if((*stack_trace)[1].fun_name() != nullptr)
+              is_expected &= (*((*stack_trace)[1].fun_name()) == "f");
+            else
+              is_expected &= false;
+            is_expected &= ((*stack_trace)[1].instr() == 1 || (*stack_trace)[1].instr() == 3);
+            is_expected &= ((*stack_trace)[2].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[2].fun() == 0);
+            is_expected &= ((*stack_trace)[2].fun_name() == nullptr);
+            is_expected &= ((*stack_trace)[2].instr() == 1 || (*stack_trace)[1].instr() == 3);
+          }
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+        CPPUNIT_ASSERT(is_expected);
+      }
+      
+      void VirtualMachineTests::test_vm_does_not_return_stack_trace_for_success()
+      {
+        PROG(prog_helper, 0);
+        FUN(0);
+        RET(IADD, IMM(10), IMM(5));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        Thread thread = _M_vm->start(vector<Value>(), [&is_success, &is_expected](const ReturnValue &value, const vector<StackTraceElement> *stack_trace) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = (15 == value.i());
+          is_expected &= (stack_trace == nullptr);
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+      
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);
