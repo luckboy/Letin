@@ -335,7 +335,7 @@ namespace letin
             value = ReturnValue(0, 0.0, Reference(), ERROR_EXCEPTION);
           }
           lazy_value_mutex_sem.op(-1);
-          try { fun(value, nullptr); } catch(...) {}
+          try { fun(value, thread2.context()->stack_trace()); } catch(...) {}
           _M_gc->delete_thread_context(thread2.context());
           stop_thread_stop_cont();
           if(_M_gc->must_stop_from_vm_thread() && _M_gc->thread_context_count() == 0) {
