@@ -2387,6 +2387,247 @@ namespace letin
         CPPUNIT_ASSERT(is_success);
         CPPUNIT_ASSERT(is_expected);
       }
+
+      void VirtualMachineTests::test_vm_executes_stacktrace()
+      {
+        PROG(prog_helper, 0);
+        FUN(1);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        ARG(RLOAD, A(0), NA());
+        LET(TRY, IMM(1), IMM(2));
+        IN();
+        RET(RLOAD, LV(0), NA());
+        END_FUN();
+        FUN(2);
+        ARG(ILOAD, IMM(10), NA());
+        LET(ICALL, IMM(3), NA());        
+        IN();
+        LET(IADD, LV(0), IMM(10));
+        IN();
+        LET(RUTFILLI, LV(1), A(0));
+        IN();
+        ARG(RLOAD, A(1), NA());
+        RET(RUTSNTH, LV(2), IMM(1));
+        END_FUN();
+        FUN(4);
+        RET(STACKTRACE, A(3), NA());
+        END_FUN();
+        FUN(1);
+        RET(IDIV, A(0), IMM(0));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        Reference unique_io_ref(_M_gc->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+        args.push_back(unique_io_ref);
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value, const vector<StackTraceElement> *stack_trace) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = ((OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) == value.r()->type());
+          is_expected &= (2 == value.r()->length());
+          Reference ref1(value.r()->elem(0).r());
+          is_expected &= (OBJECT_TYPE_RARRAY == ref1->type());
+          is_expected &= (2 == ref1->length());
+          // ref1[0]
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->elem(0).r()->type());
+          is_expected &= (4 == ref1->elem(0).r()->length());
+          // has_native_fun
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(0).r()->elem(0).type());
+          is_expected &= (0 == ref1->elem(0).r()->elem(0).i());
+          // fun
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(0).r()->elem(1).type());
+          is_expected &= (3 == ref1->elem(0).r()->elem(1).i());
+          // fun_name
+          is_expected &= (VALUE_TYPE_REF == ref1->elem(0).r()->elem(2).type());
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->elem(0).r()->elem(2).r()->type());
+          is_expected &= (1 == ref1->elem(0).r()->elem(2).r()->length());
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(0).r()->elem(2).r()->elem(0).type());
+          is_expected &= (0 == ref1->elem(0).r()->elem(2).r()->elem(0).i());
+          // instr
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(0).r()->elem(3).type());
+          is_expected &= (0 == ref1->elem(0).r()->elem(3).i());
+          // ref1[1]
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->elem(1).r()->type());
+          is_expected &= (4 == ref1->elem(1).r()->length());
+          // has_native_fun
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(1).r()->elem(0).type());
+          is_expected &= (0 == ref1->elem(1).r()->elem(0).i());
+          // fun
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(1).r()->elem(1).type());
+          is_expected &= (1 == ref1->elem(1).r()->elem(1).i());
+          // fun_name
+          is_expected &= (VALUE_TYPE_REF == ref1->elem(1).r()->elem(2).type());
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->elem(1).r()->elem(2).r()->type());
+          is_expected &= (1 == ref1->elem(1).r()->elem(2).r()->length());
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(1).r()->elem(2).r()->elem(0).type());
+          is_expected &= (0 == ref1->elem(1).r()->elem(2).r()->elem(0).i());
+          // instr
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(1).r()->elem(3).type());
+          is_expected &= (1 == ref1->elem(1).r()->elem(3).i() || 3 == ref1->elem(1).r()->elem(3).i());
+          Reference ref2(value.r()->elem(1).r());
+          is_expected &= ((OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE) == ref2->type());
+          is_expected &= (stack_trace == nullptr);
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_executes_stacktrace_with_function_name()
+      {
+        PROG(prog_helper, 0);
+        FUN(1);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        ARG(RLOAD, A(0), NA());
+        LET(TRY, IMM(1), IMM(2));
+        IN();
+        RET(RLOAD, LV(0), NA());
+        END_FUN();
+        FUN(2);
+        ARG(ILOAD, IMM(10), NA());
+        LET(ICALL, IMM(3), NA());        
+        IN();
+        LET(ISUB, LV(0), IMM(10));
+        IN();
+        LET(RUTFILLI, LV(1), A(0));
+        IN();
+        ARG(RLOAD, A(1), NA());
+        RET(RUTSNTH, LV(2), IMM(1));
+        END_FUN();
+        FUN(4);
+        RET(STACKTRACE, A(3), NA());
+        END_FUN();
+        FUN(1);
+        LET(ICALL, IMM(4), NA());
+        IN();
+        RET(IADD, LV(0), A(0));
+        END_FUN();
+        FUN(0);
+        THROW(GV(0));
+        END_FUN();
+        VAR_R(0);
+        OBJECT(IARRAY8);
+        I('d'); I('e'); I('f');
+        END_OBJECT();
+        SYMBOL_DF("f", 3);
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        Reference unique_io_ref(_M_gc->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+        args.push_back(unique_io_ref);
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value, const vector<StackTraceElement> *stack_trace) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = ((OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) == value.r()->type());
+          is_expected &= (2 == value.r()->length());
+          Reference ref1(value.r()->elem(0).r());
+          is_expected &= (OBJECT_TYPE_RARRAY == ref1->type());
+          is_expected &= (3 == ref1->length());
+          // ref1[0]
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->elem(0).r()->type());
+          is_expected &= (4 == ref1->elem(0).r()->length());
+          // has_native_fun
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(0).r()->elem(0).type());
+          is_expected &= (0 == ref1->elem(0).r()->elem(0).i());
+          // fun
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(0).r()->elem(1).type());
+          is_expected &= (4 == ref1->elem(0).r()->elem(1).i());
+          // fun_name
+          is_expected &= (VALUE_TYPE_REF == ref1->elem(0).r()->elem(2).type());
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->elem(0).r()->elem(2).r()->type());
+          is_expected &= (1 == ref1->elem(0).r()->elem(2).r()->length());
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(0).r()->elem(2).r()->elem(0).type());
+          is_expected &= (0 == ref1->elem(0).r()->elem(2).r()->elem(0).i());
+          // instr
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(0).r()->elem(3).type());
+          is_expected &= (0 == ref1->elem(0).r()->elem(3).i());
+          // ref1[1]
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->elem(1).r()->type());
+          is_expected &= (4 == ref1->elem(1).r()->length());
+          // has_native_fun
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(1).r()->elem(0).type());
+          is_expected &= (0 == ref1->elem(1).r()->elem(0).i());
+          // fun
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(1).r()->elem(1).type());
+          is_expected &= (3 == ref1->elem(1).r()->elem(1).i());
+          // fun_name
+          is_expected &= (VALUE_TYPE_REF == ref1->elem(1).r()->elem(2).type());
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->elem(1).r()->elem(2).r()->type());
+          is_expected &= (2 == ref1->elem(1).r()->elem(2).r()->length());
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(1).r()->elem(2).r()->elem(0).type());
+          is_expected &= (1 == ref1->elem(1).r()->elem(2).r()->elem(0).i());
+          is_expected &= (VALUE_TYPE_REF == ref1->elem(1).r()->elem(2).r()->elem(1).type());
+          is_expected &= (OBJECT_TYPE_IARRAY8 == ref1->elem(1).r()->elem(2).r()->elem(1).r()->type());
+          is_expected &= (1 == ref1->elem(1).r()->elem(2).r()->elem(1).r()->length());
+          is_expected &= (strncmp("f", reinterpret_cast<char *>(ref1->elem(1).r()->elem(2).r()->elem(1).r()->raw().is8), 1) == 0);          
+          // instr
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(1).r()->elem(3).type());
+          is_expected &= (0 == ref1->elem(1).r()->elem(3).i() || 2 == ref1->elem(1).r()->elem(3).i());
+          // ref1[2]
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->elem(2).r()->type());
+          is_expected &= (4 == ref1->elem(2).r()->length());
+          // has_native_fun
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(2).r()->elem(0).type());
+          is_expected &= (0 == ref1->elem(2).r()->elem(0).i());
+          // fun
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(2).r()->elem(1).type());
+          is_expected &= (1 == ref1->elem(2).r()->elem(1).i());
+          // fun_name
+          is_expected &= (VALUE_TYPE_REF == ref1->elem(2).r()->elem(2).type());
+          is_expected &= (OBJECT_TYPE_TUPLE == ref1->elem(2).r()->elem(2).r()->type());
+          is_expected &= (1 == ref1->elem(2).r()->elem(2).r()->length());
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(2).r()->elem(2).r()->elem(0).type());
+          is_expected &= (0 == ref1->elem(2).r()->elem(2).r()->elem(0).i());
+          // instr
+          is_expected &= (VALUE_TYPE_INT == ref1->elem(2).r()->elem(3).type());
+          is_expected &= (1 == ref1->elem(2).r()->elem(3).i() || 3 == ref1->elem(2).r()->elem(3).i());
+          Reference ref2(value.r()->elem(1).r());
+          is_expected &= ((OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE) == ref2->type());
+          is_expected &= (stack_trace == nullptr);
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
+      
+      void VirtualMachineTests::test_vm_executes_stacktrace_for_no_stack_trace()
+      {
+        PROG(prog_helper, 0);
+        FUN(1);
+        RET(STACKTRACE, A(0), NA());
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_success = false;
+        bool is_expected = false;
+        vector<Value> args;
+        Reference unique_io_ref(_M_gc->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+        args.push_back(unique_io_ref);
+        Thread thread = _M_vm->start(args, [&is_success, &is_expected](const ReturnValue &value, const vector<StackTraceElement> *stack_trace) {
+          is_success = (ERROR_SUCCESS == value.error());
+          is_expected = ((OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) == value.r()->type());
+          is_expected &= (2 == value.r()->length());
+          Reference ref1(value.r()->elem(0).r());
+          is_expected &= (OBJECT_TYPE_RARRAY == ref1->type());
+          is_expected &= (0 == ref1->length());
+          Reference ref2(value.r()->elem(1).r());
+          is_expected &= ((OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE) == ref2->type());
+          is_expected &= (stack_trace == nullptr);
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_success);
+        CPPUNIT_ASSERT(is_expected);
+      }
       
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 

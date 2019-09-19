@@ -130,6 +130,9 @@ namespace letin
         CPPUNIT_TEST(test_vm_returns_stack_trace);
         CPPUNIT_TEST(test_vm_returns_stack_trace_with_function_name);
         CPPUNIT_TEST(test_vm_does_not_return_stack_trace_for_success);
+        CPPUNIT_TEST(test_vm_executes_stacktrace);
+        CPPUNIT_TEST(test_vm_executes_stacktrace_with_function_name);
+        CPPUNIT_TEST(test_vm_executes_stacktrace_for_no_stack_trace);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Loader *_M_loader;
@@ -210,6 +213,9 @@ namespace letin
         void test_vm_returns_stack_trace();
         void test_vm_returns_stack_trace_with_function_name();
         void test_vm_does_not_return_stack_trace_for_success();
+        void test_vm_executes_stacktrace();
+        void test_vm_executes_stacktrace_with_function_name();
+        void test_vm_executes_stacktrace_for_no_stack_trace();
       };
 
       DECL_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
