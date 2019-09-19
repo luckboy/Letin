@@ -2296,6 +2296,7 @@ namespace letin
           is_expected &= (strncmp("abc", reinterpret_cast<const char *>(value.r()->raw().is8), 3) == 0);
           is_expected &= (stack_trace != nullptr);
           if(stack_trace != nullptr) {
+            is_expected &= (2U == stack_trace->size());
             is_expected &= ((*stack_trace)[0].has_native_fun() == false);
             is_expected &= ((*stack_trace)[0].fun() == 1);
             is_expected &= ((*stack_trace)[0].fun_name() == nullptr);
@@ -2343,6 +2344,7 @@ namespace letin
           is_expected_error = (ERROR_DIV_BY_ZERO == value.error());
           is_expected = (stack_trace != nullptr);
           if(stack_trace != nullptr) {
+            is_expected &= (3U == stack_trace->size());
             is_expected &= ((*stack_trace)[0].has_native_fun() == false);
             is_expected &= ((*stack_trace)[0].fun() == 2);
             is_expected &= ((*stack_trace)[0].fun_name() == nullptr);
@@ -2668,6 +2670,7 @@ namespace letin
           is_expected_error = (ERROR_DIV_BY_ZERO == value.error());
           is_expected = (stack_trace != nullptr);
           if(stack_trace != nullptr) {
+            is_expected &= (4U == stack_trace->size());
             is_expected &= ((*stack_trace)[0].has_native_fun() == false);
             is_expected &= ((*stack_trace)[0].fun() == 3);
             is_expected &= ((*stack_trace)[0].fun_name() == nullptr);
@@ -2737,6 +2740,7 @@ namespace letin
           is_expected &= (strncmp("abc", reinterpret_cast<const char *>(value.r()->raw().is8), 3) == 0);
           is_expected &= (stack_trace != nullptr);
           if(stack_trace != nullptr) {
+            is_expected &= (4U == stack_trace->size());
             is_expected &= ((*stack_trace)[0].has_native_fun() == false);
             is_expected &= ((*stack_trace)[0].fun() == 3);
             is_expected &= ((*stack_trace)[0].fun_name() == nullptr);
