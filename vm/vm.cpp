@@ -1402,7 +1402,7 @@ namespace letin
     void ThreadContext::set_error(int error, const Reference &r, bool is_new_stack_trace)
     {
       if(!_M_regs.try_flag || _M_regs.try_abp < _M_regs.nfbp) {
-        set_error_without_try(error, r);
+        set_error_without_try(error, r, is_new_stack_trace);
       } else {
         try_lock_and_unlock_lazy_values(_M_regs.try_abp + _M_regs.try_ac);
         add_stack_trace_elems(_M_regs.try_abp + _M_regs.try_ac, is_new_stack_trace);
