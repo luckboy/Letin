@@ -2628,7 +2628,159 @@ namespace letin
         CPPUNIT_ASSERT(is_success);
         CPPUNIT_ASSERT(is_expected);
       }
+
+      void VirtualMachineTests::test_vm_executes_rethrow_for_division_by_zero()
+      {
+        PROG(prog_helper, 0);
+        FUN(1);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        ARG(RLOAD, A(0), NA());
+        RET(TRY, IMM(1), IMM(2));
+        END_FUN();
+        FUN(2);
+        ARG(ILOAD, IMM(10), NA());
+        LET(ICALL, IMM(3), NA());        
+        IN();
+        LET(IADD, LV(0), IMM(10));
+        IN();
+        LET(RUTFILLI, LV(1), A(0));
+        IN();
+        ARG(RLOAD, A(1), NA());
+        RET(RUTSNTH, LV(2), IMM(1));
+        END_FUN();
+        FUN(4);
+        RETHROW(A(3));
+        END_FUN();
+        FUN(1);
+        RET(IDIV, A(0), IMM(0));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        bool is_expected = false;
+        vector<Value> args;
+        Reference unique_io_ref(_M_gc->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+        args.push_back(unique_io_ref);
+        Thread thread = _M_vm->start(args, [&is_expected_error, &is_expected](const ReturnValue &value, const vector<StackTraceElement> *stack_trace) {
+          is_expected_error = (ERROR_DIV_BY_ZERO == value.error());
+          is_expected = (stack_trace != nullptr);
+          if(stack_trace != nullptr) {
+            is_expected &= ((*stack_trace)[0].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[0].fun() == 3);
+            is_expected &= ((*stack_trace)[0].fun_name() == nullptr);
+            is_expected &= ((*stack_trace)[0].instr() == 0);
+            is_expected &= ((*stack_trace)[1].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[1].fun() == 1);
+            is_expected &= ((*stack_trace)[1].fun_name() == nullptr);
+            is_expected &= ((*stack_trace)[1].instr() == 1 || (*stack_trace)[1].instr() == 3);
+            is_expected &= ((*stack_trace)[2].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[2].fun() == 2);
+            is_expected &= ((*stack_trace)[2].fun_name() == nullptr);
+            is_expected &= ((*stack_trace)[2].instr() == 0);
+            is_expected &= ((*stack_trace)[3].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[3].fun() == 0);
+            is_expected &= ((*stack_trace)[3].fun_name() == nullptr);
+            is_expected &= ((*stack_trace)[3].instr() == 3);
+          }
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+        CPPUNIT_ASSERT(is_expected);
+      }
+
+      void VirtualMachineTests::test_vm_executes_rethrow_for_user_exception()
+      {
+        PROG(prog_helper, 0);
+        FUN(1);
+        ARG(ILOAD, IMM(1), NA());
+        ARG(ILOAD, IMM(2), NA());
+        ARG(RLOAD, A(0), NA());
+        RET(TRY, IMM(1), IMM(2));
+        END_FUN();
+        FUN(2);
+        ARG(ILOAD, IMM(10), NA());
+        LET(ICALL, IMM(3), NA());        
+        IN();
+        LET(ISUB, LV(0), IMM(15));
+        IN();
+        LET(RUTFILLI, LV(1), A(0));
+        IN();
+        ARG(RLOAD, A(1), NA());
+        RET(RUTSNTH, LV(2), IMM(1));
+        END_FUN();
+        FUN(4);
+        RETHROW(A(3));
+        END_FUN();
+        FUN(1);
+        THROW(GV(0));
+        END_FUN();
+        VAR_R(0);
+        OBJECT(IARRAY8);
+        I('a'); I('b'); I('c');
+        END_OBJECT();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        bool is_expected = false;
+        vector<Value> args;
+        Reference unique_io_ref(_M_gc->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+        args.push_back(unique_io_ref);
+        Thread thread = _M_vm->start(args, [&is_expected_error, &is_expected](const ReturnValue &value, const vector<StackTraceElement> *stack_trace) {
+          is_expected_error = (ERROR_USER_EXCEPTION == value.error());
+          is_expected = (OBJECT_TYPE_IARRAY8 == value.r()->type());
+          is_expected &= (3 == value.r()->length());
+          is_expected &= (strncmp("abc", reinterpret_cast<const char *>(value.r()->raw().is8), 3) == 0);
+          is_expected &= (stack_trace != nullptr);
+          if(stack_trace != nullptr) {
+            is_expected &= ((*stack_trace)[0].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[0].fun() == 3);
+            is_expected &= ((*stack_trace)[0].fun_name() == nullptr);
+            is_expected &= ((*stack_trace)[0].instr() == 0);
+            is_expected &= ((*stack_trace)[1].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[1].fun() == 1);
+            is_expected &= ((*stack_trace)[1].fun_name() == nullptr);
+            is_expected &= ((*stack_trace)[1].instr() == 1 || (*stack_trace)[1].instr() == 3);
+            is_expected &= ((*stack_trace)[2].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[2].fun() == 2);
+            is_expected &= ((*stack_trace)[2].fun_name() == nullptr);
+            is_expected &= ((*stack_trace)[2].instr() == 0);
+            is_expected &= ((*stack_trace)[3].has_native_fun() == false);
+            is_expected &= ((*stack_trace)[3].fun() == 0);
+            is_expected &= ((*stack_trace)[3].fun_name() == nullptr);
+            is_expected &= ((*stack_trace)[3].instr() == 3);
+          }
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+        CPPUNIT_ASSERT(is_expected);
+      }
       
+      void VirtualMachineTests::test_vm_complains_on_non_existent_error_for_rethrow()
+      {
+        PROG(prog_helper, 0);
+        FUN(1);
+        RETHROW(A(0));
+        END_FUN();
+        END_PROG();
+        unique_ptr<void, ProgramDelete> ptr(prog_helper.ptr());
+        bool is_loaded = _M_vm->load(ptr.get(), prog_helper.size());
+        CPPUNIT_ASSERT(is_loaded);
+        bool is_expected_error = false;
+        vector<Value> args;
+        Reference unique_io_ref(_M_gc->new_immortal_object(OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE, 0));
+        args.push_back(unique_io_ref);
+        Thread thread = _M_vm->start(args, [&is_expected_error](const ReturnValue &value) {
+          is_expected_error = (ERROR_NO_ERROR == value.error());
+        });
+        thread.system_thread().join();
+        CPPUNIT_ASSERT(is_expected_error);
+      }
+
       DEF_IMPL_VM_TESTS(Eager, InterpreterVirtualMachine);
 
       DEF_IMPL_VM_TESTS(Lazy, InterpreterVirtualMachine);

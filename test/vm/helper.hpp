@@ -41,6 +41,7 @@
 #define THROW(arg)              INSTR(make_instruction(opcode::INSTR_THROW, 0, arg, Argument(0), 2))
 #define PUSH(op, arg1, arg2)    INSTR(make_instruction(opcode::INSTR_PUSH, opcode::OP_##op, arg1, arg2, 2))
 #define POP(i)                  INSTR(make_instruction(opcode::INSTR_POP, 0, Argument(i), Argument(0), 2))
+#define RETHROW(arg)            INSTR(make_instruction(opcode::INSTR_RETHROW, 0, arg, Argument(0), 2))
 
 #define FUN(arg_count)                                                          \
 {                                                                               \
