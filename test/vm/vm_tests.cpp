@@ -2358,7 +2358,7 @@ namespace letin
             is_expected &= ((*stack_trace)[2].has_native_fun() == false);
             is_expected &= ((*stack_trace)[2].fun() == 0);
             is_expected &= ((*stack_trace)[2].fun_name() == nullptr);
-            is_expected &= ((*stack_trace)[2].instr() == 1 || (*stack_trace)[1].instr() == 3);
+            is_expected &= ((*stack_trace)[2].instr() == 1 || (*stack_trace)[2].instr() == 3);
           }
         });
         thread.system_thread().join();
