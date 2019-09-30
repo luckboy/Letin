@@ -927,8 +927,12 @@ namespace letin
           return false;
         }
         if(instr.arg1() != nullptr) {
-          if(instr.arg1()->type() == Argument::TYPE_EVAL)
+          if(instr.arg1()->type() == Argument::TYPE_EVAL) {
             ungen_fun.instrs[ip].arg1.eval = instr.arg1()->eval();
+          } else {
+            errors.push_back(Error(instr.pos(), "incorrect first argument"));
+            return false;
+          }
         } else {
           errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
           return false;
