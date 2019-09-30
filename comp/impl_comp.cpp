@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2016 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2016, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -838,6 +838,9 @@ namespace letin
             if(!get_instr_addr(ungen_fun, instr_addr, instr.arg2()->ident(), instr.arg2()->pos(), errors))
               is_success = false;
             ungen_fun.instrs[ip].arg2.i = instr_addr - (ip + 1);
+          } else {
+            errors.push_back(Error(instr.pos(), "second argument isn't label"));
+            is_success = false;
           }
         } else {
           errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
@@ -862,6 +865,9 @@ namespace letin
             if(!get_instr_addr(ungen_fun, instr_addr, instr.arg1()->ident(), instr.arg1()->pos(), errors))
               return false;
             ungen_fun.instrs[ip].arg1.i = instr_addr - (ip + 1);
+          } else {
+            errors.push_back(Error(instr.pos(), "first argument isn't label"));
+            return false;
           }
         } else {
           errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
