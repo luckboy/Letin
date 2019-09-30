@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -140,6 +140,12 @@ namespace letin
             break;
           case TYPE_IDENT:
             new (&_M_ident) string(arg._M_ident);
+            break;
+          case TYPE_POP:
+            break;
+          case TYPE_EVAL:
+            _M_eval = arg._M_eval;
+            break;
         }
       }
 

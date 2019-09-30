@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2016 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2016, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -87,6 +87,8 @@
 %token <string>         IDENT
 %token <u32>            LV
 %token <u32>            A
+%token                  PP
+%token <u32>            EV
 %token                  ENTRY
 %token                  DEFINE
 %token                  INCLUDE
@@ -214,6 +216,8 @@ arg:            arg_value %dprec 1              { $$ = new Argument(*$1, P(@1));
 |               LV                              { $$ = new Argument(LVAR, $1, P(@1)); }
 |               A                               { $$ = new Argument(ARG, $1, P(@1)); }
 |               ident %dprec 2                  { $$ = new Argument(*$1, P(@1)); delete $1; }
+|               PP                              { $$ = new Argument(POP, P(@1)); }
+|               EV                              { $$ = new Argument(EVAL, $1, P(@1)); }
 ;
 
 arg_value:      expr                            { $$ = new ArgumentValue(*$1); delete $1; }

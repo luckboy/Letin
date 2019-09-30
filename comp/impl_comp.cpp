@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2016 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2016, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -190,7 +190,8 @@ namespace letin
         { "try",        { OP_TRY,       VALUE_TYPE_INT,         VALUE_TYPE_INT } },
         { "iforce",     { OP_IFORCE,    VALUE_TYPE_INT,         VALUE_TYPE_ERROR } },
         { "fforce",     { OP_FFORCE,    VALUE_TYPE_FLOAT,       VALUE_TYPE_ERROR } },
-        { "rforce",     { OP_RFORCE,    VALUE_TYPE_REF,         VALUE_TYPE_ERROR } }
+        { "rforce",     { OP_RFORCE,    VALUE_TYPE_REF,         VALUE_TYPE_ERROR } },
+        { "stacktrace", { OP_STACKTRACE, VALUE_TYPE_REF,        VALUE_TYPE_ERROR } }
       };
 
       struct FunctionInfo
@@ -396,12 +397,14 @@ namespace letin
             for(auto line : fun.lines()) {
               if(line.instr() != nullptr) {
                 if(line.instr()->instr() == "let" || line.instr()->instr() == "arg" ||
-                    line.instr()->instr() == "ret" || line.instr()->instr() == "lettuple") {
+                    line.instr()->instr() == "ret" || line.instr()->instr() == "lettuple" ||
+                    line.instr()->instr() == "push") {
                   if(line.instr()->arg1() != nullptr)
                     reloc_size += reloc_size_from_arg(*(line.instr()->arg1()));
                   if(line.instr()->arg2() != nullptr)
                     reloc_size += reloc_size_from_arg(*(line.instr()->arg2()));
-                } else if(line.instr()->instr() == "jc" || line.instr()->instr() == "throw") {
+                } else if(line.instr()->instr() == "jc" || line.instr()->instr() == "throw" ||
+                    line.instr()->instr() == "rethrow") {
                   if(line.instr()->arg1() != nullptr)
                     reloc_size += reloc_size_from_arg(*(line.instr()->arg1()));
                 }
@@ -437,12 +440,14 @@ namespace letin
             for(auto line : fun.lines()) {
               if(line.instr() != nullptr) {
                 if(line.instr()->instr() == "let" || line.instr()->instr() == "arg" ||
-                    line.instr()->instr() == "ret" || line.instr()->instr() == "lettuple") {
+                    line.instr()->instr() == "ret" || line.instr()->instr() == "lettuple" ||
+                    line.instr()->instr() == "push") {
                   if(line.instr()->arg1() != nullptr)
                     add_symbol_name_from_arg(ungen_prog, fun_symbol_names, var_symbol_names, native_fun_symbol_names, *(line.instr()->arg1()));
                   if(line.instr()->arg2() != nullptr)
                     add_symbol_name_from_arg(ungen_prog, fun_symbol_names, var_symbol_names, native_fun_symbol_names, *(line.instr()->arg2()));
-                } else if(line.instr()->instr() == "jc" || line.instr()->instr() == "throw") {
+                } else if(line.instr()->instr() == "jc" || line.instr()->instr() == "throw" ||
+                    line.instr()->instr() == "rethrow") {
                   if(line.instr()->arg1() != nullptr)
                     add_symbol_name_from_arg(ungen_prog, fun_symbol_names, var_symbol_names, native_fun_symbol_names, *(line.instr()->arg1()));
                 }
@@ -708,6 +713,14 @@ namespace letin
               return false;
             format_arg_type = ARG_TYPE_GVAR;
             return true;
+          case Argument::TYPE_POP:
+            format_arg.i = 0;
+            format_arg_type = ARG_TYPE_POP;
+            break;
+          case Argument::TYPE_EVAL:
+            format_arg.eval = arg.eval();
+            format_arg_type = ARG_TYPE_EVAL;
+            break;
         }
         return false;
       }
@@ -877,7 +890,7 @@ namespace letin
         return true;
       }
 
-      static bool generate_throw(UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, list<Error> &errors)
+      static bool generate_throw_or_rethrow(UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, int opcode_instr, list<Error> &errors)
       {
         if(instr.op() != nullptr) {
           errors.push_back(Error(instr.pos(), "instruction can't have operation"));
@@ -895,12 +908,35 @@ namespace letin
           errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
           return false;
         }
-        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_THROW, 0, arg_type, ARG_TYPE_IMM));
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(opcode_instr, 0, arg_type, ARG_TYPE_IMM));
         ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
         ungen_fun.instrs[ip].arg2.i = 0;
         return true;
       }
 
+      static bool generate_pop(const UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, list<Error> &errors)
+      {
+        if(instr.op() != nullptr) {
+          errors.push_back(Error(instr.pos(), "instruction can't have operation"));
+          return false;
+        }
+        if(instr.arg1() != nullptr) {
+          if(instr.arg1()->type() == Argument::TYPE_EVAL)
+            ungen_fun.instrs[ip].arg1.eval = instr.arg1()->eval();
+        } else {
+          errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+          return false;
+        }
+        if(instr.arg2() != nullptr) {
+          errors.push_back(Error(instr.pos(), "incorrect number of arguments"));
+          return false;
+        }
+        ungen_fun.instrs[ip].opcode = htonl(opcode::opcode(INSTR_POP, 0, ARG_TYPE_IMM, ARG_TYPE_IMM));
+        ungen_fun.instrs[ip].arg1.i = htonl(ungen_fun.instrs[ip].arg1.i);
+        ungen_fun.instrs[ip].arg2.i = 0;
+        return true;
+      }      
+      
       static bool generate_instr(UngeneratedProgram &ungen_prog, const UngeneratedFunction &ungen_fun, uint32_t ip, const Instruction &instr, list<Error> &errors)
       {
         if(instr.instr() == "let") {
@@ -920,7 +956,13 @@ namespace letin
         } else if(instr.instr() == "lettuple") {
           return generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_LETTUPLE, errors);
         } else if(instr.instr() == "throw") {
-          return generate_throw(ungen_prog, ungen_fun, ip, instr, errors);
+          return generate_throw_or_rethrow(ungen_prog, ungen_fun, ip, instr, INSTR_THROW, errors);
+        } else if(instr.instr() == "push") {
+          return generate_instr_with_op(ungen_prog, ungen_fun, ip, instr, INSTR_PUSH, errors);
+        } else if(instr.instr() == "pop") {
+          return generate_pop(ungen_prog, ungen_fun, ip, instr, errors);
+        } else if(instr.instr() == "rethrow") {
+          return generate_throw_or_rethrow(ungen_prog, ungen_fun, ip, instr, INSTR_RETHROW, errors);
         } else {
           errors.push_back(Error(instr.pos(), "unknown instruction"));
           return false;

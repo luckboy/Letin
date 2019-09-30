@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -184,7 +184,6 @@ namespace letin
         const Position &pos() const { return _M_pos; }
       };
 
-
       class Object
       {
         std::string _M_type;
@@ -207,7 +206,9 @@ namespace letin
         const Position &pos() const { return _M_pos; }
       };
 
-      enum IndexArgumentEnum { LVAR, ARG };
+      enum IndexArgumentEnum { LVAR, ARG, EVAL };
+      
+      enum NonIndexArgumentEnum { POP };
 
       class Argument
       {
@@ -217,7 +218,9 @@ namespace letin
           TYPE_IMM,
           TYPE_LVAR,
           TYPE_ARG,
-          TYPE_IDENT
+          TYPE_IDENT,
+          TYPE_POP,
+          TYPE_EVAL
         };
       private:
         Type _M_type;
@@ -227,6 +230,7 @@ namespace letin
           std::uint32_t _M_lvar;
           std::uint32_t _M_arg;
           std::string _M_ident;
+          std::uint32_t _M_eval;
         };
         Position _M_pos;
       public:
@@ -238,14 +242,19 @@ namespace letin
         {
           if(arg_enum == LVAR) {
             _M_type = TYPE_LVAR; _M_lvar = i;
-          } else {
+          } else if(arg_enum == ARG) {
             _M_type = TYPE_ARG; _M_arg = i;
+          } else {
+            _M_type = TYPE_EVAL; _M_arg = i;
           }
         }
 
         Argument(const std::string  &ident, const Position &pos) :
           _M_type(TYPE_IDENT), _M_ident(ident), _M_pos(pos){}
 
+        Argument(NonIndexArgumentEnum arg_enum, const Position &pos) :
+          _M_type(TYPE_POP), _M_pos(pos) {}
+          
         Argument(const Argument &arg) : _M_type(arg._M_type), _M_pos(arg._M_pos) { copy_union(arg); }
 
         virtual ~Argument();
@@ -273,6 +282,8 @@ namespace letin
         std::uint32_t arg() const { return _M_type == TYPE_ARG ? _M_arg : 0; }
 
         std::string ident() const { return _M_type == TYPE_IDENT ? _M_ident : std::string(); }
+        
+        std::uint32_t eval() const { return _M_type == TYPE_EVAL ? _M_eval : 0; }
 
         const Position pos() const { return _M_pos; }
       };
@@ -398,7 +409,6 @@ namespace letin
 
         const Position &pos() const { return _M_pos; }
       };
-
 
       class FunctionLine
       {
