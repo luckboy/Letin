@@ -658,11 +658,11 @@ namespace letin
               case VALUE_TYPE_INT:
                 if(arg.v().type() == ArgumentValue::TYPE_INT) {
                   if(arg.v().i() < INT32_MIN) {
-                    errors.push_back(Error(instr_pos, "integer number is too small"));
+                    errors.push_back(Error(arg.pos(), "integer number is too small"));
                     return false;
                   }
                   if(arg.v().i() > static_cast<int64_t>(UINT32_MAX)) {
-                    errors.push_back(Error(instr_pos, "integer number is too large"));
+                    errors.push_back(Error(arg.pos(), "integer number is too large"));
                     return false;
                   }
                   format_arg.i = arg.v().i();
@@ -839,7 +839,7 @@ namespace letin
               is_success = false;
             ungen_fun.instrs[ip].arg2.i = instr_addr - (ip + 1);
           } else {
-            errors.push_back(Error(instr.pos(), "second argument isn't label"));
+            errors.push_back(Error(instr.arg2()->pos(), "argument isn't label"));
             is_success = false;
           }
         } else {
@@ -866,7 +866,7 @@ namespace letin
               return false;
             ungen_fun.instrs[ip].arg1.i = instr_addr - (ip + 1);
           } else {
-            errors.push_back(Error(instr.pos(), "first argument isn't label"));
+            errors.push_back(Error(instr.arg1()->pos(), "argument isn't label"));
             return false;
           }
         } else {
