@@ -930,7 +930,7 @@ namespace letin
           if(instr.arg1()->type() == Argument::TYPE_EVAL) {
             ungen_fun.instrs[ip].arg1.eval = instr.arg1()->eval();
           } else {
-            errors.push_back(Error(instr.pos(), "incorrect first argument"));
+            errors.push_back(Error(instr.arg1()->pos(), "incorrect argument"));
             return false;
           }
         } else {
