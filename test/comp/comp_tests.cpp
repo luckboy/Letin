@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -665,10 +665,6 @@ f(a0) = {\n\
         ASSERT_RET(RTUPLE, NA(), NA(), 2);
         END_ASSERT_FUN();
         END_ASSERT_PROG();
-      }
-
-      void CompilerTests::test_compiler_evaluates_defined_values()
-      {
       }
 
       void CompilerTests::test_compiler_evaluates_instruction_argument_values()
@@ -1488,7 +1484,7 @@ f9(a0) = {\n\
         END_ASSERT_PROG();
       }
 
-      void CompilerTests::test_compiler_complains_on_contraditory_annotations()
+      void CompilerTests::test_compiler_complains_on_contradictory_annotations()
       {
         istringstream iss("\n\
 @onlylazy @eager f1(a0) = {\n\
