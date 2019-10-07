@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -54,7 +54,6 @@ namespace letin
         CPPUNIT_TEST(test_compiler_complains_on_undefined_variables_for_unrelocatable);
         CPPUNIT_TEST(test_compiler_complains_on_already_variables);
         CPPUNIT_TEST(test_compiler_compiles_load2_instructions);
-        CPPUNIT_TEST(test_compiler_evaluates_defined_values);
         CPPUNIT_TEST(test_compiler_evaluates_instruction_argument_values);
         CPPUNIT_TEST(test_compiler_evaluates_global_variable_values);
         CPPUNIT_TEST(test_compiler_complains_on_undefined_value);
@@ -72,7 +71,7 @@ namespace letin
         CPPUNIT_TEST(test_compiler_compiles_throws);
         CPPUNIT_TEST(test_compiler_compiles_program_with_native_function_symbols);
         CPPUNIT_TEST(test_compiler_compiles_program_with_function_infos);
-        CPPUNIT_TEST(test_compiler_complains_on_contraditory_annotations);
+        CPPUNIT_TEST(test_compiler_complains_on_contradictory_annotations);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Compiler *_M_comp;
@@ -100,7 +99,6 @@ namespace letin
         void test_compiler_complains_on_already_variables();
         void test_compiler_complains_on_incorrect_number_of_arguments();
         void test_compiler_compiles_load2_instructions();
-        void test_compiler_evaluates_defined_values();
         void test_compiler_evaluates_instruction_argument_values();
         void test_compiler_evaluates_global_variable_values();
         void test_compiler_complains_on_undefined_value();
@@ -118,7 +116,7 @@ namespace letin
         void test_compiler_compiles_throws();
         void test_compiler_compiles_program_with_native_function_symbols();
         void test_compiler_compiles_program_with_function_infos();
-        void test_compiler_complains_on_contraditory_annotations();
+        void test_compiler_complains_on_contradictory_annotations();
       };
 
       DECL_IMPL_COMP_TESTS(ImplCompiler);
