@@ -716,11 +716,11 @@ namespace letin
           case Argument::TYPE_POP:
             format_arg.i = 0;
             format_arg_type = ARG_TYPE_POP;
-            break;
+            return true;
           case Argument::TYPE_EVAL:
             format_arg.eval = arg.eval();
             format_arg_type = ARG_TYPE_EVAL;
-            break;
+            return true;
         }
         return false;
       }
