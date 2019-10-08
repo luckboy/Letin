@@ -1571,6 +1571,157 @@ f8(a0) = {\n\
         CPPUNIT_ASSERT(string("function can't be eager and lazy") == error_vector[8].msg());
       }
 
+      void CompilerTests::test_compiler_compiles_expression()
+      {
+        istringstream iss("\n\
+f(a0) = {\n\
+        push iload 10\n\
+        push iload 20\n\
+        push iload 30\n\
+        arg iload ev1\n\
+        arg iload ev0\n\
+        pop ev2\n\
+        push icall &g\n\
+        ret iadd pp, pp\n\
+}\n\
+\n\
+g(a2) = {\n\
+        ret iadd a0, a1\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+        ASSERT_PROG(static_cast<size_t>(48 + 24 + 112 + 16), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(2U);
+        ASSERT_HEADER_VAR_COUNT(0U);
+        ASSERT_HEADER_CODE_SIZE(9U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        // f
+        ASSERT_FUN(0U, 8U, 48U, 48U + 24U);
+        ASSERT_PUSH(ILOAD, IMM(10), NA(), 0);
+        ASSERT_PUSH(ILOAD, IMM(20), NA(), 1);
+        ASSERT_PUSH(ILOAD, IMM(30), NA(), 2);
+        ASSERT_ARG(ILOAD, EV(1), NA(), 3);
+        ASSERT_ARG(ILOAD, EV(0), NA(), 4);
+        ASSERT_POP(2, 5);
+        ASSERT_PUSH(ICALL, IMM(1), NA(), 6);
+        ASSERT_RET(IADD, PP(), PP(), 7);
+        END_ASSERT_FUN();
+        // g
+        ASSERT_FUN(2U, 1U, 48U + 12U, 48U + 24U);
+        ASSERT_RET(IADD, A(0), A(1), 0);
+        END_ASSERT_FUN();
+        END_ASSERT_PROG();
+      }
+
+      void CompilerTests::test_compiler_compiles_expression_with_relocations_and_symbols()
+      {
+        istringstream iss("\n\
+f(a0) = {\n\
+        push iload 10\n\
+        push iload 20\n\
+        arg iload ev1\n\
+        arg iload ev0\n\
+        pop ev2\n\
+        push icall &g\n\
+        push iadd a, b\n\
+        ret iadd pp, pp\n\
+}\n\
+\n\
+a = 10\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+        ASSERT_PROG(static_cast<size_t>(48 + 16 + 16 + 96 + 40 + 16), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(1U);
+        ASSERT_HEADER_VAR_COUNT(1U);
+        ASSERT_HEADER_CODE_SIZE(8U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        ASSERT_FUN(0U, 8U, 48U, 48U + 16U + 16U);
+        ASSERT_PUSH(ILOAD, IMM(10), NA(), 0);
+        ASSERT_PUSH(ILOAD, IMM(20), NA(), 1);
+        ASSERT_ARG(ILOAD, EV(1), NA(), 2);
+        ASSERT_ARG(ILOAD, EV(0), NA(), 3);
+        ASSERT_POP(2, 4);
+        ASSERT_PUSH(ICALL, IMM(0), NA(), 5);
+        ASSERT_PUSH(IADD, GV(0), GV(0), 6);
+        ASSERT_RET(IADD, PP(), PP(), 7);
+        ASSERT_RELOC_SA1F(5U, "g", 48U + 16U + 16U + 96U, 48U + 16U + 16U + 96U + 40U);
+        ASSERT_RELOC_A1V(6U, 48U + 16U + 16U + 96U, 48U + 16U + 16U + 96U + 40U);
+        ASSERT_RELOC_SA2V(6U, "b", 48U + 16U + 16U + 96U, 48U + 16U + 16U + 96U + 40U);
+        END_ASSERT_FUN();
+        ASSERT_VAR_I(10, 48U + 16U);
+        END_ASSERT_PROG();
+      }
+
+      void CompilerTests::test_compiler_compiles_stacktrace()
+      {
+        istringstream iss("\n\
+f(a1) = {\n\
+        ret stacktrace a0\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+        ASSERT_PROG(static_cast<size_t>(48 + 16 + 16), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(1U);
+        ASSERT_HEADER_VAR_COUNT(0U);
+        ASSERT_HEADER_CODE_SIZE(1U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        ASSERT_FUN(1U, 1U, 48U, 48U + 16U);
+        ASSERT_RET(STACKTRACE, A(0), NA(), 0);
+        END_ASSERT_FUN();
+        END_ASSERT_PROG();
+      }
+
+      void CompilerTests::test_compiler_compiles_rethrow()
+      {
+        istringstream iss("\n\
+f(a1) = {\n\
+        rethrow a0\n\
+}\n\
+");
+        vector<Source> sources;
+        sources.push_back(Source("test.letins", iss));
+        list<Error> errors;
+        unique_ptr<Program> prog(_M_comp->compile(sources, errors));
+        CPPUNIT_ASSERT(nullptr != prog.get());
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(0), errors.size());
+        ASSERT_PROG(static_cast<size_t>(48 + 16 + 16), (*(prog.get())));
+        ASSERT_HEADER_MAGIC();
+        ASSERT_HEADER_FLAGS(format::HEADER_FLAG_LIBRARY | format::HEADER_FLAG_RELOCATABLE | format::HEADER_FLAG_NATIVE_FUN_SYMBOLS | format::HEADER_FLAG_FUN_INFOS);
+        ASSERT_HEADER_ENTRY(0U);
+        ASSERT_HEADER_FUN_COUNT(1U);
+        ASSERT_HEADER_VAR_COUNT(0U);
+        ASSERT_HEADER_CODE_SIZE(1U);
+        ASSERT_HEADER_DATA_SIZE(0U);
+        ASSERT_FUN(1U, 1U, 48U, 48U + 16U);
+        ASSERT_RETHROW(A(0), 0);
+        END_ASSERT_FUN();
+        END_ASSERT_PROG();
+      }      
+
       DEF_IMPL_COMP_TESTS(ImplCompiler);
     }
   }

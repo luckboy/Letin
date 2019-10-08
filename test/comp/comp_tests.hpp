@@ -72,6 +72,10 @@ namespace letin
         CPPUNIT_TEST(test_compiler_compiles_program_with_native_function_symbols);
         CPPUNIT_TEST(test_compiler_compiles_program_with_function_infos);
         CPPUNIT_TEST(test_compiler_complains_on_contradictory_annotations);
+        CPPUNIT_TEST(test_compiler_compiles_expression);
+        CPPUNIT_TEST(test_compiler_compiles_expression_with_relocations_and_symbols);
+        CPPUNIT_TEST(test_compiler_compiles_stacktrace);
+        CPPUNIT_TEST(test_compiler_compiles_rethrow);
         CPPUNIT_TEST_SUITE_END_ABSTRACT();
 
         Compiler *_M_comp;
@@ -117,6 +121,10 @@ namespace letin
         void test_compiler_compiles_program_with_native_function_symbols();
         void test_compiler_compiles_program_with_function_infos();
         void test_compiler_complains_on_contradictory_annotations();
+        void test_compiler_compiles_expression();
+        void test_compiler_compiles_expression_with_relocations_and_symbols();
+        void test_compiler_compiles_stacktrace();
+        void test_compiler_compiles_rethrow();
       };
 
       DECL_IMPL_COMP_TESTS(ImplCompiler);

@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -32,6 +32,8 @@
 #define LV(i)                           Argument(opcode::ARG_TYPE_LVAR, i)
 #define A(i)                            Argument(opcode::ARG_TYPE_ARG, i)
 #define GV(i)                           Argument(opcode::ARG_TYPE_GVAR, i)
+#define PP()                            Argument(opcode::ARG_TYPE_POP, 0)
+#define EV(i)                           Argument(opcode::ARG_TYPE_EVAL, i)
 #define NA()                            Argument(0)
 
 #define ASSERT_INSTR(instr, op, arg1, arg2, local_var_count, j)                 \
@@ -46,6 +48,9 @@ CPPUNIT_ASSERT(is_instr(instr, op, arg1, arg2, local_var_count, tmp_instrs[j]))
 #define ASSERT_LETTUPLE(local_var_count, op, arg1, arg2, j)                     \
 ASSERT_INSTR(opcode::INSTR_LETTUPLE, opcode::OP_##op, arg1, arg2, local_var_count, j)
 #define ASSERT_THROW(arg, j)            ASSERT_INSTR(opcode::INSTR_THROW, 0, arg, Argument(0), 2, j)
+#define ASSERT_PUSH(op, arg1, arg2, j)  ASSERT_INSTR(opcode::INSTR_PUSH, opcode::OP_##op, arg1, arg2, 2, j)
+#define ASSERT_POP(i, j)                ASSERT_INSTR(opcode::INSTR_POP, 0, Argument(i), Argument(0), 2, j)
+#define ASSERT_RETHROW(arg, j)          ASSERT_INSTR(opcode::INSTR_RETHROW, 0, arg, Argument(0), 2, j)
 
 #define ASSERT_FUN(arg_count, instr_count, fun_offset, code_offset)             \
 {                                                                               \
