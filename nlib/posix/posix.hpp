@@ -319,7 +319,7 @@ namespace letin
 #endif
 
       int check_flock(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
-      LETIN_NATIVE_OBJECT_CHECKER(cflock, check_flock);
+      LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE(cflock, check_flock);
 
 #if defined(__unix__) && defined(HAVE_STRUCT_FLOCK64)
       vm::Object *new_flock64(vm::VirtualMachine *vm, vm::ThreadContext *context, const struct ::flock64 &lock);
