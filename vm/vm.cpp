@@ -1401,6 +1401,7 @@ namespace letin
       saved_regs.after_leaving_flag1 = _M_regs.after_leaving_flags[0];
       saved_regs.after_leaving_flag2 = _M_regs.after_leaving_flags[1];
       saved_regs.after_leaving_flag_index = _M_regs.after_leaving_flag_index;
+      saved_regs.arg_instr_flag = _M_regs.arg_instr_flag;
       saved_regs.try_flag = _M_regs.try_flag;
       saved_regs.try_catch_flag = _M_regs.try_catch_flag;
       saved_regs.try_abp = _M_regs.try_abp;
@@ -1424,6 +1425,7 @@ namespace letin
       _M_regs.after_leaving_flags[0] = false;
       _M_regs.after_leaving_flags[1] = false;
       _M_regs.after_leaving_flag_index = 0;
+      _M_regs.arg_instr_flag = false;
       _M_regs.try_flag = false;
       _M_regs.try_catch_flag = false;
       _M_regs.try_arg2 = Value();
@@ -1466,6 +1468,7 @@ namespace letin
         _M_regs.try_ac = 0;
         result = false;
       }
+      _M_regs.arg_instr_flag = saved_regs.arg_instr_flag;
       _M_regs.after_leaving_flag_index = saved_regs.after_leaving_flag_index;
       _M_regs.after_leaving_flags[1] = saved_regs.after_leaving_flag2;
       _M_regs.after_leaving_flags[0] = saved_regs.after_leaving_flag1;

@@ -166,6 +166,7 @@ namespace letin
       bool after_leaving_flag1;
       bool after_leaving_flag2;
       unsigned after_leaving_flag_index;
+      bool arg_instr_flag;
       bool try_flag;
       bool try_catch_flag;
       std::uint32_t try_abp;
