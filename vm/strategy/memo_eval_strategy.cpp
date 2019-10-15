@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2015 Łukasz Szpakowski.                                  *
+ *   Copyright (C) 2015, 2019 Łukasz Szpakowski.                            *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -33,7 +33,7 @@ namespace letin
           return false;
         }
         if(error != ERROR_SUCCESS) {
-          context->set_error(error);
+          context->set_error(error, user_exception_ref(context), false);
           return false;
         }
         return true;
@@ -52,7 +52,7 @@ namespace letin
           return false;
         }
         if(error != ERROR_SUCCESS) {
-          context->set_error(error);
+          context->set_error(error, user_exception_ref(context), false);
           return false;
         }
         return true;
