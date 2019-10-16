@@ -590,10 +590,12 @@ namespace letin
             tmp_r = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 2, context);
             if(tmp_r.is_null()) return false;
             tmp_r->set_elem(0, Value(1));
-            RegisteredReference path_r(vm->gc()->new_string(unix_addr.sun_path, context), context);
-            if(path_r.is_null()) return false;
-            tmp_r->set_elem(1, Value(path_r));
+            tmp_r->set_elem(1, Value(Reference()));
             tmp_r.register_ref();
+            RegisteredReference path_r(vm->gc()->new_string(unix_addr.sun_path, context), context, false);
+            if(path_r.is_null()) return false;
+            path_r.register_ref();
+            tmp_r->set_elem(1, Value(path_r));
             return true;
           }
 #endif
@@ -1057,10 +1059,12 @@ namespace letin
           r->set_elem(0, Value(tmp_addr_info != nullptr ? 1 : 0));
           for(size_t i = 1; i < tuple_length; i++) r->set_elem(i, Value());
           r.register_ref();
-          if(!prev_r.has_nil())
+          if(!prev_r.has_nil()) {
             prev_r->set_elem(2, Value(r));
-          else
+          } else {
             tmp_r = r;
+            tmp_r.register_ref();
+          }
           if(tmp_addr_info == nullptr) break;
           RegisteredReference addr_info_r(vm->gc()->new_object(OBJECT_TYPE_TUPLE, 6, context), context, false);
           if(addr_info_r.is_null()) return false;
