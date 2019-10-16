@@ -2627,6 +2627,8 @@ extern "C" {
                 return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
               tm = *result;
             }
+#else
+#error "Unsupported operating system."
 #endif
             return return_value(vm, context, vut(vsome(vtm(tm)), v(io_v)));
           }
@@ -2653,6 +2655,8 @@ extern "C" {
                 return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
               tm = *result;
             }
+#else
+#error "Unsupported operating system."
 #endif
             return return_value(vm, context, vut(vsome(vtm(tm)), v(io_v)));
           }
