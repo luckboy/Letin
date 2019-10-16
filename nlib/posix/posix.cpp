@@ -1584,6 +1584,17 @@ namespace letin
       }
 #endif
 
+      bool time_to_system_time(std::int64_t time, ::time_t &system_time)
+      {
+        if((time < static_cast<int64_t>(numeric_limits<time_t>::min())) ||
+          (time > static_cast<int64_t>(numeric_limits<time_t>::max()))) {
+          letin_errno() = EINVAL;
+          return false;
+        }
+        system_time = time;
+        return true;
+      }
+
       // Functions for fd_set.
 
 #if defined(__unix__)
@@ -2194,6 +2205,70 @@ namespace letin
         tmp_r->set_elem(1, Value(name_r));
         tmp_r.register_ref();
         return true;
+      }
+
+      // Functions for struct tm.
+
+      //
+      // type tm = (
+      //     int,       // tm_sec
+      //     int,       // tm_min
+      //     int,       // tm_hour
+      //     int,       // tm_mday
+      //     int,       // tm_mon
+      //     int,       // tm_year
+      //     int,       // tm_wday
+      //     int,       // tm_yday
+      //     int        // tm_isdst
+      //   )
+      //
+      
+      Object *new_tm(VirtualMachine *vm, ThreadContext *context, const struct ::tm &tm)
+      {
+        Object *object = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 2, context);
+        if(object == nullptr) return nullptr;
+        object->set_elem(0, Value(static_cast<int64_t>(tm.tm_sec)));
+        object->set_elem(1, Value(static_cast<int64_t>(tm.tm_min)));
+        object->set_elem(2, Value(static_cast<int64_t>(tm.tm_hour)));
+        object->set_elem(3, Value(static_cast<int64_t>(tm.tm_mday)));
+        object->set_elem(4, Value(static_cast<int64_t>(tm.tm_mon)));
+        object->set_elem(5, Value(static_cast<int64_t>(tm.tm_year)));
+        object->set_elem(6, Value(static_cast<int64_t>(tm.tm_wday)));
+        object->set_elem(7, Value(static_cast<int64_t>(tm.tm_yday)));
+        object->set_elem(8, Value(static_cast<int64_t>(tm.tm_isdst)));
+        return object;
+      }
+
+      bool object_to_system_tm(const Object &object, struct ::tm &tm)
+      {
+        for(size_t i = 0; i < 9; i++) {
+          if((object.elem(i).i() < static_cast<int64_t>(numeric_limits<int>::min())) || 
+            (object.elem(i).i() > static_cast<int64_t>(numeric_limits<int>::max()))) {
+            letin_errno() = EINVAL;
+            return false;
+          }
+        }
+        tm.tm_sec = object.elem(0).i();
+        tm.tm_min = object.elem(1).i();
+        tm.tm_hour = object.elem(2).i();
+        tm.tm_mday = object.elem(3).i();
+        tm.tm_mon = object.elem(4).i();
+        tm.tm_year = object.elem(5).i();
+        tm.tm_wday = object.elem(6).i();
+        tm.tm_yday = object.elem(7).i();
+        tm.tm_isdst = object.elem(8).i();
+        return true;
+      }
+
+      int check_tm(VirtualMachine *vm, ThreadContext *context, Object &object)
+      {
+        if(!object.is_tuple() || object.length() != 9) return ERROR_INCORRECT_OBJECT;
+        for(size_t i = 0; i < 9; i++) {
+          int error = vm->force_tuple_elem(context, object, i);
+          if(error != ERROR_SUCCESS) return error;
+          if(!object.elem(i).is_int()) return ERROR_INCORRECT_OBJECT;
+        }
+        return ERROR_SUCCESS;
       }
 
 #if defined(_WIN32) || defined(_WIN64)

@@ -65,6 +65,10 @@ extern char **environ;
 
 #if defined(__unix__)
 static mutex getgroups_fun_mutex;
+#elif defined(_WIN32) || defined(_WIN64)
+static mutex tm_struct_mutex;
+#else
+#error "Unsupported operating system."
 #endif
 static vector<NativeFunction> native_funs;
 static MutexForkHandler fork_handler;
@@ -2595,12 +2599,84 @@ extern "C" {
             buf[len - 1] = 0;
             return return_value(vm, context, vut(vsome(vcstr(buf.get())), v(io_v)));
           }
+        },
+        
+        //
+        // Time transformation functions.
+        //
+
+        {
+          "posix.gmtime", // (time: int, io: uio) -> (option tuple, uio)
+          [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+            int error = check_args(vm, context, args, cint, cuio);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
+            Value &io_v = args[2];
+            time_t time;
+            struct ::tm tm;
+            if(!convert_args(args, totime(time)))
+              return return_value(vm, context, vut(vnone, v(io_v)));
+#if defined(__unix__)
+            struct ::tm *result = ::gmtime_r(&time, &tm);
+            if(result == nullptr)
+              return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            {
+              lock_guard<mutex> guard(tm_struct_mutex);
+              struct ::tm *result = ::gmtime(&time);
+              if(result == nullptr)
+                return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
+              tm = *result;
+            }
+#endif
+            return return_value(vm, context, vut(vsome(vtm(tm)), v(io_v)));
+          }
+        },
+        {
+          "posix.localtime", // (time: int, io: uio) -> (option tuple, uio)
+          [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+            int error = check_args(vm, context, args, cint, cuio);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
+            Value &io_v = args[2];
+            time_t time;
+            struct ::tm tm;
+            if(!convert_args(args, totime(time)))
+              return return_value(vm, context, vut(vnone, v(io_v)));
+#if defined(__unix__)
+            struct ::tm *result = ::localtime_r(&time, &tm);
+            if(result == nullptr)
+              return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
+#elif defined(_WIN32) || defined(_WIN64)
+            {
+              lock_guard<mutex> guard(tm_struct_mutex);
+              struct ::tm *result = ::localtime(&time);
+              if(result == nullptr)
+                return return_value_with_errno(vm, context, vut(vnone, v(io_v)));
+              tm = *result;
+            }
+#endif
+            return return_value(vm, context, vut(vsome(vtm(tm)), v(io_v)));
+          }
+        },
+        {
+          "posix.mktime", // (tm: tuple, io: uio) -> (int, uio)
+          [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
+            int error = check_args(vm, context, args, ctm, cuio);
+            if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
+            Value &io_v = args[2];
+            struct ::tm tm;
+            if(!convert_args(args, totm(tm)))
+              return return_value(vm, context, vut(vint(-1), v(io_v)));
+            time_t result = ::mktime(&tm);
+            if(result == -1)
+              return return_value_with_errno(vm, context, vut(vint(-1), v(io_v)));
+            return return_value(vm, context, vut(vint(result), v(io_v)));
+          }
         }
       };
 #if defined(__unix__)
       fork_handler.mutexes() = { &getgroups_fun_mutex };
 #elif defined(_WIN32) || defined(_WIN64)
-      fork_handler.mutexes().clear();
+      fork_handler.mutexes() = { &tm_struct_mutex };
 #else
 #error "Unsupported operating system."
 #endif

@@ -264,6 +264,9 @@ namespace letin
 
       bool speed_to_system_speed(std::int64_t speed, ::speed_t &system_speed);
 #endif
+      
+      bool time_to_system_time(std::int64_t time, time_t &system_time);
+      LETIN_NATIVE_INT_CONVERTER(totime, time_to_system_time, ::time_t);
 
       // Functions for fd_set.
 
@@ -404,6 +407,18 @@ namespace letin
       inline LETINT_NATIVE_REF_SETTER_TYPE(set_new_directory_entry, DirectoryEntry *) vdirentry(DirectoryEntry * const &dir_entry)
       { return LETINT_NATIVE_REF_SETTER_TYPE(set_new_directory_entry, DirectoryEntry *)(set_new_directory_entry, dir_entry); }
 
+      // Functions for struct tm.
+      
+      vm::Object *new_tm(vm::VirtualMachine *vm, vm::ThreadContext *context, const struct ::tm &tm);
+      LETIN_NATIVE_OBJECT_SETTER(vtm, new_tm, struct ::tm);
+
+      bool object_to_system_tm(const vm::Object &object, struct ::tm &tm);
+      LETIN_NATIVE_OBJECT_CONVERTER(totm, object_to_system_tm, struct ::tm);
+
+      int check_tm(vm::VirtualMachine *vm, vm::ThreadContext *context, vm::Object &object);
+      LETIN_NATIVE_OBJECT_CHECKER_WITH_NEW_TUPLE(ctm, check_tm);
+
+      
       // Functions for Windows.
 
 #if defined(_WIN32) || defined(_WIN64)
