@@ -2058,21 +2058,26 @@ namespace letin
       {
         tmp_r = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 7, context);
         if(tmp_r.is_null()) return false;
+        for(size_t i = 0; i < 7; i++) tmp_r->set_elem(i, Value());
+        tmp_r.register_ref();
         tmp_r->set_elem(0, Value(system_termios_iflag_to_termios_iflag(termios.c_iflag)));
         tmp_r->set_elem(1, Value(system_termios_oflag_to_termios_oflag(termios.c_oflag)));
         tmp_r->set_elem(2, Value(system_termios_cflag_to_termios_cflag(termios.c_cflag)));
         tmp_r->set_elem(3, Value(system_termios_lflag_to_termios_lflag(termios.c_lflag)));
-        RegisteredReference cc_r(vm->gc()->new_object(OBJECT_TYPE_IARRAY32, system_termios_cc_indexes.size(), context), context);
+        RegisteredReference cc_r(vm->gc()->new_object(OBJECT_TYPE_IARRAY32, system_termios_cc_indexes.size(), context), context, false);
         if(cc_r.is_null()) return false;
         size_t i = 0;
         for(auto system_cc_index : system_termios_cc_indexes) {
-          if(system_cc_index != -1) cc_r->set_elem(i, Value(termios.c_cc[system_cc_index]));
+          if(system_cc_index != -1) 
+            cc_r->set_elem(i, Value(termios.c_cc[system_cc_index]));
+          else
+            cc_r->set_elem(i, Value(-1));
           i++;
         }
+        cc_r.register_ref();
         tmp_r->set_elem(4, Value(cc_r));
         tmp_r->set_elem(5, Value(system_speed_to_speed(cfgetispeed(&termios))));
         tmp_r->set_elem(6, Value(system_speed_to_speed(cfgetospeed(&termios))));
-        tmp_r.register_ref();
         return true;
       }
 
@@ -2136,22 +2141,28 @@ namespace letin
       {
         tmp_r = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 5, context);
         if(tmp_r.is_null()) return false;
-        RegisteredReference sysname_r(vm->gc()->new_string(os_info.sysname, context), context);
-        if(sysname_r.is_null()) return false;
-        tmp_r->set_elem(0, Value(sysname_r));
-        RegisteredReference nodename_r(vm->gc()->new_string(os_info.nodename, context), context);
-        if(nodename_r.is_null()) return false;
-        tmp_r->set_elem(1, Value(nodename_r));
-        RegisteredReference release_r(vm->gc()->new_string(os_info.release, context), context);
-        if(release_r.is_null()) return false;
-        tmp_r->set_elem(2, Value(release_r));
-        RegisteredReference version_r(vm->gc()->new_string(os_info.version, context), context);
-        if(version_r.is_null()) return false;
-        tmp_r->set_elem(3, Value(version_r));
-        RegisteredReference machine_r(vm->gc()->new_string(os_info.machine, context), context);
-        if(machine_r.is_null()) return false;
-        tmp_r->set_elem(4, Value(machine_r));
+        for(size_t i = 0; i < 5; i++) tmp_r->set_elem(i, Value());
         tmp_r.register_ref();
+        RegisteredReference sysname_r(vm->gc()->new_string(os_info.sysname, context), context, false);
+        if(sysname_r.is_null()) return false;
+        sysname_r.register_ref();
+        tmp_r->set_elem(0, Value(sysname_r));
+        RegisteredReference nodename_r(vm->gc()->new_string(os_info.nodename, context), context, false);
+        if(nodename_r.is_null()) return false;
+        nodename_r.register_ref();
+        tmp_r->set_elem(1, Value(nodename_r));
+        RegisteredReference release_r(vm->gc()->new_string(os_info.release, context), context, false);
+        if(release_r.is_null()) return false;
+        release_r.register_ref();
+        tmp_r->set_elem(2, Value(release_r));
+        RegisteredReference version_r(vm->gc()->new_string(os_info.version, context), context, false);
+        if(version_r.is_null()) return false;
+        version_r.register_ref();
+        tmp_r->set_elem(3, Value(version_r));
+        RegisteredReference machine_r(vm->gc()->new_string(os_info.machine, context), context, false);
+        if(machine_r.is_null()) return false;
+        machine_r.register_ref();
+        tmp_r->set_elem(4, Value(machine_r));
         return true;
       }
 #endif
@@ -2200,10 +2211,13 @@ namespace letin
       {
         tmp_r = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 2, context);
         if(tmp_r.is_null()) return false;
-        tmp_r->set_elem(0, Value(static_cast<int64_t>(dir_entry_inode(dir_entry))));
-        RegisteredReference name_r(vm->gc()->new_string(dir_entry_name(dir_entry), context), context);
-        tmp_r->set_elem(1, Value(name_r));
+        for(size_t i = 0; i < 2; i++) tmp_r->set_elem(i, Value());
         tmp_r.register_ref();
+        tmp_r->set_elem(0, Value(static_cast<int64_t>(dir_entry_inode(dir_entry))));
+        RegisteredReference name_r(vm->gc()->new_string(dir_entry_name(dir_entry), context), context, false);
+        if(name_r.is_null()) return false;
+        name_r.register_ref();
+        tmp_r->set_elem(1, Value(name_r));
         return true;
       }
 
