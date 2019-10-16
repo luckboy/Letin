@@ -2239,7 +2239,7 @@ namespace letin
       
       Object *new_tm(VirtualMachine *vm, ThreadContext *context, const struct ::tm &tm)
       {
-        Object *object = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 2, context);
+        Object *object = vm->gc()->new_object(OBJECT_TYPE_TUPLE, 9, context);
         if(object == nullptr) return nullptr;
         object->set_elem(0, Value(static_cast<int64_t>(tm.tm_sec)));
         object->set_elem(1, Value(static_cast<int64_t>(tm.tm_min)));
