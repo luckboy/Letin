@@ -355,7 +355,7 @@ int main(int argc, char **argv)
                 if(isprint(c))
                   cout << c;
                 else
-                  cout << "\\" << oct << c << dec;
+                  cout << "\\" << oct << static_cast<unsigned>(static_cast<unsigned char>(c)) << dec;
                 break;
             }
           }
