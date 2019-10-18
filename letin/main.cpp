@@ -83,7 +83,7 @@ static bool parse_fun_eval_strategy_string(const string &str, unsigned &fun_eval
 {
   auto iter = str.begin();
   fun_eval_strategy = 0;
-  while(iter != str.end()) {
+  while(true) {
     auto iter2 = find(iter, str.end(), '+');
     if(string(iter, iter2) == "eager")
       ;
@@ -93,7 +93,10 @@ static bool parse_fun_eval_strategy_string(const string &str, unsigned &fun_eval
       fun_eval_strategy |= EVAL_STRATEGY_MEMO;
     else
       return false;
-    iter = (iter2 != str.end() ? iter2 + 1 : iter2);
+    if(iter2 != str.end())
+      iter = iter2 + 1;
+    else
+      break;
   }
   return true;
 }
@@ -159,7 +162,7 @@ EvaluationStrategy *parse_eval_strategy_string(const string &str, unique_ptr<Mem
     auto arg_list_begin = name_end + 1;
     auto arg_list_end = str.end();
     auto arg_begin = arg_list_begin;
-    while(arg_begin != arg_list_end) {
+    while(true) {
       auto arg_end = find(arg_begin, arg_list_end, ',');
       auto arg_name_end = find(arg_begin, arg_end, '=');
       bool is_arg_value = (arg_name_end != arg_end);
@@ -180,7 +183,10 @@ EvaluationStrategy *parse_eval_strategy_string(const string &str, unique_ptr<Mem
         cerr << "error: incorrect argument of evaluation strategy" << endl;
         return nullptr;
       }
-      arg_begin = (arg_end != arg_list_end ? arg_end + 1 : arg_end);
+      if(arg_end != arg_list_end)
+        arg_begin = arg_end + 1;
+      else
+        break;
     }
   }
   return fun();
