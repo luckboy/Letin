@@ -1141,6 +1141,8 @@ namespace letin
 
     std::ostream &operator<<(std::ostream &os, const LoadingError &error);
 
+    std::ostream &operator<<(std::ostream &os, const StackTraceElement &stack_trace_elem);
+    
     const char *error_to_string(int error);
 
     Reference user_exception_ref(ThreadContext *context);

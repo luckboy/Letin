@@ -186,6 +186,13 @@ EvaluationStrategy *parse_eval_strategy_string(const string &str, unique_ptr<Mem
   return fun();
 }
 
+void print_stack_trace(ostream &os, const vector<StackTraceElement> &stack_trace)
+{
+  for(auto &stack_trace_elem : stack_trace) {
+    os << "\tat " << stack_trace_elem << endl;
+  }
+}
+
 int main(int argc, char **argv)
 {
   try {
@@ -321,7 +328,7 @@ int main(int argc, char **argv)
       args.push_back(unique_io_ref);
       is_unique_result = true;
     }
-    Thread thread = vm->start(args, [is_unique_result](const ReturnValue & value) {
+    Thread thread = vm->start(args, [is_unique_result](const ReturnValue & value, const std::vector<StackTraceElement> *stack_trace) {
       if(!is_unique_result) {
         cout << "i=" << value.i() << endl;
         cout << "f=" << value.f() << endl;
@@ -363,16 +370,19 @@ int main(int argc, char **argv)
         } else
           cout << "r=" << value.r() << endl;
         cout << "error=" << value.error() << " (" << error_to_string(value.error()) << ")" << endl;
+        if(stack_trace != nullptr) print_stack_trace(cout, *stack_trace);
       } else {
         if(value.r()->type() == (OBJECT_TYPE_TUPLE | OBJECT_TYPE_UNIQUE) && value.r()->length() == 2 &&
             value.r()->elem(0).type() == VALUE_TYPE_INT &&
             value.r()->elem(1).type() == VALUE_TYPE_REF && value.r()->elem(1).r()->type() == (OBJECT_TYPE_IO | OBJECT_TYPE_UNIQUE)) {
           status = value.r()->elem(0).i();
         } else {
-          if(value.error() == ERROR_SUCCESS)
+          if(value.error() == ERROR_SUCCESS) {
             cerr << "error: result of entry function is incorrect" << endl;
-          else
+          } else {
             cerr << "error: " << error_to_string(value.error()) << endl;
+            if(stack_trace != nullptr) print_stack_trace(cerr, *stack_trace);
+          }
           status = 255;
         }
       }

@@ -13,6 +13,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <limits>
 #include <list>
 #include <map>
@@ -1901,6 +1902,24 @@ namespace letin
       }
     }
 
+    ostream &operator<<(ostream &os, const StackTraceElement &stack_trace_elem)
+    {
+      ios_base::fmtflags saved_flags = os.flags();
+      streamsize saved_width = os.width();
+      char saved_fill = os.fill();
+      if(stack_trace_elem.has_native_fun()) os << "#" << endl;
+      if(stack_trace_elem.fun_name() != nullptr)
+        os << *(stack_trace_elem.fun_name());
+      else
+        os << "<0x" << hex << setw(8) << setfill('0') << stack_trace_elem.fun() << ">";
+      if(!stack_trace_elem.has_native_fun())
+        os << ":0x" << hex << setw(8) << setfill('0') << stack_trace_elem.instr();
+      os.fill(saved_fill);
+      os.width(saved_width);
+      os.flags(saved_flags);
+      return os;
+    }
+    
     const char *error_to_string(int error)
     {
       switch(error) {
