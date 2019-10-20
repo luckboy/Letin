@@ -2610,7 +2610,7 @@ extern "C" {
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
-            Value &io_v = args[2];
+            Value &io_v = args[1];
             time_t time;
             struct ::tm tm;
             if(!convert_args(args, totime(time)))
@@ -2638,7 +2638,7 @@ extern "C" {
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, cint, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
-            Value &io_v = args[2];
+            Value &io_v = args[1];
             time_t time;
             struct ::tm tm;
             if(!convert_args(args, totime(time)))
@@ -2666,7 +2666,7 @@ extern "C" {
           [](VirtualMachine *vm, ThreadContext *context, ArgumentList &args) {
             int error = check_args(vm, context, args, ctm, cuio);
             if(error != letin::ERROR_SUCCESS) return error_return_value(error, user_exception_ref(context));
-            Value &io_v = args[2];
+            Value &io_v = args[1];
             struct ::tm tm;
             if(!convert_args(args, totm(tm)))
               return return_value(vm, context, vut(vint(-1), v(io_v)));
