@@ -168,8 +168,8 @@ Expression values are pushed to a second stack by the push instruction. The expr
 the values. The function can use the expression values which are pushed in this function.
 
 The expression values are available by pop arguments and arguments of the expression values. The
-first type of arguments automatically pops the value from the second stack. The second type of
-arguments just loads the expression value from the second stack. An instruction of an argument
+first type of arguments loads and automatically pops the value from the second stack. The second type
+of arguments just loads the expression value from the second stack. An instruction of an argument
 allocation use these two arguments because expressions use the second stack. Also, the pop
 instruction pops the expression values from the second stack and can be used with the arguments
 of the expression values in a function invocation.
