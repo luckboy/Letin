@@ -2,7 +2,7 @@
 
 ## Copyright and license
 
-Copyright (C) 2015-2016 Łukasz Szpakowski.  
+Copyright (C) 2015-2016, 2019 Łukasz Szpakowski.  
 This documentation is licensed under the Creative Commons Attribution-ShareAlike 4.0
 International Public License.
 
@@ -67,12 +67,25 @@ The Letin programming language has the special identifier for function arguments
 variables. The first identifier will be called the function argument identifier. This keyword
 consists of the a prefix and an unsigned integer number. The syntax of the argument keyword is:
 
-    <a> = "a" ("0" | ... | "9")+
+    <a> ::= "a" ("0" | ... | "9")+
 
 The second identifier consists of the lv prefix and an unsigned integer number. This identifier
 will be called the local variable identifier. The syntax of local variable identifier is:
 
-    <lv> = "lv" ("0" | ... | "9")+
+    <lv> ::= "lv" ("0" | ... | "9")+
+
+### Pop arguments and expression values
+
+The Letin programming language has the special identifier for pop arguments and expression
+values. The first identifier will be called the pop argument identifier. The syntax of the
+pop argument keyword is:
+
+    <pp> ::= "pp"
+
+The second identifier consists of the ev prefix and an unsigned integer number. This identifier
+will be called the expression value identifier. The syntax of local variable identifier is:
+
+    <ev> ::= "ev" ("0" | ... | "9")+
 
 ### Whitespace characters
 
@@ -198,15 +211,17 @@ instruction argument can be written by use of an expression. The syntax of instr
 is:
 
     <arg> ::= <number_arg> | <fun_index_arg> | <fun_index_arg> | <a_arg> | <lv_arg> |
-              <ident_arg>
+              <ident_arg> | <pp_arg> | <ev_arg>
     <number_arg> ::= <expr>
     <fun_index_arg> ::= "&" <ident>
     <native_fun_index_arg> ::= "&#" <ident>
     <a_arg> ::= <a>
     <lv_arg> ::= <lv>
     <ident_arg> ::= <ident>
+    <pp_arg> ::= <pp>
+    <ev_arg> ::= <ev>
 
-An instruction argument can have one of four types. The relationship between the syntax of
+An instruction argument can have one of six types. The relationship between the syntax of
 instruction argument and the types of instruction arguments is presented in the following
 table:
 
@@ -218,9 +233,13 @@ table:
 | a_arg                | ARG           | Function argument.                           |
 | lv_arg               | LVAR          | Local variable.                              |
 | ident_arg            | GVAR          | Global variable.                             |
+| pp_arg               | POP           | Pop argument.                                |
+| ev_arg               | EVAL          | Expression value.                            |
 
 The ident_arg syntax rule also applies to the last argument of the jump instruction or the
 jc instruction.
+
+The ev_arg syntax rule also applies to the argument of the pop instruction.
 
 ### Annotations
 

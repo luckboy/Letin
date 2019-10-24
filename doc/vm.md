@@ -2,7 +2,7 @@
 
 ## Copyright and license
 
-Copyright (C) 2015 Łukasz Szpakowski.  
+Copyright (C) 2015, 2019 Łukasz Szpakowski.  
 This documentation is licensed under the Creative Commons Attribution-ShareAlike 4.0
 International Public License.
 
@@ -65,6 +65,8 @@ An error of this value can be one of the following errors:
 | UNIQUE_OBJECT       | 19     | Unique object.                 |
 | AGAIN_USED_UNIQUE   | 20     | Again used unique object.      |
 | USER_EXCEPTION      | 21     | User exception.                |
+| NO_EXPR_VALUE       | 22     | No expression value.           |
+| NO_ERROR            | 23     | No error.                      |
 
 The values of the first kind will be called the values and the values of the second kind will
 be called the return values.
@@ -159,6 +161,19 @@ behaves how this function result. For example, this value is the reference to th
 has the information of the function invocation that can be used so that this function is
 invoked when that is necessary. Each instruction interprets this value as the function result.
 
+### Expressions
+
+The Letin virtual machine allows to create expressions in RPN (reverse Polish notation).
+Expression values are pushed to a second stack by the push instruction. The expression value are
+the values. The function can use the expression values which are pushed in this function.
+
+The expression values are available by pop arguments and arguments of the expression values. The
+first type of arguments automatically pops the value from the second stack. The second type of
+arguments just loads the expression value from the second stack. An instruction of an argument
+allocation use these two arguments because expressions use the second stack. Also, the pop
+instruction pops the expression values from the second stack and can be used with the arguments
+of the expression values in a function invocation.
+
 ### Reference cancellation
 
 Unique objects can be used only once in a code. The Letin virtual machine has the mechanism of
@@ -194,6 +209,27 @@ The arguments of the function of exception handling are:
 
 The try operation and the first function and the function of exception handling return a tuple
 with any value and the IO object.
+
+The rethrow instruction throws caught exception in the function of exception handling. This
+instruction takes the IO object from the first argument. If the exception isn't caught by the
+try operation, the rethrow instruction throws the system exception of the NO_ERROR number.
+
+### Stack trace
+
+The Letin virtual machine supports a stack trace. The stack trace is saved after exception
+throw. The stack trace contains elements which are four fields. Four fields of stack trace
+element are:
+
+* flag of native function
+* function index
+* optional function name
+* instruction address
+
+The stack trace can be load as tuple array by a stack trace instruction. The stack trace
+instruction gives the stack trace with the IO object if system exception or user exception is
+caught, otherwise this instruction gives empty array with the IO object. This operation takes
+the IO object. The stack trace hasn't to be load after next function of exception handling. The
+rethrow instruction concatenates old stack trace with new stack trace.
 
 ## Instructions
 
@@ -234,6 +270,9 @@ The instructions of the Letin virtual machine is presented in the following tabl
 | retry                         | 0x06 | Again invokes current function.                    |
 | lettuple(n) &lt;op&gt;        | 0x07 | Allocates local variables from tuple.              |
 | throw &lt;arg&gt;             | 0x08 | Throws user exception with first argument as data. |
+| push &lt;op;&gt;              | 0x09 | Push expression value to second stack.             |
+| pop ev&lt;n&gt;               | 0x0a | Pops values from second stack.                     |
+| rethrow &lt;arg&gt;           | 0x0b | Throws caught exception.                           |
 
 The jump instruction jumps to an address that is sum of the next instruction address and the
 argument value. The argument value is an integer number. The jump address for the jc
@@ -249,7 +288,7 @@ with the error of incorrect object.
 
 ### Arguments
 
-Each instruction argument can have one of four types. These argument types specify for example
+Each instruction argument can have one of six types. These argument types specify for example
 whether an instruction or an operation uses a local variable. An operation and an instruction
 have the value types of arguments. The arg1 or arg2 field can be a different value for the
 different argument types. These types with the accepted value types and the description of the
@@ -261,9 +300,15 @@ argument fields are presented in the following table:
 | ARG  | 0x1  | INT, FLOAT, REF      | Index of function argument.   | Function argument. |
 | IMM  | 0x2  | INT, FLOAT           | Immediate value.              | Immediate value.   |
 | GVAR | 0x3  | INT, FLOAT, REF      | Index of global variable.     | Global variable.   |
+| POP  | 0x4  | INT, FLOAT, REF      | None.                         | Pop argument.      |
+| EVAL | 0x5  | INT, FLOAT, REF      | Index of expression value.    | Expression value.  |
 
 Function arguments and local variables are indexed from zero in the order of allocations. A
 value of floating-point number is stored in the IEEE 754 standard for the instruction
+arguments.
+
+Pop arguments pop values from last argument to first argument. Expression values are indexed
+from zero in reverse order of pushing. This values are indexed after popping of values by pop
 arguments.
 
 ### Operations
@@ -294,6 +339,7 @@ These short names are presented in the following table:
 | udfa  | Reference to unique array of double-precision floating-point numbers. |
 | ura   | Reference to unique array of reference.                               |
 | ut    | Reference to unique tuple.                                            |
+| uio   | Reference to IO object.                                               |
 
 Some operations also take arguments which are passed in a stack. Some operations have to take
 arguments which have specified object types, otherwise a program terminates with the error of
@@ -440,3 +486,4 @@ object type. The operations of the Letin virtual machine are presented in the fo
 | iforce(&lt;arg&gt;)                    | 0x88 | i          | Eagerly evaluates and loads integer number.                                               |
 | fforce(&lt;arg&gt;)                    | 0x89 | f          | Eagerly evaluates and loads floating-point number.                                        |
 | rforce(&lt;arg&gt;)                    | 0x8a | r          | Eagerly evaluates and loads reference.                                                    |
+| stacktrace(&lt;arg&gt;)                | 0x8b | uio        | Gives stack trace with IO object.                                                         |
