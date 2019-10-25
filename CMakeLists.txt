@@ -43,7 +43,7 @@ add_subdirectory(doc)
 add_subdirectory(nlib)
 
 install(DIRECTORY include/letin DESTINATION include)
-install(FILES README.md LICENSE GPL DOCLICENSE DESTINATION share/doc)
+install(FILES README.md LICENSE GPL DOCLICENSE DESTINATION share/doc/Letin)
 
 if(BUILD_TESTING)
 	enable_testing()

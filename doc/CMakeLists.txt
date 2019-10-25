@@ -16,8 +16,8 @@ if(PANDOC_FOUND)
 	add_custom_target(html ALL DEPENDS ${html_files})
 endif(PANDOC_FOUND)
 
-install(FILES ${markdown_names} DESTINATION share/doc)
+install(FILES ${markdown_names} DESTINATION share/doc/Letin)
 
 if(PANDOC_FOUND)
-	install(FILES ${html_files} DESTINATION share/doc)
+	install(FILES ${html_files} DESTINATION share/doc/Letin)
 endif(PANDOC_FOUND)

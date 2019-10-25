@@ -85,4 +85,4 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 	target_link_libraries(posix letinvm)
 endif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 
-install(TARGETS posix DESTINATION share/letin/nlib)
+install(TARGETS posix DESTINATION lib/letin/nlib)

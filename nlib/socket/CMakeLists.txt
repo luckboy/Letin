@@ -27,4 +27,4 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 	target_link_libraries(socket letinvm)
 endif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
 
-install(TARGETS socket DESTINATION share/letin/nlib)
+install(TARGETS socket DESTINATION lib/letin/nlib)
