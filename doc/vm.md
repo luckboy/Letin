@@ -164,15 +164,15 @@ invoked when that is necessary. Each instruction interprets this value as the fu
 ### Expressions
 
 The Letin virtual machine allows to create expressions in RPN (reverse Polish notation).
-Expression values are pushed to a second stack by the push instruction. The expression value are
-the values. The function can use the expression values which are pushed in this function.
+Expression values are pushed to a second stack by the push instruction. The expression values are
+the values. The function just can use the expression values which are pushed in this function.
 
 The expression values are available by pop arguments and arguments of the expression values. The
-first type of arguments loads and automatically pops the value from the second stack. The second type
-of arguments just loads the expression value from the second stack. An instruction of an argument
-allocation use these two arguments because expressions use the second stack. Also, the pop
-instruction pops the expression values from the second stack and can be used with the arguments
-of the expression values in a function invocation.
+first type of arguments loads and automatically pops the value from the second stack. The second
+type of arguments just loads the expression value from the second stack. An instruction of an
+argument allocation use these two arguments because expressions use the second stack. Also, the
+pop instruction pops the expression values from the second stack and can be used with the
+arguments of the expression values in a function invocation.
 
 ### Reference cancellation
 
@@ -270,7 +270,7 @@ The instructions of the Letin virtual machine is presented in the following tabl
 | retry                         | 0x06 | Again invokes current function.                    |
 | lettuple(n) &lt;op&gt;        | 0x07 | Allocates local variables from tuple.              |
 | throw &lt;arg&gt;             | 0x08 | Throws user exception with first argument as data. |
-| push &lt;op;&gt;              | 0x09 | Push expression value to second stack.             |
+| push &lt;op;&gt;              | 0x09 | Pushes expression value to second stack.           |
 | pop ev&lt;n&gt;               | 0x0a | Pops values from second stack.                     |
 | rethrow &lt;arg&gt;           | 0x0b | Throws caught exception.                           |
 
