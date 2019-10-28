@@ -1847,6 +1847,7 @@ namespace letin
           os << "rarray";
           break;
         case OBJECT_TYPE_TUPLE:
+          if(object.length() == 1) os << "tuple";
           break;
         case OBJECT_TYPE_IO:
           return os << "io";
@@ -1860,12 +1861,12 @@ namespace letin
           else
             return os << "error";
       }
-      os << ((object.type() & ~ OBJECT_TYPE_UNIQUE) != OBJECT_TYPE_TUPLE ? "[" : "(");
+      os << ((object.type() & ~ OBJECT_TYPE_UNIQUE) != OBJECT_TYPE_TUPLE || object.length() == 1 ? "[" : "(");
       for(size_t i = 0; i < object.length(); i++) {
         os << object.elem(i);
         if(i + 1 < object.length()) os << ", ";
       }
-      return os << ((object.type() & ~ OBJECT_TYPE_UNIQUE) != OBJECT_TYPE_TUPLE ? "]" : ")");
+      return os << ((object.type() & ~ OBJECT_TYPE_UNIQUE) != OBJECT_TYPE_TUPLE || object.length() == 1 ? "]" : ")");
     }
 
     ostream &operator<<(ostream &os, const LoadingError &error)
