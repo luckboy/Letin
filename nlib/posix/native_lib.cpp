@@ -513,7 +513,7 @@ extern "C" {
             int result;
             {
               InterruptibleFunctionAround around(context);
-              ::select(nfds, &rfds, &wfds, &efds, (is_timeout ? &timeout : nullptr));
+              result = ::select(nfds, &rfds, &wfds, &efds, (is_timeout ? &timeout : nullptr));
             }
             if(result == -1)
               return return_value_with_errno(vm, context, vut(vt(vint(-1), v(rfds_v), v(wfds_v), v(efds_v)), v(io_v)));
