@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -44,7 +44,7 @@
 #endif
 
 #ifndef __FLOAT_WORD_ORDER
-#ifndef __FLOAT_WORD_ORDER__
+#ifdef __FLOAT_WORD_ORDER__
 #define __FLOAT_WORD_ORDER      __FLOAT_WORD_ORDER__
 #else
 #define __FLOAT_WORD_ORDER      __BYTE_ORDER
