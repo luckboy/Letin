@@ -401,6 +401,8 @@ namespace letin
 
       Object(int type, std::size_t length = 0) { _M_raw.type = type; _M_raw.length = length; }
 
+      ~Object() {}
+      
       bool operator==(const Object &object) const;
 
       bool operator!=(const Object &object) const { return !(*this == object); }
