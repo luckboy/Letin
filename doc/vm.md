@@ -270,7 +270,7 @@ The instructions of the Letin virtual machine is presented in the following tabl
 | retry                         | 0x06 | Again invokes current function.                    |
 | lettuple(n) &lt;op&gt;        | 0x07 | Allocates local variables from tuple.              |
 | throw &lt;arg&gt;             | 0x08 | Throws user exception with first argument as data. |
-| push &lt;op;&gt;              | 0x09 | Pushes expression value to second stack.           |
+| push &lt;op&gt;               | 0x09 | Pushes expression value to second stack.           |
 | pop ev&lt;n&gt;               | 0x0a | Pops values from second stack.                     |
 | rethrow &lt;arg&gt;           | 0x0b | Throws caught exception.                           |
 
