@@ -9,7 +9,7 @@ International Public License.
 ## General
 
 The Letin virtual machine is designed for purely functional programming languages. A code for
-this virtual machine is executed without side-effects except modifications of stack and
+this virtual machine is executed without side-effects except modifications of two stacks and
 registers. The conception of this virtual is based on the let expression from functional
 programming languages.
 
@@ -259,20 +259,20 @@ following table:
 
 The instructions of the Letin virtual machine is presented in the following table:
 
-| Instruction                   | Code | Description                                        |
-|:----------------------------- |:---- |:-------------------------------------------------- |
-| let &lt;op&gt;                | 0x00 | Allocates local variable in stack.                 |
-| in                            | 0x01 | Makes allocated local variable available.          |
-| ret &lt;op&gt;                | 0x02 | Returns from function.                             |
-| jc &lt;arg1&gt;, &lt;arg2&gt; | 0x03 | Jumps if first argument isn't zero.                |
-| jump &lt;arg&gt;              | 0x04 | Jumps.                                             |
-| arg &lt;op&gt;                | 0x05 | Allocates argument in stack.                       |
-| retry                         | 0x06 | Again invokes current function.                    |
-| lettuple(n) &lt;op&gt;        | 0x07 | Allocates local variables from tuple.              |
-| throw &lt;arg&gt;             | 0x08 | Throws user exception with first argument as data. |
-| push &lt;op&gt;               | 0x09 | Pushes expression value to second stack.           |
-| pop ev&lt;n&gt;               | 0x0a | Pops values from second stack.                     |
-| rethrow &lt;arg&gt;           | 0x0b | Throws caught exception.                           |
+| Instruction                      | Code | Description                                        |
+|:-------------------------------- |:---- |:-------------------------------------------------- |
+| let &lt;op&gt;                   | 0x00 | Allocates local variable in stack.                 |
+| in                               | 0x01 | Makes allocated local variable available.          |
+| ret &lt;op&gt;                   | 0x02 | Returns from function.                             |
+| jc &lt;arg1&gt;, &lt;arg2&gt;    | 0x03 | Jumps if first argument isn't zero.                |
+| jump &lt;arg&gt;                 | 0x04 | Jumps.                                             |
+| arg &lt;op&gt;                   | 0x05 | Allocates argument in stack.                       |
+| retry                            | 0x06 | Again invokes current function.                    |
+| lettuple(lv&lt;n&gt;) &lt;op&gt; | 0x07 | Allocates local variables from tuple.              |
+| throw &lt;arg&gt;                | 0x08 | Throws user exception with first argument as data. |
+| push &lt;op&gt;                  | 0x09 | Pushes expression value to second stack.           |
+| pop ev&lt;n&gt;                  | 0x0a | Pops values from second stack.                     |
+| rethrow &lt;arg&gt;              | 0x0b | Throws caught exception.                           |
 
 The jump instruction jumps to an address that is sum of the next instruction address and the
 argument value. The argument value is an integer number. The jump address for the jc
