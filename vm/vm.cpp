@@ -1434,9 +1434,9 @@ namespace letin
         if(is_ref_value_type_for_gc(_M_stack[i].type()) && !_M_stack[i].raw().r.has_nil())
           fun(_M_stack[i].raw().r.ptr());
       }
-      for(size_t i = 0; i < _M_regs.sec; i++) {
-        if(is_ref_value_type_for_gc(_M_stack[i].type()) && !_M_stack[i].raw().r.has_nil())
-          fun(_M_stack[i].raw().r.ptr());
+      for(size_t i = 0; i < _M_regs.esec; i++) {
+        if(is_ref_value_type_for_gc(_M_expr_stack[i].type()) && !_M_expr_stack[i].raw().r.has_nil())
+          fun(_M_expr_stack[i].raw().r.ptr());
       }
       if(!_M_regs.rv.raw().r.has_nil())
         fun(_M_regs.rv.raw().r.ptr());
