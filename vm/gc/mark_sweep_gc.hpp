@@ -95,7 +95,7 @@ namespace letin
             object->raw().lzv.mutex.~LazyValueMutex();
         }
       public:
-        MarkSweepGarbageCollector(Allocator *alloc, unsigned int interval_usecs = 10000);
+        MarkSweepGarbageCollector(Allocator *alloc, unsigned int interval_usecs = 100000);
 
         ~MarkSweepGarbageCollector();
 
