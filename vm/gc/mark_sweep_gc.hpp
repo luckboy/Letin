@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -95,7 +95,7 @@ namespace letin
             object->raw().lzv.mutex.~LazyValueMutex();
         }
       public:
-        MarkSweepGarbageCollector(Allocator *alloc, unsigned int interval_usecs = 100);
+        MarkSweepGarbageCollector(Allocator *alloc, unsigned int interval_usecs = 10000);
 
         ~MarkSweepGarbageCollector();
 
