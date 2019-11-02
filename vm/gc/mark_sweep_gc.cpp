@@ -1,5 +1,5 @@
 /****************************************************************************
- *   Copyright (C) 2014-2015 Łukasz Szpakowski.                             *
+ *   Copyright (C) 2014-2015, 2019 Łukasz Szpakowski.                       *
  *                                                                          *
  *   This software is licensed under the GNU Lesser General Public          *
  *   License v3 or later. See the LICENSE file and the GPL file for         *
@@ -112,13 +112,15 @@ namespace letin
       void MarkSweepGarbageCollector::mark_from_object(Object *object)
       {
         Header *header = object_to_header(object);
-        mark_and_push_header(header);
-        while(!is_empty_stack()) {
-          Object *top_object = header_to_object(pop_header());
-          traverse_child_objects(*top_object, [this](Object *child_object) {
-            Header *child_header = object_to_header(child_object);
-            if(!child_header->is_marked()) mark_and_push_header(child_header);
-          });
+        if(!header->is_marked()) {
+          mark_and_push_header(header);
+          while(!is_empty_stack()) {
+            Object *top_object = header_to_object(pop_header());
+            traverse_child_objects(*top_object, [this](Object *child_object) {
+              Header *child_header = object_to_header(child_object);
+              if(!child_header->is_marked()) mark_and_push_header(child_header);
+            });
+          }
         }
       }
 
