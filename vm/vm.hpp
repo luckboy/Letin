@@ -543,6 +543,13 @@ namespace letin
           return false;
       }
 
+      void pop_expr_values()
+      {
+        _M_regs.evc = 0;
+        _M_regs.esec = _M_regs.evbp;
+        std::atomic_thread_fence(std::memory_order_release);
+      }
+      
       Value &expr_value(std::size_t i) { return _M_expr_stack[_M_regs.evbp + _M_regs.evc - i - 1]; }
       
       bool get_expr_value(std::size_t i, Value &value)

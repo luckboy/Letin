@@ -982,6 +982,7 @@ namespace letin
               for(size_t i = 0; i < context.regs().ac; i++)
                 context.arg(i).safely_assign_for_gc(context.pushed_arg(i));
               context.pop_args_and_local_vars();
+              context.pop_expr_values();
             } else
               context.set_error(ERROR_INCORRECT_ARG_COUNT);
             context.regs().ip = 0;
