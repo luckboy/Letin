@@ -325,7 +325,13 @@ namespace letin
 
       Value &pushed_arg(std::size_t i) { return _M_stack[_M_regs.abp2 + i]; }
 
-      void pop_args_and_local_vars() { _M_regs.abp2 = lvbp(); _M_regs.lvc = _M_regs.ac2 = 0; }
+      void pop_args_and_local_vars()
+      {
+        _M_regs.abp2 = lvbp();
+        _M_regs.lvc = _M_regs.ac2 = 0;
+        _M_regs.sec = _M_regs.abp2;
+        std::atomic_thread_fence(std::memory_order_release);
+      }
 
       bool enter_to_fun(std::size_t i);
 
