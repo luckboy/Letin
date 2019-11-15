@@ -187,8 +187,9 @@ extern "C" {
             SocketSize len;
             if(!convert_args(args, tosd(sd), tolen(len), toflags(flags)))
               return return_value(vm, context, vut(vnone, v(io_v)));
-            RegisteredReference buf_r(vm->gc()->new_object(OBJECT_TYPE_IARRAY8, len, context), context);
+            RegisteredReference buf_r(vm->gc()->new_object(OBJECT_TYPE_IARRAY8, len, context), context, false);
             if(buf_r.is_null()) return error_return_value(ERROR_OUT_OF_MEMORY);
+            buf_r.register_ref();
             fill_n(buf_r->raw().is8, buf_r->length(), 0);
 #if defined(__unix__)
             SocketSsize result;
@@ -296,8 +297,9 @@ extern "C" {
             Socklen addr_len;
             if(!convert_args(args, tosd(sd), tolen(len), toflags(flags), tosockaddr(addr)))
               return return_value(vm, context, vut(vnone, v(io_v)));
-            RegisteredReference buf_r(vm->gc()->new_object(OBJECT_TYPE_IARRAY8, len, context), context);
+            RegisteredReference buf_r(vm->gc()->new_object(OBJECT_TYPE_IARRAY8, len, context), context, false);
             if(buf_r.is_null()) return error_return_value(ERROR_OUT_OF_MEMORY);
+            buf_r.register_ref();
             fill_n(buf_r->raw().is8, buf_r->length(), 0);
 #if defined(__unix__)
             SocketSsize result;
